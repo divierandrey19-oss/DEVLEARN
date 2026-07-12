@@ -3839,6 +3839,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
           <button onclick="setLang('bi')" id="lang-bi">EN+ES</button>
         </div>
         <button class="sound-toggle" id="sound-toggle" onclick="Sound.toggle();updateSoundIcon();" title="Toggle sounds">🔊</button>
+        <button id="fb-sync-btn" onclick="window._signInGoogle && window._signInGoogle()" style="background:none;border:none;cursor:pointer;font-size:0.78rem;color:var(--text-3);padding:4px 8px;border-radius:8px;white-space:nowrap;" title="Sincronizar con la nube">☁️ Sync</button>
         <button class="btn btn-ghost btn-sm" onclick="openFocusMode()">🎯 Focus</button>
         <button class="btn btn-primary btn-sm" onclick="navigate('levels')">+ Study</button>
       </div>
@@ -4367,6 +4368,30 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 const KEY = 'lingua_v4';
 const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
 let state = loadState();
+
+// Firebase sync helpers
+window._appState = function() { return state; };
+window._mergeCloudState = function(cloud) {
+  try {
+    const imported = migrateState(cloud);
+    // Keep local images, use cloud for everything else
+    if (state.units && imported.units) {
+      Object.entries(state.units).forEach(([key, unit]) => {
+        if (unit.batches && imported.units[key] && imported.units[key].batches) {
+          unit.batches.forEach((batch, i) => {
+            const cloudBatch = imported.units[key].batches[i];
+            if (cloudBatch) cloudBatch.images = batch.images || [];
+          });
+        }
+      });
+    }
+    Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
+    saveNow();
+    if (typeof navigate === 'function') navigate('dashboard');
+    if (typeof updateNavBadges === 'function') updateNavBadges();
+    if (typeof toast === 'function') toast('☁️ Datos sincronizados');
+  } catch(e) { console.warn('Merge error:', e); }
+};
 let current = { lid: null, uid: null, tab: 'vocab' };
 let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
@@ -5220,11 +5245,17 @@ function save() {
     catch (e) { console.error('Save failed:', e); toast('⚠️ Storage almost full — delete old units to free space'); }
   }, 800); // 800ms: enough to batch rapid interactions, short enough to feel reliable
 }
+let _fbSyncTimer = null;
 function saveNow() {
-  if (window._importingData) return; // Don't overwrite imported data
+  if (window._importingData) return;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   _saveDirty = false;
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  // Debounced Firebase sync
+  if (window._syncToFirestore) {
+    if (_fbSyncTimer) clearTimeout(_fbSyncTimer);
+    _fbSyncTimer = setTimeout(window._syncToFirestore, 3000);
+  }
 }
 
 function getUnit(lid, uid) {
@@ -13193,5 +13224,90 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAx3yQ5gUIXN2nvs6QVlZ5w_rYRPYRL-_0",
+  authDomain: "devlearn-367f8.firebaseapp.com",
+  projectId: "devlearn-367f8",
+  storageBucket: "devlearn-367f8.firebasestorage.app",
+  messagingSenderId: "779027585114",
+  appId: "1:779027585114:web:195f189c72ce671fc12063"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+window._fb = { db, auth, doc, setDoc, getDoc, GoogleAuthProvider, signInWithPopup, signOut };
+
+function getStateForSync() {
+  const s = JSON.parse(JSON.stringify(window._appState ? window._appState() : {}));
+  if (s.units) {
+    Object.values(s.units).forEach(unit => {
+      if (unit.batches) unit.batches.forEach(b => { b.images = []; });
+    });
+  }
+  return s;
+}
+
+window._syncToFirestore = async function() {
+  if (!window._fb._user || !window._fb.db) return;
+  try {
+    const s = getStateForSync();
+    await window._fb.setDoc(
+      window._fb.doc(window._fb.db, 'users', window._fb._user.uid),
+      { state: JSON.stringify(s), updatedAt: new Date().toISOString() }
+    );
+    const btn = document.getElementById('fb-sync-btn');
+    if (btn) btn.title = 'Sincronizado ✅';
+  } catch(e) { console.warn('Sync error:', e); }
+};
+
+window._loadFromFirestore = async function() {
+  if (!window._fb._user) return;
+  try {
+    const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', window._fb._user.uid));
+    if (snap.exists()) {
+      const cloud = JSON.parse(snap.data().state);
+      window._mergeCloudState && window._mergeCloudState(cloud);
+    }
+  } catch(e) { console.warn('Load error:', e); }
+};
+
+window._signInGoogle = async function() {
+  try {
+    const provider = new window._fb.GoogleAuthProvider();
+    await window._fb.signInWithPopup(window._fb.auth, provider);
+  } catch(e) { alert('Error al iniciar sesión: ' + e.message); }
+};
+
+window._signOutGoogle = async function() {
+  try {
+    await window._fb.signOut(window._fb.auth);
+    const btn = document.getElementById('fb-sync-btn');
+    if (btn) { btn.textContent = '☁️ Sync'; btn.style.color = ''; btn.onclick = window._signInGoogle; }
+  } catch(e) {}
+};
+
+onAuthStateChanged(auth, async (user) => {
+  window._fb._user = user;
+  const btn = document.getElementById('fb-sync-btn');
+  if (user) {
+    if (btn) {
+      btn.textContent = '☁️ ' + user.displayName.split(' ')[0];
+      btn.style.color = 'var(--green)';
+      btn.onclick = window._signOutGoogle;
+    }
+    await window._loadFromFirestore();
+  } else {
+    if (btn) { btn.textContent = '☁️ Sync'; btn.style.color = ''; btn.onclick = window._signInGoogle; }
+  }
+});
+</script>
 </body>
 </html>
