@@ -4393,7 +4393,7 @@ window._mergeCloudState = function(cloud) {
     saveNow();
     if (typeof navigate === 'function') navigate('dashboard');
     if (typeof updateNavBadges === 'function') updateNavBadges();
-    if (typeof toast === 'function') toast('☁️ Datos sincronizados');
+    // Silent sync — no toast
   } catch(e) { console.warn('Merge error:', e); }
 };
 let current = { lid: null, uid: null, tab: 'vocab' };
@@ -13262,8 +13262,10 @@ function getStateForSync() {
   return s;
 }
 
+let _isSyncing = false;
 window._syncToFirestore = async function() {
-  if (!window._fb._user || !window._fb.db) return;
+  if (!window._fb._user || !window._fb.db || _isSyncing) return;
+  _isSyncing = true;
   try {
     window._updateSyncStatus && window._updateSyncStatus('syncing');
     const s = getStateForSync();
@@ -13275,6 +13277,8 @@ window._syncToFirestore = async function() {
   } catch(e) {
     console.warn('Sync error:', e);
     window._updateSyncStatus && window._updateSyncStatus('error');
+  } finally {
+    _isSyncing = false;
   }
 };
 
