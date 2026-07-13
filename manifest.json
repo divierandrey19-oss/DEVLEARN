@@ -1,0 +1,18 @@
+{
+  "name": "DEV Learn",
+  "short_name": "DEV Learn",
+  "description": "Tu clase de inglés con IA",
+  "start_url": "/DEVLEARN/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
