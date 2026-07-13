@@ -13274,21 +13274,26 @@ window._syncToFirestore = async function() {
 window._loadFromFirestore = async function(forceLoad) {
   if (!window._fb._user) return;
   try {
-    const localState = window._appState ? window._appState() : {};
-    const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
+    const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', window._fb._user.uid));
     
-    if (!forceLoad && hasLocalData) {
-      // Local data exists — just push to cloud, don't overwrite local
+    if (!snap.exists()) {
+      // No cloud data — push local to cloud
       if (window._syncToFirestore) window._syncToFirestore();
       return;
     }
-    
-    // No local data or forced — load from cloud
-    const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', window._fb._user.uid));
-    if (snap.exists()) {
-      const cloud = JSON.parse(snap.data().state);
+
+    const cloudData = snap.data();
+    const cloudTime = cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
+    const localState = window._appState ? window._appState() : {};
+    const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
+    const localTime = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
+
+    if (!hasLocalData || forceLoad || cloudTime > localTime) {
+      // Cloud is newer or no local data — pull from cloud
+      const cloud = JSON.parse(cloudData.state);
       window._mergeCloudState && window._mergeCloudState(cloud);
     } else {
+      // Local is newer — push to cloud
       if (window._syncToFirestore) window._syncToFirestore();
     }
   } catch(e) { console.warn('Load error:', e); }
