@@ -4391,9 +4391,8 @@ window._mergeCloudState = function(cloud) {
     }
     Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
     saveNow();
-    if (typeof navigate === 'function') navigate('dashboard');
     if (typeof updateNavBadges === 'function') updateNavBadges();
-    // Silent sync — no toast
+    // Silent sync — no toast, no navigation
   } catch(e) { console.warn('Merge error:', e); }
 };
 let current = { lid: null, uid: null, tab: 'vocab' };
@@ -13263,12 +13262,14 @@ function getStateForSync() {
 }
 
 let _isSyncing = false;
+let _selfPushTime = 0;
 window._syncToFirestore = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
   _isSyncing = true;
   try {
     window._updateSyncStatus && window._updateSyncStatus('syncing');
     const s = getStateForSync();
+    _selfPushTime = Date.now();
     await window._fb.setDoc(
       window._fb.doc(window._fb.db, 'users', window._fb._user.uid),
       { state: JSON.stringify(s), updatedAt: new Date().toISOString() }
@@ -13294,8 +13295,13 @@ window._loadFromFirestore = function(forceLoad) {
 
   // Use real-time listener
   _unsubscribeListener = window._fb.onSnapshot(userDoc, function(snap) {
+    // Ignore if we just pushed (avoid reacting to our own updates)
+    if (Date.now() - _selfPushTime < 10000) {
+      window._updateSyncStatus && window._updateSyncStatus('synced');
+      return;
+    }
+
     if (!snap.exists()) {
-      // No cloud data — push local
       if (window._syncToFirestore) window._syncToFirestore();
       return;
     }
@@ -13306,13 +13312,11 @@ window._loadFromFirestore = function(forceLoad) {
     const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
     const localTime = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
 
-    // Only pull if cloud is strictly newer (by more than 5 seconds to avoid loops)
     if (!hasLocalData || forceLoad || (cloudTime - localTime) > 5000) {
       const cloud = JSON.parse(cloudData.state);
       window._mergeCloudState && window._mergeCloudState(cloud);
       window._updateSyncStatus && window._updateSyncStatus('synced');
     } else if (localTime > cloudTime) {
-      // Local is newer — push to cloud
       if (window._syncToFirestore) window._syncToFirestore();
     } else {
       window._updateSyncStatus && window._updateSyncStatus('synced');
