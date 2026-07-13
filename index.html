@@ -5268,11 +5268,7 @@ function saveNow() {
     state.lastSaved = new Date().toISOString();
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch (e) {}
-  // Debounced Firebase sync
-  if (window._syncToFirestore) {
-    if (_fbSyncTimer) clearTimeout(_fbSyncTimer);
-    _fbSyncTimer = setTimeout(window._syncToFirestore, 3000);
-  }
+  // Firebase sync happens at natural pause points, not here
 }
 
 function getUnit(lid, uid) {
@@ -5358,6 +5354,8 @@ function navigate(page) {
   updateNavBadges();
   // Persist navigation so reload returns to same page
   try { localStorage.setItem('devlearn_nav', JSON.stringify({ page })); } catch(e) {}
+  // Sync to Firebase on page change
+  if (window._syncToFirestore) window._syncToFirestore();
 }
 
 function toggleSidebar() {
@@ -11497,6 +11495,8 @@ function updateFcProgress() {
 
 /** Show result screen when deck is complete */
 function showFcResult() {
+  // Sync to Firebase at natural pause point
+  if (window._syncToFirestore) window._syncToFirestore();
   // ── Quiz session completion ─────────────────────────────────
   if (fc.quizSession && fc.mode === 'quiz') {
     QuizSession.complete(fc.quizSession);
@@ -13232,11 +13232,15 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('beforeunload', () => {
     if (window._studyTimer) clearInterval(window._studyTimer);
     saveNow();
+    if (window._syncToFirestore) window._syncToFirestore();
   }, { once: true });
 
   // On mobile, beforeunload doesn't always fire — visibilitychange does
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) saveNow();
+    if (document.hidden) {
+      saveNow();
+      if (window._syncToFirestore) window._syncToFirestore();
+    }
   });
 });
 </script>
