@@ -5250,7 +5250,10 @@ function saveNow() {
   if (window._importingData) return;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   _saveDirty = false;
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  try {
+    state.lastSaved = new Date().toISOString();
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (e) {}
   // Debounced Firebase sync
   if (window._syncToFirestore) {
     if (_fbSyncTimer) clearTimeout(_fbSyncTimer);
@@ -13273,8 +13276,21 @@ window._loadFromFirestore = async function() {
   try {
     const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', window._fb._user.uid));
     if (snap.exists()) {
-      const cloud = JSON.parse(snap.data().state);
-      window._mergeCloudState && window._mergeCloudState(cloud);
+      const cloudData = snap.data();
+      const cloudUpdatedAt = cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
+      // Only load from cloud if cloud is newer than local data
+      const localState = window._appState ? window._appState() : {};
+      const localUpdatedAt = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
+      if (cloudUpdatedAt > localUpdatedAt) {
+        const cloud = JSON.parse(cloudData.state);
+        window._mergeCloudState && window._mergeCloudState(cloud);
+      } else {
+        // Local is newer, push local to cloud
+        if (window._syncToFirestore) window._syncToFirestore();
+      }
+    } else {
+      // No cloud data yet, upload local
+      if (window._syncToFirestore) window._syncToFirestore();
     }
   } catch(e) { console.warn('Load error:', e); }
 };
