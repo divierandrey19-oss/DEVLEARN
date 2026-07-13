@@ -3839,7 +3839,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
           <button onclick="setLang('bi')" id="lang-bi">EN+ES</button>
         </div>
         <button class="sound-toggle" id="sound-toggle" onclick="Sound.toggle();updateSoundIcon();" title="Toggle sounds">🔊</button>
-        <button id="fb-sync-btn" onclick="window._signInGoogle && window._signInGoogle()" style="background:none;border:none;cursor:pointer;font-size:0.78rem;color:var(--text-3);padding:4px 8px;border-radius:8px;white-space:nowrap;" title="Sincronizar con la nube">☁️ Sync</button>
+        <button id="fb-sync-btn" onclick="window._handleSyncBtn && window._handleSyncBtn()" style="background:none;border:none;cursor:pointer;font-size:0.78rem;color:var(--text-3);padding:4px 8px;border-radius:8px;white-space:nowrap;" title="Sincronizar con la nube">☁️ Sync</button>
         <button class="btn btn-ghost btn-sm" onclick="openFocusMode()">🎯 Focus</button>
         <button class="btn btn-primary btn-sm" onclick="navigate('levels')">+ Study</button>
       </div>
@@ -13271,28 +13271,38 @@ window._syncToFirestore = async function() {
   } catch(e) { console.warn('Sync error:', e); }
 };
 
-window._loadFromFirestore = async function() {
+window._loadFromFirestore = async function(forceLoad) {
   if (!window._fb._user) return;
   try {
+    const localState = window._appState ? window._appState() : {};
+    const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
+    
+    if (!forceLoad && hasLocalData) {
+      // Local data exists — just push to cloud, don't overwrite local
+      if (window._syncToFirestore) window._syncToFirestore();
+      return;
+    }
+    
+    // No local data or forced — load from cloud
     const snap = await window._fb.getDoc(window._fb.doc(window._fb.db, 'users', window._fb._user.uid));
     if (snap.exists()) {
-      const cloudData = snap.data();
-      const cloudUpdatedAt = cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
-      // Only load from cloud if cloud is newer than local data
-      const localState = window._appState ? window._appState() : {};
-      const localUpdatedAt = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
-      if (cloudUpdatedAt > localUpdatedAt) {
-        const cloud = JSON.parse(cloudData.state);
-        window._mergeCloudState && window._mergeCloudState(cloud);
-      } else {
-        // Local is newer, push local to cloud
-        if (window._syncToFirestore) window._syncToFirestore();
-      }
+      const cloud = JSON.parse(snap.data().state);
+      window._mergeCloudState && window._mergeCloudState(cloud);
     } else {
-      // No cloud data yet, upload local
       if (window._syncToFirestore) window._syncToFirestore();
     }
   } catch(e) { console.warn('Load error:', e); }
+};
+
+// Manual sync button — forces load from cloud
+window._manualSync = async function() {
+  if (!window._fb._user) {
+    window._signInGoogle && window._signInGoogle();
+    return;
+  }
+  if (confirm('¿Cargar datos desde la nube? Esto reemplazará los datos locales.')) {
+    await window._loadFromFirestore(true);
+  }
 };
 
 window._signInGoogle = async function() {
@@ -13300,6 +13310,16 @@ window._signInGoogle = async function() {
     const provider = new window._fb.GoogleAuthProvider();
     await window._fb.signInWithPopup(window._fb.auth, provider);
   } catch(e) { alert('Error al iniciar sesión: ' + e.message); }
+};
+
+window._handleSyncBtn = function() {
+  if (window._fb && window._fb._user) {
+    // Already signed in — just push local data to cloud
+    window._syncToFirestore && window._syncToFirestore();
+    toast('☁️ Datos enviados a la nube');
+  } else {
+    window._signInGoogle && window._signInGoogle();
+  }
 };
 
 window._signOutGoogle = async function() {
