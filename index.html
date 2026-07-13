@@ -13308,16 +13308,13 @@ window._loadFromFirestore = function(forceLoad) {
 
   const userDoc = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
 
-  // Use real-time listener
-  _unsubscribeListener = window._fb.onSnapshot(userDoc, function(snap) {
-    // Ignore if we just pushed (avoid reacting to our own updates)
-    if (Date.now() - _selfPushTime < 4000) {
-      window._updateSyncStatus && window._updateSyncStatus('synced');
-      return;
-    }
-
+  // On first load: do a one-time check against Firebase
+  // After that, only push — never pull automatically while active
+  window._fb.getDoc(userDoc).then(function(snap) {
     if (!snap.exists()) {
+      // No cloud data — push local
       if (window._syncToFirestore) window._syncToFirestore();
+      window._updateSyncStatus && window._updateSyncStatus('synced');
       return;
     }
 
@@ -13327,17 +13324,26 @@ window._loadFromFirestore = function(forceLoad) {
     const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
     const localTime = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
 
-    if (!hasLocalData || forceLoad || (cloudTime - localTime) > 5000) {
+    if (!hasLocalData || forceLoad || cloudTime > localTime) {
+      // Cloud is newer or no local data — pull once on open
       const cloud = JSON.parse(cloudData.state);
       window._mergeCloudState && window._mergeCloudState(cloud);
-      window._updateSyncStatus && window._updateSyncStatus('synced');
-    } else if (localTime > cloudTime) {
-      if (window._syncToFirestore) window._syncToFirestore();
     } else {
+      // Local is newer — push to cloud
+      if (window._syncToFirestore) window._syncToFirestore();
+    }
+    window._updateSyncStatus && window._updateSyncStatus('synced');
+  }).catch(function(e) {
+    console.warn('Load error:', e);
+    window._updateSyncStatus && window._updateSyncStatus('error');
+  });
+
+  // Keep listener only for status indicator (green dot), not for pulling data
+  _unsubscribeListener = window._fb.onSnapshot(userDoc, function(snap) {
+    if (Date.now() - _selfPushTime < 4000) {
       window._updateSyncStatus && window._updateSyncStatus('synced');
     }
-  }, function(e) { 
-    console.warn('Listener error:', e); 
+  }, function(e) {
     window._updateSyncStatus && window._updateSyncStatus('error');
   });
 };
