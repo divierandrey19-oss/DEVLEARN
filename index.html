@@ -4392,7 +4392,18 @@ window._mergeCloudState = function(cloud) {
     Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
     saveNow();
     if (typeof updateNavBadges === 'function') updateNavBadges();
-    // Silent sync — no toast, no navigation
+    // Refresh current page view silently (no sound, no scroll)
+    try {
+      const activePage = document.querySelector('.page.active');
+      if (activePage) {
+        const pageId = activePage.id;
+        if (pageId === 'page-dashboard' && typeof renderDashboard === 'function') renderDashboard();
+        else if (pageId === 'page-flashcards-all' && typeof renderAllFlashcards === 'function') renderAllFlashcards();
+        else if (pageId === 'page-vocab-all' && typeof renderAllVocab === 'function') renderAllVocab();
+        else if (pageId === 'page-progress' && typeof renderProgressPage === 'function') renderProgressPage();
+      }
+    } catch(e) {}
+    // Silent sync — no toast
   } catch(e) { console.warn('Merge error:', e); }
 };
 let current = { lid: null, uid: null, tab: 'vocab' };
@@ -13296,7 +13307,7 @@ window._loadFromFirestore = function(forceLoad) {
   // Use real-time listener
   _unsubscribeListener = window._fb.onSnapshot(userDoc, function(snap) {
     // Ignore if we just pushed (avoid reacting to our own updates)
-    if (Date.now() - _selfPushTime < 10000) {
+    if (Date.now() - _selfPushTime < 4000) {
       window._updateSyncStatus && window._updateSyncStatus('synced');
       return;
     }
@@ -13357,9 +13368,10 @@ window._handleSyncBtn = function() {
 
 window._signOutGoogle = async function() {
   try {
+    // Cancel listener before signing out
+    if (_unsubscribeListener) { _unsubscribeListener(); _unsubscribeListener = null; }
     await window._fb.signOut(window._fb.auth);
-    const btn = document.getElementById('fb-sync-btn');
-    if (btn) { btn.textContent = '☁️ Sync'; btn.style.color = ''; btn.onclick = window._signInGoogle; }
+    updateSyncBtn(null);
   } catch(e) {}
 };
 
@@ -13403,9 +13415,10 @@ onAuthStateChanged(auth, async (user) => {
   window._fb._user = user;
   if (user) {
     updateSyncBtn(user, 'syncing');
-    await window._loadFromFirestore();
-    updateSyncBtn(user, 'synced');
+    window._loadFromFirestore();
+    // Status will be updated by listener when Firebase responds
   } else {
+    if (_unsubscribeListener) { _unsubscribeListener(); _unsubscribeListener = null; }
     updateSyncBtn(null);
   }
 });
