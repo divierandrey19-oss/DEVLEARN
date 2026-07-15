@@ -3728,6 +3728,31 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 }
 .sound-toggle:hover { background: var(--surface-2); color: var(--text); transform: translateY(-1px); }
 .sound-toggle.muted { color: var(--text-3); opacity: 0.6; }
+
+/* ===========================================================
+   OVERFLOW SAFETY NET
+   AI-generated content (or a pasted URL) can contain very long
+   unbreakable strings. Without wrapping, they force mobile Chrome
+   to widen the layout viewport, which makes the whole page slide
+   sideways. These rules make long words wrap instead.
+   =========================================================== */
+.vocab-word, .vocab-translation, .vocab-example, .vocab-example-es,
+.fc-word, .grammar-title, .grammar-text, .grammar-example,
+.grammar-example .ge-en, .grammar-example .ge-es,
+.exercise-q, .msg-bubble, .pr-weak-name,
+.pr-unit-row-name, .pr-unit-row-meta,
+.unit-hero-title, .unit-hero-sub, .hero-title, .hero-sub,
+.cc-title, .cc-sub, .section-title, .section-sub,
+.level-name, .level-desc, .unit-card-title, .breadcrumb {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+/* Progress "weak areas" rows: let the flexible name column actually shrink */
+.pr-weak-name { min-width: 0; }
+.pr-weak-row { min-width: 0; }
+.pr-unit-row, .pr-unit-row-head { min-width: 0; }
+.pr-unit-row-head > * { min-width: 0; }
 </style>
 </head>
 <body>
@@ -5639,7 +5664,7 @@ function renderDashboard() {
 function renderCalendar() {
   const cal   = document.getElementById('calendar');
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = dateLocal(today);
 
   // Build 4-week grid ending today
   const days  = ['S','M','T','W','T','F','S'];
@@ -5660,12 +5685,12 @@ function renderCalendar() {
     for (let i = 0; i < state.streak; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      streakDays.add(d.toISOString().split('T')[0]);
+      streakDays.add(dateLocal(d));
     }
   }
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const str     = d.toISOString().split('T')[0];
+    const str     = dateLocal(d);
     const studied = studySet.has(str);
     const inStr   = streakDays.has(str) && studied;
     const isToday = str === todayStr;
@@ -7105,15 +7130,21 @@ function renderVocabCards(vocab, unit) {
   }).join('');
 }
 
-// todayLocal: returns YYYY-MM-DD in the user's LOCAL timezone (not UTC).
-// Using toISOString() alone gives UTC date, which causes daily resets to
-// happen at the wrong local time (e.g. 7pm in Colombia instead of midnight).
-function todayLocal() {
-  const d = new Date();
+// dateLocal: formats ANY Date object as YYYY-MM-DD in the user's LOCAL timezone.
+// Use this instead of d.toISOString().split('T')[0], which returns the UTC date
+// and is therefore wrong for ~5 hours every evening in Colombia (UTC-5).
+function dateLocal(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+// todayLocal: returns YYYY-MM-DD in the user's LOCAL timezone (not UTC).
+// Using toISOString() alone gives UTC date, which causes daily resets to
+// happen at the wrong local time (e.g. 7pm in Colombia instead of midnight).
+function todayLocal() {
+  return dateLocal(new Date());
 }
 
 // escapeStr: safe for HTML attribute values inside single-quoted onclick handlers.
@@ -7810,7 +7841,9 @@ const SRS = {
   rate(progress, word, rating) {
     const c    = this.getCard(progress, word);
     const now  = new Date();
-    const today = now.toISOString().split('T')[0];
+    // LOCAL date — using toISOString() here scheduled every evening review
+    // one day late (see dateLocal/todayLocal).
+    const today = todayLocal();
 
     c.attempts++;
     c.score    = rating;
@@ -8057,9 +8090,12 @@ const SRS = {
   },
 
   _addDays(dateStr, days) {
-    const d = new Date(dateStr);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().split('T')[0];
+    // Parse as a LOCAL date. `new Date('2026-07-14')` parses as UTC midnight,
+    // which only worked here by accident; this is explicit and safe.
+    const [y, m, d] = String(dateStr).split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + days);
+    return dateLocal(dt);
   },
 };
 
@@ -11540,7 +11576,7 @@ function showFcResult() {
 
     // Cards scheduled for tomorrow
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = dateLocal(tomorrow);
     const u = getUnit(fc.unitLid, fc.unitUid);
     const scheduled = u ? getUnitVocab(u).filter(v => {
       const c = u.fcProgress[v.word];
@@ -12130,7 +12166,9 @@ function recordStudyDate() {
     state.studyDates.push(today);
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split('T')[0];
+    // LOCAL date — with toISOString() this resolved to *today* after 7pm in
+    // Colombia, so the streak comparison failed and the streak reset to 1.
+    const yStr = dateLocal(yesterday);
     const prevStreak = state.streak;
 
     if (state.lastStudyDate === yStr || !state.lastStudyDate) {
@@ -12667,39 +12705,6 @@ function loadSettings() {
   updateAIDot();
 }
 
-function exportData() {
-  try {
-    const data = localStorage.getItem(KEY);
-    if (!data) { toast('No data to export'); return; }
-
-    const blob = new Blob([data], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const date = todayLocal();
-    a.href     = url;
-    a.download = `devlearn_backup_${date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    const status = document.getElementById('import-export-status');
-    if (status) {
-      status.style.color = 'var(--green)';
-      status.textContent = '✅ Data exported — save the .json file safely';
-    }
-    toast('✅ Data exported successfully');
-  } catch(e) {
-    toast('❌ Export failed');
-  }
-}
-
-function cancelImport() {
-  window._pendingImport = null;
-  const status = document.getElementById('import-export-status');
-  if (status) status.textContent = '';
-  const input = document.getElementById('import-file-input');
-  if (input) input.value = '';
-}
-
 function doImport() {
   const text = window._pendingImport;
   if (!text) return;
@@ -12735,45 +12740,6 @@ function doImport() {
     const status = document.getElementById('import-export-status');
     if (status) { status.style.color = 'var(--red)'; status.textContent = 'Error: ' + e.message; }
   }
-}
-
-function importData(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const status = document.getElementById('import-export-status');
-  if (status) { status.textContent = 'Leyendo archivo...'; status.style.color = 'var(--text-3)'; }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const text = e.target.result;
-      const parsed = JSON.parse(text);
-      if (!parsed.units && !parsed.stats) throw new Error('Invalid format');
-      window._pendingImport = text;
-
-      const unitCount = Object.keys(parsed.units || {}).length;
-      if (status) {
-        status.style.color = 'var(--text-1)';
-        const div = document.createElement('div');
-        div.style.cssText = 'background:var(--card);border-radius:10px;padding:12px;margin-top:8px;';
-        const info = document.createElement('div');
-        info.style.marginBottom = '10px';
-        info.innerHTML = 'Backup listo: <strong>' + unitCount + ' unidades</strong> (' + Math.round(text.length/1024) + ' KB)';
-        const btnOk = document.createElement('button');
-        btnOk.textContent = 'Importar ahora';
-        btnOk.style.cssText = 'width:100%;padding:10px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem;';
-        btnOk.onclick = doImport;
-        div.appendChild(info);
-        div.appendChild(btnOk);
-        status.innerHTML = '';
-        status.appendChild(div);
-      }
-    } catch(err) {
-      if (status) { status.style.color = 'var(--red)'; status.textContent = 'Archivo invalido.'; }
-    }
-    event.target.value = '';
-  };
-  reader.readAsText(file);
 }
 
 
