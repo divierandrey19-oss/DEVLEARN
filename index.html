@@ -208,8 +208,6 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
-  overflow-x: hidden;
-  width: 100%;
 }
 body {
   background: var(--bg);
@@ -3298,9 +3296,17 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
     padding-left: max(14px, var(--safe-left));
     padding-right: max(14px, var(--safe-right));
   }
-  .topbar { padding: 11px 14px; gap: 8px; padding-top: calc(11px + var(--safe-top)); }
+  .topbar { padding: 11px 14px; gap: 8px; padding-top: calc(11px + var(--safe-top)); min-width: 0; }
   .page-title { font-size: 1.15rem; }
-  .topbar-right { gap: 6px; }
+  /* Allow the left side (☰ + title) to shrink so the topbar never exceeds
+     the device width — otherwise mobile Chrome widens the layout viewport,
+     which makes the whole page drag sideways. */
+  .topbar-left { min-width: 0; flex: 1 1 auto; }
+  .topbar-left .page-title {
+    min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .topbar-right { gap: 6px; flex: 0 0 auto; }
   .lang-selector { display: none; }
   .topbar-right .btn { padding: 6px 12px; font-size: 0.72rem; }
   .hero { padding: 22px 18px; border-radius: var(--r-lg); }
@@ -3389,6 +3395,11 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   .vocab-word { font-size: 1.1rem; }
   .section-title { font-size: 1.15rem; }
   .lang-selector { display: none; }
+  /* Compact topbar on narrow phones — keeps every control on screen */
+  #fb-sync-label { display: none; }
+  #fb-sync-btn { padding: 5px 8px !important; }
+  .topbar-right .btn { padding: 6px 9px; font-size: 0.7rem; }
+  .sound-toggle { width: 32px; height: 32px; }
 }
 /* ===========================================================
    BOOT SPLASH — cinematic premium intro
