@@ -4418,21 +4418,118 @@ let state = loadState();
 
 // Firebase sync helpers
 window._appState = function() { return state; };
+/**
+ * Merge two SRS progress maps word by word.
+ * Whichever device reviewed a word most recently wins for that word, so
+ * studying offline on one device is never silently thrown away.
+ */
+function mergeFcProgress(localProg, cloudProg) {
+  const out = { ...(cloudProg || {}) };
+  Object.entries(localProg || {}).forEach(([word, lc]) => {
+    const cc = out[word];
+    if (!cc) { out[word] = lc; return; }           // only local knows this word
+    const lt = lc.lastReview || '';
+    const ct = cc.lastReview || '';
+    if (lt > ct) out[word] = lc;                   // 'YYYY-MM-DD' compares fine
+    else if (lt === ct && (lc.attempts || 0) > (cc.attempts || 0)) out[word] = lc;
+  });
+  return out;
+}
+
+/**
+ * Merge cloud state into local state.
+ *
+ * This is a UNION, not a replace. Rules:
+ *  - A unit that exists only locally is kept (it may not be uploaded yet).
+ *  - Batches are matched by id, never by array index — index matching put
+ *    photos on the wrong batch when devices ordered batches differently.
+ *  - Images live only on this device (they're stripped before upload), so
+ *    local images are re-attached to their own batch by id.
+ *  - Per-word SRS progress keeps the most recently reviewed version.
+ */
+/** Every batch id currently in a state object. */
+function allBatchIds(st) {
+  const ids = [];
+  Object.values(st.units || {}).forEach(u => (u.batches || []).forEach(b => { if (b.id) ids.push(b.id); }));
+  return ids;
+}
+
+/**
+ * Records which batch ids the cloud is known to contain right now.
+ * This is what lets the merge tell "the cloud has never seen this batch"
+ * (keep it) apart from "another device deleted this batch" (drop it).
+ * Clock-free on purpose: it records a fact, it doesn't compare timestamps.
+ */
+window._recordSyncedBatchIds = function(ids) {
+  state.syncedBatchIds = Array.from(new Set(ids || []));
+  saveNow();
+};
+
+/** Server-time marker of the last cloud snapshot we reconciled with. */
+window._setCloudSeen = function(ms) {
+  if (!ms) return;
+  state.lastCloudSeen = ms;
+  saveNow();
+};
+
 window._mergeCloudState = function(cloud) {
   try {
     const imported = migrateState(cloud);
-    // Keep local images, use cloud for everything else
-    if (state.units && imported.units) {
-      Object.entries(state.units).forEach(([key, unit]) => {
-        if (unit.batches && imported.units[key] && imported.units[key].batches) {
-          unit.batches.forEach((batch, i) => {
-            const cloudBatch = imported.units[key].batches[i];
-            if (cloudBatch) cloudBatch.images = batch.images || [];
-          });
+
+    // Snapshot anything we need from local BEFORE cloud fields overwrite it
+    const localStudyDates = [...(state.studyDates || [])];
+    // Batch ids the cloud is known to have held. If a batch is in here but is
+    // missing from the incoming snapshot, another device deleted it — so it
+    // must NOT be resurrected. If it isn't in here, the cloud simply hasn't
+    // seen it yet and it must be kept.
+    const knownToCloud = new Set(state.syncedBatchIds || []);
+    // Capture the cloud's batch ids BEFORE the merge below mutates `imported`
+    // (cloudUnit is a live reference into it, so reading after would wrongly
+    // include local-only batches the cloud has never received).
+    const cloudBatchIds = allBatchIds(imported);
+
+    // Start from what we already have — nothing local gets dropped.
+    const mergedUnits = { ...(state.units || {}) };
+
+    Object.entries(imported.units || {}).forEach(([key, cloudUnit]) => {
+      const localUnit = (state.units || {})[key];
+      if (!localUnit) { mergedUnits[key] = cloudUnit; return; } // new unit from another device
+
+      // ── Batches: match by id ──────────────────────────────
+      const localById = new Map((localUnit.batches || []).map(b => [b.id, b]));
+      const cloudBatches = (cloudUnit.batches || []).map(cb => {
+        const lb = localById.get(cb.id);
+        if (lb) {
+          cb.images = lb.images || [];   // re-attach THIS batch's own photos
+          localById.delete(cb.id);
+        } else {
+          cb.images = cb.images || [];   // batch from another device — no photos here
         }
+        return cb;
       });
-    }
+      // Batches the cloud hasn't seen yet stay (with their photos); batches the
+      // cloud used to have but no longer does were deleted elsewhere — drop them.
+      const localOnly = [...localById.values()].filter(b => !knownToCloud.has(b.id));
+      cloudUnit.batches = [...cloudBatches, ...localOnly];
+
+      // ── Progress ──────────────────────────────────────────
+      cloudUnit.fcProgress = mergeFcProgress(localUnit.fcProgress, cloudUnit.fcProgress);
+
+      mergedUnits[key] = cloudUnit;
+    });
+
+    // Apply cloud's top-level fields, then restore the merged units
     Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
+    state.units = mergedUnits;
+
+    // Study dates are a set of days — union them, don't overwrite
+    const allDates = new Set([...localStudyDates, ...(imported.studyDates || [])]);
+    state.studyDates = [...allDates].sort();
+
+    // We have now reconciled with this snapshot: the cloud holds exactly these
+    // batches. A push right after this will widen it to include our local ones.
+    state.syncedBatchIds = cloudBatchIds;
+
     saveNow();
     if (typeof updateNavBadges === 'function') updateNavBadges();
     // Refresh current page view silently (no sound, no scroll)
@@ -5056,6 +5153,33 @@ RULES:
   },
 
   /**
+   * The Messages API expects a conversation that starts with the user and
+   * alternates. Two things break that here:
+   *  - Mari's greeting is stored as an assistant turn, so it sits at index 0.
+   *  - A failed call leaves the student's message in history with no reply,
+   *    so the next send produces two user turns in a row.
+   * This rebuilds a valid conversation without touching what's on screen.
+   */
+  _sanitizeHistory(history) {
+    const msgs = (history || [])
+      .filter(m => m && typeof m.content === 'string' && m.content.trim())
+      .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }));
+
+    // Drop any leading assistant turns — the first turn must be the user's
+    let i = 0;
+    while (i < msgs.length && msgs[i].role === 'assistant') i++;
+
+    // Collapse consecutive same-role turns into one
+    const out = [];
+    msgs.slice(i).forEach(m => {
+      const last = out[out.length - 1];
+      if (last && last.role === m.role) last.content += '\n\n' + m.content;
+      else out.push({ ...m });
+    });
+    return out;
+  },
+
+  /**
    * Real Claude tutor — uses full conversation history + rich system prompt
    */
   async _tutorReal({ history, unitContext, weakAreas, langMode }) {
@@ -5067,12 +5191,14 @@ RULES:
       .map(([k,v]) => `${k} (${v} mistakes)`).join(', ') || 'none identified yet';
 
     const lvlNames = { a1:'A1 Beginner', a2:'A2 Elementary', b1:'B1 Intermediate', b2:'B2 Upper-Intermediate', c1:'C1 Advanced', c2:'C2 Proficiency' };
-    const lvl = unitContext ? (lvlNames['a2'] || 'A2 Elementary') : 'A2 Elementary'; // default A2
+    // Use the unit's actual level — this was hardcoded to 'a2', so Mari would
+    // have kept treating the student as A2 in a B1 unit.
+    const lvl = lvlNames[unitContext?.lid] || 'A2 Elementary';
 
     const systemPrompt = `You are Mari, a warm English tutor for a Colombian A2 student at American Schoolway in Medellín.
 
 TWO NON-NEGOTIABLE RULES THAT OVERRIDE EVERYTHING ELSE IN THIS PROMPT:
-1. NEVER write a sample sentence for the student to copy — not in your follow-up question, and not even when correcting a mistake or redirecting to different grammar. If you catch yourself about to write "Try:", "Use:", an underscore blank like "_____", or any quoted example sentence, delete it. State the rule or ask the question, then STOP.
+1. NEVER write a sample sentence for the student to copy — not in your follow-up question, not when correcting a mistake, not when redirecting to different grammar, and NOT EVEN IF THE STUDENT ASKS YOU FOR ONE. There is no situation in this conversation where you write a sentence for them to copy. If you catch yourself about to write "Try:", "Use:", an underscore blank like "_____", or any quoted example sentence, delete it. State the rule or ask the question, then STOP.
 2. Only use vocabulary/grammar that appears somewhere in the Grammar line below — but if it lists multiple grammar points, ALL of them are equally valid at any time. Never treat one listed grammar point as wrong just because you were focused on a different listed point a moment ago.
 
 STUDENT PROFILE:
@@ -5095,14 +5221,14 @@ RULES:
 - Bold key corrections only. No long explanations.
 - CRITICAL: Only use grammar structures and vocabulary that are EXPLICITLY listed in the Grammar line above (it may list several valid points — ANY of them are fair game, don't treat one as "more correct" than another). Never introduce a grammar structure that is NOT in that list at all (e.g. past tense when it's not listed). If the student uses a structure that genuinely is NOT in the list, gently redirect — but if it IS somewhere in the list, treat it as correct and on-topic, even if it's not the specific point you were focused on a moment ago.
 - NEVER correct a grammatically correct sentence.
-- If they write in Spanish, ask them to try in English with a hint.
+- If they write in Spanish, ask them to say it in English. Do not translate it for them and do not write the English sentence — that is the sentence they need to produce.
 - CRITICAL: Your follow-up question must be ONLY the question itself — nothing after it. No "Use:", no "Try:", no sample sentences, no quoted example answers, no parenthetical hints like "(or compare with...)". Once you write the question mark, STOP. This is a strict rule with zero exceptions, no matter what word you use to introduce the example (Use/Try/Example/For instance/etc. are ALL forbidden).
   WRONG (never do this — any of these): 
   "Who cooks better, you or your mom? Use: 'My mom can cook better than me.'"
   "Who cooks better, you or your mom? Try: 'I can cook better.'"
   "Who cooks better, you or your mom?" (followed by any sample sentence in quotes)
   RIGHT (always do this): "Who cooks better, you or your mom?" — and then nothing else.
-- Only give an example if the student explicitly says they're stuck, asks for a hint, or asks "how do I say this?" — never proactively, never by default.
+- Even if the student explicitly asks for an example, a hint, or "how do I say this?", do NOT write a sentence for them. Give the rule, or the single missing word on its own, and ask them to try it themselves. A single word is fine; a sentence they can copy is never fine.
 
 CORRECTION FORMAT (only for real errors):
 ✏️ **"[wrong]"** → **"[correct]"** — [one-sentence rule]
@@ -5117,11 +5243,8 @@ Example of a BAD response (too long — never do this):
 
 
     // Build messages array (last 20 for context window efficiency)
-    const recentHistory = history.slice(-20);
-    const messages = recentHistory.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' : 'user',
-      content: m.content,
-    }));
+    const messages = this._sanitizeHistory(history.slice(-20));
+    if (messages.length === 0) throw new Error('NO_USER_MESSAGE');
 
     // The last message should be the user's latest input
     const raw = await this._callClaude({
@@ -5130,16 +5253,23 @@ Example of a BAD response (too long — never do this):
       systemPrompt,
     });
 
-    // Detect mistake type from response content
+    // Detect mistake type from response content.
+    // Mari is instructed to answer with: ✏️ **"wrong"** → **"right"** — rule
+    // The old check looked for the word "Correction", which that format never
+    // contains, so every correction Mari made was silently thrown away.
     let mistake = 'none';
-    if (/✏️.*Correction|correction:/i.test(raw)) {
-      if (/spelling|spelled|typo/i.test(raw))       mistake = 'spelling';
-      else if (/word order|sentence order/i.test(raw)) mistake = 'word_order';
-      else if (/vocab|word|phrase/i.test(raw))       mistake = 'vocab';
-      else                                            mistake = 'grammar';
+    let corrected = '';
+    if (/✏️/.test(raw)) {
+      const m = raw.match(/✏️\s*\*\*"?([^"*]+)"?\*\*\s*(?:→|->)/);
+      if (m) corrected = (m[1] || '').trim();
+      const rule = raw.split(/→|->/).slice(1).join(' ');
+      if (/spell|typo/i.test(rule))                                  mistake = 'spelling';
+      else if (/preposition|vocabulary|wrong word|means/i.test(rule)) mistake = 'vocab';
+      else if (/\bword order\b|\border of\b/i.test(rule))            mistake = 'word_order';
+      else                                                           mistake = 'grammar';
     }
 
-    return { reply: raw, mistake };
+    return { reply: raw, mistake, corrected };
   },
 
   /**
@@ -11163,7 +11293,7 @@ async function sendChatMessage(inputId, containerId, type, useUnitContext) {
   }
 
   try {
-    const { reply, mistake } = await AIService.tutorChat({
+    const { reply, mistake, corrected } = await AIService.tutorChat({
       history: chat[type],
       unitContext,
       weakAreas: state.weakAreas,
@@ -11198,7 +11328,9 @@ async function sendChatMessage(inputId, containerId, type, useUnitContext) {
         : mistake === 'word_order' ? 'sentence structure'
         : mistake === 'spelling' ? 'spelling'
         : 'grammar';
-      addWeakArea(area, 'Chat correction');
+      // Pass the word Mari actually corrected: if it's one of your vocabulary
+      // words, addWeakArea brings its flashcard forward.
+      addWeakArea(area, corrected || 'Chat correction');
     }
 
     saveNow();
@@ -11206,7 +11338,18 @@ async function sendChatMessage(inputId, containerId, type, useUnitContext) {
     console.error('Chat error:', e);
     const tiEl = document.getElementById('typing-' + type);
     if (tiEl) tiEl.remove();
-    addChatMsg('ai', "Sorry, I couldn't connect. Please check your internet connection. 😔", containerId);
+    // Say what actually went wrong — blaming the connection for every error
+    // hides real problems (bad key, rate limit, malformed request).
+    const msg = e.message || '';
+    let text;
+    if (msg.includes('NO_KEY'))            text = "No API key set. Add one in ⚙️ Settings and we can talk. 🔑";
+    else if (msg.includes('INVALID_KEY'))  text = "That API key isn't working. Check it in ⚙️ Settings. 🔑";
+    else if (msg.includes('RATE_LIMIT'))   text = "Too many messages right now. Wait a moment and try again. ⏳";
+    else if (msg.includes('OVERLOADED'))   text = "The server is busy. Try again in a few seconds. ⏳";
+    else if (msg.includes('TIMEOUT'))      text = "That took too long. Try sending it again. ⏳";
+    else if (msg.includes('NETWORK'))      text = "Sorry, I couldn't connect. Please check your internet connection. 😔";
+    else                                   text = "Something went wrong: " + msg.slice(0, 80) + " 😔";
+    addChatMsg('ai', text, containerId);
   }
 }
 
@@ -12200,7 +12343,7 @@ function addWeakArea(area, detail) {
     const match = vocab.find(v => v.word.toLowerCase() === word.toLowerCase());
     if (!match) return;
 
-    const prog = u.fcProgress;
+    const prog = u.fcProgress || (u.fcProgress = {});
     const card  = SRS.initCard(prog, match);
 
     // Apply soft penalty — lighter than a full lapse
@@ -13457,7 +13600,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -13473,7 +13616,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, GoogleAuthProvider, signInWithPopup, signOut };
+window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, serverTimestamp, GoogleAuthProvider, signInWithPopup, signOut };
 
 function getStateForSync() {
   const s = JSON.parse(JSON.stringify(window._appState ? window._appState() : {}));
@@ -13487,6 +13630,16 @@ function getStateForSync() {
 
 let _isSyncing = false;
 let _selfPushTime = 0;
+
+/** Reads a doc's updatedAt as milliseconds, tolerating the old ISO-string format. */
+function cloudMillis(data) {
+  const v = data && data.updatedAt;
+  if (!v) return 0;
+  if (typeof v.toMillis === 'function') return v.toMillis();   // Firestore Timestamp
+  const t = Date.parse(v);                                     // legacy ISO string
+  return isNaN(t) ? 0 : t;
+}
+
 window._syncToFirestore = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
   _isSyncing = true;
@@ -13494,10 +13647,26 @@ window._syncToFirestore = async function() {
     window._updateSyncStatus && window._updateSyncStatus('syncing');
     const s = getStateForSync();
     _selfPushTime = Date.now();
-    await window._fb.setDoc(
-      window._fb.doc(window._fb.db, 'users', window._fb._user.uid),
-      { state: JSON.stringify(s), updatedAt: new Date().toISOString() }
-    );
+    const ref = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
+    await window._fb.setDoc(ref, {
+      state: JSON.stringify(s),
+      // Server clock — comparing two devices' own clocks picked the wrong
+      // winner whenever they drifted apart.
+      updatedAt: window._fb.serverTimestamp(),
+      updatedAtClient: new Date().toISOString(), // display only
+    });
+    // The cloud now holds exactly the batches we just pushed. Read back the
+    // resolved server time so the next open compares server-time to server-time.
+    try {
+      const fresh = await window._fb.getDoc(ref);
+      if (fresh.exists()) {
+        window._setCloudSeen && window._setCloudSeen(cloudMillis(fresh.data()));
+        const pushed = JSON.parse(fresh.data().state || '{}');
+        const ids = [];
+        Object.values(pushed.units || {}).forEach(u => (u.batches || []).forEach(b => { if (b.id) ids.push(b.id); }));
+        window._recordSyncedBatchIds && window._recordSyncedBatchIds(ids);
+      }
+    } catch(e) { /* non-fatal: next open just merges again, which is safe */ }
     window._updateSyncStatus && window._updateSyncStatus('synced');
   } catch(e) {
     console.warn('Sync error:', e);
@@ -13528,17 +13697,25 @@ window._loadFromFirestore = function(forceLoad) {
     }
 
     const cloudData = snap.data();
-    const cloudTime = cloudData.updatedAt ? new Date(cloudData.updatedAt).getTime() : 0;
+    // Both sides of this comparison are now SERVER time: the doc's timestamp,
+    // and the server time of the last snapshot this device reconciled with.
+    // The old code compared this device's clock to the other device's clock,
+    // so any drift between them picked the wrong winner.
+    const cloudMs = cloudMillis(cloudData);
     const localState = window._appState ? window._appState() : {};
     const hasLocalData = localState.units && Object.keys(localState.units).length > 0;
-    const localTime = localState.lastSaved ? new Date(localState.lastSaved).getTime() : 0;
+    const seenMs = localState.lastCloudSeen || 0;
 
-    if (!hasLocalData || forceLoad || cloudTime > localTime) {
-      // Cloud is newer or no local data — pull once on open
+    if (!hasLocalData || forceLoad || cloudMs > seenMs) {
+      // The cloud has something we haven't reconciled with yet. Merging is a
+      // union, so this is safe even when our own copy is the newer one.
       const cloud = JSON.parse(cloudData.state);
       window._mergeCloudState && window._mergeCloudState(cloud);
+      window._setCloudSeen && window._setCloudSeen(cloudMs);
+      // Push the merged result so the cloud also gets what only we had.
+      if (window._syncToFirestore) window._syncToFirestore();
     } else {
-      // Local is newer — push to cloud
+      // Nothing new up there — just make sure our changes are up.
       if (window._syncToFirestore) window._syncToFirestore();
     }
     window._updateSyncStatus && window._updateSyncStatus('synced');
