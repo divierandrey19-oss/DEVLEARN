@@ -4455,7 +4455,10 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
 const QUIZ_SESSION_KEY = 'devlearn_quiz_session';
-let exam = { timer: null, score: 0, total: 0, startTime: null };
+// Exam session persistence — an exam costs an API call and ~25 min of work,
+// so it must survive backgrounding the app or an accidental reload.
+const EXAM_SESSION_KEY = 'devlearn_exam_session';
+let exam = { timer: null, score: 0, total: 0, startTime: null, answers: {}, timeLeft: 0 };
 let chat = { unit: [], standalone: [] };
 let focusTimer = { running: false, seconds: 25 * 60, interval: null };
 let studyStartTime = Date.now();
@@ -6562,6 +6565,69 @@ const QuizSession = {
   /** Cards answered correctly */
   correctCount(session) {
     return Object.values(session.results).filter(r => r === 'correct').length;
+  },
+};
+
+/* ============================================================
+   EXAM SESSION — survives backgrounding, reload and app close.
+   An exam costs an API call and ~25 minutes, so losing it to a
+   phone call is unacceptable. Mirrors QuizSession deliberately.
+   The timer is PAUSED while away: we persist the remaining
+   seconds rather than a wall-clock deadline.
+   ============================================================ */
+const EXAM_SESSION_KEY_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+
+const ExamSession = {
+  /** Snapshot the live `exam` object. Safe to call often. */
+  save() {
+    if (!exam || !Array.isArray(exam.questions) || exam.questions.length === 0) return;
+    try {
+      localStorage.setItem(EXAM_SESSION_KEY, JSON.stringify({
+        lid: current.lid, uid: current.uid,
+        questions:    exam.questions,
+        score:        exam.score || 0,
+        total:        exam.total || exam.questions.length,
+        results:      exam.results || [],
+        wrongAnswers: exam.wrongAnswers || [],
+        answers:      exam.answers || {},   // { idx: userAnswerString }
+        timeLeft:     Math.max(0, Math.round(exam.timeLeft || 0)),
+        adaptiveMode: !!exam.adaptiveMode,
+        startedAt:    exam.startTime || Date.now(),
+        savedAt:      Date.now(),
+        version: 1,
+      }));
+    } catch (e) { /* quota — exam still playable in memory */ }
+  },
+
+  load() {
+    try {
+      const s = localStorage.getItem(EXAM_SESSION_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch (e) { return null; }
+  },
+
+  clear() {
+    try { localStorage.removeItem(EXAM_SESSION_KEY); } catch (e) {}
+  },
+
+  /** Returns a resumable session for this unit, or null. */
+  getActive(lid, uid) {
+    const s = this.load();
+    if (!s) return null;
+    if (s.lid !== lid || s.uid !== uid) return null;
+    if (!Array.isArray(s.questions) || s.questions.length === 0) { this.clear(); return null; }
+    if (s.timeLeft <= 0) { this.clear(); return null; }          // ran out of time
+    if (this.answeredCount(s) >= s.questions.length) { this.clear(); return null; } // nothing left
+    if (Date.now() - (s.savedAt || 0) > EXAM_SESSION_KEY_MAX_AGE) { this.clear(); return null; } // stale
+    return s;
+  },
+
+  answeredCount(session) {
+    return (session.results || []).filter(r => r && typeof r.correct === 'boolean').length;
+  },
+
+  correctSoFar(session) {
+    return (session.results || []).filter(r => r && r.correct === true).length;
   },
 };
 
@@ -10229,18 +10295,29 @@ function prepareExam() {
       ${trend !== null ? `<div style="text-align:center;margin-top:8px;font-size:0.75rem;color:${trend>0?'var(--green)':trend<0?'var(--red)':'var(--text-3)'};">${trend>0?'▲ +':'▼ '}${trend !== 0 ? Math.abs(trend)+'% from last attempt' : 'Same as last attempt'}</div>` : ''}
     </div>` : '';
 
-  // Dynamic time calculation
-  const timePerQ = { multiple_choice: 30, fill_blank: 50, translation: 60, error_correction: 50, sentence_builder: 80, matching: 60 };
-  const sampleQ  = exercises.slice(0, 10);
-  const totalSec = sampleQ.reduce((s, ex) => s + (timePerQ[ex.type] || 45), 0);
-  const minStr   = Math.ceil(totalSec / 60);
+  // ── Resume banner: an unfinished exam for this unit ──
+  const saved = ExamSession.getActive(current.lid, current.uid);
+  const resumeHTML = saved ? `
+    <div style="margin-bottom:20px;padding:16px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:12px;text-align:left;">
+      <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:2px;">
+        ▶️ Exam in progress — ${saved.questions.length - ExamSession.answeredCount(saved)} questions left
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-3);margin-bottom:12px;">
+        ${ExamSession.correctSoFar(saved)} correct so far · ${Math.floor(saved.timeLeft/60)}:${String(saved.timeLeft%60).padStart(2,'0')} on the clock
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="resumeExam()">Resume exam</button>
+        <button class="btn btn-ghost btn-sm" onclick="discardExamSession()">Discard &amp; start new</button>
+      </div>
+    </div>` : '';
 
   c.innerHTML = `
     <div style="text-align:center;padding:32px 20px;">
+      ${resumeHTML}
       <div style="font-size:2.5rem;margin-bottom:16px;">🏆</div>
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;">Unit Exam</div>
       <div style="font-size:0.88rem;color:var(--text-3);margin-bottom:24px;">
-        30 questions · ~25 min · Tests vocabulary, grammar & comprehension
+        30 questions · ~25 min · Tests vocabulary, grammar &amp; comprehension
       </div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
         <button class="btn btn-primary btn-lg" onclick="startExam(false)">Start exam →</button>
@@ -10251,8 +10328,46 @@ function prepareExam() {
   `;
 }
 
-async function startExam(adaptiveMode = false) {
+/** Resume the saved exam for the current unit. */
+function resumeExam() {
+  const saved = ExamSession.getActive(current.lid, current.uid);
+  if (!saved) { toast('That exam is no longer available.'); prepareExam(); return; }
+  startExam(saved.adaptiveMode, saved);
+}
+
+/** Throw away the saved exam and return to the start screen. */
+function discardExamSession() {
+  ExamSession.clear();
+  toast('Exam discarded — you can start a new one');
+  prepareExam();
+}
+
+async function startExam(adaptiveMode = false, resume = null) {
   const u = getUnit(current.lid, current.uid);
+
+  // ── Resuming a saved exam: no API call, no regeneration ──
+  if (resume) {
+    const timePerQ = { multiple_choice: 30, fill_blank: 50, translation: 60, error_correction: 50, sentence_builder: 80, matching: 60 };
+    const fullSec  = resume.questions.reduce((s, ex) => s + (timePerQ[ex.type] || 45), 0);
+    exam = {
+      score: resume.score || 0,
+      total: resume.total || resume.questions.length,
+      startTime: resume.startedAt || Date.now(),
+      questions: resume.questions,
+      answered: ExamSession.answeredCount(resume),
+      wrongAnswers: resume.wrongAnswers || [],
+      results: resume.results || [],
+      answers: resume.answers || {},
+      adaptiveMode: !!resume.adaptiveMode,
+      timeLeft: resume.timeLeft > 0 ? resume.timeLeft : fullSec,
+      timer: null,
+    };
+    renderExamBody(exam.questions);
+    restoreExamAnswers();
+    startExamTimer();
+    toast(`▶️ Exam resumed — ${exam.questions.length - exam.answered} questions left`);
+    return;
+  }
 
   // Show loading state
   const examTab = document.getElementById('exam-content') || document.getElementById('tab-exam');
@@ -10301,7 +10416,11 @@ Return ONLY a JSON array with exactly 30 items:
       const raw  = await AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 5000, isJSON: true, timeoutMs: 60000, model: 'claude-haiku-4-5-20251001' });
       const data = AIService._parseClaudeJSON(raw);
       if (Array.isArray(data) && data.length >= 5) {
-        examPool = data.slice(0, 10);
+        // Use every question we asked (and paid) for. Slicing to 10 here not
+        // only wasted 20 questions — because the prompt returns them grouped
+        // by type, it also cut translation / sentence_builder / multiple_choice
+        // out of every exam. Shuffle so types are interleaved, not blocked.
+        examPool = data.slice(0, 30).sort(() => Math.random() - 0.5);
       }
     } catch(e) {
       console.warn('Exam generation failed:', e.message);
@@ -10315,12 +10434,13 @@ Return ONLY a JSON array with exactly 30 items:
   // Fallback: use existing exercises if Claude fails
   if (!examPool) {
     const allExercises = getUnitExercises(u);
+    const CAP = 30; // same length as an AI-generated exam
     if (adaptiveMode && u.examWrongQuestions?.length) {
       const wrongEx = allExercises.filter(ex => u.examWrongQuestions.includes(ex.question));
       const otherEx = allExercises.filter(ex => !u.examWrongQuestions.includes(ex.question)).sort(() => Math.random() - 0.5);
-      examPool = [...wrongEx, ...otherEx].slice(0, Math.min(10, allExercises.length));
+      examPool = [...wrongEx, ...otherEx].slice(0, Math.min(CAP, allExercises.length));
     } else {
-      examPool = [...allExercises].sort(() => Math.random() - 0.5).slice(0, Math.min(10, allExercises.length));
+      examPool = [...allExercises].sort(() => Math.random() - 0.5).slice(0, Math.min(CAP, allExercises.length));
     }
   }
 
@@ -10339,8 +10459,20 @@ Return ONLY a JSON array with exactly 30 items:
     answered: 0, wrongAnswers: [],
     adaptiveMode,
     results: [], // track per-question results
+    answers: {}, // { idx: what the student typed/picked } — needed to restore
+    timeLeft: totalSec,
+    timer: null,
   };
 
+  renderExamBody(examPool);
+  ExamSession.save();
+  startExamTimer();
+}
+
+/**
+ * Renders the exam question list. Shared by a fresh start and by resume.
+ */
+function renderExamBody(examPool) {
   const typeColors = {
     multiple_choice:  { color: 'var(--accent)', bg: 'var(--accent-glow)', label: 'Multiple choice' },
     fill_blank:       { color: 'var(--green)',  bg: 'var(--green-bg)',   label: 'Fill the blank' },
@@ -10350,17 +10482,18 @@ Return ONLY a JSON array with exactly 30 items:
     matching:         { color: 'var(--accent)', bg: 'var(--surface-2)',  label: 'Matching' },
   };
 
+  const secs = Math.max(0, Math.round(exam.timeLeft || 0));
   document.getElementById('exam-content').innerHTML = `
     <div class="exam-head">
       <div>
-        <div class="exam-title">${adaptiveMode ? '🎯 Adaptive Retake' : 'Unit Exam'}</div>
+        <div class="exam-title">${exam.adaptiveMode ? '🎯 Adaptive Retake' : 'Unit Exam'}</div>
         <div style="font-size:0.78rem;color:var(--text-3);">${examPool.length} questions</div>
       </div>
       <div class="exam-meta-row">
-        <div class="exam-meta"><div class="exam-meta-val" id="exam-score-live">0</div><div class="exam-meta-lbl">Correct</div></div>
+        <div class="exam-meta"><div class="exam-meta-val" id="exam-score-live">${exam.score || 0}</div><div class="exam-meta-lbl">Correct</div></div>
         <div class="exam-meta"><div class="exam-meta-val">${examPool.length}</div><div class="exam-meta-lbl">Total</div></div>
       </div>
-      <div class="exam-timer" id="exam-timer">${Math.floor(totalSec/60)}:${String(totalSec%60).padStart(2,'0')}</div>
+      <div class="exam-timer" id="exam-timer">${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')}</div>
     </div>
     <div id="exam-questions">
       ${examPool.map((ex, i) => {
@@ -10411,16 +10544,60 @@ Return ONLY a JSON array with exactly 30 items:
       Submit exam
     </button>
   `;
+}
 
-  let timeLeft = totalSec;
+/**
+ * Exam countdown. Counts down only while the app is actually visible, so
+ * backgrounding the app pauses the exam instead of silently draining it.
+ * Persists every few seconds so a crash costs at most a moment.
+ */
+function startExamTimer() {
+  if (exam.timer) clearInterval(exam.timer);
+  let tick = 0;
   exam.timer = setInterval(() => {
-    timeLeft--;
+    if (document.visibilityState !== 'visible') return; // paused while away
+    exam.timeLeft = Math.max(0, (exam.timeLeft || 0) - 1);
     const el = document.getElementById('exam-timer');
-    if (el) el.textContent = Math.floor(timeLeft/60) + ':' + String(timeLeft%60).padStart(2,'0');
+    if (el) el.textContent = Math.floor(exam.timeLeft/60) + ':' + String(Math.round(exam.timeLeft)%60).padStart(2,'0');
     // Warn when <30s left
-    if (timeLeft === 30 && el) el.style.color = 'var(--red)';
-    if (timeLeft <= 0) { clearInterval(exam.timer); finishExam(); }
+    if (exam.timeLeft === 30 && el) el.style.color = 'var(--red)';
+    if (++tick % 5 === 0) ExamSession.save();
+    if (exam.timeLeft <= 0) { clearInterval(exam.timer); exam.timer = null; ExamSession.clear(); finishExam(); }
   }, 1000);
+}
+
+/**
+ * Re-applies previously given answers after a resume: fills inputs, disables
+ * answered questions and re-shows their feedback.
+ */
+function restoreExamAnswers() {
+  (exam.results || []).forEach((res, i) => {
+    if (!res || typeof res.correct !== 'boolean') return;
+    const q   = exam.questions[i];
+    const ans = q?.answer || '';
+    const fb  = document.getElementById('exam-fb-' + i);
+    if (fb) {
+      fb.className = 'exercise-feedback show ' + (res.correct ? 'correct' : 'wrong');
+      fb.textContent = res.correct ? '✅ Correct' : '❌ ' + ans;
+    }
+    const given = (exam.answers || {})[i];
+    if (q?.type === 'multiple_choice') {
+      const card = document.getElementById('exam-q-' + i);
+      card?.querySelectorAll('.exercise-opt').forEach(o => {
+        o.style.pointerEvents = 'none';
+        const txt = (o.textContent || '').trim();
+        if (given && txt === String(given).trim()) o.classList.add(res.correct ? 'correct' : 'wrong');
+        else if (!res.correct && smartCheck(txt, ans)) o.classList.add('correct');
+      });
+    } else {
+      const input = document.getElementById('exam-input-' + i);
+      if (input) {
+        if (given !== undefined) input.value = given;
+        input.style.borderColor = res.correct ? 'var(--green)' : 'var(--red)';
+        input.disabled = true;
+      }
+    }
+  });
 }
 
 function examCheckMCData(btn) {
@@ -10443,6 +10620,9 @@ function examCheckMC(btn, idx, sel, ans) {
     exam.wrongAnswers.push(exam.questions[idx]?.question || '');
   }
   exam.results[idx] = { correct, type: 'multiple_choice', question: exam.questions[idx]?.question };
+  exam.answers[idx] = sel;
+  exam.answered = ExamSession.answeredCount({ results: exam.results });
+  ExamSession.save();
   const fb = document.getElementById('exam-fb-' + idx);
   if (fb) { fb.className = 'exercise-feedback show ' + (correct ? 'correct' : 'wrong'); fb.textContent = correct ? '✅ Correct' : '❌ ' + ans; }
 }
@@ -10466,12 +10646,17 @@ function examCheckOpen(idx, ans) {
     exam.wrongAnswers.push(exam.questions[idx]?.question || '');
   }
   exam.results[idx] = { correct, type: exam.questions[idx]?.type, question: exam.questions[idx]?.question };
+  exam.answers[idx] = input.value;
+  exam.answered = ExamSession.answeredCount({ results: exam.results });
+  input.disabled = true;
+  ExamSession.save();
   const fb = document.getElementById('exam-fb-' + idx);
   if (fb) { fb.className = 'exercise-feedback show ' + (correct ? 'correct' : 'wrong'); fb.textContent = correct ? '✅ Correct' : '❌ ' + ans; }
 }
 
 function finishExam() {
-  if (exam.timer) clearInterval(exam.timer);
+  if (exam.timer) { clearInterval(exam.timer); exam.timer = null; }
+  ExamSession.clear(); // submitted — nothing left to resume
   const pct      = Math.round((exam.score / exam.total) * 100);
   const timeTaken = Math.round((Date.now() - exam.startTime) / 60000);
   const u        = getUnit(current.lid, current.uid);
@@ -13234,18 +13419,37 @@ document.addEventListener('DOMContentLoaded', () => {
     lastUpdateEl.textContent = localStorage.getItem(UPDATE_KEY) || '—';
   }
 
-  window.addEventListener('beforeunload', () => {
-    if (window._studyTimer) clearInterval(window._studyTimer);
+  // ── State persistence on exit ──────────────────────────────
+  // save() is debounced 800ms for performance (state can be ~1MB with page
+  // photos). These hooks flush immediately so nothing is lost when the app
+  // goes away. beforeunload is unreliable on mobile; pagehide and
+  // visibilitychange are the ones Android Chrome actually fires.
+  const flushState = () => {
     saveNow();
+    if (exam && exam.timer) ExamSession.save(); // capture the paused exam clock
     if (window._syncToFirestore) window._syncToFirestore();
-  }, { once: true });
+  };
 
-  // On mobile, beforeunload doesn't always fire — visibilitychange does
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      saveNow();
-      if (window._syncToFirestore) window._syncToFirestore();
+  window.addEventListener('pagehide', (e) => {
+    flushState();
+    // Only tear the timer down on a real unload — if the page is going into
+    // bfcache it may come straight back and still needs to track study time.
+    if (!e.persisted && window._studyTimer) {
+      clearInterval(window._studyTimer);
+      window._studyTimer = null;
     }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (window._studyTimer) {
+      clearInterval(window._studyTimer);
+      window._studyTimer = null;
+    }
+    flushState();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) flushState();
   });
 });
 </script>
