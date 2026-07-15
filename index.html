@@ -5183,9 +5183,29 @@ RULES:
    * Real Claude tutor — uses full conversation history + rich system prompt
    */
   async _tutorReal({ history, unitContext, weakAreas, langMode }) {
-    // Build context strings
-    const unitVocab   = unitContext?.vocab?.slice(0, 20).map(v => `${v.word} (${v.translation})`).join(', ') || '';
-    const unitGrammar = unitContext?.grammar?.map(g => g.title).join(', ') || '';
+    // Build context strings.
+    // Vocabulary: sample across the WHOLE unit, not slice(0, 20). That slice
+    // always returned the first batch — for Unit 3 that was 20 can-abilities
+    // (cook, paint, instrument...), so Mari could only ever talk about those,
+    // even when asked to change topic. Re-sampling each turn adds variety.
+    const allVocab = unitContext?.vocab || [];
+    const vocabPool = allVocab.length > 30
+      ? [...allVocab].sort(() => Math.random() - 0.5).slice(0, 30)
+      : allVocab;
+    const unitVocab = vocabPool.map(v => `${v.word} (${v.translation})`).join(' · ') || '';
+
+    // Grammar: de-duplicate titles. The same point extracted from several book
+    // pages ("Modal Verb CAN for Ability" ×2) made CAN look more important.
+    const seenG = new Set();
+    const grammarTitles = (unitContext?.grammar || [])
+      .map(g => (g.title || '').trim())
+      .filter(t => {
+        const k = t.toLowerCase().replace(/[^a-z ]/g, '').trim();
+        if (!k || seenG.has(k)) return false;
+        seenG.add(k); return true;
+      });
+    const unitGrammar = grammarTitles.map(t => `   • ${t}`).join('\n');
+
     const topWeak     = Object.entries(weakAreas || {})
       .filter(([,v]) => v > 1).sort((a,b) => b[1]-a[1]).slice(0,3)
       .map(([k,v]) => `${k} (${v} mistakes)`).join(', ') || 'none identified yet';
@@ -5200,14 +5220,16 @@ RULES:
 TWO NON-NEGOTIABLE RULES THAT OVERRIDE EVERYTHING ELSE IN THIS PROMPT:
 1. NEVER write a sample sentence for the student to copy — not in your follow-up question, not when correcting a mistake, not when redirecting to different grammar, and NOT EVEN IF THE STUDENT ASKS YOU FOR ONE. There is no situation in this conversation where you write a sentence for them to copy. If you catch yourself about to write "Try:", "Use:", an underscore blank like "_____", or any quoted example sentence, delete it. State the rule or ask the question, then STOP.
 2. Only use vocabulary/grammar that appears in the Grammar line below — but if it lists multiple grammar points, ALL of them are equally valid at any time. Never treat one listed grammar point as wrong just because you were focused on a different listed point a moment ago.
-   BEFORE you send any question, check it: does it only use structures from the Grammar line? If your question needs a structure that is NOT listed — comparatives with "than", past tense, present perfect, -ing after a verb, future, etc. — REWRITE the question without it. This unit is the only thing that exists in this conversation. A question that is natural but uses an unlisted structure is still WRONG here.
+   BEFORE you send any question, check it: does it only use structures from the Grammar line? If your question needs a structure that is NOT listed — comparatives with "than", past tense, present perfect, future, etc. — REWRITE the question without it. This unit is the only thing that exists in this conversation. A question that is natural but uses an unlisted structure is still WRONG here.
+   ROTATE through the Grammar line. Many of its points may look similar or repeat a keyword — that does NOT mean that keyword is the whole unit. If your last two questions used the same grammar point, your next one MUST use a different point from the list. If the student says they want a different topic, switch to a grammar point from the list that you have not used yet — never just re-use the same one with new words.
 
 STUDENT PROFILE:
 - Level: ${lvl}
 - Unit: ${unitContext ? (unitContext.title || 'Unit ' + unitContext.uid) : 'General practice'}
 ${unitVocab ? `- Vocabulary: ${unitVocab}` : ''}
-- Grammar (THE ONLY STRUCTURES YOU MAY USE): ${unitGrammar || 'not extracted yet — stay on very simple present-tense sentences about this unit\'s topic and nothing else'}
 - Weak areas: ${topWeak}
+- Grammar — these ${grammarTitles.length} points are THE ONLY structures you may use, and ALL of them are yours to practise:
+${unitGrammar || '   • not extracted yet — stay on very simple present-tense sentences about this unit\'s topic and nothing else'}
 
 RESPONSE STYLE — CRITICAL:
 Keep every response SHORT — maximum 4 lines total. The student is practicing speaking, not reading. Long responses discourage practice.
@@ -5223,7 +5245,7 @@ RULES:
 - English always. Spanish only for very tricky concepts (1 sentence max).
 - Bold key corrections only. No long explanations.
 - CRITICAL: Only use grammar structures and vocabulary that are EXPLICITLY listed in the Grammar line above (it may list several valid points — ANY of them are fair game, don't treat one as "more correct" than another). Never introduce a grammar structure that is NOT in that list at all (e.g. past tense when it's not listed). If the student uses a structure that genuinely is NOT in the list, gently redirect — but if it IS somewhere in the list, treat it as correct and on-topic, even if it's not the specific point you were focused on a moment ago.
-- NEVER correct a grammatically correct sentence.
+- NEVER correct a grammatically correct sentence. The ✏️ line is ONLY for real errors: if there is no error, do not write a ✏️ line at all — just react and ask. Never write a ✏️ line where the "wrong" and "correct" text are the same, and never use ✏️ to say something is right.
 - If they write in Spanish, ask them to say it in English. Do not translate it for them and do not write the English sentence — that is the sentence they need to produce.
 - CRITICAL: Your follow-up question must be ONLY the question itself — nothing after it. No "Use:", no "Try:", no sample sentences, no quoted example answers, no parenthetical hints like "(or compare with...)". Once you write the question mark, STOP. This is a strict rule with zero exceptions, no matter what word you use to introduce the example (Use/Try/Example/For instance/etc. are ALL forbidden).
   WRONG (never do this — any of these):
@@ -5273,13 +5295,20 @@ Shape of a BAD response (too long — never do this):
     let mistake = 'none';
     let corrected = '';
     if (/✏️/.test(raw)) {
-      const m = raw.match(/✏️\s*\*\*"?([^"*]+)"?\*\*\s*(?:→|->)/);
-      if (m) corrected = (m[1] || '').trim();
-      const rule = raw.split(/→|->/).slice(1).join(' ');
-      if (/spell|typo/i.test(rule))                                  mistake = 'spelling';
-      else if (/preposition|vocabulary|wrong word|means/i.test(rule)) mistake = 'vocab';
-      else if (/\bword order\b|\border of\b/i.test(rule))            mistake = 'word_order';
-      else                                                           mistake = 'grammar';
+      const m = raw.match(/✏️\s*\*\*"?([^"*]+)"?\*\*\s*(?:→|->)\s*\*\*"?([^"*]+)"?\*\*/);
+      const wrong = m ? (m[1] || '').trim() : '';
+      const right = m ? (m[2] || '').trim() : '';
+      // Mari sometimes uses the ✏️ format to say a sentence is already perfect
+      // ("X" → "X" — this is perfect!). That is not a mistake; don't log one.
+      const isRealError = !m || wrong.toLowerCase() !== right.toLowerCase();
+      if (isRealError) {
+        corrected = wrong;
+        const rule = raw.split(/→|->/).slice(1).join(' ');
+        if (/spell|typo/i.test(rule))                                  mistake = 'spelling';
+        else if (/preposition|vocabulary|wrong word|means/i.test(rule)) mistake = 'vocab';
+        else if (/\bword order\b|\border of\b/i.test(rule))            mistake = 'word_order';
+        else                                                           mistake = 'grammar';
+      }
     }
 
     return { reply: raw, mistake, corrected };
