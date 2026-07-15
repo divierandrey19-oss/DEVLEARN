@@ -208,6 +208,8 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
+  overflow-x: hidden;
+  width: 100%;
 }
 body {
   background: var(--bg);
@@ -3387,6 +3389,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   .vocab-word { font-size: 1.1rem; }
   .section-title { font-size: 1.15rem; }
   .lang-selector { display: none; }
+}
 /* ===========================================================
    BOOT SPLASH — cinematic premium intro
    =========================================================== */
@@ -13072,15 +13075,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const nameEl  = document.getElementById('splash-name');
     const tagEl   = document.getElementById('splash-tag');
 
+    // Respect low-power devices / reduced motion — skip straight to done
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      splashEl.remove();
+      return;
+    }
+
     const W = canvas.width  = window.innerWidth;
     const H = canvas.height = window.innerHeight;
     const ctx = canvas.getContext('2d');
     const cx = W / 2, cy = H / 2;
 
-    // ── Particle system ──────────────────────────────────────
+    // ── Particle system (lightweight for low-end phones) ─────
     const COLORS = ['rgba(10,132,255,', 'rgba(90,200,250,', 'rgba(191,90,242,', 'rgba(255,255,255,'];
     const particles = [];
-    const N = 90;
+    const N = 36;
 
     for (let i = 0; i < N; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -13121,7 +13130,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillRect(0, 0, W, H);
 
       // ── Phase 1 (0–600ms): particles converge from darkness ──
-      const p1 = Math.min(elapsed / 600, 1);
+      const p1 = Math.min(elapsed / 300, 1);
 
       particles.forEach(p => {
         p.phase += p.speed;
@@ -13132,33 +13141,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
         if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
 
-        const fadeIn = ease(Math.min(elapsed / 800, 1));
+        const fadeIn = ease(Math.min(elapsed / 400, 1));
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = p.color + (p.targetAlpha * fadeIn).toFixed(3) + ')';
         ctx.fill();
       });
 
-      // ── Central glow (fades in at 300ms) ─────────────────────
-      if (elapsed > 300) {
-        const gp = ease(Math.min((elapsed - 300) / 700, 1));
+      // ── Central glow (fades in at 300ms) — precomputed gradient, just alpha-scaled ──
+      if (elapsed > 150) {
+        const gp = ease(Math.min((elapsed - 150) / 350, 1));
         glowAlpha = gp * 0.22;
 
-        // Outer soft glow
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 260 + gp * 80);
-        grad.addColorStop(0, `rgba(10,132,255,${(glowAlpha * 0.9).toFixed(3)})`);
-        grad.addColorStop(0.4, `rgba(10,132,255,${(glowAlpha * 0.3).toFixed(3)})`);
-        grad.addColorStop(0.7, `rgba(191,90,242,${(glowAlpha * 0.15).toFixed(3)})`);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        if (!window._splashGrad) {
+          window._splashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 340);
+          window._splashGrad.addColorStop(0, 'rgba(10,132,255,0.9)');
+          window._splashGrad.addColorStop(0.4, 'rgba(10,132,255,0.3)');
+          window._splashGrad.addColorStop(0.7, 'rgba(191,90,242,0.15)');
+          window._splashGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        }
+        ctx.save();
+        ctx.globalAlpha = Math.min(glowAlpha / 0.22, 1);
         ctx.beginPath();
         ctx.arc(cx, cy, 340 + gp * 80, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
+        ctx.fillStyle = window._splashGrad;
         ctx.fill();
+        ctx.restore();
       }
 
       // ── Phase 2 (600ms): logo mark springs in ─────────────────
-      if (elapsed >= 600) {
-        const lp = Math.min((elapsed - 600) / 380, 1);
+      if (elapsed >= 300) {
+        const lp = Math.min((elapsed - 300) / 190, 1);
         const springScale = 0.8 + ease(lp) * 0.22; // 0.8 → 1.02 → 1.0
         const logoAlpha = ease(lp);
 
@@ -13167,27 +13180,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // ── Phase 3 (900ms): accent dot pops ─────────────────────
-      if (elapsed >= 900) {
-        const ap = Math.min((elapsed - 900) / 280, 1);
+      if (elapsed >= 450) {
+        const ap = Math.min((elapsed - 450) / 140, 1);
         const dotScale = ease(ap) * 1.15; // overshoot slightly
         accent.style.transform = `scale(${Math.min(dotScale, 1.0).toFixed(3)})`;
       }
 
       // ── Phase 4 (1050ms): name slides up ─────────────────────
-      if (elapsed >= 1050) {
-        const np = Math.min((elapsed - 1050) / 420, 1);
+      if (elapsed >= 525) {
+        const np = Math.min((elapsed - 525) / 210, 1);
         nameEl.style.opacity = ease(np).toFixed(3);
         nameEl.style.transform = `translateY(${(12 * (1 - ease(np))).toFixed(2)}px)`;
       }
 
       // ── Phase 5 (1380ms): tagline fades in ───────────────────
-      if (elapsed >= 1380) {
-        const tp = Math.min((elapsed - 1380) / 400, 1);
+      if (elapsed >= 690) {
+        const tp = Math.min((elapsed - 690) / 200, 1);
         tagEl.style.opacity = (ease(tp) * 0.55).toFixed(3);
       }
 
-      // ── Exit at 2500ms ────────────────────────────────────────
-      if (elapsed >= 2500) {
+      // ── Exit at 1400ms ────────────────────────────────────────
+      if (elapsed >= 1400) {
         running = false;
         // Disable touches immediately so app is usable during fade
         splashEl.style.pointerEvents = 'none';
@@ -13217,7 +13230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       s.style.pointerEvents = 'none'; // immediately stop blocking touches
       setTimeout(() => { if (s.parentNode) s.remove(); }, 350);
     }
-  }, 4000); // 4 seconds max — well after normal 3.1s splash
+  }, 2500); // 2.5 seconds max — well after normal 1.4s splash
 
   // Track study time — store reference to avoid accumulation on hot-reload
   if (window._studyTimer) clearInterval(window._studyTimer);
