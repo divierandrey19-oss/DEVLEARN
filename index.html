@@ -5211,10 +5211,12 @@ ${unitGrammar ? `- Grammar: ${unitGrammar}` : ''}
 RESPONSE STYLE — CRITICAL:
 Keep every response SHORT — maximum 4 lines total. The student is practicing speaking, not reading. Long responses discourage practice.
 
-Structure every response in exactly this order:
+Structure every response in this order — but steps 1 and 2 are optional:
 1. CORRECTION (only if there's a real grammar error): ✏️ "wrong" → "correct" + one-sentence rule. Skip if correct.
-2. ANSWER: One short sentence answering or acknowledging what they said.
+2. ANSWER: One short sentence answering or acknowledging what they said. SKIP THIS if it would just restate your question — never say the same thing twice.
 3. FOLLOW-UP: One short question using unit vocabulary or grammar to keep them talking.
+
+Every response ends with EXACTLY ONE question. Never ask two questions, and never ask the same question twice in different words. If the student asks you something open-ended (like "can you help me?"), answer with one short question and nothing else.
 
 RULES:
 - English always. Spanish only for very tricky concepts (1 sentence max).
@@ -5237,6 +5239,13 @@ Example of a GOOD response (short, direct):
 Student: "My sister have long hair."
 Mari: ✏️ **"have"** → **"has"** — third person singular needs -s.
 She sounds nice! Is she older or younger than you?
+
+Example of a BAD response (asks the same thing twice — never do this):
+Student: "Me puedes ayudar"
+Mari: "¡Claro! Tell me what you need help with, but try to ask in English. 😊
+What do you need help with?"
+The acknowledgement and the question say the same thing. Ask ONCE:
+Mari: "Of course — in English, what do you need help with?"
 
 Example of a BAD response (too long — never do this):
 "Great effort! I can see you are working hard on describing people. Let me help you with a small correction..."`;
@@ -8634,7 +8643,8 @@ function smartCheck(userInput, expected, question = '') {
     .replace(/&apos;/g, "'")                           // unescape HTML entity from onclick attrs
     .replace(/&quot;/g, '"')                           // unescape HTML entity
     .replace(/\\'/g, "'")                              // fix stored escaped apostrophes \' → '
-    .replace(/[´`''ʼ]/g, "'")                         // normalize all apostrophe variants → '
+    .replace(/[\u00B4\u0060\u2018\u2019\u02BC\u02B9\u2032\uFF07]/g, "'")  // all apostrophe variants → ' (Android's keyboard types \u2019)
+    .replace(/[\u201C\u201D\u2033]/g, '"')             // curly double quotes → "
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // strip accents: tú→tu, está→esta
     .replace(/[.,!?;:¿¡]/g, '')
     .replace(/\s+/g, ' ');
@@ -8642,8 +8652,11 @@ function smartCheck(userInput, expected, question = '') {
   const u = norm(userInput);
   if (!u) return false;
 
-  // 0. Multiple accepted answers separated by / or , — accept ANY of them
-  const alternatives = (expected || '').split(/[\/|,]/).map(a => a.trim()).filter(Boolean);
+  // 0. Multiple accepted answers separated by / or | — accept ANY of them.
+  // NOTE: comma is deliberately NOT a separator. Answers legitimately contain
+  // commas ("Yes, I can." / "He can swim, but he can't run."), and splitting on
+  // them accepted half an answer as correct.
+  const alternatives = (expected || '').split(/[\/|]/).map(a => a.trim()).filter(Boolean);
   if (alternatives.length > 1) {
     if (alternatives.some(alt => smartCheck(userInput, alt, question))) return true;
   }
@@ -8653,8 +8666,16 @@ function smartCheck(userInput, expected, question = '') {
   // 1. Exact match
   if (u === e) return true;
 
-  // 2. User typed the full sentence containing the answer
-  if (u.length > e.length && u.includes(e)) return true;
+  // 2. User typed the full sentence containing the answer.
+  // Must match as a WHOLE WORD: a plain substring test accepted "She cannot
+  // swim" and "scan the page" for the answer "can" — i.e. the exact opposite
+  // of the right answer scored as correct.
+  if (u.length > e.length && e) {
+    const escaped = e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // norm() collapses whitespace and strips punctuation, so word edges are
+    // spaces or the string ends. Apostrophes survive, keeping can ≠ can't.
+    if (new RegExp('(^|\\s)' + escaped + '($|\\s)').test(u)) return true;
+  }
 
   // 3. Reconstruct full sentence from question + expected
   if (question) {
