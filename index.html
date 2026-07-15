@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-15c -->
+<!-- DEVLEARN_BUILD: 2026-07-15g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4553,7 +4553,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-15c';
+const APP_BUILD = '2026-07-15g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5314,6 +5314,7 @@ Shape of a BAD response (too long — never do this):
     // contains, so every correction Mari made was silently thrown away.
     let mistake = 'none';
     let corrected = '';
+    let correction = null;
     if (/✏️/.test(raw)) {
       const m = raw.match(/✏️\s*\*\*"?([^"*]+)"?\*\*\s*(?:→|->)\s*\*\*"?([^"*]+)"?\*\*/);
       const wrong = m ? (m[1] || '').trim() : '';
@@ -5323,6 +5324,11 @@ Shape of a BAD response (too long — never do this):
       const isRealError = !m || wrong.toLowerCase() !== right.toLowerCase();
       if (isRealError) {
         corrected = wrong;
+        correction = { wrong, right, rule: '' };
+        // The rule Mari states after the em dash: "third person singular
+        // needs -s". That sentence is the part worth remembering.
+        const dash = raw.match(/(?:→|->)\s*\*\*[^*]*\*\*\s*[—–-]+\s*([^\n]+)/);
+        if (dash) correction.rule = dash[1].trim();
         const rule = raw.split(/→|->/).slice(1).join(' ');
         if (/spell|typo/i.test(rule))                                  mistake = 'spelling';
         else if (/preposition|vocabulary|wrong word|means/i.test(rule)) mistake = 'vocab';
@@ -5331,7 +5337,7 @@ Shape of a BAD response (too long — never do this):
       }
     }
 
-    return { reply: raw, mistake, corrected };
+    return { reply: raw, mistake, corrected, correction };
   },
 
   /**
@@ -5497,26 +5503,71 @@ function migrateState(s) {
 
 // Debounced save
 let _saveDirty = false;
+let _storageFull = false;
+
+/**
+ * The single place state reaches disk. Returns true if it actually landed.
+ *
+ * This used to be duplicated inline: save() showed a fleeting toast on
+ * failure and saveNow() swallowed the error entirely — and saveNow is the one
+ * that runs when the app closes. A full quota meant an hour of study vanished
+ * with no warning at all.
+ */
+function writeState() {
+  try {
+    state.lastSaved = new Date().toISOString();
+    localStorage.setItem(KEY, JSON.stringify(state));
+    _saveDirty = false;
+    if (_storageFull) { _storageFull = false; hideStorageBanner(); }
+    return true;
+  } catch (e) {
+    // Anything unsaved is now memory-only and dies with the tab.
+    _saveDirty = true;
+    const quota = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22);
+    if (quota) {
+      if (!_storageFull) { _storageFull = true; showStorageBanner(); }
+    } else {
+      console.error('Save failed:', e);
+    }
+    return false;
+  }
+}
+
+/** Persistent warning — a toast is too easy to miss for silent data loss. */
+function showStorageBanner() {
+  if (document.getElementById('storage-banner')) return;
+  const el = document.createElement('div');
+  el.id = 'storage-banner';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--red,#ff3b30);'
+    + 'color:#fff;padding:12px 16px;font-size:0.82rem;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.4);'
+    + 'display:flex;flex-direction:column;gap:8px;';
+  el.innerHTML = `
+    <div><strong>⚠️ Almacenamiento lleno — tu progreso NO se está guardando.</strong><br>
+    Si cierras la app ahora, pierdes lo de esta sesión.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="exportData()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">↑ Exportar copia</button>
+      <button onclick="openSettings()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Liberar espacio</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+function hideStorageBanner() {
+  document.getElementById('storage-banner')?.remove();
+}
+
 function save() {
   _saveDirty = true;
   if (saveTimer) return; // already queued — don't reset the timer on every call
   saveTimer = setTimeout(() => {
     saveTimer = null;
     if (!_saveDirty) return;
-    _saveDirty = false;
-    try { localStorage.setItem(KEY, JSON.stringify(state)); }
-    catch (e) { console.error('Save failed:', e); toast('⚠️ Storage almost full — delete old units to free space'); }
+    writeState();
   }, 800); // 800ms: enough to batch rapid interactions, short enough to feel reliable
 }
 let _fbSyncTimer = null;
 function saveNow() {
   if (window._importingData) return;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  _saveDirty = false;
-  try {
-    state.lastSaved = new Date().toISOString();
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch (e) {}
+  writeState();
   // Firebase sync happens at natural pause points, not here
 }
 
@@ -6469,7 +6520,15 @@ function handleUnitUpload(event) {
       analyzing: true,
     };
     u.batches.push(batch);
-    try { saveNow(); } catch (e) { toast('⚠️ Storage near full'); }
+    // Photos are the thing that fills storage, so check the write landed.
+    // The old `try { saveNow() } catch` could never fire — saveNow doesn't throw.
+    if (!writeState()) {
+      u.batches.pop();
+      renderImagePreviews(getUnitImages(u));
+      document.getElementById('upload-zone').style.display = '';
+      toast('⚠️ No hay espacio para más fotos — libera espacio y reintenta');
+      return;
+    }
 
     renderImagePreviews(getUnitImages(u));
     showAnalysisLoading();
@@ -7403,6 +7462,15 @@ function dateLocal(d) {
 // happen at the wrong local time (e.g. 7pm in Colombia instead of midnight).
 function todayLocal() {
   return dateLocal(new Date());
+}
+
+// escapeHtml: safe for HTML *text content*. escapeStr below only handles quotes
+// for attribute values and leaves < > intact, which is unsafe for text coming
+// from the model or the student.
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // escapeStr: safe for HTML attribute values inside single-quoted onclick handlers.
@@ -9282,8 +9350,8 @@ async function checkGrammarDrill(pfx, di) {
     input.addEventListener('focus', () => { input.style.borderColor = ''; }, { once: true });
 
     const genericHint = type === 'error_correction'
-      ? `❌ Not quite — the answer is: <strong>${answer}</strong>`
-      : `❌ Expected: <strong>${answer}</strong>`;
+      ? `❌ Not quite — the answer is: <strong>${escapeHtml(answer)}</strong>`
+      : `❌ Expected: <strong>${escapeHtml(answer)}</strong>`;
     fb.innerHTML = genericHint;
     fb.style.color = 'var(--text-2)';
 
@@ -9307,7 +9375,7 @@ Respond with ONLY the one-sentence explanation, no preamble.`;
         });
 
         if (explanation) {
-          fb.innerHTML = `❌ ${explanation.trim()}<br><span style="color:var(--text-3);font-size:0.72rem;margin-top:3px;display:block;">Expected: <strong style="color:var(--text-2);">${answer}</strong></span>`;
+          fb.innerHTML = `❌ ${escapeHtml(explanation.trim())}<br><span style="color:var(--text-3);font-size:0.72rem;margin-top:3px;display:block;">Expected: <strong style="color:var(--text-2);">${escapeHtml(answer)}</strong></span>`;
           fb.style.color = 'var(--text-2)';
         }
       } catch (e) {
@@ -11367,7 +11435,7 @@ async function sendChatMessage(inputId, containerId, type, useUnitContext) {
   }
 
   try {
-    const { reply, mistake, corrected } = await AIService.tutorChat({
+    const { reply, mistake, corrected, correction } = await AIService.tutorChat({
       history: chat[type],
       unitContext,
       weakAreas: state.weakAreas,
@@ -11405,6 +11473,13 @@ async function sendChatMessage(inputId, containerId, type, useUnitContext) {
       // Pass the word Mari actually corrected: if it's one of your vocabulary
       // words, addWeakArea brings its flashcard forward.
       addWeakArea(area, corrected || 'Chat correction');
+      if (correction) {
+        logMistake({
+          source: 'chat', wrong: correction.wrong, right: correction.right,
+          rule: correction.rule || area,
+          unitKey: type === 'unit' ? `${current.lid}_${current.uid}` : '',
+        });
+      }
     }
 
     saveNow();
@@ -12207,6 +12282,13 @@ function renderProgressPage() {
     .slice(0, 6);
   const weakMax = weakEntries[0]?.[1] || 1;
 
+  // ── Recurring mistakes ────────────────────────────────────────
+  // The bars below only say "grammar: 8". This says WHICH rule.
+  const mistakes = [...(state.mistakeLog || [])]
+    .sort((a, b) => (b.count - a.count) || (b.at - a.at))
+    .slice(0, 8);
+  const srcIcon = { chat: '💬', exercise: '✍️', exam: '🏆' };
+
   // ── Build HTML ────────────────────────────────────────────────
   c.innerHTML = `
     <!-- Hero ring -->
@@ -12313,6 +12395,28 @@ function renderProgressPage() {
     </div>
     ` : ''}
 
+    ${mistakes.length > 0 ? `
+    <!-- Recurring mistakes -->
+    <div class="pr-section">Mistakes you repeat</div>
+    <div class="pr-weak">
+      ${mistakes.map(m => `
+        <div class="pr-weak-row" style="align-items:flex-start;">
+          <div style="flex:1;min-width:0;">
+            <div class="pr-weak-name" style="white-space:normal;">
+              ${srcIcon[m.source] || '•'} ${escapeHtml(m.rule || m.wrong || '')}
+            </div>
+            ${m.wrong && m.right ? `
+              <div style="font-size:0.72rem;color:var(--text-3);margin-top:2px;">
+                <span style="text-decoration:line-through;">${escapeHtml(m.wrong)}</span>
+                → <strong style="color:var(--green);">${escapeHtml(m.right)}</strong>
+              </div>` : ''}
+          </div>
+          <div class="pr-weak-count" style="flex-shrink:0;">${m.count}×</div>
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
+
     ${weakEntries.length > 0 ? `
     <!-- Weak areas -->
     <div class="pr-section">Areas to improve</div>
@@ -12374,6 +12478,13 @@ function trackFailedExercise(ex) {
   if (!current.lid || !current.uid) return;
   const u = getUnit(current.lid, current.uid);
   if (!u.failedExercises) u.failedExercises = [];
+  // The explanation names the rule that was broken ("Modal verbs don't use
+  // 'to'"), which is what makes a repeated mistake recognisable.
+  logMistake({
+    source: 'exercise', wrong: '', right: ex.answer || '',
+    rule: ex.explanation || ex.type || '',
+    unitKey: `${current.lid}_${current.uid}`,
+  });
   // Deduplicate by question text
   u.failedExercises = u.failedExercises.filter(e => e.question !== ex.question);
   // Add with timestamp
@@ -12395,6 +12506,55 @@ function trackFailedExercise(ex) {
  * - addWeakArea = soft signal (ease -0.1, interval shortened if long)
  * This avoids over-penalizing words that were failed in an unusual context.
  */
+/**
+ * Records WHAT the student got wrong, not just how many times.
+ * weakAreas only ever counted coarse buckets ("grammar: 8"), which can't
+ * answer the question that matters: which rule do I keep breaking?
+ * Capped and de-duplicated so it stays small enough to sync.
+ */
+function logMistake({ source, wrong, right, rule, unitKey }) {
+  if (!state.mistakeLog) state.mistakeLog = [];
+  const cleanRule = (rule || '').trim().replace(/\s+/g, ' ').slice(0, 140);
+  if (!cleanRule && !wrong) return;
+
+  // Group by the rule itself, ignoring punctuation and quote style: the same
+  // rule arrives as `modal verbs don't use "to".` from Mari and as
+  // `Modal verbs don't use 'to'` from an exercise. Those are one mistake, and
+  // splitting them would hide exactly the repetition worth showing.
+  const key = (cleanRule || wrong || '')
+    .toLowerCase()
+    .replace(/[\u2018\u2019\u201C\u201D'"`´]/g, '')
+    .replace(/[.,;:!?()]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!key) return;
+  const existing = state.mistakeLog.find(m => m.key === key);
+  if (existing) {
+    existing.count++;
+    existing.at = Date.now();
+    // Only replace the pair as a unit. An exercise failure has an answer but
+    // no "wrong" text, so updating the fields independently would splice one
+    // source's before onto another's after and show a correction that never
+    // happened ("He can to dance → can").
+    if (wrong && right) {
+      existing.wrong = String(wrong).slice(0, 90);
+      existing.right = String(right).slice(0, 90);
+    }
+  } else {
+    state.mistakeLog.unshift({
+      key, count: 1, source: source || 'exercise',
+      wrong: (wrong && right) ? String(wrong).slice(0, 90) : '',
+      right: (wrong && right) ? String(right).slice(0, 90) : '',
+      rule: cleanRule, unitKey: unitKey || '', at: Date.now(),
+    });
+  }
+  // Keep the most repeated and the most recent; drop stale one-offs.
+  if (state.mistakeLog.length > 80) {
+    state.mistakeLog.sort((a, b) => (b.count - a.count) || (b.at - a.at));
+    state.mistakeLog = state.mistakeLog.slice(0, 80);
+  }
+}
+
 function addWeakArea(area, detail) {
   if (!state.weakAreas[area]) state.weakAreas[area] = 0;
   state.weakAreas[area]++;
@@ -13107,11 +13267,41 @@ function loadSettings() {
   updateAIDot();
 }
 
+const PRE_IMPORT_KEY = 'devlearn_pre_import';
+
+/** Restores whatever was here before the last import. */
+function undoImport() {
+  const backup = localStorage.getItem(PRE_IMPORT_KEY);
+  if (!backup) { toast('No hay copia previa'); return; }
+  try {
+    const prev = migrateState(JSON.parse(backup));
+    Object.keys(prev).forEach(k => { state[k] = prev[k]; });
+    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.removeItem(PRE_IMPORT_KEY);
+    toast('↩️ Import deshecho — tus datos anteriores volvieron');
+    setTheme(state.theme || 'dark');
+    navigate('dashboard');
+    updateNavBadges();
+  } catch (e) { toast('❌ No se pudo deshacer'); }
+}
+
 function doImport() {
   const text = window._pendingImport;
   if (!text) return;
   try {
     const parsed = JSON.parse(text);
+    // Validate here too, not only in the file picker: this function overwrites
+    // everything, so it must not trust its caller.
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('El archivo no es un backup de DEV Learn');
+    }
+    if (!parsed.units && !parsed.stats) {
+      throw new Error('El archivo no tiene datos de DEV Learn');
+    }
+
+    // Keep what's here now, so a wrong file isn't a one-way door.
+    try { localStorage.setItem(PRE_IMPORT_KEY, localStorage.getItem(KEY) || ''); } catch(e) {}
+
     const imported = migrateState(parsed);
 
     // Step 1: Update the global state so beforeunload saves the RIGHT data
@@ -13128,7 +13318,13 @@ function doImport() {
 
     // Step 4: Show success and re-render WITHOUT reloading
     const status = document.getElementById('import-export-status');
-    if (status) { status.style.color = 'var(--green)'; status.textContent = '✅ ' + Math.round(verify.length/1024) + ' KB importados correctamente'; }
+    if (status) {
+      status.style.color = 'var(--green)';
+      status.innerHTML = '✅ ' + Math.round(verify.length/1024) + ' KB importados correctamente<br>'
+        + '<button onclick="undoImport()" style="margin-top:8px;padding:6px 12px;border-radius:8px;'
+        + 'border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:0.78rem;">'
+        + '↩️ Deshacer (era el archivo equivocado)</button>';
+    }
     toast('✅ Datos importados');
 
     // Close modal and re-render app directly
@@ -13194,6 +13390,10 @@ function importData(event) {
 
       const unitCount = Object.keys(parsed.units || {}).length;
       const wordCount = parsed.stats ? (parsed.stats.wordsLearned || 0) : 0;
+      const currentUnits = Object.keys(state.units || {}).filter(k => (state.units[k].batches || []).length).length;
+      // A file with zero units passes the format check above (an empty object
+      // is truthy) and would wipe everything without ever saying so.
+      const destructivo = unitCount === 0 && currentUnits > 0;
       window._pendingImport = text;
 
       if (status) {
@@ -13206,8 +13406,14 @@ function importData(event) {
         info.innerHTML = 'Backup: <strong>' + unitCount + ' unidad(es)</strong>, ' + wordCount + ' palabras.';
         
         const warn = document.createElement('div');
-        warn.style.cssText = 'margin-bottom:10px;font-size:0.8rem;color:var(--text-3);';
-        warn.textContent = 'Esto reemplazara los datos actuales en este dispositivo.';
+        if (destructivo) {
+          warn.style.cssText = 'margin-bottom:10px;font-size:0.8rem;color:var(--red);font-weight:600;';
+          warn.textContent = '⚠️ Este archivo no tiene unidades. Importarlo BORRARÁ tus '
+            + currentUnits + ' unidad(es) con contenido. ¿Seguro que es el archivo correcto?';
+        } else {
+          warn.style.cssText = 'margin-bottom:10px;font-size:0.8rem;color:var(--text-3);';
+          warn.textContent = 'Esto reemplazará los datos actuales en este dispositivo. Se guardará una copia por si acaso.';
+        }
         
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex;gap:8px;';
