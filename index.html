@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- DEVLEARN_BUILD: 2026-07-15c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4291,7 +4292,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
           <div style="font-size:1.2rem;font-weight:600;letter-spacing:-0.022em;margin-bottom:4px;">Settings</div>
-          <div style="font-size:var(--fs-caption);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tr-eyebrow);font-weight:var(--fw-semibold);">DEV Learn</div>
+          <div style="font-size:var(--fs-caption);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tr-eyebrow);font-weight:var(--fw-semibold);">DEV Learn · <span id="app-build">—</span></div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="closeSettings()">✕</button>
       </div>
@@ -4389,8 +4390,9 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 
       <!-- App version info -->
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-3);text-align:center;">
-        <div style="margin-bottom:4px;">DEV Learn</div>
-        <div>Última actualización: <strong id="last-update-date">—</strong></div>
+        <div style="margin-bottom:6px;">DEV Learn · <strong id="running-build">—</strong></div>
+        <div id="deploy-info" style="line-height:1.6;">Consultando GitHub…</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="checkDeployStatus()">🔄 Revisar de nuevo</button>
       </div>
     </div>
 
@@ -4548,6 +4550,10 @@ window._mergeCloudState = function(cloud) {
 };
 let current = { lid: null, uid: null, tab: 'vocab' };
 let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
+
+// Build stamp — shown in Settings. Bump this whenever the file is updated so
+// it's possible to confirm a device isn't serving a stale cached copy.
+const APP_BUILD = '2026-07-15c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5197,14 +5203,25 @@ RULES:
     // Grammar: de-duplicate titles. The same point extracted from several book
     // pages ("Modal Verb CAN for Ability" ×2) made CAN look more important.
     const seenG = new Set();
-    const grammarTitles = (unitContext?.grammar || [])
-      .map(g => (g.title || '').trim())
-      .filter(t => {
-        const k = t.toLowerCase().replace(/[^a-z ]/g, '').trim();
+    const grammarItems = (unitContext?.grammar || [])
+      .filter(g => {
+        const k = (g.title || '').toLowerCase().replace(/[^a-z ]/g, '').trim();
         if (!k || seenG.has(k)) return false;
         seenG.add(k); return true;
       });
+    const grammarTitles = grammarItems.map(g => (g.title || '').trim());
     const unitGrammar = grammarTitles.map(t => `   • ${t}`).join('\n');
+
+    // Titles alone are ambiguous: "Should and Shouldn't for Advice" reads as
+    // generic advice, so Mari applied it to piano practice when the book
+    // teaches it for health problems. Send the book's own rule for a small
+    // rotating subset each turn — precise scope, and it forces topic variety.
+    const focusPool = [...grammarItems].sort(() => Math.random() - 0.5).slice(0, 5);
+    const focusList = focusPool.map(g => {
+      const detail = (g.rule || g.explanation || '').trim().slice(0, 160);
+      const trap   = (g.spanishTrap || '').trim().slice(0, 100);
+      return `   • ${g.title}${detail ? ' — ' + detail : ''}${trap ? ' (Spanish-speaker trap: ' + trap + ')' : ''}`;
+    }).join('\n');
 
     const topWeak     = Object.entries(weakAreas || {})
       .filter(([,v]) => v > 1).sort((a,b) => b[1]-a[1]).slice(0,3)
@@ -5228,8 +5245,11 @@ STUDENT PROFILE:
 - Unit: ${unitContext ? (unitContext.title || 'Unit ' + unitContext.uid) : 'General practice'}
 ${unitVocab ? `- Vocabulary: ${unitVocab}` : ''}
 - Weak areas: ${topWeak}
-- Grammar — these ${grammarTitles.length} points are THE ONLY structures you may use, and ALL of them are yours to practise:
+- Grammar — these ${grammarTitles.length} points are THE ONLY structures you may use, and ALL of them are valid if the student uses them:
 ${unitGrammar || '   • not extracted yet — stay on very simple present-tense sentences about this unit\'s topic and nothing else'}
+${focusList ? `
+FOCUS FOR THIS MESSAGE — build your question from ONE of these, and respect its rule exactly. The rule is what the student's book actually teaches; do not stretch the point beyond it:
+${focusList}` : ''}
 
 RESPONSE STYLE — CRITICAL:
 Keep every response SHORT — maximum 4 lines total. The student is practicing speaking, not reading. Long responses discourage practice.
@@ -13224,16 +13244,90 @@ function importData(event) {
 }
 
 
+const GH_REPO = 'divierandrey19-oss/DEVLEARN';
+
+/** "hace 5 minutos" / "hace 2 días" */
+function timeAgoEs(date) {
+  const s = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (s < 0)      return 'en el futuro (revisa el reloj de este dispositivo)';
+  if (s < 60)     return 'hace unos segundos';
+  if (s < 3600)   return `hace ${Math.floor(s/60)} min`;
+  if (s < 86400)  return `hace ${Math.floor(s/3600)} h`;
+  return `hace ${Math.floor(s/86400)} día${Math.floor(s/86400) > 1 ? 's' : ''}`;
+}
+
+/**
+ * Answers the only two questions that matter: did my upload actually land,
+ * and is the copy on THIS device the one I uploaded?
+ *
+ * The old "Última actualización" read a localStorage value written the first
+ * time each device ever opened the app — so the phone said Jul 13 and the
+ * laptop Jul 12, and neither had anything to do with GitHub. It also never
+ * refreshed, because its version key was hardcoded to an old date.
+ *
+ * Both facts here come from GitHub, so every device agrees.
+ */
+async function checkDeployStatus() {
+  const el = document.getElementById('deploy-info');
+  const runEl = document.getElementById('running-build');
+  if (runEl) runEl.textContent = 'build ' + APP_BUILD;
+  if (!el) return;
+  el.innerHTML = 'Consultando GitHub…';
+
+  try {
+    // 1. When was index.html last pushed?
+    const cRes = await fetch(`https://api.github.com/repos/${GH_REPO}/commits?path=index.html&per_page=1`, { cache: 'no-store' });
+    if (cRes.status === 403) { el.innerHTML = '⏳ GitHub limitó las consultas por un rato. Intenta más tarde.'; return; }
+    if (!cRes.ok) throw new Error('HTTP ' + cRes.status);
+    const commits = await cRes.json();
+    if (!commits.length) { el.innerHTML = 'No encontré commits de index.html.'; return; }
+
+    const c    = commits[0];
+    const when = new Date(c.commit.committer.date);
+    const sha  = c.sha;
+    const fecha = when.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+                + ' · ' + when.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+
+    // 2. Which build is actually live? Read just the first bytes of the
+    //    deployed file (it carries the build marker) — not the whole 580 KB.
+    let liveBuild = null;
+    try {
+      const rRes = await fetch(`https://raw.githubusercontent.com/${GH_REPO}/${sha}/index.html`,
+                               { headers: { Range: 'bytes=0-300' }, cache: 'no-store' });
+      const head = await rRes.text();
+      const m = head.match(/DEVLEARN_BUILD:\s*([\w.\-]+)/);
+      if (m) liveBuild = m[1];
+    } catch(e) { /* fall through — the date alone is still useful */ }
+
+    let veredicto;
+    if (!liveBuild) {
+      veredicto = `<div style="color:var(--text-3);">No pude leer el build publicado.</div>`;
+    } else if (liveBuild === APP_BUILD) {
+      veredicto = `<div style="color:var(--green);">✅ Ya lo subiste, y este dispositivo est&aacute; usando esa versi&oacute;n.</div>`;
+    } else if (liveBuild < APP_BUILD) {
+      // Build format is YYYY-MM-DD + letter, so string order = chronological.
+      // This device has something GitHub doesn't → the upload hasn't happened.
+      veredicto = `<div style="color:var(--amber);">⚠️ <strong>Todav&iacute;a no has subido este build.</strong><br>
+        Aqu&iacute; tienes <strong>${APP_BUILD}</strong>, pero en GitHub sigue <strong>${liveBuild}</strong>.</div>`;
+    } else {
+      veredicto = `<div style="color:var(--amber);">⚠️ <strong>Este dispositivo tiene una copia vieja.</strong><br>
+        GitHub ya tiene <strong>${liveBuild}</strong>. Recarga la p&aacute;gina.</div>`;
+    }
+
+    el.innerHTML = `
+      <div>Último HTML subido: <strong>${fecha}</strong></div>
+      <div style="color:var(--text-3);">${timeAgoEs(when)}${liveBuild ? ' · publicado: build ' + liveBuild : ''}</div>
+      <div style="margin-top:6px;">${veredicto}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--text-3);">No pude consultar GitHub (${(e.message||'').slice(0,40)}).<br>Este dispositivo corre build <strong>${APP_BUILD}</strong>.</div>`;
+  }
+}
+
 function openSettings() {
   const modal = document.getElementById('settings-modal');
   modal.classList.add('open');
-  // Show last update date
-  const lastUpdateEl = document.getElementById('last-update-date');
-  if (lastUpdateEl) {
-    const APP_VERSION = '2026-06-30';
-    const UPDATE_KEY  = 'devlearn_last_update_' + APP_VERSION;
-    lastUpdateEl.textContent = localStorage.getItem(UPDATE_KEY) || '—';
-  }
+  // Ask GitHub what's actually deployed vs what this device is running
+  checkDeployStatus();
   // Sync UI to current state
   const mode = AIService.mode || 'local';
   document.getElementById('mode-btn-local').classList.toggle('active', mode === 'local');
@@ -13601,20 +13695,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 60000);
 
   // Clean up on tab close
-  // Auto last-update: save date/time on first load of this version
-  // Uses a version key so it updates when a new file is deployed
-  const APP_VERSION = '2026-06-30';
-  const UPDATE_KEY  = 'devlearn_last_update_' + APP_VERSION;
-  if (!localStorage.getItem(UPDATE_KEY)) {
-    const now = new Date();
-    const formatted = now.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
-      + ' · ' + now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    localStorage.setItem(UPDATE_KEY, formatted);
-  }
-  const lastUpdateEl = document.getElementById('last-update-date');
-  if (lastUpdateEl) {
-    lastUpdateEl.textContent = localStorage.getItem(UPDATE_KEY) || '—';
-  }
 
   // ── State persistence on exit ──────────────────────────────
   // save() is debounced 800ms for performance (state can be ~1MB with page
