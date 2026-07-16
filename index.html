@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16i -->
+<!-- DEVLEARN_BUILD: 2026-07-16j -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16i';
+const APP_BUILD = '2026-07-16j';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11563,7 +11563,17 @@ function renderDebugPanel(u) {
           ? new Date(b.generatedAt).toLocaleString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
           : b.createdAt ? new Date(b.createdAt).toLocaleDateString('es-CO') : '—';
         const isOld = (b.grammarVersion || 0) < GRAMMAR_VERSION;
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+        // The batch header that normally carries this button only renders for
+        // multi-batch units, leaving a one-page unit with no way to regenerate.
+        // This panel always lists every batch, so the button belongs here too.
+        const regen = (current.lid && current.uid && b.images?.length) ? `
+          <button id="dbg-regen-${b.id}" class="btn btn-ghost btn-sm"
+            style="font-size:0.62rem;padding:3px 8px;${isOld ? 'color:var(--amber);border-color:var(--amber);' : ''}"
+            onclick="regenerateBatchContent('${current.lid}','${current.uid}','${escapeStr(b.id)}')"
+            title="${isOld ? 'Generado con un prompt viejo — regenera para mejor contenido' : 'Regenerar gramática y ejercicios (conserva vocabulario y progreso)'}">
+            ↺ ${isOld ? 'Actualizar' : 'Regenerar'}
+          </button>` : '';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">
           <div>
             <span style="color:var(--text-2);">Batch ${i+1}</span>
             <span style="margin-left:8px;">${b.images?.length||0} img · ${b.vocab?.length||0} words · ${b.grammar?.length||0} grammar</span>
@@ -11571,6 +11581,7 @@ function renderDebugPanel(u) {
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="color:${isOld?'var(--amber)':'var(--green)'};">v${b.grammarVersion||1}</span>
             <span>${date}</span>
+            ${regen}
           </div>
         </div>`;
       }).join('')}
