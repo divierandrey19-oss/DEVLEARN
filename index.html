@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-15h -->
+<!-- DEVLEARN_BUILD: 2026-07-16b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-15h';
+const APP_BUILD = '2026-07-16b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4681,32 +4681,42 @@ const AIService = {
 
     const prompt = {
       type: 'text',
-      text: `You are an expert English teacher and curriculum designer. Analyze these ${images.length} textbook page(s) for a ${levelName} Colombian Spanish-speaking student.
+      text: `You are an expert English teacher analyzing these ${images.length} textbook page(s) for a ${levelName} Colombian Spanish-speaking student.
 
-YOUR MISSION: Extract HIGH-VALUE vocabulary for real English learning. Think like a teacher preparing a lesson — choose words that students will USE in real life, exams, and conversations.
+YOUR MISSION: Extract what is ACTUALLY ON THESE PAGES. Nothing else.
 
-━━ EXTRACT THESE (high educational value) ━━
+This student is examined on this exact book. Content you invent — however useful it might be in general — is content they will study instead of what their exam covers. That is worse than extracting nothing.
 
-1. OCCUPATIONS & ROLES: doctor, teacher, chef, nurse, student, musician, engineer...
-2. ACTION VERBS: listen, repeat, work, study, speak, write, read, match, look, describe...
-3. COMMON EXPRESSIONS: "Nice to meet you", "How are you?", "I am from...", "My name is..."
-4. PRONOUNS & GRAMMAR WORDS: I, you, he, she, we, they, this, that, is, are, am
-5. USEFUL ADJECTIVES: friendly, busy, happy, tired, married, single...
-6. CLASSROOM INSTRUCTIONS: "Listen and repeat", "Match the words", "Look at the picture"
-7. DAILY LIFE NOUNS: school, office, hospital, family, job, city, country...
-8. COLLOCATIONS & PHRASES: "go to work", "have breakfast", "be from", "live in"
-9. VISUAL VOCABULARY: If you see a chef in an image → extract "chef", "cook", "kitchen", "meal"
+━━ THE GROUNDING RULE (overrides everything below) ━━
 
-━━ DO NOT EXTRACT (low educational value) ━━
+Every word, phrase and grammar point you return MUST be visibly printed on these pages.
+- If a word is not written on the page, do NOT include it — no matter how related or useful.
+- Do NOT infer vocabulary from pictures. If the page shows a photo of a chef but the word "kitchen" is not printed anywhere, "kitchen" does not exist for this task.
+- Do NOT add words the lesson "should" teach, or that usually accompany this topic.
+- Do NOT complete a category. If the page shows only "doctor" and "teacher", return those two — not the rest of the professions.
+- Before returning any word, ask: "Can I point to where this is printed on the page?" If not, drop it.
 
-✗ Character/person names: Bill, Betty, Sam, Sue, Mike, Anna, Tom, Maria
-✗ Isolated decorative text or page numbers
-✗ Proper nouns that don't teach general vocabulary (city names only if key to lesson)
-✗ Words that appear only as labels for specific characters in exercises
+━━ NO QUOTA ━━
 
-SELECTION PRINCIPLE: Ask yourself "Will a student USE this word in real English conversations or exams?" If yes → include. If it's just a name in an exercise → skip.
+Return exactly as many items as the page actually contains — no more.
+If the page has 8 teachable words, return 8. If it has 40, return 40.
+NEVER pad the list to reach a number. A short, faithful list is a success.
 
-TARGET: 25-35 high-value items. Quality over quantity. Every word should be teachable and useful.
+━━ WHAT COUNTS AS ON THE PAGE ━━
+
+Printed text in any part of the page qualifies: lesson text, word lists, exercise
+items, instructions ("Listen and repeat"), dialogues, tables, and labels written
+on pictures. A picture alone does not qualify — the word must be written.
+
+━━ WHAT TO SKIP ━━
+
+✗ Character/person names used only as exercise labels: Bill, Betty, Sam, Sue, Mike, Anna, Tom, Maria
+✗ Page numbers, decorative text, publisher marks
+✗ Proper nouns that don't teach general vocabulary (city names only if key to the lesson)
+
+Among the words that ARE on the page, prefer the ones the lesson is teaching:
+vocabulary lists, highlighted words, words drilled in the exercises, key phrases
+and classroom instructions.
 
 ━━ JSON OUTPUT (no markdown, no explanation) ━━
 
@@ -4716,27 +4726,27 @@ TARGET: 25-35 high-value items. Quality over quantity. Every word should be teac
   "detectedTopics": ["topic1", "topic2", "topic3"],
   "vocabulary": [
     {
-      "word": "English word or short phrase",
+      "word": "the English word or phrase exactly as printed on the page",
       "translation": "Spanish (Colombia)",
       "phonetic": "/IPA/",
       "type": "noun|verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
-      "example": "natural example sentence at ${levelName} level",
+      "example": "if a sentence on the page uses this word, copy that sentence. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
       "exampleTranslation": "Spanish translation of example",
       "difficulty": "easy|medium|hard"
     }
   ],
   "grammar": [
     {
-      "title": "Grammar topic name",
+      "title": "Grammar topic name — the structure this page actually teaches",
       "level": "${level.toUpperCase()}",
       "explanation": "Clear explanation written specifically for a Colombian Spanish speaker (2-3 sentences). Address differences with Spanish explicitly.",
-      "structure": "Subject + verb + ... pattern",
-      "rule": "The key rule in one sentence",
+      "structure": "Subject + verb + ... pattern, as the page presents it",
+      "rule": "The key rule in one sentence, as this page teaches it — not the rule in general. If the page teaches 'should' only for health advice, say so; do not broaden it",
       "spanishTrap": "One specific mistake Colombian Spanish speakers make with this rule (e.g. confusing ser/estar with 'to be'), or empty string if no significant trap",
       "examples": [
-        { "en": "Example sentence", "es": "Spanish translation" },
-        { "en": "Example sentence 2", "es": "Spanish translation 2" }
+        { "en": "Example sentence — copy one from the page if there is one", "es": "Spanish translation" },
+        { "en": "Example sentence 2 — page words only", "es": "Spanish translation 2" }
       ],
       "commonErrors": [
         { "wrong": "Incorrect sentence a student might write", "correct": "The correct version", "why": "Brief explanation in simple English" },
@@ -4745,19 +4755,19 @@ TARGET: 25-35 high-value items. Quality over quantity. Every word should be teac
       "drillSentences": [
         {
           "type": "translation",
-          "prompt": "A Spanish sentence about a COMPLETELY DIFFERENT situation from the examples (e.g. family, food, school, sports, technology, home). Different verb, different subject, different meaning.",
+          "prompt": "A Spanish sentence the student must translate. Use ONLY words printed on these pages, recombined into a sentence the page does not contain — different subject or different verb from the page's own list",
           "answer": "The correct English translation",
           "hint": "Optional grammar hint if needed"
         },
         {
           "type": "fill_blank",
-          "prompt": "An English sentence with ___ testing the same rule but in an unrelated everyday context. Include enough context so only ONE answer is correct — add a second sentence or context clue if needed.",
+          "prompt": "An English sentence with ___ testing the same rule, built only from words on these pages, in a sentence the page does not contain. Include enough context so only ONE answer is correct — add a second sentence or context clue if needed.",
           "answer": "just the missing word",
           "hint": ""
         },
         {
           "type": "error_correction",
-          "prompt": "A sentence with ONE grammar error — use a situation unrelated to the examples",
+          "prompt": "A sentence with ONE grammar error, built only from words on these pages, not copied from the examples",
           "answer": "The corrected sentence",
           "hint": "The specific rule name being tested"
         }
@@ -4767,7 +4777,7 @@ TARGET: 25-35 high-value items. Quality over quantity. Every word should be teac
   "exercises": [
     {
       "type": "multiple_choice|fill_blank|translation|error_correction|sentence_builder|matching",
-      "question": "The exercise question, instruction, or sentence with __ for fill_blank",
+      "question": "The exercise question, instruction, or sentence with __ for fill_blank — built only from words printed on these pages",
       "options": ["option A", "option B", "option C", "option D"],
       "answer": "correct answer string",
       "explanation": "Why this is correct — brief",
@@ -4775,32 +4785,31 @@ TARGET: 25-35 high-value items. Quality over quantity. Every word should be teac
     }
   ],
   "speakingPrompts": [
-    "Speaking practice prompt 1",
-    "Speaking practice prompt 2",
-    "Speaking practice prompt 3"
+    "Speaking prompt using this page's topic, grammar and words",
+    "Speaking prompt 2 — same constraint",
+    "Speaking prompt 3 — same constraint"
   ]
 }
 
 RULES:
-- vocabulary: 25-35 HIGH-VALUE items only, no proper names, no duplicates
-- grammar: 2-4 topics based on structures visible in the content
+- vocabulary: ONLY words and phrases printed on these pages. No proper names, no duplicates. However many the page has — do not pad, do not round up to a nicer number.
+- grammar: ONLY the structures these pages actually teach or drill. If the page teaches one structure, return one. If it teaches six, return six. Do not add a structure because it "goes with" the topic.
+- The grammar "examples" field: prefer example sentences that appear on the page itself. If you must write one, build it ONLY from words printed on these pages.
 - For EACH grammar topic: include 2 commonErrors and 3 drillSentences with DIFFERENT types (one translation, one fill_blank, one error_correction)
-- CRITICAL for drillSentences: The drills must use COMPLETELY DIFFERENT semantic content from the examples — different verbs, different subjects, different real-world situations, different meanings entirely.
-  WRONG approach (semantically identical to example "I can swim in the pool"):
-    → "Puedo nadar en la piscina." (same verb, same place)
-    → "She can swim." (same verb)
-  CORRECT approach (same grammar rule, completely unrelated content):
-    → "Mi hermano puede cocinar muy bien." (different verb, different person, different context)
-    → "Nosotros podemos correr rápido." (different verb, different subject)
-    → "¿Puedes abrir la ventana?" (different verb, question form)
-    → "Mi mamá no puede manejar." (different verb, negative, different person)
-  The student must APPLY the grammar pattern to brand new situations, not RECOGNIZE a translation of something they just read.
-  Imagine 3 completely unrelated everyday situations a Colombian teenager might encounter — family, school, sports, home, food, technology — and build the drills around those. Zero overlap in meaning with the examples.
+- CRITICAL for drillSentences — TWO requirements that must BOTH hold:
+  (a) VOCABULARY: use ONLY words printed on these pages. Never introduce a verb, noun or situation the page does not contain.
+  (b) SITUATION: do not reuse the example's sentence. Recombine the page's own words into a situation the page does not show — different subject, different verb from the page's list, negative or question form, a different person.
+  The student must APPLY the grammar pattern to a new sentence, not RECOGNIZE a translation of something they just read — but every word in that new sentence must come from their book.
+  If the page teaches "can" with swim, cook, dance, paint:
+    WRONG (same sentence as the example): example "I can swim." → drill "Puedo nadar."
+    WRONG (word not on the page): drill "Mi mamá no puede manejar." — "drive" is not on the page
+    RIGHT (page's words, new situation): "Mi hermano puede cocinar." / "¿Puedes bailar?" / "She can't paint."
 - drillSentences types: "translation" = new Spanish → English; "fill_blank" = sentence with ___ gap; "error_correction" = sentence with one mistake to fix
 - For error_correction drills: the hint field should name the specific rule (e.g. "After modal verbs, use base form")
+- exercises: test the vocabulary and grammar of THESE pages, using only words printed on them. Same rule as drills — new sentences, book words.
 - spanishTrap: identify false cognates, ser/estar confusion, missing articles, direct translation errors — traps specific to Colombian Spanish speakers
 - Grammar explanations must address Spanish interference explicitly (e.g. "Unlike Spanish, English requires...")
-- exercises: 10-14 exercises mixing ALL types — variety is key for engagement:
+- exercises: mix ALL types — variety is key for engagement. Make as many as the page's own content genuinely supports (about 10-14 for a rich page, fewer for a short one). NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
   • multiple_choice: 4 options, one correct. Vary: sometimes ask "which is INCORRECT?", use "all of the above" occasionally. answer = exact option text
   • fill_blank: full sentence with __, answer = just the missing word. CRITICAL: the sentence must include enough context so that ONLY ONE answer is correct. Add a second sentence or a context clue if needed. BAD: "My ___ computer is very fast." (brother's, teacher's, mom's all work). GOOD: "My ___ computer is very fast. She uses it to prepare her classes every day." (only teacher's fits). EXTRA CRITICAL for family vocabulary: be mathematically precise. If the sentence says "two girls and one boy", the answer must be "nieces and a nephew" NOT "nieces and nephews". Count carefully and use exact singular/plural forms.
   • translation: Spanish sentence → English. answer = natural English translation (accept minor variations)
@@ -4808,7 +4817,7 @@ RULES:
   • sentence_builder: provide 5-6 scrambled words. question = "Build a sentence with these words:". words = ["array","of","scrambled","words"]. answer = the correct sentence
   • matching: provide 4 English words and 4 Spanish translations to connect. question = "Match each word with its translation". options = ["word1 → translation1", "word2 → translation2", "word3 → translation3", "word4 → translation4"] — each option is already matched correctly. answer = "all" (auto-checked by matching UI)
   Shuffle exercise order randomly — don't cluster by type
-- speakingPrompts: Look carefully at the images for any section labeled "SPEAKING", "GROUP WORK", "PAIR WORK", "COMMUNICATION ACTIVATOR", or similar. Extract the EXACT speaking tasks shown (e.g. "Complete the chart about your family and ask questions", "Describe the people in the photo using comparatives"). If there are sample questions shown in speech bubbles or quotes, include them. If no specific speaking section exists, generate 3-4 natural speaking prompts based on the lesson topic. Format each prompt as a clear instruction a teacher would give.
+- speakingPrompts: Look carefully at the images for any section labeled "SPEAKING", "GROUP WORK", "PAIR WORK", "COMMUNICATION ACTIVATOR", or similar. Extract the EXACT speaking tasks shown (e.g. "Complete the chart about your family and ask questions", "Describe the people in the photo using comparatives"). If there are sample questions shown in speech bubbles or quotes, include them. If no specific speaking section exists, write 3-4 speaking prompts about this lesson's topic, using this page's vocabulary and the structures it teaches. Format each prompt as a clear instruction a teacher would give.
 - All Spanish must be natural Colombian Spanish
 - IPA phonetics must be accurate
 - Examples must be at ${levelName} level
@@ -4852,9 +4861,74 @@ RULES:
       parsed.vocabulary = [];
     }
 
-    // Sanitize arrays
-    if (!Array.isArray(parsed.grammar))         parsed.grammar = [];
-    if (!Array.isArray(parsed.exercises))        parsed.exercises = [];
+    // ── Validate grammar ───────────────────────────────────────
+    // Vocabulary above gets careful treatment; grammar and exercises used to
+    // get none beyond "is it an array?". A null or a bare string in here
+    // crashed the grammar tab, and the bad item was saved — so the unit stayed
+    // broken forever. The model's output is not trustworthy input.
+    if (Array.isArray(parsed.grammar)) {
+      const seenG = new Set();
+      parsed.grammar = parsed.grammar
+        .filter(g => g && typeof g === 'object' && String(g.title || '').trim())
+        .map(g => ({
+          title:       String(g.title).trim(),
+          level:       String(g.level || '').trim(),
+          explanation: String(g.explanation || '').trim(),
+          structure:   String(g.structure || '').trim(),
+          rule:        String(g.rule || '').trim(),
+          spanishTrap: String(g.spanishTrap || '').trim(),
+          examples:    Array.isArray(g.examples)
+            ? g.examples.filter(e => e && typeof e === 'object' && (e.en || e.es))
+                        .map(e => ({ en: String(e.en || '').trim(), es: String(e.es || '').trim() }))
+            : [],
+          commonErrors: Array.isArray(g.commonErrors) ? g.commonErrors.filter(x => x) : [],
+          drills: Array.isArray(g.drills)
+            ? g.drills.filter(d => d && typeof d === 'object' && d.answer)
+                      .map(d => ({ prompt: String(d.prompt || '').trim(),
+                                   answer: String(d.answer).trim(),
+                                   type:   String(d.type || 'translation').trim() }))
+            : [],
+        }))
+        .filter(g => {
+          const key = g.title.toLowerCase().replace(/[^a-z ]/g, '').trim();
+          if (seenG.has(key)) return false;   // same point extracted twice
+          seenG.add(key);
+          return true;
+        });
+    } else {
+      parsed.grammar = [];
+    }
+
+    // ── Validate exercises ─────────────────────────────────────
+    // An exercise with no answer can never be answered correctly; one with no
+    // question shows a blank prompt. Both are worse than not existing.
+    const TIPOS = ['fill_blank', 'translation', 'error_correction', 'multiple_choice', 'sentence_builder', 'matching'];
+    if (Array.isArray(parsed.exercises)) {
+      const seenE = new Set();
+      parsed.exercises = parsed.exercises
+        .filter(e => e && typeof e === 'object')
+        .map(e => ({
+          type:        TIPOS.includes(String(e.type || '').trim()) ? String(e.type).trim() : 'fill_blank',
+          question:    String(e.question || '').trim(),
+          answer:      String(e.answer || '').trim(),
+          explanation: String(e.explanation || '').trim(),
+          options:     Array.isArray(e.options) ? e.options.map(o => String(o)).filter(Boolean) : undefined,
+          words:       Array.isArray(e.words)   ? e.words.map(w => String(w)).filter(Boolean)   : undefined,
+        }))
+        .filter(e => {
+          if (!e.question || !e.answer) return false;                       // unusable
+          if (e.type === 'multiple_choice' && (!e.options || e.options.length < 2)) return false;
+          if (e.type === 'sentence_builder' && (!e.words || !e.words.length)) return false;
+          const key = e.question.toLowerCase().trim();
+          if (seenE.has(key)) return false;
+          seenE.add(key);
+          return true;
+        });
+    } else {
+      parsed.exercises = [];
+    }
+
+    // Sanitize remaining arrays
     if (!Array.isArray(parsed.speakingPrompts))  parsed.speakingPrompts = [];
     if (!Array.isArray(parsed.detectedTopics))   parsed.detectedTopics = [];
 
@@ -7055,6 +7129,26 @@ async function analyzeWithAI(images, unit, batch) {
       });
       const removed = before - parsed.vocabulary.length;
       if (removed > 0) console.log(`Deduped ${removed} words already in other batches`);
+    }
+
+    // Same for grammar: several pages of one unit re-teach the same point, so
+    // it was stored once per batch. That's why the tutor saw "Modal Verb CAN
+    // for Ability" twice and treated CAN as if it were the whole unit.
+    const existingGrammar = new Set(
+      unit.batches
+        .filter(b => b !== batch)
+        .flatMap(b => (b.grammar || []))
+        .map(g => (g.title || '').toLowerCase().replace(/[^a-z ]/g, '').trim())
+        .filter(Boolean)
+    );
+    if (parsed.grammar && existingGrammar.size > 0) {
+      const before = parsed.grammar.length;
+      parsed.grammar = parsed.grammar.filter(g => {
+        const key = (g.title || '').toLowerCase().replace(/[^a-z ]/g, '').trim();
+        return key && !existingGrammar.has(key);
+      });
+      const removed = before - parsed.grammar.length;
+      if (removed > 0) console.log(`Deduped ${removed} grammar points already in other batches`);
     }
 
     // Persist all generated content INTO THE BATCH (linked to its images)
@@ -10780,7 +10874,16 @@ async function startExam(adaptiveMode = false, resume = null) {
   // Build context for Claude
   // Collect content from ALL batches for a comprehensive exam
   const vocab    = getUnitVocab(u).map(v => v.word).join(', ');
-  const grammar  = u.batches?.flatMap(b => b.grammar || []).map(g => g.title).join(', ') || '';
+  const grammarItems = u.batches?.flatMap(b => b.grammar || []).filter(g => g && g.title) || [];
+  const seenG    = new Set();
+  const grammar  = grammarItems.filter(g => {
+    const k = String(g.title).toLowerCase().replace(/[^a-z ]/g, '').trim();
+    if (!k || seenG.has(k)) return false;
+    seenG.add(k); return true;
+  }).map(g => {
+    const rule = (g.rule || g.structure || '').toString().trim();
+    return rule ? `• ${g.title} — ${rule}` : `• ${g.title}`;
+  }).join('\n');
   const batchTitles = u.batches?.map(b => b.title).filter(Boolean).join(', ') || '';
   const lvl      = LEVELS.find(l => l.id === current.lid)?.name || 'A2';
   const unitName = batchTitles || u.batches?.[0]?.title || 'Unit ' + current.uid;
@@ -10796,20 +10899,29 @@ async function startExam(adaptiveMode = false, resume = null) {
     try {
       const prompt = `Generate exactly 30 English exam questions for an A2 Colombian student.
 Pages studied: ${unitName}
-Grammar topics (cover ALL of these): ${grammar}
-Vocabulary: ${vocab}
 
-CRITICAL: Spread questions across ALL grammar topics listed — not just one topic. Each question tests a different grammar rule or vocabulary area.
-Use NEW situations different from the vocabulary list.
-Include: 8 fill_blank, 6 error_correction, 6 multiple_choice, 5 translation, 5 sentence_builder.
-CRITICAL for fill_blank: each sentence must include enough context so only ONE answer is correct. Add a second sentence or context clue if needed. BAD: "She ___ very happy today." (feels/is/looks all work). GOOD: "She ___ very happy today. It is her birthday!" (feels/is both work — add more specific context).
+This student is examined on this exact book. Every question must stay inside the vocabulary and grammar below. A question using a word or structure that is not listed is a wrong question, however natural it sounds.
+
+GRAMMAR — cover ALL of these points, and respect each rule exactly as written. The rule is what the student's book teaches; do not stretch a point beyond it:
+${grammar}
+
+VOCABULARY — the ONLY words you may use (plus basic function words: articles, pronouns, prepositions, and the listed structures):
+${vocab}
+
+RULES:
+- Spread questions across ALL grammar points listed — not just one. Each question tests a different rule or vocabulary area.
+- Build NEW sentences: recombine the words above into situations the student's exercises did not use. Do not introduce any word that is not listed.
+- Include: 8 fill_blank, 6 error_correction, 6 multiple_choice, 5 translation, 5 sentence_builder.
+- CRITICAL for fill_blank: each sentence must include enough context so only ONE answer is correct. Add a second sentence or context clue if needed. BAD: "She ___ very happy today." (feels/is/looks all work). GOOD: "She ___ very happy today. It is her birthday!" (feels/is both work — add more specific context).
+
+The examples below show the JSON FORMAT ONLY. Their words and grammar are NOT a model to copy — use the vocabulary and grammar listed above instead.
 
 Return ONLY a JSON array with exactly 30 items:
-[{"type":"fill_blank","question":"My brother ___ to school every day. He never misses a class.","answer":"goes","explanation":"Third person singular uses -s"},
-{"type":"error_correction","question":"Find and correct: He can to swim.","answer":"He can swim.","explanation":"Modal verbs don't use 'to'"},
-{"type":"multiple_choice","question":"Which is correct?","options":["She can swims","She can swim","She cans swim","She can to swim"],"answer":"She can swim","explanation":"Can + base verb"},
-{"type":"translation","question":"Ella no puede conducir un carro.","answer":"She can't drive a car.","explanation":"can't + base verb"},
-{"type":"sentence_builder","question":"Build a sentence with these words:","words":["can","you","play","tennis","?"],"answer":"Can you play tennis?","explanation":"Question: Can + subject + verb"}]`;
+[{"type":"fill_blank","question":"[sentence with ___ and enough context]","answer":"[the missing word]","explanation":"[the rule]"},
+{"type":"error_correction","question":"Find and correct: [sentence with one error]","answer":"[corrected sentence]","explanation":"[the rule]"},
+{"type":"multiple_choice","question":"Which is correct?","options":["[option]","[option]","[option]","[option]"],"answer":"[the correct option, copied exactly]","explanation":"[the rule]"},
+{"type":"translation","question":"[Spanish sentence]","answer":"[English translation]","explanation":"[the rule]"},
+{"type":"sentence_builder","question":"Build a sentence with these words:","words":["[word]","[word]","[word]","[word]"],"answer":"[the correct sentence]","explanation":"[the rule]"}]`;
 
       const raw  = await AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 5000, isJSON: true, timeoutMs: 60000, model: 'claude-haiku-4-5-20251001' });
       const data = AIService._parseClaudeJSON(raw);
