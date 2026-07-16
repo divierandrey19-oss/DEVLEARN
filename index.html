@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-15g -->
+<!-- DEVLEARN_BUILD: 2026-07-15h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4388,6 +4388,11 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       </div>
       <div id="import-export-status" style="margin-top:10px;font-size:0.75rem;"></div>
 
+      <!-- Storage usage -->
+      <div id="storage-usage" style="margin-top:14px;padding:10px 12px;background:var(--card);border-radius:10px;font-size:0.75rem;color:var(--text-3);line-height:1.6;">
+        Calculando espacio…
+      </div>
+
       <!-- App version info -->
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-3);text-align:center;">
         <div style="margin-bottom:6px;">DEV Learn · <strong id="running-build">—</strong></div>
@@ -4553,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-15g';
+const APP_BUILD = '2026-07-15h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5502,6 +5507,119 @@ function migrateState(s) {
 }
 
 // Debounced save
+/* ============================================================
+   IMAGE STORE — page photos live in IndexedDB, not localStorage.
+
+   Photos are base64 (~120KB each) and used to be saved inside the
+   state blob. localStorage caps out around 5MB, so a few units of
+   book pages filled it and photos had to be deleted to keep going.
+   IndexedDB has orders of magnitude more room.
+
+   Design note: photos stay in memory exactly as before, so every
+   screen that reads batch.images keeps working untouched. Only the
+   *storage* changes — localStorage gets the state without photos,
+   IndexedDB gets the photos, and they're re-attached on boot.
+   ============================================================ */
+const ImageStore = {
+  _db: null,
+  DB_NAME: 'devlearn_images',
+  STORE: 'batches',
+
+  async open() {
+    if (this._db) return this._db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(this.STORE)) db.createObjectStore(this.STORE);
+      };
+      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async _run(mode, fn) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, mode);
+      const req = fn(tx.objectStore(this.STORE));
+      tx.oncomplete = () => resolve(req ? req.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  },
+
+  /** Store one batch's photos. Key is the batch id. */
+  async put(batchId, images) {
+    if (!batchId) return;
+    return this._run('readwrite', s => s.put(images || [], batchId));
+  },
+
+  async get(batchId) {
+    try { return (await this._run('readonly', s => s.get(batchId))) || []; }
+    catch (e) { return []; }
+  },
+
+  async delete(batchId) {
+    try { return await this._run('readwrite', s => s.delete(batchId)); } catch (e) {}
+  },
+
+  async keys() {
+    try { return (await this._run('readonly', s => s.getAllKeys())) || []; }
+    catch (e) { return []; }
+  },
+
+  /** Rough size in bytes, for the storage readout. */
+  async size() {
+    try {
+      const all = await this._run('readonly', s => s.getAll());
+      let n = 0;
+      (all || []).forEach(arr => (arr || []).forEach(img => { n += (img || '').length; }));
+      return n;
+    } catch (e) { return 0; }
+  },
+};
+
+/** Writes every batch's photos currently in memory to IndexedDB. */
+async function persistImages() {
+  const jobs = [];
+  Object.values(state.units || {}).forEach(u => {
+    (u.batches || []).forEach(b => { if (b.id) jobs.push(ImageStore.put(b.id, b.images || [])); });
+  });
+  await Promise.all(jobs);
+}
+
+/** Re-attaches photos from IndexedDB onto the in-memory state. */
+async function hydrateImages() {
+  const jobs = [];
+  Object.values(state.units || {}).forEach(u => {
+    (u.batches || []).forEach(b => {
+      if (!b.id) return;
+      if (b.images && b.images.length) return; // already in memory — don't clobber
+      jobs.push(ImageStore.get(b.id).then(imgs => { b.images = imgs || []; }));
+    });
+  });
+  await Promise.all(jobs);
+}
+
+/** Drops photos for batches that no longer exist, so deleted units free space. */
+async function pruneImages() {
+  const alive = new Set();
+  Object.values(state.units || {}).forEach(u =>
+    (u.batches || []).forEach(b => { if (b.id) alive.add(b.id); }));
+  const stored = await ImageStore.keys();
+  await Promise.all(stored.filter(k => !alive.has(k)).map(k => ImageStore.delete(k)));
+}
+
+/** A copy of the state with photos removed — for localStorage. */
+function stateWithoutImages() {
+  const s = { ...state, units: {} };
+  Object.entries(state.units || {}).forEach(([k, u]) => {
+    s.units[k] = { ...u, batches: (u.batches || []).map(b => ({ ...b, images: [] })) };
+  });
+  return s;
+}
+
 let _saveDirty = false;
 let _storageFull = false;
 
@@ -5516,7 +5634,10 @@ let _storageFull = false;
 function writeState() {
   try {
     state.lastSaved = new Date().toISOString();
-    localStorage.setItem(KEY, JSON.stringify(state));
+    // Photos are NOT written here — they live in IndexedDB. Keeping them in
+    // this blob is what filled localStorage's ~5MB cap and forced photos to be
+    // deleted. The in-memory state keeps them, so nothing else changes.
+    localStorage.setItem(KEY, JSON.stringify(stateWithoutImages()));
     _saveDirty = false;
     if (_storageFull) { _storageFull = false; hideStorageBanner(); }
     return true;
@@ -6520,13 +6641,14 @@ function handleUnitUpload(event) {
       analyzing: true,
     };
     u.batches.push(batch);
-    // Photos are the thing that fills storage, so check the write landed.
-    // The old `try { saveNow() } catch` could never fire — saveNow doesn't throw.
+    // Photos go to IndexedDB; the state write below no longer carries them.
+    ImageStore.put(batch.id, batch.images).catch(e => console.warn('Image save failed:', e));
     if (!writeState()) {
       u.batches.pop();
+      ImageStore.delete(batch.id);
       renderImagePreviews(getUnitImages(u));
       document.getElementById('upload-zone').style.display = '';
-      toast('⚠️ No hay espacio para más fotos — libera espacio y reintenta');
+      toast('⚠️ No se pudo guardar — libera espacio y reintenta');
       return;
     }
 
@@ -6601,8 +6723,12 @@ function removeUnitImage(i) {
       if (batch.images.length === 0) {
         const batchIdx = u.batches.indexOf(batch);
         if (batchIdx >= 0) u.batches.splice(batchIdx, 1);
+        ImageStore.delete(batch.id);
         toast('🗑 Image and its content removed');
       } else {
+        // Mirror the deletion into IndexedDB — otherwise the photo would be
+        // re-attached from there on the next boot.
+        ImageStore.put(batch.id, batch.images);
         toast('🗑 Image removed');
       }
 
@@ -13201,11 +13327,13 @@ function doReset(sel) {
 
   // If both images AND content are being deleted, remove the whole batches
   if (sel.images && sel.vocab && sel.grammar && sel.exercises) {
+    u.batches.forEach(b => ImageStore.delete(b.id));
     u.batches = [];
   } else {
     // Per-piece removal across all batches
     u.batches.forEach(b => {
-      if (sel.images) b.images = [];
+      // Mirror into IndexedDB — otherwise cleared photos come back on reload
+      if (sel.images) { b.images = []; ImageStore.delete(b.id); }
       if (sel.vocab) b.vocab = [];
       if (sel.grammar) b.grammar = [];
       if (sel.exercises) b.exercises = [];
@@ -13276,8 +13404,14 @@ function undoImport() {
   try {
     const prev = migrateState(JSON.parse(backup));
     Object.keys(prev).forEach(k => { state[k] = prev[k]; });
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(KEY, JSON.stringify(stateWithoutImages()));
     localStorage.removeItem(PRE_IMPORT_KEY);
+    // The rollback copy is photo-free (like all localStorage now), so pull the
+    // photos back from IndexedDB. They're still there: an import never deletes
+    // the old batches' photos, and pruning is skipped while an undo is pending.
+    hydrateImages().then(() => {
+      if (current.lid && current.uid && current.tab) showUnitTab(current.tab);
+    });
     toast('↩️ Import deshecho — tus datos anteriores volvieron');
     setTheme(state.theme || 'dark');
     navigate('dashboard');
@@ -13306,6 +13440,10 @@ function doImport() {
 
     // Step 1: Update the global state so beforeunload saves the RIGHT data
     Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
+
+    // A backup carries photos inside it, but localStorage no longer stores
+    // them — push them into IndexedDB or they'd disappear on the next reload.
+    persistImages().catch(e => console.warn('Image import failed:', e));
 
     // Step 2: Save directly to localStorage
     localStorage.setItem(KEY, JSON.stringify(state));
@@ -13343,8 +13481,11 @@ function doImport() {
 
 function exportData() {
   try {
-    const data = localStorage.getItem(KEY);
-    if (!data) { toast('No data to export'); return; }
+    // Export from memory, NOT localStorage: localStorage deliberately holds a
+    // photo-free copy now, so reading it here would produce backups with every
+    // page photo missing.
+    const data = JSON.stringify(state);
+    if (!data || data.length < 20) { toast('No data to export'); return; }
 
     const blob = new Blob([data], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
@@ -13529,11 +13670,39 @@ async function checkDeployStatus() {
   }
 }
 
+/** Shows what's stored where. Photos are the big item, so they get their own line. */
+async function renderStorageUsage() {
+  const el = document.getElementById('storage-usage');
+  if (!el) return;
+  try {
+    const lsBytes  = (localStorage.getItem(KEY) || '').length;
+    const imgBytes = await ImageStore.size();
+    const fotos = Object.values(state.units || {})
+      .flatMap(u => (u.batches || []).flatMap(b => b.images || [])).length;
+    const mb = n => (n / 1024 / 1024).toFixed(n < 1024 * 1024 ? 2 : 1);
+
+    let libre = '';
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est.quota) libre = ` · espacio disponible: ~${mb(est.quota - (est.usage || 0))} MB`;
+    }
+
+    el.innerHTML = `
+      <div><strong>Progreso y contenido:</strong> ${mb(lsBytes)} MB <span style="opacity:.6;">(límite ~5 MB)</span></div>
+      <div><strong>Fotos de páginas:</strong> ${mb(imgBytes)} MB · ${fotos} foto${fotos !== 1 ? 's' : ''}
+        <span style="opacity:.6;">(sin límite práctico)</span></div>
+      <div style="opacity:.7;margin-top:4px;">Las fotos ya no ocupan el espacio limitado${libre}</div>`;
+  } catch (e) {
+    el.textContent = 'No se pudo calcular el espacio.';
+  }
+}
+
 function openSettings() {
   const modal = document.getElementById('settings-modal');
   modal.classList.add('open');
   // Ask GitHub what's actually deployed vs what this device is running
   checkDeployStatus();
+  renderStorageUsage();
   // Sync UI to current state
   const mode = AIService.mode || 'local';
   document.getElementById('mode-btn-local').classList.toggle('active', mode === 'local');
@@ -13667,10 +13836,52 @@ function updateSoundIcon() {
 /* ============================================================
    INIT
    ============================================================ */
+/**
+ * One-time migration + per-boot hydration of page photos.
+ *
+ * Old builds kept base64 photos inside the localStorage blob. If we still see
+ * photos there, move them into IndexedDB and rewrite the (now much smaller)
+ * state. Photos are only removed from localStorage AFTER IndexedDB confirms
+ * it has them — losing a page photo is not an acceptable failure here.
+ */
+async function initImageStorage() {
+  try {
+    const enMemoria = [];
+    Object.values(state.units || {}).forEach(u => (u.batches || []).forEach(b => {
+      if (b.id && b.images && b.images.length) enMemoria.push(b.id);
+    }));
+
+    if (enMemoria.length) {
+      // Legacy photos found in localStorage → move them.
+      await persistImages();
+      // Verify every batch really landed before shrinking localStorage.
+      const guardadas = new Set(await ImageStore.keys());
+      const faltan = enMemoria.filter(id => !guardadas.has(id));
+      if (faltan.length) {
+        console.warn('Image migration incomplete, keeping localStorage copy:', faltan);
+        return; // leave things exactly as they were
+      }
+      writeState(); // now writes without photos
+      console.info(`Moved photos of ${enMemoria.length} batch(es) to IndexedDB`);
+    } else {
+      await hydrateImages();
+    }
+    // Don't prune while an import can still be undone — the photos it would
+    // delete are exactly the ones the undo needs to bring back.
+    if (!localStorage.getItem(PRE_IMPORT_KEY)) await pruneImages();
+
+    // Re-render whatever is on screen now that photos are attached
+    if (current.lid && current.uid && current.tab) showUnitTab(current.tab);
+  } catch (e) {
+    console.warn('Image storage init failed:', e);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   setTheme(state.theme || 'dark');
   setLang(state.lang || 'en');
   loadSettings();   // load AI mode + API key
+  initImageStorage();
 
   // Load sound preference
   if (state.settings && state.settings.soundEnabled === false) {
