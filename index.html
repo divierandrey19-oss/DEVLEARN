@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16e -->
+<!-- DEVLEARN_BUILD: 2026-07-16i -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16e';
+const APP_BUILD = '2026-07-16i';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4725,8 +4725,28 @@ Boxes that point somewhere else — "GRAMMAR EXPANDER p. 132", "See page 45",
 that other page, not this one.
 - NEVER create a grammar topic from a title you can only see inside a pointer box.
   You would have to invent its rule, structure and examples.
-- Create a grammar topic only when its rule, structure or examples are actually
-  printed here.
+
+━━ TAUGHT vs USED — TAG EVERY GRAMMAR POINT ━━
+
+Every page is written in English, so every page contains grammar. That does not mean
+every page TEACHES grammar. Tag each grammar point honestly with where its RULE came from:
+
+"source": "book"    — this page teaches it. The rule, the pattern or the explanation is
+                      printed right here: a GRAMMAR box, a stated rule, a drilled pattern.
+"source": "derived" — the LANGUAGE is printed here, but the page never explains it.
+                      You are writing the rule yourself.
+
+Both are allowed and both are useful. But the student's exam is built on the book, so they
+must be able to tell which is which. Never mark a point "book" unless you can point to the
+printed rule. When in doubt, it is "derived".
+
+A "derived" point still may not invent language. It must describe a structure that is
+actually printed on this page — never one you expect to find there. A warm-up that prints
+"The meat looks delicious!" supports a derived point about looks + adjective. It supports
+NO point about comparatives, because no comparative is printed.
+
+If a page teaches no grammar and prints no structure worth explaining, return an empty
+grammar list. That is a correct answer, not a failure.
 
 ━━ TASKS THAT NEED THE AUDIO ARE NOT EXERCISES ━━
 
@@ -4785,7 +4805,8 @@ Among the words that ARE on the page, prefer these over incidental text.
   ],
   "grammar": [
     {
-      "title": "Grammar topic name — the structure this page actually teaches",
+      "title": "Grammar topic name — the structure this page teaches or prints",
+      "source": "book | derived — see the TAUGHT vs USED rule. Be honest.",
       "level": "${level.toUpperCase()}",
       "explanation": "Clear explanation written specifically for a Colombian Spanish speaker (2-3 sentences). Address differences with Spanish explicitly.",
       "structure": "Subject + verb + ... pattern, as the page presents it",
@@ -4838,9 +4859,35 @@ Among the words that ARE on the page, prefer these over incidental text.
   ]
 }
 
+━━ EVERY SENTENCE YOU WRITE MUST SURVIVE THE TEACHER ━━
+
+You will write new sentences: drills, exercises, examples. This student studies them as
+if the book had printed them, and is examined on the book. So each one must hold up:
+
+1. CORRECT ENGLISH. Read it back. Would a native speaker say it exactly like that?
+   "The healthy food is more my style" is WRONG — a general statement takes no "the".
+   If you are not certain a sentence is natural, write a different one.
+2. IT MUST NOT BREAK THIS UNIT'S OWN GRAMMAR. If the page teaches when to use "the",
+   every sentence you write must use "the" correctly. Contradicting the lesson you just
+   extracted from the same page is the worst thing you can do here.
+3. PLANTED ERRORS: exactly ONE per error_correction item — the instruction says "the
+   mistake", singular. Two errors makes the item unanswerable. And the error must be
+   about grammar this page teaches, or about a spanishTrap this page's language raises.
+   Never plant an error about grammar the unit does not cover: "to I" -> "to me" is object
+   pronouns, and that is off-topic on a page about "looks + adjective".
+4. SPANISH PROMPTS MUST BE REAL SPANISH. In translation items write the Spanish a
+   Colombian would actually say, never a word-for-word calque of the English.
+   BAD:  "El sándwich es más mi estilo."  (nobody says this — it is English in disguise)
+   GOOD: "Prefiero el sándwich." / "Me gusta más el sándwich."
+   If a page phrase has no natural Spanish equivalent, do not build a translation item
+   from it — use fill_blank or sentence_builder instead.
+5. OPTIONS IN THE RIGHT LANGUAGE. If you ask which ENGLISH word means something, every
+   option must be an English word. Never offer Spanish words as answers to an English
+   question.
+
 RULES:
 - vocabulary: ONLY words and phrases printed on these pages. No proper names, no duplicates. However many the page has — do not pad, do not round up to a nicer number.
-- grammar: ONLY the structures these pages actually teach or drill. If the page teaches one structure, return one. If it teaches six, return six. Do not add a structure because it "goes with" the topic.
+- grammar: ONLY structures whose language is printed on these pages. Tag each one "book" or "derived". If the page teaches one structure, return one. If it teaches six, return six. Do not add a structure because it "goes with" the topic, and never mark a point "book" when you wrote the rule yourself.
 - The grammar "examples" field: prefer example sentences that appear on the page itself. If you must write one, build it ONLY from words printed on these pages.
 - For EACH grammar topic: include 2 commonErrors and 3 drillSentences with DIFFERENT types (one translation, one fill_blank, one error_correction)
 - CRITICAL for drillSentences — TWO requirements that must BOTH hold:
@@ -4856,7 +4903,7 @@ RULES:
 - exercises: test the vocabulary and grammar of THESE pages, using only words printed on them. Same rule as drills — new sentences, book words.
 - spanishTrap: identify false cognates, ser/estar confusion, missing articles, direct translation errors — traps specific to Colombian Spanish speakers
 - Grammar explanations must address Spanish interference explicitly (e.g. "Unlike Spanish, English requires...")
-- exercises: mix ALL types — variety is key for engagement. Make as many as the page's own content genuinely supports (about 10-14 for a rich page, fewer for a short one). NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
+- exercises: mix ALL types — variety matters. Make as many as the page's OWN content genuinely supports, and no more. Count the distinct sentences and target words the page actually prints, then make roughly that many items: a dense grammar page with a rule box and a practice section supports 10-14; a warm-up or a photo page with a handful of printed sentences supports 4-6, and padding it to 13 forces you into invented, low-quality items. Fewer good items beat more weak ones. NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
   • multiple_choice: 4 options, one correct. Vary: sometimes ask "which is INCORRECT?", use "all of the above" occasionally. answer = exact option text
   • fill_blank: full sentence with __, answer = just the missing word. CRITICAL: the sentence must include enough context so that ONLY ONE answer is correct. Add a second sentence or a context clue if needed. BAD: "My ___ computer is very fast." (brother's, teacher's, mom's all work). GOOD: "My ___ computer is very fast. She uses it to prepare her classes every day." (only teacher's fits). EXTRA CRITICAL for family vocabulary: be mathematically precise. If the sentence says "two girls and one boy", the answer must be "nieces and a nephew" NOT "nieces and nephews". Count carefully and use exact singular/plural forms.
   • translation: Spanish sentence → English. answer = natural English translation (accept minor variations)
@@ -4874,8 +4921,11 @@ RULES:
     };
 
     const raw = await this._callClaude({
+      // 8000 truncated rich 2-page batches. The schema ends with speakingPrompts,
+      // so a truncated response silently dropped the role play scenes. Raising the
+      // cap costs nothing — billing is per token generated, not per cap.
       messages: [{ role: 'user', content: [...imageBlocks, prompt] }],
-      maxTokens: 8000,
+      maxTokens: 16000,
       isJSON: true,
     });
 
@@ -4919,6 +4969,9 @@ RULES:
         .filter(g => g && typeof g === 'object' && String(g.title || '').trim())
         .map(g => ({
           title:       String(g.title).trim(),
+          // Anything not explicitly and validly marked "book" is "derived".
+          // An unmarked point must never claim the book's authority.
+          source:      String(g.source || '').trim().toLowerCase() === 'book' ? 'book' : 'derived',
           level:       String(g.level || '').trim(),
           explanation: String(g.explanation || '').trim(),
           structure:   String(g.structure || '').trim(),
@@ -7012,7 +7065,7 @@ function setAnalysisStep(text) {
 // that old generated grammar/exercises should be regenerated.
 // v1 = original prompt (translation-only drills, may copy examples)
 // v2 = typed drills (translation/fill_blank/error_correction), semantically independent
-const GRAMMAR_VERSION = 2;
+const GRAMMAR_VERSION = 3;   // v3: grounding rules, source tag, sentence-quality rules
 
 /**
  * Regenerate ONLY grammar, exercises, and drills for a batch.
@@ -7020,7 +7073,9 @@ const GRAMMAR_VERSION = 2;
  * Replaces: grammar[], exercises[], speakingPrompts[]
  */
 async function regenerateBatchContent(lid, uid, batchId) {
-  if (!AIService.mode === 'claude' && !AIService.getKey()) {
+  // Was `!AIService.mode === 'claude' && ...` — precedence made it (!mode) === 'claude',
+  // always false, so this guard never fired.
+  if (AIService.mode !== 'claude' || !AIService.getKey()) {
     toast('⚠️ Claude API required for regeneration. Add your API key in Settings.');
     return;
   }
@@ -7037,6 +7092,35 @@ async function regenerateBatchContent(lid, uid, batchId) {
   if (btn) { btn.textContent = 'Regenerating…'; btn.disabled = true; }
   toast('🔄 Regenerating grammar & exercises…');
 
+  /* analyzeWithAI renders its own error UI and does NOT rethrow, so the catch
+   * below never fired: a failed regeneration left the batch permanently empty
+   * AND reported success. Snapshot first; detect failure by its own signals
+   * (failedAt bumped, or the batch spliced out on a fatal auth error). */
+  const backup = {
+    grammar:         batch.grammar || [],
+    exercises:       batch.exercises || [],
+    speakingPrompts: batch.speakingPrompts || [],
+    vocab:           batch.vocab || [],
+    grammarVersion:  batch.grammarVersion,
+  };
+  const failedBefore = batch.failedAt || 0;
+  const idxBefore    = u.batches.indexOf(batch);
+
+  const restore = () => {
+    batch.analyzing       = false;
+    batch.grammar         = backup.grammar;
+    batch.exercises       = backup.exercises;
+    batch.speakingPrompts = backup.speakingPrompts;
+    batch.grammarVersion  = backup.grammarVersion;
+    if (!(batch.vocab || []).length) batch.vocab = backup.vocab;
+    // A fatal auth error removes the batch — with a regeneration that would
+    // also destroy its photos and vocabulary. Put it back.
+    if (u.batches.indexOf(batch) < 0) u.batches.splice(Math.max(0, idxBefore), 0, batch);
+    if (btn) { btn.textContent = '↺ Regenerate'; btn.disabled = false; }
+    saveNow();
+    toast('❌ Regeneration failed — your previous content was restored');
+  };
+
   // Mark as regenerating (keep vocab and images)
   batch.analyzing = true;
   batch.grammar   = [];
@@ -7048,13 +7132,20 @@ async function regenerateBatchContent(lid, uid, batchId) {
     // Re-run AI analysis with the same images
     // analyzeWithAI will update grammar/exercises/drills and stamp new grammarVersion
     await analyzeWithAI(batch.images, u, batch);
-    toast('✅ Grammar & exercises regenerated with improved prompts');
   } catch (e) {
-    batch.analyzing = false;
-    if (btn) { btn.textContent = '↺ Regenerate'; btn.disabled = false; }
-    toast('❌ Regeneration failed — check your API key');
-    saveNow();
+    restore();
+    return;
   }
+
+  if ((batch.failedAt || 0) !== failedBefore || u.batches.indexOf(batch) < 0) {
+    restore();
+    return;
+  }
+
+  // An empty grammar list is a legitimate result (a warm-up page teaches none),
+  // so success is judged by the absence of failure, never by the content count.
+  if (btn) { btn.textContent = '↺ Regenerate'; btn.disabled = false; }
+  toast('✅ Grammar & exercises regenerated with improved prompts');
 }
 
 /* ============================================================
@@ -9640,7 +9731,13 @@ function renderGrammarItems(grammar, batchPrefix = '') {
     return `
       <div class="grammar-card">
         <div class="grammar-title">${g.title || 'Grammar topic ' + (gi + 1)}</div>
-        <div class="grammar-sub">${g.level || 'Grammar'}</div>
+        <div class="grammar-sub">${g.level || 'Grammar'}${
+          g.source === 'book'
+            ? ' &nbsp;·&nbsp; <span title="La regla está impresa en tu libro" style="color:var(--success,#3fb950);font-weight:600;">📗 del libro</span>'
+            : g.source === 'derived'
+              ? ' &nbsp;·&nbsp; <span title="La frase está en tu página, pero la regla la escribió Mari" style="color:var(--warning,#d29922);font-weight:600;">💡 de Mari</span>'
+              : ''
+        }</div>
         <div class="grammar-text">${g.explanation || ''}</div>
         ${g.structure ? `<div class="grammar-structure">${g.structure}</div>` : ''}
         ${g.rule ? `<div class="grammar-rule"><div class="grammar-rule-icon">💡</div><div>${g.rule}</div></div>` : ''}
