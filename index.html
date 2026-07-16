@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16k -->
+<!-- DEVLEARN_BUILD: 2026-07-16l -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16k';
+const APP_BUILD = '2026-07-16l';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4917,7 +4917,8 @@ RULES:
   • sentence_builder: provide 5-6 scrambled words. question = "Build a sentence with these words:". words = ["array","of","scrambled","words"]. answer = the correct sentence
   • matching: provide 4 English words and 4 Spanish translations to connect. question = "Match each word with its translation". options = ["word1 → translation1", "word2 → translation2", "word3 → translation3", "word4 → translation4"] — each option is already matched correctly. answer = "all" (auto-checked by matching UI)
   Shuffle exercise order randomly — don't cluster by type
-- speakingPrompts: Look for sections labeled SPEAKING, PAIR WORK, GROUP WORK, DISCUSSION, ROLE PLAY, COMMUNICATION ACTIVATOR, TALKING POINTS, WARM-UP or similar. Extract the EXACT tasks the page prints, in the page's own words, plus any sample questions printed in speech bubbles.
+- speakingPrompts: Look for sections labeled SPEAKING, PAIR WORK, GROUP WORK, DISCUSSION, ROLE PLAY, COMMUNICATION ACTIVATOR, TALKING POINTS, WARM-UP or similar. Extract the EXACT task the page prints — the instruction it gives the student — in the page's own words and nothing else. Never append a question of your own to it.
+  A SPEECH BUBBLE IS NOT A TASK. Lines printed in bubbles over photos or characters are sample language: they show the student how the task sounds when people do it. They are not separate assignments. The instruction is the task; the bubbles are one way of answering it. Turning each bubble into its own prompt splits a single conversation into several fake ones.
   NO QUOTA HERE EITHER. If the page prints one speaking task, return one. If it prints none, return an empty list. NEVER write a speaking prompt the page does not print: these become role play scenes the student rehearses for an oral exam graded on this book, so an invented scene drills a conversation their book never assigned.
   A unit contents strip (a COMMUNICATION GOALS bar listing "Lesson 1 ... Lesson 2 ... Lesson 3 ...") is a table of contents, not a task for THIS page. Those lessons live on their own pages, with their own speaking sections. Never turn a lesson title into a speaking prompt.
 - All Spanish must be natural Colombian Spanish
