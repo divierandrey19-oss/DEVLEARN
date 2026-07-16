@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16b -->
+<!-- DEVLEARN_BUILD: 2026-07-16e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4057,7 +4057,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         <button class="unit-tab" onclick="showUnitTab('exercises')">✏️ Exercises</button>
         <button class="unit-tab" id="tab-btn-tutor" onclick="showUnitTab('tutor')">🎙️ Tutor</button>
         <button class="unit-tab" onclick="showUnitTab('exam')">🏆 Exam</button>
-        <!-- <button class="unit-tab" onclick="showUnitTab('speaking')">🗣️ Speaking</button> -->
+        <button class="unit-tab" onclick="showUnitTab('speaking')">🎭 Role Play</button>
         <button class="unit-tab" onclick="showUnitTab('notes')">📝 Notes</button>
       </div>
 
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16b';
+const APP_BUILD = '2026-07-16e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4567,7 +4567,7 @@ const QUIZ_SESSION_KEY = 'devlearn_quiz_session';
 // so it must survive backgrounding the app or an accidental reload.
 const EXAM_SESSION_KEY = 'devlearn_exam_session';
 let exam = { timer: null, score: 0, total: 0, startTime: null, answers: {}, timeLeft: 0 };
-let chat = { unit: [], standalone: [] };
+let chat = { unit: [], standalone: [], roleplay: [] };
 let focusTimer = { running: false, seconds: 25 * 60, interval: null };
 let studyStartTime = Date.now();
 let saveTimer = null;
@@ -4708,15 +4708,62 @@ Printed text in any part of the page qualifies: lesson text, word lists, exercis
 items, instructions ("Listen and repeat"), dialogues, tables, and labels written
 on pictures. A picture alone does not qualify — the word must be written.
 
+━━ WRONG EXAMPLES ARE NOT VOCABULARY ━━
+
+Textbooks print incorrect English on purpose, to warn against it: struck-through
+text, or forms marked NOT / ✗ / "Don't say". For example "I'll have milk. NOT a
+milk NOT two milks" teaches that "a milk" is WRONG English.
+- NEVER extract a marked-wrong form as vocabulary, as an example, or as an answer.
+- DO use them for commonErrors — they are exactly that: put the marked-wrong form
+  in "wrong" and the page's correct form in "correct". The book is telling you the
+  precise mistake this lesson expects. That is the most valuable thing on the page.
+
+━━ CROSS-REFERENCES ARE NOT CONTENT ━━
+
+Boxes that point somewhere else — "GRAMMAR EXPANDER p. 132", "See page 45",
+"Review Unit 3", "Workbook p. 20" — list titles, not lessons. Their rules live on
+that other page, not this one.
+- NEVER create a grammar topic from a title you can only see inside a pointer box.
+  You would have to invent its rule, structure and examples.
+- Create a grammar topic only when its rule, structure or examples are actually
+  printed here.
+
+━━ TASKS THAT NEED THE AUDIO ARE NOT EXERCISES ━━
+
+Sections marked LISTEN, LISTEN TO INFER, LISTEN FOR DETAILS, LISTEN TO ACTIVATE
+VOCABULARY, ZOOM-IN, or any task whose answer exists only in a recording, cannot be
+answered from the page. The student has no audio here.
+- NEVER turn a listening task into an exercise. You would have to guess the answer,
+  and the student would memorize your guess as if the book had said it. Skip the task.
+- Skip its answer options too: "a) a banana b) bread c) cookies" are guesses, not content.
+- BUT DO extract the words printed in that section. "VOCABULARY | Read and listen. Then
+  listen again and repeat" introduces a printed word list — that list is the lesson's
+  core vocabulary and must be extracted in full. Only the un-answerable task is skipped,
+  never the printed words around it.
+
 ━━ WHAT TO SKIP ━━
 
 ✗ Character/person names used only as exercise labels: Bill, Betty, Sam, Sue, Mike, Anna, Tom, Maria
 ✗ Page numbers, decorative text, publisher marks
 ✗ Proper nouns that don't teach general vocabulary (city names only if key to the lesson)
 
-Among the words that ARE on the page, prefer the ones the lesson is teaching:
-vocabulary lists, highlighted words, words drilled in the exercises, key phrases
-and classroom instructions.
+KEEP anything the page's own tasks ask the student to say, write or role-play, even when
+it looks like a proper noun. If a menu lists "Russian salad" and the speaking task says
+"order from this menu", then "Russian salad" is language the student must produce — it is
+lesson content, not a stray name. The test is the task, not the capital letter.
+
+━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
+
+Textbooks flag what they are teaching. Treat every marked item as target language and
+include it:
+- Typography: bold, colour, underlining, highlighting, "featured" words.
+- Labelled boxes: VOCABULARY, GRAMMAR, Social language, Ways to order food, KEEP TALKING.
+- A unit summary box (e.g. "RECYCLE THIS LANGUAGE") lists the language the book itself
+  says this unit teaches. It is the book's own checklist of what it will test.
+  Never skip an item that appears there.
+- Words the page's exercises drill: if a word is the answer to an exercise, it is taught.
+
+Among the words that ARE on the page, prefer these over incidental text.
 
 ━━ JSON OUTPUT (no markdown, no explanation) ━━
 
@@ -5419,6 +5466,110 @@ Shape of a BAD response (too long — never do this):
     return { reply: raw, mistake, corrected, correction };
   },
 
+  /* ── ROLE PLAY ────────────────────────────────────────────────
+   * The speaking exam makes the student hold a conversation with a
+   * classmate. Nobody corrects them mid-conversation, so Mari does not
+   * either: she stays in character for the whole scene and all feedback
+   * is deferred to rolePlayDebrief(). Corrections mid-scene would teach
+   * a habit the exam does not allow — stopping to be fixed.
+   */
+  _unitLanguage(unitContext) {
+    const allVocab = unitContext?.vocab || [];
+    const pool = allVocab.length > 40
+      ? [...allVocab].sort(() => Math.random() - 0.5).slice(0, 40)
+      : allVocab;
+    const vocab = pool.map(v => v.word).join(' · ');
+
+    const seen = new Set();
+    const grammar = (unitContext?.grammar || []).filter(g => {
+      const k = (g.title || '').toLowerCase().replace(/[^a-z ]/g, '').trim();
+      if (!k || seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+    const grammarList = grammar.map(g => {
+      const rule = (g.rule || g.explanation || '').trim().slice(0, 120);
+      return `   • ${g.title}${rule ? ' — ' + rule : ''}`;
+    }).join('\n');
+    return { vocab, grammarList, grammarCount: grammar.length };
+  },
+
+  async rolePlayChat({ history, unitContext, scenario }) {
+    if (this.mode !== 'claude' || !this.getKey()) return { reply: '⚠️ Agrega tu API key de Claude en Ajustes para hacer role play con Mari.' };
+
+    const { vocab, grammarList } = this._unitLanguage(unitContext);
+    const unitName = unitContext?.title || 'this unit';
+
+    const systemPrompt = `You are role-playing a scene with a Colombian A2 English student at American Schoolway in Medellín. In two weeks they take an oral exam where they must hold a conversation with a classmate, unaided. This is that practice.
+
+THE SCENE — taken word-for-word from the student's own textbook (${unitName}):
+"${scenario}"
+
+Read the scene and decide who the other person is (server, friend, classmate, customer...). YOU play that person. The student plays themselves.
+
+NON-NEGOTIABLE RULES:
+1. STAY IN CHARACTER for the entire scene. You are not a teacher right now. Never correct their English, never comment on it, never write a ✏️ line, never step outside the scene to explain anything. Feedback comes after the scene ends — not now. If they make a mistake, react to what they MEANT and keep the scene moving.
+2. NEVER write the student's line for them. No "You could say...", no suggestions, no hints, no examples, no blanks to fill. They must find their own words — that is the entire point of this exercise. If you catch yourself about to model their answer, delete it and just ask your question.
+3. ONLY use the vocabulary and grammar listed below. It is their unit, and their exam covers exactly it. A sentence that is natural English but uses an unlisted structure is WRONG here — rewrite it.
+4. SHORT TURNS: 1-2 sentences, then stop. They must talk more than you do. Never deliver a speech.
+5. Always leave them something to answer — a question, a choice, or a reaction that invites more.
+6. If they write in Spanish, freeze, or say "I don't know": stay in character and give them another opening ("Sorry, I didn't catch that?"). NEVER translate for them and never supply the sentence.
+
+THEIR UNIT LANGUAGE — the only language that exists in this scene:
+${vocab ? `- Vocabulary: ${vocab}` : '- Vocabulary: not extracted yet — keep to very simple words about this scene'}
+- Grammar:
+${grammarList || '   • not extracted yet — simple present tense only'}
+
+YOUR FIRST MESSAGE ONLY: open with one short italic line naming the place and your role, e.g. *[At the restaurant. I'm your server.]* — then your first line in character. After that, never use the italic line again.
+
+Reply with your character's turn and nothing else.`;
+
+    const raw = await this._callClaude({
+      messages: history.map(m => ({ role: m.role, content: m.content })),
+      systemPrompt,
+      maxTokens: 300,
+      model: 'claude-sonnet-4-5',
+    });
+    return { reply: raw.trim() };
+  },
+
+  async rolePlayDebrief({ history, unitContext, scenario }) {
+    if (this.mode !== 'claude' || !this.getKey()) return { reply: '⚠️ Agrega tu API key de Claude en Ajustes.' };
+
+    const { vocab, grammarList } = this._unitLanguage(unitContext);
+    const transcript = history
+      .map(m => `${m.role === 'user' ? 'STUDENT' : 'PARTNER'}: ${m.content}`)
+      .join('\n');
+
+    const systemPrompt = `You are Mari, an English tutor. Your Colombian A2 student just finished a speaking role play from their textbook. Their oral exam is in two weeks and it is graded on the language of this unit.
+
+THE SCENE: "${scenario}"
+
+THEIR UNIT LANGUAGE:
+${vocab ? `- Vocabulary: ${vocab}` : ''}
+- Grammar:
+${grammarList || '   • not extracted yet'}
+
+Review ONLY the STUDENT's turns. Reply in EXACTLY this structure, nothing before or after, maximum 9 lines:
+
+✅ [One line naming something they genuinely did well. Quote their actual words. Be specific — never generic praise.]
+✏️ [Up to 3 real errors, one per line: **"their words"** → **"correct"** — short rule in Spanish. ONLY real errors. If they made none, write one line saying so and move on. NEVER invent an error and never "correct" something that was already right.]
+📘 [Up to 3 words or structures from their unit list above that fitted this scene and they did NOT use. Name them only — do NOT write example sentences with them.]
+🎯 [One line in Spanish: the single most important thing to fix before the exam.]
+
+RULES:
+- Feedback lines in Spanish (they are A2 — the feedback must land). English words stay in English.
+- Never write a full model sentence for them to copy. Name the word or the rule, not the sentence.
+- Be honest. If the conversation was weak, say so kindly and concretely. False praise costs them the exam.`;
+
+    const raw = await this._callClaude({
+      messages: [{ role: 'user', content: `Transcript:\n\n${transcript}` }],
+      systemPrompt,
+      maxTokens: 600,
+      model: 'claude-sonnet-4-5',
+    });
+    return { reply: raw.trim() };
+  },
+
   /**
    * Local pattern-matching tutor (fallback when no API key)
    */
@@ -5530,6 +5681,7 @@ function defaultState() {
     units: {},
     weakAreas: {},
     tutorMemory: {},
+    rolePlay: {},
     standaloneTutorMemory: [],
     stats: { wordsLearned: 0, unitsCompleted: 0, fcMastered: 0, exercisesDone: 0, bestScore: null, avgScore: null, examsTaken: 0 },
     lastUnit: null,
@@ -5541,6 +5693,7 @@ function migrateState(s) {
   const base = defaultState();
   const merged = { ...base, ...s };
   merged.tutorMemory = merged.tutorMemory || {};
+  merged.rolePlay = merged.rolePlay || {};
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
   merged.settings = merged.settings || base.settings;
   merged.version = 4;
@@ -6328,7 +6481,7 @@ function showUnitTab(tab) {
   if (tab === 'tutor')    initUnitChat();
   if (tab === 'notes')    loadNotes();
   if (tab === 'exam')     prepareExam();
-  if (tab === 'speaking') initSpeakingTest();
+  if (tab === 'speaking') initRolePlay();
   // Persist so reload returns to same unit + tab
   try {
     localStorage.setItem('devlearn_nav', JSON.stringify({
@@ -11347,6 +11500,208 @@ function clearNotes() {
 /* ============================================================
    AI TUTOR CHAT
    ============================================================ */
+/* ── ROLE PLAY ────────────────────────────────────────────────────
+ * Scenes come only from the book's own speaking tasks (COMMUNICATION
+ * ACTIVATOR / PAIR WORK / ROLE PLAY). If the book gave none, there are
+ * no scenes — inventing one would drill language the exam won't cover.
+ */
+function rolePlayScenarios(u) {
+  const seen = new Set(); const out = [];
+  for (const raw of getUnitSpeakingPrompts(u)) {
+    const s = String(raw || '').trim();
+    const k = s.toLowerCase().replace(/[^a-z ]/g, '').trim();
+    if (!s || !k || seen.has(k)) continue;
+    seen.add(k); out.push(s);
+  }
+  return out;
+}
+
+function rpUnitContext(u) {
+  return { lid: u.lid, uid: u.uid, title: u.title, vocab: getUnitVocab(u), grammar: getUnitGrammar(u) };
+}
+
+function initRolePlay() {
+  const container = document.getElementById('speaking-content');
+  if (!container) return;
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  if (!u) { container.innerHTML = '<div class="empty-state">Abre una unidad primero.</div>'; return; }
+  const unitKey = current.lid + '_' + current.uid;
+  const session = state.rolePlay[unitKey];
+  if (session && session.scenario) renderRolePlayChat(u, unitKey, session);
+  else renderRolePlayPicker(u);
+}
+
+function renderRolePlayPicker(u) {
+  const container = document.getElementById('speaking-content');
+  const scenarios = rolePlayScenarios(u);
+
+  if (!scenarios.length) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:2.2rem;margin-bottom:8px;">🎭</div>
+        <h3 style="margin:0 0 8px;">Todavía no hay escenas</h3>
+        <p style="color:var(--text-3);font-size:0.85rem;line-height:1.5;margin:0;">
+          Las escenas salen de las secciones <b>SPEAKING</b>, <b>PAIR WORK</b> y
+          <b>COMMUNICATION ACTIVATOR</b> de tu libro. Sube esas páginas y aparecerán aquí.<br><br>
+          Mari no se inventa escenas: si no está en tu libro, no te lo van a evaluar.
+        </p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="padding:4px 0 12px;">
+      <p style="color:var(--text-3);font-size:0.82rem;line-height:1.5;margin:0 0 14px;">
+        Mari hace de tu compañero. No te corrige mientras hablan — igual que en tu examen.
+        El feedback llega al final. 🎤 Usa el micrófono del teclado y <b>di</b> tu respuesta.
+      </p>
+      ${scenarios.map((s, i) => `
+        <button class="card" onclick="startRolePlay(${i})"
+          style="display:block;width:100%;text-align:left;margin-bottom:10px;cursor:pointer;border:none;">
+          <div style="font-size:0.72rem;color:var(--accent);font-weight:700;letter-spacing:.04em;">ESCENA ${i + 1}</div>
+          <div style="font-size:0.88rem;line-height:1.45;margin-top:4px;">${escapeHtml(s)}</div>
+        </button>`).join('')}
+    </div>`;
+}
+
+function renderRolePlayChat(u, unitKey, session) {
+  const container = document.getElementById('speaking-content');
+  const done = !!session.done;
+  container.innerHTML = `
+    <div class="chat-area">
+      <div class="chat-head">
+        <div class="ai-avatar">🎭</div>
+        <div class="ai-info">
+          <div class="ai-name">Role play</div>
+          <div class="ai-status">${escapeHtml(session.scenario.slice(0, 60))}${session.scenario.length > 60 ? '…' : ''}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="exitRolePlay()" title="Salir de la escena">✕</button>
+      </div>
+      <div class="chat-msgs" id="rp-msgs"></div>
+      <div class="chat-chips" id="rp-chips">
+        ${done
+          ? `<button class="chat-chip" onclick="exitRolePlay(true)">🎭 Otra escena</button>`
+          : `<button class="chat-chip" onclick="endRolePlay()">🏁 Terminar y ver feedback</button>`}
+      </div>
+      ${done ? '' : `
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="rp-input" rows="1" placeholder="Contesta en inglés… 🎤"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendRolePlay();}"></textarea>
+        <button class="chat-btn-circle chat-send" onclick="sendRolePlay()">→</button>
+      </div>`}
+    </div>`;
+
+  chat.roleplay = (session.msgs || []).map(m => ({ role: m.role, content: m.content }));
+  (session.msgs || []).forEach(m =>
+    addChatMsg(m.role === 'user' ? 'user' : 'ai', m.content, 'rp-msgs', { stream: false }));
+  const c = document.getElementById('rp-msgs');
+  if (c) c.scrollTop = c.scrollHeight;
+}
+
+async function startRolePlay(idx) {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+  const scenario = rolePlayScenarios(u)[idx];
+  if (!scenario) return;
+  const unitKey = current.lid + '_' + current.uid;
+  state.rolePlay[unitKey] = { scenario, msgs: [], startedAt: Date.now() };
+  save();
+  renderRolePlayChat(u, unitKey, state.rolePlay[unitKey]);
+  await rolePlayTurn(unitKey);
+}
+
+/* The API requires the first message to be role:user, but Mari speaks first.
+ * The opener is prepended at call time and never stored, so the visible
+ * transcript stays clean and roles still alternate correctly. */
+async function rolePlayTurn(unitKey) {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  const session = state.rolePlay[unitKey];
+  if (!u || !session) return;
+
+  const c = document.getElementById('rp-msgs');
+  if (c) {
+    const ti = document.createElement('div');
+    ti.className = 'msg msg-ai'; ti.id = 'typing-rp';
+    ti.innerHTML = `<div class="msg-bubble" style="display:flex;align-items:center;gap:8px;color:var(--text-3);"><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
+    c.appendChild(ti); c.scrollTop = c.scrollHeight;
+  }
+
+  try {
+    const { reply } = await AIService.rolePlayChat({
+      history: [{ role: 'user', content: '(I am ready. Begin the scene.)' }, ...chat.roleplay],
+      unitContext: rpUnitContext(u),
+      scenario: session.scenario,
+    });
+    document.getElementById('typing-rp')?.remove();
+    chat.roleplay.push({ role: 'assistant', content: reply });
+    session.msgs.push({ role: 'assistant', content: reply, ts: Date.now() });
+    save();
+    addChatMsg('ai', reply, 'rp-msgs');
+  } catch (e) {
+    document.getElementById('typing-rp')?.remove();
+    addChatMsg('ai', '⚠️ No pude responder. Revisa tu conexión e intenta de nuevo.', 'rp-msgs');
+  }
+}
+
+async function sendRolePlay() {
+  const input = document.getElementById('rp-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  const unitKey = current.lid + '_' + current.uid;
+  const session = state.rolePlay[unitKey];
+  if (!session || session.done) return;
+
+  input.value = '';
+  addChatMsg('user', text, 'rp-msgs');
+  chat.roleplay.push({ role: 'user', content: text });
+  session.msgs.push({ role: 'user', content: text, ts: Date.now() });
+  save();
+  await rolePlayTurn(unitKey);
+}
+
+async function endRolePlay() {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  const unitKey = current.lid + '_' + current.uid;
+  const session = state.rolePlay[unitKey];
+  if (!u || !session) return;
+
+  const spoke = session.msgs.filter(m => m.role === 'user').length;
+  if (spoke === 0) {
+    alert('Contesta al menos una vez antes de pedir feedback.');
+    return;
+  }
+
+  const chips = document.getElementById('rp-chips');
+  if (chips) chips.innerHTML = '<span style="color:var(--text-3);font-size:0.78rem;">Mari está revisando…</span>';
+
+  try {
+    const { reply } = await AIService.rolePlayDebrief({
+      history: chat.roleplay,
+      unitContext: rpUnitContext(u),
+      scenario: session.scenario,
+    });
+    session.done = true;
+    session.msgs.push({ role: 'assistant', content: reply, ts: Date.now() });
+    save();
+    renderRolePlayChat(u, unitKey, session);
+  } catch (e) {
+    if (chips) chips.innerHTML = '<button class="chat-chip" onclick="endRolePlay()">🏁 Reintentar feedback</button>';
+  }
+}
+
+function exitRolePlay(skipConfirm) {
+  const unitKey = current.lid + '_' + current.uid;
+  const session = state.rolePlay[unitKey];
+  if (session && !session.done && !skipConfirm) {
+    if (!confirm('¿Salir de la escena? Se pierde esta conversación.')) return;
+  }
+  delete state.rolePlay[unitKey];
+  chat.roleplay = [];
+  save();
+  initRolePlay();
+}
+
 function initUnitChat() {
   const container = document.getElementById('unit-chat');
   if (!container) return;
