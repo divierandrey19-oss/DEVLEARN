@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16j -->
+<!-- DEVLEARN_BUILD: 2026-07-16k -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4558,7 +4558,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16j';
+const APP_BUILD = '2026-07-16k';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4862,25 +4862,31 @@ Among the words that ARE on the page, prefer these over incidental text.
 ━━ EVERY SENTENCE YOU WRITE MUST SURVIVE THE TEACHER ━━
 
 You will write new sentences: drills, exercises, examples. This student studies them as
-if the book had printed them, and is examined on the book. So each one must hold up:
+if the book had printed them, and is examined on the book. So each one must hold up.
 
-1. CORRECT ENGLISH. Read it back. Would a native speaker say it exactly like that?
-   "The healthy food is more my style" is WRONG — a general statement takes no "the".
-   If you are not certain a sentence is natural, write a different one.
+This block DESCRIBES faults so you can avoid them. Never lift wording out of it into your
+output — a description of a mistake is not a sentence to write.
+
+1. CORRECT ENGLISH, AND IT MUST MEAN SOMETHING. Read every sentence back: would a native
+   speaker say it exactly like that, and does it actually say anything? Watch for an article
+   in front of a general plural or non-count noun; for adjectives or verbs attached to a noun
+   that cannot take them (only people have habits and tastes, food does not); and for page
+   words strung together into a sentence that parses but means nothing. If you are not
+   certain a sentence is natural, write a different one.
 2. IT MUST NOT BREAK THIS UNIT'S OWN GRAMMAR. If the page teaches when to use "the",
    every sentence you write must use "the" correctly. Contradicting the lesson you just
    extracted from the same page is the worst thing you can do here.
 3. PLANTED ERRORS: exactly ONE per error_correction item — the instruction says "the
    mistake", singular. Two errors makes the item unanswerable. And the error must be
    about grammar this page teaches, or about a spanishTrap this page's language raises.
-   Never plant an error about grammar the unit does not cover: "to I" -> "to me" is object
-   pronouns, and that is off-topic on a page about "looks + adjective".
-4. SPANISH PROMPTS MUST BE REAL SPANISH. In translation items write the Spanish a
-   Colombian would actually say, never a word-for-word calque of the English.
-   BAD:  "El sándwich es más mi estilo."  (nobody says this — it is English in disguise)
-   GOOD: "Prefiero el sándwich." / "Me gusta más el sándwich."
-   If a page phrase has no natural Spanish equivalent, do not build a translation item
-   from it — use fill_blank or sentence_builder instead.
+   Never plant an error about grammar the unit does not cover: pronoun case, verb tenses or
+   anything this page never teaches is off-topic here, even when it is a real mistake.
+4. SPANISH PROMPTS MUST BE REAL SPANISH. In translation items, write the Spanish a
+   Colombian would actually say. Never walk the English words across one by one: if your
+   Spanish keeps the English word order and the English idiom, it is English in disguise and
+   nobody in Medellín would say it. Test it: read your Spanish aloud with the English out of
+   your head — is that a sentence a person says? If an English phrase has no natural Spanish
+   equivalent, do not build a translation item from it. Use fill_blank or sentence_builder.
 5. OPTIONS IN THE RIGHT LANGUAGE. If you ask which ENGLISH word means something, every
    option must be an English word. Never offer Spanish words as answers to an English
    question.
@@ -4911,7 +4917,9 @@ RULES:
   • sentence_builder: provide 5-6 scrambled words. question = "Build a sentence with these words:". words = ["array","of","scrambled","words"]. answer = the correct sentence
   • matching: provide 4 English words and 4 Spanish translations to connect. question = "Match each word with its translation". options = ["word1 → translation1", "word2 → translation2", "word3 → translation3", "word4 → translation4"] — each option is already matched correctly. answer = "all" (auto-checked by matching UI)
   Shuffle exercise order randomly — don't cluster by type
-- speakingPrompts: Look carefully at the images for any section labeled "SPEAKING", "GROUP WORK", "PAIR WORK", "COMMUNICATION ACTIVATOR", or similar. Extract the EXACT speaking tasks shown (e.g. "Complete the chart about your family and ask questions", "Describe the people in the photo using comparatives"). If there are sample questions shown in speech bubbles or quotes, include them. If no specific speaking section exists, write 3-4 speaking prompts about this lesson's topic, using this page's vocabulary and the structures it teaches. Format each prompt as a clear instruction a teacher would give.
+- speakingPrompts: Look for sections labeled SPEAKING, PAIR WORK, GROUP WORK, DISCUSSION, ROLE PLAY, COMMUNICATION ACTIVATOR, TALKING POINTS, WARM-UP or similar. Extract the EXACT tasks the page prints, in the page's own words, plus any sample questions printed in speech bubbles.
+  NO QUOTA HERE EITHER. If the page prints one speaking task, return one. If it prints none, return an empty list. NEVER write a speaking prompt the page does not print: these become role play scenes the student rehearses for an oral exam graded on this book, so an invented scene drills a conversation their book never assigned.
+  A unit contents strip (a COMMUNICATION GOALS bar listing "Lesson 1 ... Lesson 2 ... Lesson 3 ...") is a table of contents, not a task for THIS page. Those lessons live on their own pages, with their own speaking sections. Never turn a lesson title into a speaking prompt.
 - All Spanish must be natural Colombian Spanish
 - IPA phonetics must be accurate
 - Examples must be at ${levelName} level
