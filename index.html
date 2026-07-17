@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-17f -->
+<!-- DEVLEARN_BUILD: 2026-07-17g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4560,7 +4560,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-17f';
+const APP_BUILD = '2026-07-17g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5543,6 +5543,25 @@ Shape of a BAD response (too long — never do this):
    * is deferred to rolePlayDebrief(). Corrections mid-scene would teach
    * a habit the exam does not allow — stopping to be fixed.
    */
+  /* Mari answers corrections as: ✏️ **"wrong"** → **"right"** — the rule.
+   * The tutor path only ever needs the first one; a role play debrief lists up
+   * to three, and every one of them is a real mistake this student made while
+   * speaking under time pressure. Those are the most valuable ones they make. */
+  _extractCorrections(raw) {
+    const out = [];
+    const re = /✏️\s*\*\*"?([^"*]+)"?\*\*\s*(?:→|->)\s*\*\*"?([^"*]+)"?\*\*\s*(?:[—–-]+\s*([^\n]+))?/g;
+    let m;
+    while ((m = re.exec(raw)) !== null) {
+      const wrong = (m[1] || '').trim();
+      const right = (m[2] || '').trim();
+      // Mari sometimes uses the ✏️ shape to praise a correct sentence
+      // ("X" → "X" — perfect!). That is not a mistake; never log one.
+      if (!wrong || !right || wrong.toLowerCase() === right.toLowerCase()) continue;
+      out.push({ wrong, right, rule: (m[3] || '').trim() });
+    }
+    return out;
+  },
+
   _unitLanguage(unitContext) {
     const allVocab = unitContext?.vocab || [];
     const pool = allVocab.length > 40
@@ -5639,7 +5658,7 @@ RULES:
       model: 'claude-sonnet-4-5',
       timeoutMs: 45000,
     });
-    return { reply: raw.trim() };
+    return { reply: raw.trim(), corrections: this._extractCorrections(raw) };
   },
 
   /**
@@ -11973,14 +11992,26 @@ async function endRolePlay() {
   if (chips) chips.innerHTML = '<span style="color:var(--text-3);font-size:0.78rem;">Mari está revisando…</span>';
 
   try {
-    const { reply } = await AIService.rolePlayDebrief({
+    const { reply, corrections } = await AIService.rolePlayDebrief({
       history: chat.roleplay,
       unitContext: rpUnitContext(u),
       scenario: session.scenario,
     });
     session.done = true;
     session.msgs.push({ role: 'assistant', content: reply, ts: Date.now() });
-    save();
+
+    /* These are the student's real speaking mistakes — made out loud, under a
+     * clock, producing their own words. Until now the debrief showed them once
+     * and threw them away, so "Practice mistakes" stayed empty no matter how
+     * much they role-played. */
+    (corrections || []).forEach(c => {
+      logMistake({ source: 'roleplay', wrong: c.wrong, right: c.right, rule: c.rule || 'speaking', unitKey });
+      // Same as the tutor path: if the corrected word is one of their vocabulary
+      // words, this pulls its flashcard forward in the review schedule.
+      addWeakArea('grammar', c.wrong);
+    });
+
+    saveNow();
     renderRolePlayChat(u, unitKey, session);
   } catch (e) {
     if (chips) chips.innerHTML = '<button class="chat-chip" onclick="endRolePlay()">🏁 Reintentar feedback</button>';
@@ -13177,7 +13208,7 @@ function renderProgressPage() {
   const mistakes = [...(state.mistakeLog || [])]
     .sort((a, b) => (b.count - a.count) || (b.at - a.at))
     .slice(0, 8);
-  const srcIcon = { chat: '💬', exercise: '✍️', exam: '🏆' };
+  const srcIcon = { chat: '💬', exercise: '✍️', exam: '🏆', roleplay: '🎭' };
 
   // ── Build HTML ────────────────────────────────────────────────
   c.innerHTML = `
