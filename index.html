@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-17g -->
+<!-- DEVLEARN_BUILD: 2026-07-17i -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4534,6 +4534,11 @@ window._mergeCloudState = function(cloud) {
     // Study dates are a set of days — union them, don't overwrite
     const allDates = new Set([...localStudyDates, ...(imported.studyDates || [])]);
     state.studyDates = [...allDates].sort();
+    // The loop above copied every cloud field, including the streak — a scalar
+    // that cannot be merged, so the device that synced last won regardless of
+    // who actually studied. Derive it from the union instead.
+    state.streak = computeStreak(state.studyDates);
+    state.lastStudyDate = state.studyDates[state.studyDates.length - 1] || state.lastStudyDate;
 
     // We have now reconciled with this snapshot: the cloud holds exactly these
     // batches. A push right after this will widen it to include our local ones.
@@ -4560,7 +4565,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-17g';
+const APP_BUILD = '2026-07-17i';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5785,6 +5790,11 @@ function migrateState(s) {
   const merged = { ...base, ...s };
   merged.tutorMemory = merged.tutorMemory || {};
   merged.rolePlay = merged.rolePlay || {};
+  // Heal a streak that already drifted: the dates are the record, the count was
+  // only ever a cache of them. Any device that synced with a stale count gets
+  // its real streak back on the next open.
+  merged.studyDates = [...new Set(merged.studyDates || [])].filter(Boolean).sort();
+  merged.streak = computeStreak(merged.studyDates);
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
   merged.settings = merged.settings || base.settings;
   merged.version = 4;
@@ -7965,6 +7975,36 @@ function dateLocal(d) {
 // todayLocal: returns YYYY-MM-DD in the user's LOCAL timezone (not UTC).
 // Using toISOString() alone gives UTC date, which causes daily resets to
 // happen at the wrong local time (e.g. 7pm in Colombia instead of midnight).
+/* The streak used to be a hand-kept counter, and a counter drifts. studyDates
+ * merges across devices as a union (that is why 7 real days survived), but a
+ * scalar cannot merge: the sync copies every top-level field from the cloud, so
+ * whichever device pushed last simply overwrote the count. A laptop used 4 days
+ * beat a phone used 7. Deriving the streak from the dates makes that impossible,
+ * and heals a value that already drifted.
+ */
+function computeStreak(studyDates) {
+  const dates = [...new Set(studyDates || [])].filter(Boolean).sort();
+  if (!dates.length) return 0;
+
+  const today = todayLocal();
+  const yesterday = dateLocal(new Date(Date.now() - 86400000));
+  const last = dates[dates.length - 1];
+  // A streak only counts if it reaches today or yesterday — otherwise it is broken,
+  // and today has simply not been recorded yet.
+  if (last !== today && last !== yesterday) return 0;
+
+  let run = 1;
+  for (let i = dates.length - 1; i > 0; i--) {
+    // Parse as local midnight: new Date('2026-07-17') is UTC and would shift the
+    // day back in Bogota.
+    const a = new Date(dates[i] + 'T00:00:00');
+    const b = new Date(dates[i - 1] + 'T00:00:00');
+    if (Math.round((a - b) / 86400000) === 1) run++;
+    else break;
+  }
+  return run;
+}
+
 function todayLocal() {
   return dateLocal(new Date());
 }
@@ -13318,7 +13358,11 @@ function renderProgressPage() {
 
     ${mistakes.length > 0 ? `
     <!-- Recurring mistakes -->
-    <div class="pr-section">Mistakes you repeat</div>
+    <div class="pr-section" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <span>Mistakes you repeat</span>
+      <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:3px 9px;text-transform:none;letter-spacing:0;"
+        onclick="copyMistakes()" title="Copiar la lista para el cuaderno o para practicar en otro chat">📋 Copiar</button>
+    </div>
     <div class="pr-weak">
       ${mistakes.map(m => `
         <div class="pr-weak-row" style="align-items:flex-start;">
@@ -13433,6 +13477,44 @@ function trackFailedExercise(ex) {
  * answer the question that matters: which rule do I keep breaking?
  * Capped and de-duplicated so it stays small enough to sync.
  */
+/* The log is capped at 80 and drops one-off mistakes first, so anything the
+ * student wants to keep has to leave the app. Export exists, but it buries the
+ * list inside a multi-megabyte backup with the page photos in it. This hands
+ * them plain text they can paste into a notebook or another chat. */
+async function copyMistakes() {
+  const list = (state.mistakeLog || []).slice().sort((a, b) => (b.count - a.count) || (b.at - a.at));
+  if (!list.length) { toast('Todavía no hay errores registrados'); return; }
+
+  const icon = { chat: '💬', exercise: '✍️', exam: '🏆', roleplay: '🎭' };
+  const lines = list.map(m => {
+    const pair = (m.wrong && m.right) ? `"${m.wrong}" → "${m.right}"` : (m.right ? `"${m.right}"` : '');
+    const rule = m.rule ? (pair ? ' — ' + m.rule : m.rule) : '';
+    return `${icon[m.source] || '•'} ${pair}${rule}${m.count > 1 ? ` (×${m.count})` : ''}`;
+  });
+  const text = `Mis errores repetidos en inglés (DEV Learn · ${todayLocal()}):\n\n${lines.join('\n')}`;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`📋 ${list.length} error${list.length !== 1 ? 'es' : ''} copiado${list.length !== 1 ? 's' : ''}`);
+  } catch (e) {
+    // Clipboard needs a secure context and can be blocked; show the text so the
+    // list is never trapped in the app.
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:10%;left:5%;width:90%;height:60%;z-index:9999;padding:12px;font-size:0.8rem;';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast('📋 Copiado');
+      ta.remove();
+    } catch (e2) {
+      toast('Selecciona y copia el texto');
+      ta.addEventListener('blur', () => ta.remove());
+    }
+  }
+}
+
 function logMistake({ source, wrong, right, rule, unitKey }) {
   if (!state.mistakeLog) state.mistakeLog = [];
   const cleanRule = (rule || '').trim().replace(/\s+/g, ' ').slice(0, 140);
@@ -13647,18 +13729,9 @@ function recordStudyDate() {
   const today = todayLocal();
   if (!state.studyDates.includes(today)) {
     state.studyDates.push(today);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    // LOCAL date — with toISOString() this resolved to *today* after 7pm in
-    // Colombia, so the streak comparison failed and the streak reset to 1.
-    const yStr = dateLocal(yesterday);
     const prevStreak = state.streak;
-
-    if (state.lastStudyDate === yStr || !state.lastStudyDate) {
-      state.streak++;
-    } else if (state.lastStudyDate !== today) {
-      state.streak = 1;
-    }
+    // Derive from the dates rather than incrementing — see computeStreak.
+    state.streak = computeStreak(state.studyDates);
     state.lastStudyDate = today;
     save();
 
