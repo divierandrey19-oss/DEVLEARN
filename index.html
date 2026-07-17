@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-17d -->
+<!-- DEVLEARN_BUILD: 2026-07-17f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4560,7 +4560,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-17d';
+const APP_BUILD = '2026-07-17f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4933,11 +4933,16 @@ RULES:
 
     const raw = await this._callClaude({
       // 8000 truncated rich 2-page batches. The schema ends with speakingPrompts,
-      // so a truncated response silently dropped the role play scenes. Raising the
-      // cap costs nothing — billing is per token generated, not per cap.
+      // so a truncated response silently dropped the role play scenes.
+      // Raising the cap costs no MONEY (billing is per token generated, not per
+      // cap) but it does cost TIME: a dense page generates 6-8k tokens, which on
+      // a phone connection runs past the 120s default. That timeout fired after
+      // the tokens were already billed — paid for, and nothing to show. This is
+      // a long background job with its own progress screen, so give it room.
       messages: [{ role: 'user', content: [...imageBlocks, prompt] }],
       maxTokens: 16000,
       isJSON: true,
+      timeoutMs: 300000,
     });
 
     // ── Robust JSON parsing pipeline ──────────────────────────
@@ -11355,7 +11360,9 @@ Return ONLY a JSON array with exactly 30 items:
 {"type":"translation","question":"[Spanish sentence]","answer":"[English translation]","explanation":"[the rule]"},
 {"type":"sentence_builder","question":"Build a sentence with these words:","words":["[word]","[word]","[word]","[word]"],"answer":"[the correct sentence]","explanation":"[the rule]"}]`;
 
-      const raw  = await AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 5000, isJSON: true, timeoutMs: 60000, model: 'claude-haiku-4-5-20251001' });
+      // Same trap as the extraction: 5000 tokens will not reliably land inside 60s on
+      // a phone, and a timeout here bills the tokens and shows nothing for them.
+      const raw  = await AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 5000, isJSON: true, timeoutMs: 120000, model: 'claude-haiku-4-5-20251001' });
       const data = AIService._parseClaudeJSON(raw);
       if (Array.isArray(data) && data.length >= 5) {
         // Use every question we asked (and paid) for. Slicing to 10 here not
