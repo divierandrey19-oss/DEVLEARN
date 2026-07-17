@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-16l -->
+<!-- DEVLEARN_BUILD: 2026-07-17d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4057,7 +4057,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         <button class="unit-tab" onclick="showUnitTab('exercises')">✏️ Exercises</button>
         <button class="unit-tab" id="tab-btn-tutor" onclick="showUnitTab('tutor')">🎙️ Tutor</button>
         <button class="unit-tab" onclick="showUnitTab('exam')">🏆 Exam</button>
-        <button class="unit-tab" onclick="showUnitTab('speaking')">🎭 Role Play</button>
+        <button class="unit-tab" onclick="showUnitTab('speaking')">🎤 Speaking Test</button>
+        <button class="unit-tab" onclick="showUnitTab('roleplay')">🎭 Role Play</button>
         <button class="unit-tab" onclick="showUnitTab('notes')">📝 Notes</button>
       </div>
 
@@ -4069,6 +4070,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div class="tab-panel" id="tab-tutor"><div id="unit-chat"></div></div>
       <div class="tab-panel" id="tab-exam"><div id="exam-content"></div></div>
       <div class="tab-panel" id="tab-speaking"><div id="speaking-content"></div></div>
+      <div class="tab-panel" id="tab-roleplay"><div id="roleplay-content"></div></div>
       <div class="tab-panel" id="tab-notes">
         <div class="notes-card">
           <div class="notes-toolbar">
@@ -4558,7 +4560,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-16l';
+const APP_BUILD = '2026-07-17d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5494,6 +5496,7 @@ Shape of a BAD response (too long — never do this):
       messages,
       maxTokens: 600,
       systemPrompt,
+      timeoutMs: 45000,
     });
 
     // Detect mistake type from response content.
@@ -5590,6 +5593,7 @@ Reply with your character's turn and nothing else.`;
       systemPrompt,
       maxTokens: 300,
       model: 'claude-sonnet-4-5',
+      timeoutMs: 45000,
     });
     return { reply: raw.trim() };
   },
@@ -5628,6 +5632,7 @@ RULES:
       systemPrompt,
       maxTokens: 600,
       model: 'claude-sonnet-4-5',
+      timeoutMs: 45000,
     });
     return { reply: raw.trim() };
   },
@@ -6535,7 +6540,7 @@ function showUnitTab(tab) {
   current.tab = tab;
   document.querySelectorAll('.unit-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  const tabs = ['start', 'vocab', 'flashcards', 'grammar', 'exercises', 'tutor', 'exam', 'speaking', 'notes'];
+  const tabs = ['start', 'vocab', 'flashcards', 'grammar', 'exercises', 'tutor', 'exam', 'speaking', 'roleplay', 'notes'];
   const idx = tabs.indexOf(tab);
   if (idx >= 0) document.querySelectorAll('.unit-tab')[idx]?.classList.add('active');
   document.getElementById('tab-' + tab)?.classList.add('active');
@@ -6543,7 +6548,9 @@ function showUnitTab(tab) {
   if (tab === 'tutor')    initUnitChat();
   if (tab === 'notes')    loadNotes();
   if (tab === 'exam')     prepareExam();
-  if (tab === 'speaking') initRolePlay();
+  if (tab !== 'speaking') stopSpeakingTimer();   // never leave the clock running in the background
+  if (tab === 'speaking') initSpeakingTest();
+  if (tab === 'roleplay') initRolePlay();
   // Persist so reload returns to same unit + tab
   try {
     localStorage.setItem('devlearn_nav', JSON.stringify({
@@ -7741,6 +7748,7 @@ Rules:
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 300,
         isJSON: true,
+        timeoutMs: 30000,
       });
 
       const data = AIService._parseClaudeJSON(raw);
@@ -9344,7 +9352,7 @@ Student wrote: "${userAnswer}"
 Is the student's answer a valid correction of the original mistake? It doesn't need to match the expected answer exactly — any grammatically correct sentence that fixes the error is acceptable.
 
 Respond ONLY with JSON: {"correct": true|false, "feedback": "one brief sentence explaining why, in simple English"}`;
-    AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 150, isJSON: true })
+    AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 150, isJSON: true, timeoutMs: 30000 })
       .then(raw => {
         const data = AIService._parseClaudeJSON(raw);
         if (!data) throw new Error('parse');
@@ -10610,6 +10618,17 @@ async function startSpeakingTest() {
   const pageLabel = (useAll ? 'Toda la unidad' : checkedBoxes.map(i => `Página ${i+1}`).join(' + ')) + ': ' + unitTitle;
   speakingState.pageLabel = pageLabel;
 
+  /* The real exam card always shows a picture and asks the student to name what
+   * they see, then talk about it. The app has no exam photos — but every word in
+   * this student's vocabulary carries an emoji from their own book, and a row of
+   * emojis is a picture they must read and name. Only concrete things work:
+   * an emoji for an abstract word is not nameable. */
+  const emojiPalette = selectedBatches
+    .flatMap(b => b.vocab || [])
+    .filter(v => (v.emoji || '').trim() && (v.word || '').trim())
+    .map(v => `${v.emoji} = ${v.word}`)
+    .join('\n');
+
   // Build the message — use images if available, otherwise use text
   let messages;
   const systemPrompt = `You are an experienced English teacher creating a speaking exam for an A2 Colombian student.`;
@@ -10632,11 +10651,32 @@ First, identify these three things EXACTLY as they appear on the page:
 2. GRAMMAR — what exact grammar structure is shown? Copy the structure and examples from the page.
 3. SPEAKING ACTIVITY — read the exact instructions of the speaking exercise on this page (PAIR WORK, GROUP WORK, COMMUNICATION ACTIVATOR, etc.). Copy the exact format and question types the book uses.
 
-Then generate exactly 10 speaking exam items that MIRROR the exact format of the book's speaking activities:
+━━ PICTURE CARDS (items 1-3) ━━
 
-ITEMS 1-4 (VOCABULARY): Use ONLY the vocabulary words visible on this page. Create short situations where the student identifies or uses those exact words.
+The student's real exam always shows a picture and says "look at these X, name them, then
+tell us about your own..." Recreate that with the emojis below, which come from this same
+unit's vocabulary.
 
-ITEMS 5-7 (GRAMMAR): Use ONLY the grammar structure explicitly shown on this page. Ask the student to USE that grammar structure to talk about their OWN life and family. For example, if the page teaches possessive 's with family, ask: "Tell me about your mother's sister — what is her name and what does she do?" or "Describe one person in your extended family using possessive 's." The student should practice the grammar by speaking about themselves, not by identifying fictional characters.
+EMOJI PALETTE — you may use ONLY these, exactly as written:
+${emojiPalette || '(none available — skip picture cards entirely and make all 10 normal items)'}
+
+Write items 1-3 in this exact shape:
+[IMG]<4 to 6 emojis separated by spaces>[/IMG]<the task>
+
+Rules for picture cards:
+- Pick ONLY emojis for concrete things or actions the student can NAME out loud. An emoji
+  standing in for an abstract word cannot be named — skip those, however useful the word.
+- The emojis must belong together: one category the student can talk about as a set.
+- Copy the emoji characters exactly from the palette. Never invent an emoji that is not listed.
+- Then the task: name what they see, and say something of their OWN about it. Their opinion,
+  their habits, their life — that part cannot be read off the picture, and that is the point.
+- Never write the words the emojis stand for. Naming them IS the exam.
+
+Then generate the remaining items that MIRROR the exact format of the book's speaking activities:
+
+ITEMS 4-5 (VOCABULARY): Use ONLY the vocabulary words visible on this page. Create short situations where the student identifies or uses those exact words.
+
+ITEMS 6-7 (GRAMMAR): Use ONLY the grammar structure explicitly shown on this page. Ask the student to USE that grammar structure to talk about their OWN life and family. For example, if the page teaches possessive 's with family, ask: "Tell me about your mother's sister — what is her name and what does she do?" or "Describe one person in your extended family using possessive 's." The student should practice the grammar by speaking about themselves, not by identifying fictional characters.
 
 ITEMS 8-10 (SPEAKING ACTIVITY): Copy the EXACT format of the speaking activity on the page. If the book says "Ask WHO questions about relationships", generate WHO questions. If it says "respond to good or bad news", generate news situations. Do NOT invent a different activity format.
 
@@ -10644,7 +10684,9 @@ At least 1 of these 3 items must be a PAIR WORK situation where the student has 
 
 STRICT RULES:
 - Use ONLY vocabulary and grammar explicitly visible on this page. If you cannot point to it, do NOT use it.
-- Each item has EXACTLY ONE question mark and requires a complete spoken sentence — never a one-word answer.
+- FORMAT — match the real exam card. The student's academy prints cards like this: a short instruction to name or think about something from the lesson, then one or two things to say about it, often ending with a "why". They are TASKS, not quiz questions — several have no question mark at all. Write items the same shape.
+- Each item must give the student roughly 30 SECONDS of continuous speech: enough to say two or three connected sentences. One or two parts, never more. A one-word answer means the item failed.
+- The clock is running when they read it: keep the wording short and instantly clear. A card they must decode twice costs them the answer.
 - Every situation must be self-contained. NEVER reference a photo or image. If asking about relationships, always give the full family context before the question. Example: "Valentina is married to Pedro. Pedro's mother is Rosa. Who is Rosa to Valentina?"
 - Use ONLY simple present tense. Never past tense (did, was, were, met, etc.).
 - Invent Colombian names. Never use the book's example characters.
@@ -10668,12 +10710,42 @@ Grammar: ${grammar}
 Vocabulary: ${vocab}
 ${speakingPrompts.length > 0 ? 'Book speaking tasks:\n' + speakingPrompts.map(p => '- ' + p).join('\n') : ''}
 
-Generate 10 speaking exam items:
-- Items 1-4: vocabulary situations (one question each)
-- Items 5-7: grammar practice questions
-- Items 8-10: communication goal situations
+━━ PICTURE CARDS (items 1-3) ━━
 
-Rules: ONLY use vocab/grammar listed above. Exactly ONE question per item. Self-contained situations (never say 'look at the photo'). Never ask for one-word answers — always full sentences. Colombian names.
+This student's real exam always shows a picture and says "look at these X, name them, then
+tell us about your own..." Recreate that with the emojis below, which come from this same
+unit's vocabulary.
+
+EMOJI PALETTE — you may use ONLY these, exactly as written:
+${emojiPalette || '(none available — skip picture cards entirely and make all 10 normal items)'}
+
+Write items 1-3 in this exact shape:
+[IMG]<4 to 6 emojis separated by spaces>[/IMG]<the task>
+
+Rules for picture cards:
+- Pick ONLY emojis for concrete things or actions the student can NAME out loud. An emoji
+  standing in for an abstract word cannot be named — skip those, however useful the word.
+- The emojis must belong together: one category the student can talk about as a set.
+- Copy the emoji characters exactly from the palette. Never invent an emoji that is not listed.
+- Then the task: name what they see, and say something of their OWN about it — their opinion,
+  their habits, their life. That part cannot be read off the picture, and that is the point.
+- Never write the words the emojis stand for. Naming them IS the exam.
+
+Then the rest:
+- Items 4-5: vocabulary situations
+- Items 6-7: grammar practice
+- Items 8-10: communication goal situations. At least one must ask the student to role-play
+  or talk WITH A PARTNER about the lesson topic — that is most of their real exam.
+
+Rules: ONLY use vocab/grammar listed above.
+- FORMAT — match the real exam card: a short instruction to name or think about something,
+  then one or two things to say about it, often ending with a "why". They are TASKS, not quiz
+  questions — several have no question mark at all.
+- Each item must give the student roughly 30 SECONDS of continuous speech: two or three
+  connected sentences. One or two parts, never more. A one-word answer means the item failed.
+- The clock is running when they read it: short, instantly clear wording.
+- Self-contained. Outside a [IMG] card, never say 'look at the photo' — there is no photo.
+- Colombian names.
 
 Respond ONLY with a JSON array of exactly 10 strings.` }];
   }
@@ -10702,6 +10774,7 @@ Respond ONLY with a JSON array of exactly 10 strings.` }];
 }
 
 function renderSpeakingCards() {
+  stopSpeakingTimer();
   const c = document.getElementById('speaking-content');
   const total = speakingState.questions.length;
   const done = speakingState.completed.size;
@@ -10781,10 +10854,68 @@ function openSpeakingCard(idx) {
   renderSpeakingQuestion();
 }
 
+/* ── EXAM TIMER ───────────────────────────────────────────────────
+ * The real test gives 30 seconds per card. Practising without the clock
+ * trains a different skill: with unlimited time the student composes in
+ * Spanish and translates, which is exactly what the clock forbids.
+ * Fixed at 30s on purpose — a "relaxed" 60s would rehearse an exam that
+ * does not exist.
+ */
+const SPEAKING_SECONDS = 30;
+let _spkTimer = null;
+
+function stopSpeakingTimer() {
+  if (_spkTimer) { clearInterval(_spkTimer); _spkTimer = null; }
+}
+
+function startSpeakingTimer() {
+  stopSpeakingTimer();
+  let left = SPEAKING_SECONDS;
+  const paint = () => {
+    const el = document.getElementById('spk-timer');
+    if (!el) { stopSpeakingTimer(); return; }   // view changed — don't leak
+    const m = Math.floor(left / 60), sec = left % 60;
+    el.textContent = `${m}:${String(sec).padStart(2, '0')}`;
+    el.style.color = left <= 10 ? 'var(--red, #f85149)' : left <= 20 ? 'var(--amber, #d29922)' : 'var(--text-2)';
+  };
+  paint();
+  _spkTimer = setInterval(() => {
+    left--;
+    if (left <= 0) {
+      stopSpeakingTimer();
+      const el = document.getElementById('spk-timer');
+      if (el) { el.textContent = "Time's up"; el.style.color = 'var(--red, #f85149)'; }
+      // Time running out never blocks the answer: in the real exam you keep
+      // talking past the buzzer, and a locked textarea would just punish them.
+      const note = document.getElementById('spk-timeup');
+      if (note) note.style.display = '';
+      Sound.wrong?.();
+      return;
+    }
+    paint();
+  }, 1000);
+}
+
+/* A card is either plain text or "[IMG]emojis[/IMG]task". Parsing here keeps
+ * speakingState.questions a plain string array, so nothing else changes. */
+function parseSpeakingCard(q) {
+  const m = String(q || '').match(/^\s*\[IMG\](.*?)\[\/IMG\]\s*([\s\S]*)$/);
+  if (!m) return { emojis: '', task: String(q || '') };
+  return { emojis: m[1].trim(), task: m[2].trim() };
+}
+
+/* 5 of the 6 cards in this student's real exam are conversations with a partner,
+ * and they come up at random among the others. A card that asks for a partner is
+ * unanswerable alone, so it hands off to Mari instead of being typed at. */
+function cardWantsPartner(task) {
+  return /role-?play|with (your|a) (partner|classmate)|with the class|conversation|invite your partner|share with your partner|talk with your partner|ask your (partner|classmate)/i.test(task || '');
+}
+
 function renderSpeakingQuestion() {
   const c = document.getElementById('speaking-content');
   const idx = speakingState.current;
   const q = speakingState.questions[idx];
+  const card = parseSpeakingCard(q);
   const num = idx + 1;
   const total = speakingState.questions.length;
   const colors = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16','#6366f1'];
@@ -10800,12 +10931,27 @@ function renderSpeakingQuestion() {
           <div style="font-size:0.72rem;color:var(--text-3);">${speakingState.pageLabel || ''}</div>
           <div style="font-size:0.78rem;color:${color};font-weight:600;">${label}</div>
         </div>
+        <div id="spk-timer" style="margin-left:auto;font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text-2);">0:30</div>
+      </div>
+      <div id="spk-timeup" style="display:none;background:var(--red-glow, #f8514922);border:1px solid var(--red, #f85149);color:var(--red, #f85149);border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:0.8rem;">
+        ⏱ Se acabó el tiempo. Contesta igual — en el examen se sigue hablando.
       </div>
 
       <!-- Question -->
       <div style="background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;">
-        <div style="font-size:1.15rem;font-weight:600;line-height:1.6;color:var(--text-1);">${q}</div>
+        ${card.emojis ? `<div style="font-size:2.6rem;line-height:1.35;letter-spacing:0.12em;text-align:center;margin-bottom:16px;word-break:break-word;">${escapeHtml(card.emojis)}</div>` : ''}
+        <div style="font-size:1.15rem;font-weight:600;line-height:1.6;color:var(--text-1);">${escapeHtml(card.task)}</div>
       </div>
+
+      ${cardWantsPartner(card.task) ? `
+      <div style="background:var(--accent-glow, #1f6feb22);border:1px solid var(--accent, #1f6feb);border-radius:16px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:0.82rem;color:var(--text-2);line-height:1.5;margin-bottom:10px;">
+          🎭 Esta tarjeta pide un compañero — como en tu examen. Escribir la respuesta solo no la practica.
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:12px;font-size:0.9rem;" onclick="speakingCardToRolePlay()">
+          🎭 Hacerlo con Mari
+        </button>
+      </div>` : ''}
 
       <!-- Answer area -->
       <div style="background:var(--card);border-radius:16px;padding:20px;margin-bottom:12px;">
@@ -10827,9 +10973,33 @@ function renderSpeakingQuestion() {
     </div>`;
 
   document.getElementById('speaking-answer')?.focus();
+  startSpeakingTimer();
+}
+
+/* Hands the current exam card to Mari as a role play scene. The card text is the
+ * scenario verbatim — it came from the student's own pages, so the grounding holds. */
+async function speakingCardToRolePlay() {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+  const card = parseSpeakingCard(speakingState.questions[speakingState.current]);
+  const scenario = card.task.trim();
+  if (!scenario) return;
+
+  const unitKey = current.lid + '_' + current.uid;
+  const open = state.rolePlay[unitKey];
+  if (open && open.scenario && !open.done && (open.msgs || []).length) {
+    if (!confirm('Tienes una escena de Role Play a medias. ¿La reemplazo por esta tarjeta?')) return;
+  }
+
+  stopSpeakingTimer();
+  state.rolePlay[unitKey] = { scenario, msgs: [], startedAt: Date.now(), fromCard: true };
+  save();
+  showUnitTab('roleplay');
+  await rolePlayTurn(unitKey);
 }
 
 async function checkSpeakingAnswer() {
+  stopSpeakingTimer();
   const answerEl = document.getElementById('speaking-answer');
   if (!answerEl) return;
   const answer = answerEl.value.trim();
@@ -10874,6 +11044,7 @@ Respond ONLY with JSON:
     const raw = await AIService._callClaude({
       messages: [{ role: 'user', content: prompt }],
       maxTokens: 500,
+      timeoutMs: 45000,
     });
     const result = AIService._parseClaudeJSON(raw);
     if (!result) throw new Error('parse');
@@ -10947,11 +11118,13 @@ function renderSpeakingFeedback(result, answer, question) {
 }
 
 function nextSpeakingQuestion() {
+  stopSpeakingTimer();
   speakingState.current++;
   renderSpeakingQuestion();
 }
 
 function showSpeakingResults() {
+  stopSpeakingTimer();
   const c = document.getElementById('speaking-content');
   const answers = speakingState.answers;
   const total   = answers.length;
@@ -11638,7 +11811,7 @@ function rpUnitContext(u) {
 }
 
 function initRolePlay() {
-  const container = document.getElementById('speaking-content');
+  const container = document.getElementById('roleplay-content');
   if (!container) return;
   const u = current.lid ? getUnit(current.lid, current.uid) : null;
   if (!u) { container.innerHTML = '<div class="empty-state">Abre una unidad primero.</div>'; return; }
@@ -11649,7 +11822,7 @@ function initRolePlay() {
 }
 
 function renderRolePlayPicker(u) {
-  const container = document.getElementById('speaking-content');
+  const container = document.getElementById('roleplay-content');
   const scenarios = rolePlayScenarios(u);
 
   if (!scenarios.length) {
@@ -11682,7 +11855,7 @@ function renderRolePlayPicker(u) {
 }
 
 function renderRolePlayChat(u, unitKey, session) {
-  const container = document.getElementById('speaking-content');
+  const container = document.getElementById('roleplay-content');
   const done = !!session.done;
   container.innerHTML = `
     <div class="chat-area">
