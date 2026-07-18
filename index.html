@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-17i -->
+<!-- DEVLEARN_BUILD: 2026-07-18a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4565,7 +4565,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-17i';
+const APP_BUILD = '2026-07-18a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -9802,7 +9802,7 @@ function renderGrammarItems(grammar, batchPrefix = '') {
             </div>
             <div class="grammar-drill-fb" id="gd-fb-${pfx}-${di}"
               style="${isCorrect ? 'color:var(--green);' : ''}">
-              ${isCorrect ? '✅ Correct!' : ''}
+              ${isCorrect ? `✅ Correct! <button class="btn btn-ghost btn-sm" style="padding:2px 8px;margin-left:6px;font-size:0.72rem;" onclick="speak(this.dataset.say)" data-say="${escapeStr(d.answer)}" title="Escuchar la pronunciación">🔊</button>` : ''}
             </div>
           </div>
           `;
@@ -9860,7 +9860,8 @@ async function checkGrammarDrill(pfx, di) {
 
   if (correct) {
     fb.style.color = 'var(--green)';
-    fb.textContent = '✅ Correct!';
+    // Same speaker the reloaded view shows: hear the answer sentence right away.
+    fb.innerHTML = `✅ Correct! <button class="btn btn-ghost btn-sm" style="padding:2px 8px;margin-left:6px;font-size:0.72rem;" onclick="speak(this.dataset.say)" data-say="${escapeStr(input.dataset.answer || '')}" title="Escuchar la pronunciación">🔊</button>`;
     Sound.correct();
     showFeedback({ type: 'correct' });
     input.disabled = true;
