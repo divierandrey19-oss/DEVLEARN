@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-18a -->
+<!-- DEVLEARN_BUILD: 2026-07-18b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4565,7 +4565,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-18a';
+const APP_BUILD = '2026-07-18b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8080,10 +8080,30 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
   `;
 }
 
+// Mari's text carries **bold**, emojis and ✏️ "x" → "y" correction lines. Read
+// aloud raw, the synthesizer says "asterisk asterisk". Clean it once, here, so
+// every caller (flashcards, drills, chat, auto-speak) speaks plain English.
+function speakableText(text) {
+  return String(text || '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')       // bold
+    .replace(/\*(.*?)\*/g, '$1')           // italic
+    .replace(/\[[^\]]*\]/g, ' ')           // [At Cleo's.] stage directions — not spoken
+    .replace(/\s*[→➜➝\u2192-\u21FF]\s*/g, ', ')  // correction arrow → a spoken pause (before emoji strip)
+    .replace(/[""''"']/g, '')              // quote marks around corrections
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/gu, '') // emoji
+    .replace(/[\u{FE00}-\u{FE0F}\u{200D}\u{20D0}-\u{20FF}]/gu, '')  // variation selectors + combining marks
+    .replace(/[,\s]*,[,\s]*/g, ', ')       // collapse doubled pauses
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s,]+|[\s,]+$/g, '')       // trim stray leading/trailing pauses
+    .trim();
+}
+
 function speak(text, rate = 0.88) {
   if (!('speechSynthesis' in window)) { toast('Audio not supported in this browser'); return; }
+  const clean = speakableText(text);
+  if (!clean) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  const u = new SpeechSynthesisUtterance(clean);
   u.lang = 'en-US'; u.rate = rate;
   window.speechSynthesis.speak(u);
 }
@@ -11932,6 +11952,7 @@ function renderRolePlayChat(u, unitKey, session) {
           <div class="ai-name">Role play</div>
           <div class="ai-status">${escapeHtml(session.scenario.slice(0, 60))}${session.scenario.length > 60 ? '…' : ''}</div>
         </div>
+        <button class="btn btn-ghost btn-sm" id="rp-mute" onclick="toggleRpAutoSpeak()" title="Leer en voz alta las preguntas de Mari">${state.rpAutoSpeak !== false ? '🔊' : '🔇'}</button>
         <button class="btn btn-ghost btn-sm" onclick="exitRolePlay()" title="Salir de la escena">✕</button>
       </div>
       <div class="chat-msgs" id="rp-msgs"></div>
@@ -11993,7 +12014,7 @@ async function rolePlayTurn(unitKey) {
     chat.roleplay.push({ role: 'assistant', content: reply });
     session.msgs.push({ role: 'assistant', content: reply, ts: Date.now() });
     save();
-    addChatMsg('ai', reply, 'rp-msgs');
+    addChatMsg('ai', reply, 'rp-msgs', { autoSpeak: true });
   } catch (e) {
     document.getElementById('typing-rp')?.remove();
     addChatMsg('ai', '⚠️ No pude responder. Revisa tu conexión e intenta de nuevo.', 'rp-msgs');
@@ -12069,6 +12090,14 @@ function exitRolePlay(skipConfirm) {
   chat.roleplay = [];
   save();
   initRolePlay();
+}
+
+function toggleRpAutoSpeak() {
+  state.rpAutoSpeak = state.rpAutoSpeak === false ? true : false;
+  save();
+  const btn = document.getElementById('rp-mute');
+  if (btn) btn.textContent = state.rpAutoSpeak !== false ? '🔊' : '🔇';
+  if (state.rpAutoSpeak === false && 'speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
 function initUnitChat() {
@@ -12330,10 +12359,38 @@ function addChatMsg(role, text, containerId, opts = {}) {
       }
     }
     nextChunk();
+    // A speaker on Mari's turn: the exam is heard, not read, so let the student
+    // replay her question aloud. In the role play it also reads automatically on
+    // arrival — only if the student hasn't muted it.
+    if (opts.speakable !== false) {
+      setTimeout(() => {
+        const bub = div.querySelector('.msg-bubble');
+        if (bub && !bub.querySelector('.msg-say')) {
+          const btn = document.createElement('button');
+          btn.className = 'msg-say btn btn-ghost btn-sm';
+          btn.style.cssText = 'padding:2px 8px;margin-top:6px;font-size:0.72rem;';
+          btn.textContent = '🔊';
+          btn.title = 'Escuchar';
+          btn.onclick = () => speak(text);
+          bub.appendChild(btn);
+        }
+      }, 200);
+      if (opts.autoSpeak && state.rpAutoSpeak !== false) setTimeout(() => speak(text), 250);
+    }
   } else {
     div.innerHTML = `<div class="msg-bubble">${formatted(text)}</div><div class="msg-time">${time}</div>`;
     c.appendChild(div);
     c.scrollTop = c.scrollHeight;
+    if (role === 'ai' && opts.speakable !== false) {
+      const bub = div.querySelector('.msg-bubble');
+      const btn = document.createElement('button');
+      btn.className = 'msg-say btn btn-ghost btn-sm';
+      btn.style.cssText = 'padding:2px 8px;margin-top:6px;font-size:0.72rem;';
+      btn.textContent = '🔊';
+      btn.title = 'Escuchar';
+      btn.onclick = () => speak(text);
+      bub.appendChild(btn);
+    }
   }
 }
 
