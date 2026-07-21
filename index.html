@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-18b -->
+<!-- DEVLEARN_BUILD: 2026-07-18c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4565,7 +4565,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-18b';
+const APP_BUILD = '2026-07-18c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12534,24 +12534,60 @@ function renderAllVocab() {
     c.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-title">No vocabulary yet</div><div class="empty-sub">Start uploading book pages in any unit.</div></div>`;
     return;
   }
+  window._allVocabCache = all;
   c.innerHTML = `
-    <div style="font-size:0.86rem;color:var(--text-3);margin-bottom:14px;">${all.length} total words across ${Object.keys(state.units).length} units</div>
-    <div class="vocab-grid">
-      ${all.map(w => `
-        <div class="vocab-card">
-          <div class="vocab-image">${w.emoji || '📝'}</div>
-          <div class="vocab-word">${w.word}</div>
-          <div class="vocab-phonetic">${w.phonetic || ''}</div>
-          <div class="vocab-translation">${w.translation || ''}</div>
-          <div class="vocab-example">"${w.example || ''}"</div>
-          <div class="vocab-footer">
-            <button class="audio-btn" onclick="speak('${escapeStr(w.word)}')">🔊</button>
-            <span class="vocab-tag">${w.type || 'word'}</span>
-          </div>
-        </div>
-      `).join('')}
+    <div style="font-size:0.86rem;color:var(--text-3);margin-bottom:10px;">${all.length} total words across ${Object.keys(state.units).length} units</div>
+    <div style="position:relative;margin-bottom:14px;">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:0.6;">🔍</span>
+      <input id="vocab-search" type="search" inputmode="search" autocomplete="off"
+        oninput="filterAllVocab(this.value)" placeholder="Buscar palabra, traducción o ejemplo…"
+        style="width:100%;padding:11px 12px 11px 38px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;">
     </div>
+    <div id="vocab-count" style="font-size:0.72rem;color:var(--text-3);margin-bottom:8px;display:none;"></div>
+    <div class="vocab-grid" id="vocab-grid"></div>
   `;
+  filterAllVocab('');
+}
+
+function filterAllVocab(query) {
+  const all = window._allVocabCache || [];
+  const grid = document.getElementById('vocab-grid');
+  const countEl = document.getElementById('vocab-count');
+  if (!grid) return;
+
+  const q = query.trim().toLowerCase();
+  // Match word, translation OR example: the student may remember the Spanish
+  // meaning but not the English word, and that reverse lookup is the point.
+  const list = q
+    ? all.filter(w =>
+        (w.word || '').toLowerCase().includes(q) ||
+        (w.translation || '').toLowerCase().includes(q) ||
+        (w.example || '').toLowerCase().includes(q))
+    : all;
+
+  if (countEl) {
+    if (q) { countEl.style.display = ''; countEl.textContent = `${list.length} resultado${list.length !== 1 ? 's' : ''}`; }
+    else countEl.style.display = 'none';
+  }
+
+  if (!list.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-3);font-size:0.85rem;">Sin resultados para "${escapeHtml(query)}"</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(w => `
+    <div class="vocab-card">
+      <div class="vocab-image">${w.emoji || '📝'}</div>
+      <div class="vocab-word">${escapeHtml(w.word || '')}</div>
+      <div class="vocab-phonetic">${escapeHtml(w.phonetic || '')}</div>
+      <div class="vocab-translation">${escapeHtml(w.translation || '')}</div>
+      <div class="vocab-example">"${escapeHtml(w.example || '')}"</div>
+      <div class="vocab-footer">
+        <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
+        <span class="vocab-tag">${escapeHtml(w.type || 'word')}</span>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderAllFlashcards() {
