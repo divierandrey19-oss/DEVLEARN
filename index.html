@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-21c -->
+<!-- DEVLEARN_BUILD: 2026-07-21d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4585,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-21c';
+const APP_BUILD = '2026-07-21d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6350,22 +6350,62 @@ function renderCourseTracker() {
 }
 
 /* His academy's first slot is 6:00 AM and classes run 90 minutes, so 06:00 is
- * the default time. Two prompts keep it dependency-free on mobile. */
+ * the default time. Native date/time inputs give the calendar and clock pickers
+ * on mobile — one dialog, no typing dates by hand. */
 function scheduleClass(id) {
   const cls = COURSE_SYLLABUS.find(c => c.id === id);
   if (!cls) return;
   const sched = state.classSchedule = state.classSchedule || {};
-  const date = prompt(`📆 Clase ${id} · ${cls.title}\n\n¿Qué día la ves? (AAAA-MM-DD)\nDeja vacío para quitar la fecha.`, sched[id] || todayLocal());
-  if (date === null) return;                       // cancelled
-  const clean = date.trim();
-  if (!clean) { delete sched[id]; delete sched[id + '_t']; save(); renderCourseTracker(); return; }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) { toast('Formato: AAAA-MM-DD, ej. 2026-07-22'); return; }
-  const time = prompt('¿A qué hora? (HH:MM, 24h)', sched[id + '_t'] || '06:00');
-  sched[id] = clean;
-  if (time && /^\d{1,2}:\d{2}$/.test(time.trim())) sched[id + '_t'] = time.trim().padStart(5, '0');
+  document.getElementById('sched-overlay')?.remove();
+
+  const ov = document.createElement('div');
+  ov.id = 'sched-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-weight:700;">📆 Programar clase</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sched-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:16px;">
+        <span style="font-size:0.7rem;">${cls.id}</span> · ${escapeHtml(cls.title)}
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Día</label>
+      <input type="date" id="sched-date" value="${sched[id] || todayLocal()}"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Hora</label>
+      <input type="time" id="sched-time" value="${sched[id + '_t'] || '06:00'}"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:18px;">
+      <div style="display:flex;gap:10px;">
+        ${sched[id] ? `<button class="btn btn-ghost" style="flex:1;padding:11px;" onclick="clearClassSchedule(${id})">🗑 Quitar</button>` : ''}
+        <button class="btn btn-primary" style="flex:2;padding:11px;" onclick="saveClassSchedule(${id})">Guardar</button>
+      </div>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function saveClassSchedule(id) {
+  const date = document.getElementById('sched-date')?.value;
+  const time = document.getElementById('sched-time')?.value;
+  if (!date) { toast('Escoge el día'); return; }
+  const sched = state.classSchedule = state.classSchedule || {};
+  sched[id] = date;
+  sched[id + '_t'] = time || '06:00';
   save();
+  document.getElementById('sched-overlay')?.remove();
   renderCourseTracker();
   toast(`📆 Clase ${id} programada`);
+}
+
+function clearClassSchedule(id) {
+  const sched = state.classSchedule = state.classSchedule || {};
+  delete sched[id];
+  delete sched[id + '_t'];
+  save();
+  document.getElementById('sched-overlay')?.remove();
+  renderCourseTracker();
+  toast(`Clase ${id} sin fecha`);
 }
 
 function unmarkClass(id) {
