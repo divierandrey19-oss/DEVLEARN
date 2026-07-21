@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-21b -->
+<!-- DEVLEARN_BUILD: 2026-07-21c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4585,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-21b';
+const APP_BUILD = '2026-07-21c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5811,6 +5811,7 @@ function migrateState(s) {
   merged.tutorMemory = merged.tutorMemory || {};
   merged.rolePlay = merged.rolePlay || {};
   merged.classesDone = [...new Set(merged.classesDone || [])];
+  merged.classSchedule = merged.classSchedule || {};
   // Heal a streak that already drifted: the dates are the record, the count was
   // only ever a cache of them. Any device that synced with a stale count gets
   // its real streak back on the next open.
@@ -6266,6 +6267,7 @@ function renderCourseTracker() {
   const el = document.getElementById('course-tracker');
   if (!el) return;
   const done = new Set(state.classesDone || []);
+  const sched = state.classSchedule || {};
   const remaining = COURSE_SYLLABUS.filter(c => !done.has(c.id));
 
   if (!remaining.length) {
@@ -6273,11 +6275,9 @@ function renderCourseTracker() {
     return;
   }
 
-  const next = remaining[0];
   const nextExam = remaining.find(c => c.exam);
   const classesToExam = nextExam ? remaining.indexOf(nextExam) : null;
 
-  // Content class whose pages are not in the app yet → nudge the upload.
   const missingPages = COURSE_SYLLABUS
     .filter(c => done.has(c.id) && c.pages && c.unit)
     .filter(c => {
@@ -6287,6 +6287,20 @@ function renderCourseTracker() {
 
   const expanded = state.courseTrackerOpen === true;
   const visible = expanded ? remaining.slice(0, 12) : remaining.slice(0, 3);
+  const doneList = COURSE_SYLLABUS.filter(c => done.has(c.id));
+
+  const fmtSched = (id) => {
+    const s = sched[id];
+    if (!s) return '';
+    const d = new Date(s + 'T00:00:00');
+    const dias = ['dom','lun','mar','mié','jue','vie','sáb'];
+    const hh = (state.classSchedule?.[id + '_t']) || '06:00';
+    return `<span style="color:var(--accent);font-size:0.68rem;">📆 ${dias[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1} · ${hh}</span>`;
+  };
+
+  // Is the next class scheduled for today? Make it loud.
+  const today = todayLocal();
+  const todayClass = remaining.find(c => sched[c.id] === today);
 
   el.innerHTML = `
     <div style="border:1px solid var(--border);background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
@@ -6294,23 +6308,71 @@ function renderCourseTracker() {
         <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 MI CURSO · ${remaining.length} clases restantes</div>
         <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲ Menos' : '▼ Ver más'}</button>
       </div>
+      ${todayClass ? `
+        <div style="font-size:0.78rem;color:var(--green);font-weight:700;margin-bottom:8px;">
+          🕕 Hoy: clase ${todayClass.id} · ${escapeHtml(todayClass.title)} · ${(sched[todayClass.id + '_t']) || '06:00'}
+        </div>` : ''}
       ${nextExam && classesToExam !== null ? `
         <div style="font-size:0.74rem;color:var(--amber, #d29922);margin-bottom:8px;">
-          🎯 ${escapeHtml(nextExam.title)} — ${classesToExam === 0 ? 'es la próxima clase' : `faltan ${classesToExam} clase${classesToExam !== 1 ? 's' : ''} de contenido antes`}
+          🎯 ${escapeHtml(nextExam.title)} — ${classesToExam === 0 ? 'es la próxima clase' : `faltan ${classesToExam} clase${classesToExam !== 1 ? 's' : ''} de contenido antes`}${sched[nextExam.id] ? ' · ' + fmtSched(nextExam.id).replace(/<[^>]*>/g, '') : ''}
         </div>` : ''}
       ${visible.map(c => `
-        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
           <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:0.78rem;flex-shrink:0;"
             onclick="markClassDone(${c.id})" title="Marcar como vista">○</button>
           <div style="flex:1;min-width:0;font-size:0.8rem;${c.exam ? 'font-weight:700;color:var(--amber, #d29922);' : ''}">
             <span style="color:var(--text-3);font-size:0.7rem;">${c.id}</span> · ${escapeHtml(c.title)}
+            ${fmtSched(c.id) ? '<br>' + fmtSched(c.id) : ''}
           </div>
+          <button class="btn btn-ghost btn-sm" style="padding:3px 7px;font-size:0.68rem;flex-shrink:0;"
+            onclick="scheduleClass(${c.id})" title="Programar fecha y hora">📆</button>
         </div>`).join('')}
       ${missingPages.length ? `
         <div style="font-size:0.72rem;color:var(--amber, #d29922);margin-top:8px;">
           📷 Fuiste a ${missingPages.map(c => escapeHtml(c.pages)).join(', ')} pero esas páginas no están en la app — súbelas para practicarlas.
         </div>` : ''}
+      ${doneList.length ? `
+        <div style="margin-top:10px;">
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseDoneOpen=${state.courseDoneOpen ? 'false' : 'true'};save();renderCourseTracker();">
+            ✓ ${doneList.length} vista${doneList.length !== 1 ? 's' : ''} ${state.courseDoneOpen ? '▲' : '▼'}
+          </button>
+          ${state.courseDoneOpen ? doneList.map(c => `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);opacity:0.7;">
+              <span style="color:var(--green);flex-shrink:0;">✓</span>
+              <div style="flex:1;min-width:0;font-size:0.78rem;text-decoration:line-through;">
+                <span style="font-size:0.68rem;">${c.id}</span> · ${escapeHtml(c.title)}
+              </div>
+              <button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:0.64rem;flex-shrink:0;"
+                onclick="unmarkClass(${c.id})" title="Desmarcar — la marqué por error">↩︎</button>
+            </div>`).join('') : ''}
+        </div>` : ''}
     </div>`;
+}
+
+/* His academy's first slot is 6:00 AM and classes run 90 minutes, so 06:00 is
+ * the default time. Two prompts keep it dependency-free on mobile. */
+function scheduleClass(id) {
+  const cls = COURSE_SYLLABUS.find(c => c.id === id);
+  if (!cls) return;
+  const sched = state.classSchedule = state.classSchedule || {};
+  const date = prompt(`📆 Clase ${id} · ${cls.title}\n\n¿Qué día la ves? (AAAA-MM-DD)\nDeja vacío para quitar la fecha.`, sched[id] || todayLocal());
+  if (date === null) return;                       // cancelled
+  const clean = date.trim();
+  if (!clean) { delete sched[id]; delete sched[id + '_t']; save(); renderCourseTracker(); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) { toast('Formato: AAAA-MM-DD, ej. 2026-07-22'); return; }
+  const time = prompt('¿A qué hora? (HH:MM, 24h)', sched[id + '_t'] || '06:00');
+  sched[id] = clean;
+  if (time && /^\d{1,2}:\d{2}$/.test(time.trim())) sched[id + '_t'] = time.trim().padStart(5, '0');
+  save();
+  renderCourseTracker();
+  toast(`📆 Clase ${id} programada`);
+}
+
+function unmarkClass(id) {
+  state.classesDone = (state.classesDone || []).filter(x => x !== id);
+  save();
+  renderCourseTracker();
+  toast(`↩︎ Clase ${id} de vuelta en pendientes`);
 }
 
 function markClassDone(id) {
