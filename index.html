@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-18c -->
+<!-- DEVLEARN_BUILD: 2026-07-21b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3895,6 +3895,10 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 
     <!-- ===== DASHBOARD ===== -->
     <div class="page active" id="page-dashboard">
+      <!-- Exam countdown — set the date in Settings -->
+      <div id="exam-countdown"></div>
+      <!-- Course syllabus tracker — remaining classes only -->
+      <div id="course-tracker"></div>
       <!-- Smart hero — content injected by renderDashboard() -->
       <div class="hero" id="dash-hero">
         <div class="hero-content" id="dash-hero-content">
@@ -4368,6 +4372,22 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       </div>
     </div>
 
+    <!-- Exam countdown -->
+    <div class="settings-section" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;">
+      <div class="settings-label">🎯 Próximo examen</div>
+      <div style="font-size:0.78rem;color:var(--text-3);margin-bottom:10px;line-height:1.5;">
+        La fecha aparece como cuenta regresiva en el Dashboard. Bórrala para ocultarla.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" id="set-exam-label" placeholder="Nombre (ej. Speaking Test 5-6)" maxlength="40"
+          onchange="state.examLabel = this.value.trim(); save(); renderExamCountdown();"
+          style="flex:2;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.85rem;">
+        <input type="date" id="set-exam-date"
+          onchange="state.examDate = this.value || null; save(); renderExamCountdown();"
+          style="flex:1;min-width:130px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.85rem;">
+      </div>
+    </div>
+
     <!-- Data Export / Import -->
     <div class="settings-section" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px;">
       <div class="settings-label">Your data</div>
@@ -4565,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-18c';
+const APP_BUILD = '2026-07-21b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5790,11 +5810,18 @@ function migrateState(s) {
   const merged = { ...base, ...s };
   merged.tutorMemory = merged.tutorMemory || {};
   merged.rolePlay = merged.rolePlay || {};
+  merged.classesDone = [...new Set(merged.classesDone || [])];
   // Heal a streak that already drifted: the dates are the record, the count was
   // only ever a cache of them. Any device that synced with a stale count gets
   // its real streak back on the next open.
   merged.studyDates = [...new Set(merged.studyDates || [])].filter(Boolean).sort();
   merged.streak = computeStreak(merged.studyDates);
+  // Seed the known exam once. `examDate === undefined` means the field has never
+  // existed; null means the user cleared it on purpose — never re-seed that.
+  if (merged.examDate === undefined) {
+    merged.examDate = '2026-07-31';
+    merged.examLabel = 'Speaking Test · Units 5-6';
+  }
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
   merged.settings = merged.settings || base.settings;
   merged.version = 4;
@@ -6166,7 +6193,175 @@ function setLang(lang) {
 /* ============================================================
    DASHBOARD
    ============================================================ */
+/* ── EXAM COUNTDOWN ─────────────────────────────────────────────
+ * A concrete deadline ("9 days left") pushes harder than an abstract date.
+ * Ambar at 7 days, red at 3, celebratory on the day, silently gone after.
+ * Date and label live in state.examDate / state.examLabel (Settings).
+ */
+/* ── COURSE TRACKER ──────────────────────────────────────────────
+ * His academy's own syllabus, remaining classes only (he asked to start at
+ * the first "pendiente", #37). Each content class names the exact book pages
+ * — the same pairs he uploads to the app — so marking a class done can nudge
+ * the missing upload. Completions live in state.classesDone (an id array,
+ * which merges as a union across devices unlike a counter — the streak
+ * lesson). Zero tokens, all local.
+ */
+const COURSE_SYLLABUS = [
+  { id: 37, title: '52-53 / Unit 5',                              pages: '52-53', unit: 'a2_5' },
+  { id: 38, title: '54-55 / Unit 5',                              pages: '54-55', unit: 'a2_5' },
+  { id: 39, title: '56-57 / Unit 5',                              pages: '56-57', unit: 'a2_5' },
+  { id: 40, title: '58-59 / Unit 5',                              pages: '58-59', unit: 'a2_5' },
+  { id: 41, title: 'Virtual vocabulary-writing / Unit 5' },
+  { id: 42, title: 'We Talk activity' },
+  { id: 43, title: 'REVIEW TEST 1 / Units 1-5',                   exam: true },
+  { id: 44, title: '61-62-63 / Unit 6',                           pages: '61-63', unit: 'a2_6' },
+  { id: 45, title: '64-65 / Unit 6',                              pages: '64-65', unit: 'a2_6' },
+  { id: 46, title: '66-67 / Unit 6',                              pages: '66-67', unit: 'a2_6' },
+  { id: 47, title: '68-69 / Unit 6',                              pages: '68-69', unit: 'a2_6' },
+  { id: 48, title: 'E-book practice 70-71 / Unit 6',              pages: '70-71', unit: 'a2_6' },
+  { id: 49, title: 'SPEAKING TEST / Units 5-6',                   exam: true },
+  { id: 50, title: 'Virtual video / online practice / Units 5-6' },
+  { id: 51, title: 'We Talk activity' },
+  { id: 52, title: 'Virtual communicative skills / Units 5-6' },
+  { id: 53, title: 'Virtual vocabulary and writing / Unit 6' },
+  { id: 54, title: '73-74-75 / Unit 7',                           pages: '73-75', unit: 'a2_7' },
+  { id: 55, title: '76-77 / Unit 7',                              pages: '76-77', unit: 'a2_7' },
+  { id: 56, title: '78-79 / Unit 7',                              pages: '78-79', unit: 'a2_7' },
+  { id: 57, title: '80-81 / Unit 7',                              pages: '80-81', unit: 'a2_7' },
+  { id: 58, title: '82-83 / Unit 7',                              pages: '82-83', unit: 'a2_7' },
+  { id: 59, title: 'We Talk activity' },
+  { id: 60, title: 'Virtual vocabulary-writing / Unit 7' },
+  { id: 61, title: '85-86-87 / Unit 8',                           pages: '85-87', unit: 'a2_8' },
+  { id: 62, title: '88-89 / Unit 8',                              pages: '88-89', unit: 'a2_8' },
+  { id: 63, title: '90-91 / Unit 8',                              pages: '90-91', unit: 'a2_8' },
+  { id: 64, title: '92-93 / Unit 8',                              pages: '92-93', unit: 'a2_8' },
+  { id: 65, title: '94-95 / Unit 8',                              pages: '94-95', unit: 'a2_8' },
+  { id: 66, title: 'SPEAKING TEST / Units 7-8',                   exam: true },
+  { id: 67, title: 'Virtual video / online practice / Units 7-8' },
+  { id: 68, title: 'We Talk activity' },
+  { id: 69, title: 'Virtual communicative skills / Units 7-8' },
+  { id: 70, title: 'Virtual vocabulary and writing / Unit 8' },
+  { id: 71, title: '97-98-99 / Unit 9',                           pages: '97-99', unit: 'a2_9' },
+  { id: 72, title: '100-101 / Unit 9',                            pages: '100-101', unit: 'a2_9' },
+  { id: 73, title: '102-103 / Unit 9',                            pages: '102-103', unit: 'a2_9' },
+  { id: 74, title: '104-105 / Unit 9',                            pages: '104-105', unit: 'a2_9' },
+  { id: 75, title: '106-107 / Unit 9',                            pages: '106-107', unit: 'a2_9' },
+  { id: 76, title: 'We Talk activity' },
+  { id: 77, title: 'Virtual vocabulary-writing / Unit 9' },
+  { id: 78, title: '109-110-111 / Unit 10',                       pages: '109-111', unit: 'a2_10' },
+  { id: 79, title: '112-113 / Unit 10',                           pages: '112-113', unit: 'a2_10' },
+  { id: 80, title: '114-115 / Unit 10',                           pages: '114-115', unit: 'a2_10' },
+  { id: 81, title: '116-117 / Unit 10',                           pages: '116-117', unit: 'a2_10' },
+  { id: 82, title: 'E-book practice 118-119 / Unit 10',           pages: '118-119', unit: 'a2_10' },
+  { id: 83, title: 'Virtual video / practice / Units 9-10' },
+  { id: 84, title: 'Virtual communicative skills / Units 9-10' },
+  { id: 85, title: 'We Talk activity' },
+  { id: 86, title: 'REVIEW TEST 2 / Units 6-10',                  exam: true },
+  { id: 87, title: 'SPEAKING TEST / Units 9-10',                  exam: true },
+  { id: 88, title: 'AUTONOMOUS WORK / all units' },
+  { id: 89, title: 'INTERNATIONAL FINAL EXAM / A2 / 1h 40m',      exam: true },
+];
+
+function renderCourseTracker() {
+  const el = document.getElementById('course-tracker');
+  if (!el) return;
+  const done = new Set(state.classesDone || []);
+  const remaining = COURSE_SYLLABUS.filter(c => !done.has(c.id));
+
+  if (!remaining.length) {
+    el.innerHTML = `<div style="border:1px solid var(--green);border-radius:14px;padding:12px 16px;margin-bottom:14px;text-align:center;">🎓 ¡Curso completo!</div>`;
+    return;
+  }
+
+  const next = remaining[0];
+  const nextExam = remaining.find(c => c.exam);
+  const classesToExam = nextExam ? remaining.indexOf(nextExam) : null;
+
+  // Content class whose pages are not in the app yet → nudge the upload.
+  const missingPages = COURSE_SYLLABUS
+    .filter(c => done.has(c.id) && c.pages && c.unit)
+    .filter(c => {
+      const u = state.units[c.unit];
+      return !u || !(u.batches || []).length;
+    });
+
+  const expanded = state.courseTrackerOpen === true;
+  const visible = expanded ? remaining.slice(0, 12) : remaining.slice(0, 3);
+
+  el.innerHTML = `
+    <div style="border:1px solid var(--border);background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 MI CURSO · ${remaining.length} clases restantes</div>
+        <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲ Menos' : '▼ Ver más'}</button>
+      </div>
+      ${nextExam && classesToExam !== null ? `
+        <div style="font-size:0.74rem;color:var(--amber, #d29922);margin-bottom:8px;">
+          🎯 ${escapeHtml(nextExam.title)} — ${classesToExam === 0 ? 'es la próxima clase' : `faltan ${classesToExam} clase${classesToExam !== 1 ? 's' : ''} de contenido antes`}
+        </div>` : ''}
+      ${visible.map(c => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:0.78rem;flex-shrink:0;"
+            onclick="markClassDone(${c.id})" title="Marcar como vista">○</button>
+          <div style="flex:1;min-width:0;font-size:0.8rem;${c.exam ? 'font-weight:700;color:var(--amber, #d29922);' : ''}">
+            <span style="color:var(--text-3);font-size:0.7rem;">${c.id}</span> · ${escapeHtml(c.title)}
+          </div>
+        </div>`).join('')}
+      ${missingPages.length ? `
+        <div style="font-size:0.72rem;color:var(--amber, #d29922);margin-top:8px;">
+          📷 Fuiste a ${missingPages.map(c => escapeHtml(c.pages)).join(', ')} pero esas páginas no están en la app — súbelas para practicarlas.
+        </div>` : ''}
+    </div>`;
+}
+
+function markClassDone(id) {
+  if (!Array.isArray(state.classesDone)) state.classesDone = [];
+  if (!state.classesDone.includes(id)) state.classesDone.push(id);
+  save();
+  Sound.correct?.();
+  renderCourseTracker();
+  const cls = COURSE_SYLLABUS.find(c => c.id === id);
+  if (cls?.pages && cls.unit && !(state.units[cls.unit]?.batches || []).length) {
+    toast(`✓ Clase ${id} · ¿Ya subiste las páginas ${cls.pages}?`);
+  } else {
+    toast(`✓ Clase ${id} marcada`);
+  }
+}
+
+function renderExamCountdown() {
+  const el = document.getElementById('exam-countdown');
+  if (!el) return;
+  const dateStr = state.examDate;
+  if (!dateStr) { el.innerHTML = ''; return; }
+
+  // Local midnight parsing — 'YYYY-MM-DD' via new Date() is UTC and would be
+  // off by a day in Bogota. Same trap as the streak.
+  const exam = new Date(dateStr + 'T00:00:00');
+  const today = new Date(todayLocal() + 'T00:00:00');
+  const days = Math.round((exam - today) / 86400000);
+  const label = state.examLabel || 'Examen';
+
+  if (days < 0) { el.innerHTML = ''; return; }   // past — vanish silently
+
+  const color = days === 0 ? 'var(--green)' : days <= 3 ? 'var(--red, #f85149)' : days <= 7 ? 'var(--amber, #d29922)' : 'var(--accent)';
+  const nice = exam.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+  const main = days === 0 ? '¡Es hoy! 🎤'
+    : days === 1 ? 'Mañana'
+    : `Faltan ${days} días`;
+
+  el.innerHTML = `
+    <div style="border:1px solid ${color};background:color-mix(in srgb, ${color} 12%, transparent);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:1.4rem;">🎯</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.72rem;color:var(--text-3);">${escapeHtml(label)}</div>
+        <div style="font-weight:800;font-size:1.05rem;color:${color};">${main}</div>
+        <div style="font-size:0.72rem;color:var(--text-3);">${escapeHtml(nice)}</div>
+      </div>
+    </div>`;
+}
+
 function renderDashboard() {
+  renderExamCountdown();
+  renderCourseTracker();
   const h = new Date().getHours();
   const now = Date.now();
   const todayStr = todayLocal();
@@ -6721,6 +6916,20 @@ function renderTodayTab() {
     priority: leeches.length > 0 ? 'high' : 'low',
     badge: leeches.length > 0 ? leeches.length : null,
   });
+
+  // Step 4.5: Ear trainer — only where the unit's own vocabulary contains "can",
+  // so the card appears exactly where the can/can't distinction is the lesson.
+  const hasCan = vocab.some(v => /\bcan\b/i.test(v.word || ''));
+  if (hasCan) {
+    steps.push({
+      icon: '👂', title: 'Ear trainer: can / can\'t',
+      sub: 'Escucha y decide cuál dijo — tu profesor señaló esta diferencia',
+      color: 'var(--text-2)',
+      action: `openEarTrainer()`,
+      priority: 'low',
+      badge: null,
+    });
+  }
 
   // Step 5: Exam (when ready)
   if (examReady) {
@@ -11025,7 +11234,9 @@ function renderSpeakingQuestion() {
       <!-- Question -->
       <div style="background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;">
         ${card.emojis ? `<div style="font-size:2.6rem;line-height:1.35;letter-spacing:0.12em;text-align:center;margin-bottom:16px;word-break:break-word;">${escapeHtml(card.emojis)}</div>` : ''}
-        <div style="font-size:1.15rem;font-weight:600;line-height:1.6;color:var(--text-1);">${escapeHtml(card.task)}</div>
+        <div style="font-size:1.15rem;font-weight:600;line-height:1.6;color:var(--text-1);">${escapeHtml(card.task)}
+          <button class="btn btn-ghost btn-sm" style="padding:2px 8px;margin-left:6px;font-size:0.78rem;vertical-align:middle;" onclick="speak(this.dataset.say)" data-say="${escapeStr(card.task)}" title="Escuchar la tarjeta">🔊</button>
+        </div>
       </div>
 
       ${cardWantsPartner(card.task) ? `
@@ -11059,6 +11270,9 @@ function renderSpeakingQuestion() {
 
   document.getElementById('speaking-answer')?.focus();
   startSpeakingTimer();
+  // The real examiner reads the card to the student. Honour the same mute
+  // preference as the role play — one toggle governs both.
+  if (state.rpAutoSpeak !== false) setTimeout(() => speak(card.task), 300);
 }
 
 /* Hands the current exam card to Mari as a role play scene. The card text is the
@@ -11895,6 +12109,111 @@ function rolePlayScenarios(u) {
 
 function rpUnitContext(u) {
   return { lid: u.lid, uid: u.uid, title: u.title, vocab: getUnitVocab(u), grammar: getUnitGrammar(u) };
+}
+
+/* ── EAR TRAINER: minimal pairs ──────────────────────────────────
+ * The teacher's exact note was the can/can't distinction — the student's
+ * lowest rubric line (intelligible 3.8) is hearers not being sure which
+ * one he said. Perception precedes production: training the ear to hear
+ * the difference is the first step to making it. Zero tokens (local
+ * synthesizer), zero SRS impact, self-contained.
+ */
+/* Opens the ear trainer in a lightweight overlay — no new tab needed. */
+function openEarTrainer() {
+  document.getElementById('ear-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'ear-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:420px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-weight:700;">👂 can / can't</div>
+        <button class="btn btn-ghost btn-sm" onclick="closeEarTrainer()">✕</button>
+      </div>
+      <div id="ear-trainer-body"></div>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closeEarTrainer(); });
+  document.body.appendChild(ov);
+  startEarTrainer();
+}
+
+function closeEarTrainer() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  earState = null;
+  document.getElementById('ear-overlay')?.remove();
+}
+
+const EAR_PAIRS = [
+  { a: 'can', b: "can't" },
+  { a: 'I can swim', b: "I can't swim" },
+  { a: 'She can cook', b: "She can't cook" },
+  { a: 'He can dance', b: "He can't dance" },
+  { a: 'They can come', b: "They can't come" },
+];
+let earState = null;
+
+function startEarTrainer() {
+  earState = { round: 0, total: 10, correct: 0, current: null };
+  renderEarRound();
+}
+
+function renderEarRound() {
+  const c = document.getElementById('ear-trainer-body');
+  if (!c || !earState) return;
+
+  if (earState.round >= earState.total) {
+    const pct = Math.round((earState.correct / earState.total) * 100);
+    c.innerHTML = `
+      <div style="text-align:center;padding:8px 0;">
+        <div style="font-size:2rem;font-weight:800;">${earState.correct}/${earState.total}</div>
+        <div style="font-size:0.8rem;color:var(--text-3);margin:6px 0 14px;">
+          ${pct >= 80 ? '¡Tu oído ya los distingue! Ahora practica DECIRLOS igual de distinto.'
+            : pct >= 50 ? 'Vas a mitad de camino. La clave: can es corto y débil (/kən/), can\'t es fuerte y con t (/kænt/).'
+            : 'Todavía se te mezclan — normal. Escucha: can casi desaparece (/kən/), can\'t golpea (/kænt/).'}
+        </div>
+        <button class="btn btn-primary" onclick="startEarTrainer()">🔁 Otra ronda</button>
+      </div>`;
+    return;
+  }
+
+  const pair = EAR_PAIRS[Math.floor(Math.random() * EAR_PAIRS.length)];
+  const answer = Math.random() < 0.5 ? 'a' : 'b';
+  earState.current = { pair, answer };
+
+  c.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:0.72rem;color:var(--text-3);margin-bottom:10px;">Ronda ${earState.round + 1} de ${earState.total} · aciertos: ${earState.correct}</div>
+      <button class="btn btn-ghost" style="font-size:1.6rem;padding:10px 22px;margin-bottom:14px;" onclick="playEarClip()" title="Escuchar">🔊</button>
+      <div style="font-size:0.78rem;color:var(--text-3);margin-bottom:10px;">¿Cuál oíste?</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="btn btn-ghost" style="flex:1;max-width:180px;padding:12px;" onclick="answerEar('a')">${escapeHtml(pair.a)}</button>
+        <button class="btn btn-ghost" style="flex:1;max-width:180px;padding:12px;" onclick="answerEar('b')">${escapeHtml(pair.b)}</button>
+      </div>
+      <div id="ear-fb" style="min-height:22px;margin-top:10px;font-size:0.82rem;"></div>
+    </div>`;
+  playEarClip();
+}
+
+function playEarClip() {
+  if (!earState?.current) return;
+  const { pair, answer } = earState.current;
+  // Natural rate on purpose: slowed-down speech over-articulates the /t/ and
+  // trains an exam that does not exist. The real distinction lives at speed.
+  speak(pair[answer], 1.0);
+}
+
+function answerEar(choice) {
+  if (!earState?.current) return;
+  const { pair, answer } = earState.current;
+  const fb = document.getElementById('ear-fb');
+  const right = choice === answer;
+  if (right) earState.correct++;
+  if (fb) {
+    fb.style.color = right ? 'var(--green)' : 'var(--red, #f85149)';
+    fb.textContent = right ? '✅ Correcto' : `❌ Dijo: "${pair[answer]}"`;
+  }
+  earState.round++;
+  setTimeout(renderEarRound, right ? 700 : 1400);
 }
 
 function initRolePlay() {
@@ -14665,6 +14984,10 @@ function openSettings() {
   // Ask GitHub what's actually deployed vs what this device is running
   checkDeployStatus();
   renderStorageUsage();
+  const exL = document.getElementById('set-exam-label');
+  const exD = document.getElementById('set-exam-date');
+  if (exL) exL.value = state.examLabel || '';
+  if (exD) exD.value = state.examDate || '';
   // Sync UI to current state
   const mode = AIService.mode || 'local';
   document.getElementById('mode-btn-local').classList.toggle('active', mode === 'local');
