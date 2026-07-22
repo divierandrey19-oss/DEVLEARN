@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-21d -->
+<!-- DEVLEARN_BUILD: 2026-07-22a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4585,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-21d';
+const APP_BUILD = '2026-07-22a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5812,6 +5812,8 @@ function migrateState(s) {
   merged.rolePlay = merged.rolePlay || {};
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.classSchedule = merged.classSchedule || {};
+  // Personal words survive sync as a per-unit union by word text.
+  Object.values(merged.units || {}).forEach(u => { if (u && !Array.isArray(u.myWords)) u.myWords = u.myWords || []; });
   // Heal a streak that already drifted: the dates are the record, the count was
   // only ever a cache of them. Any device that synced with a stale count gets
   // its real streak back on the next open.
@@ -7994,11 +7996,155 @@ function renderVocabulary(vocab, unit) {
         </div>
       </div>
     `).join('');
+    c.insertAdjacentHTML('beforeend', renderMyWordsSection(unit));
     return;
   }
 
   // Single batch
   c.innerHTML = header + `<div class="vocab-grid">${renderVocabCards(vocab, unit)}</div>`;
+  c.insertAdjacentHTML('beforeend', renderMyWordsSection(unit));
+}
+
+/* ── ✍️ MIS PALABRAS ─────────────────────────────────────────────
+ * The extraction pulls the on-topic words from a page, but a dense reading
+ * (his page 58) holds many more — and which of THOSE he doesn't know is
+ * personal: no model can guess it. These are his margin notes. They live in
+ * unit.myWords, structurally apart from the batches, are badged ✍️ everywhere,
+ * and practice in their own flashcard deck so they never blur into what the
+ * book actually printed. That separation is what keeps the grounding honest.
+ */
+function renderMyWordsSection(unit) {
+  if (!unit) return '';
+  const words = unit.myWords || [];
+  return `
+    <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-weight:700;font-size:0.92rem;">✍️ Mis palabras <span style="color:var(--text-3);font-weight:400;">(${words.length})</span></div>
+        <div style="display:flex;gap:8px;">
+          ${words.length ? `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;" onclick="practiceMyWords()">🃏 Practicar</button>` : ''}
+          <button class="btn btn-primary btn-sm" style="font-size:0.72rem;" onclick="openAddMyWord()">➕ Agregar</button>
+        </div>
+      </div>
+      ${words.length ? `
+        <div class="vocab-grid">
+          ${words.map((w, i) => `
+            <div class="vocab-card" style="border-style:dashed;">
+              <div class="vocab-image">✍️</div>
+              <div class="vocab-word">${escapeHtml(w.word)}</div>
+              <div class="vocab-translation">${escapeHtml(w.translation)}</div>
+              ${w.example ? `<div class="vocab-example">"${escapeHtml(w.example)}"</div>` : ''}
+              <div class="vocab-footer">
+                <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deleteMyWord(${i})">🗑</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : `
+        <div style="font-size:0.78rem;color:var(--text-3);line-height:1.5;">
+          Palabras que encontraste leyendo (como en la página 58) y que la extracción no trajo.
+          Quedan aparte del vocabulario del libro, con sus propias flashcards.
+        </div>`}
+    </div>`;
+}
+
+function openAddMyWord() {
+  document.getElementById('myword-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'myword-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-weight:700;">✍️ Agregar palabra</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('myword-overlay').remove()">✕</button>
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Palabra (inglés)</label>
+      <input type="text" id="myword-en" maxlength="60" autocomplete="off"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Traducción (español)</label>
+      <input type="text" id="myword-es" maxlength="80" autocomplete="off"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Frase donde la viste (opcional)</label>
+      <input type="text" id="myword-ex" maxlength="140" autocomplete="off"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;margin-bottom:18px;">
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="saveMyWord()">Guardar</button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('myword-en')?.focus();
+}
+
+function saveMyWord() {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+  const en = (document.getElementById('myword-en')?.value || '').trim();
+  const es = (document.getElementById('myword-es')?.value || '').trim();
+  const ex = (document.getElementById('myword-ex')?.value || '').trim();
+  if (!en || !es) { toast('Palabra y traducción son obligatorias'); return; }
+  u.myWords = u.myWords || [];
+  if (u.myWords.some(w => w.word.toLowerCase() === en.toLowerCase())) { toast('Esa palabra ya está en tu lista'); return; }
+  u.myWords.push({ word: en, translation: es, example: ex || undefined, ts: Date.now() });
+  save();
+  document.getElementById('myword-overlay')?.remove();
+  renderVocabulary(getUnitVocab(u), u);
+  toast(`✍️ "${en}" agregada`);
+}
+
+function deleteMyWord(idx) {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  if (!u || !u.myWords) return;
+  const w = u.myWords[idx];
+  if (!w) return;
+  if (!confirm(`¿Borrar "${w.word}" de tus palabras?`)) return;
+  u.myWords.splice(idx, 1);
+  save();
+  renderVocabulary(getUnitVocab(u), u);
+}
+
+/* Their own tiny flip deck — deliberately NOT the SRS: these cards never mix
+ * with the book deck, which is exactly what he asked for. */
+let _mwState = null;
+function practiceMyWords() {
+  const u = current.lid ? getUnit(current.lid, current.uid) : null;
+  const words = (u?.myWords || []).slice();
+  if (!words.length) return;
+  for (let i = words.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [words[i], words[j]] = [words[j], words[i]]; }
+  _mwState = { words, idx: 0, flipped: false };
+  renderMyWordsPractice();
+}
+
+function renderMyWordsPractice() {
+  document.getElementById('myword-overlay')?.remove();
+  const st = _mwState;
+  if (!st) return;
+  const done = st.idx >= st.words.length;
+  const w = st.words[Math.min(st.idx, st.words.length - 1)];
+  const ov = document.createElement('div');
+  ov.id = 'myword-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-weight:700;">✍️ Mis palabras ${done ? '' : `· ${st.idx + 1}/${st.words.length}`}</div>
+        <button class="btn btn-ghost btn-sm" onclick="_mwState=null;document.getElementById('myword-overlay').remove()">✕</button>
+      </div>
+      ${done ? `
+        <div style="text-align:center;padding:12px 0;">
+          <div style="font-size:1.6rem;margin-bottom:8px;">🎉</div>
+          <div style="font-size:0.85rem;color:var(--text-2);margin-bottom:16px;">Repasaste tus ${st.words.length} palabra${st.words.length !== 1 ? 's' : ''}.</div>
+          <button class="btn btn-primary" style="padding:10px 22px;" onclick="practiceMyWords()">🔁 Otra vez</button>
+        </div>` : `
+        <div onclick="_mwState.flipped=!_mwState.flipped;renderMyWordsPractice()" style="cursor:pointer;text-align:center;background:var(--card);border:1px dashed var(--border);border-radius:14px;padding:34px 16px;margin-bottom:14px;">
+          <div style="font-size:1.5rem;font-weight:800;margin-bottom:6px;">${escapeHtml(st.flipped ? w.translation : w.word)}</div>
+          ${st.flipped && w.example ? `<div style="font-size:0.78rem;color:var(--text-3);">"${escapeHtml(w.example)}"</div>` : `<div style="font-size:0.7rem;color:var(--text-3);">toca para voltear</div>`}
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" style="flex:1;padding:10px;" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
+          <button class="btn btn-primary" style="flex:2;padding:10px;" onclick="_mwState.idx++;_mwState.flipped=false;renderMyWordsPractice()">Siguiente →</button>
+        </div>`}
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) { _mwState = null; ov.remove(); } });
+  document.body.appendChild(ov);
 }
 
 /* ── Vocab self-test — feeds directly into fcProgress ─────── */
