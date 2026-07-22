@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-22a -->
+<!-- DEVLEARN_BUILD: 2026-07-22c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4585,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-22a';
+const APP_BUILD = '2026-07-22c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7976,7 +7976,8 @@ function renderVocabulary(vocab, unit) {
         <button class="btn btn-ghost btn-sm" onclick="showUnitTab('flashcards')">🃏 Study cards</button>
       </div>
     </div>
-    ${masteryBar}`;
+    ${masteryBar}
+    ${renderMyWordsSection(unit)}`;
 
   // Multi-batch: group vocab by page
   if (unit && unit.batches && unit.batches.length > 1) {
@@ -7996,13 +7997,11 @@ function renderVocabulary(vocab, unit) {
         </div>
       </div>
     `).join('');
-    c.insertAdjacentHTML('beforeend', renderMyWordsSection(unit));
     return;
   }
 
   // Single batch
   c.innerHTML = header + `<div class="vocab-grid">${renderVocabCards(vocab, unit)}</div>`;
-  c.insertAdjacentHTML('beforeend', renderMyWordsSection(unit));
 }
 
 /* ── ✍️ MIS PALABRAS ─────────────────────────────────────────────
@@ -8016,34 +8015,37 @@ function renderVocabulary(vocab, unit) {
 function renderMyWordsSection(unit) {
   if (!unit) return '';
   const words = unit.myWords || [];
+  const open = state.myWordsOpen === true;
   return `
-    <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-weight:700;font-size:0.92rem;">✍️ Mis palabras <span style="color:var(--text-3);font-weight:400;">(${words.length})</span></div>
-        <div style="display:flex;gap:8px;">
-          ${words.length ? `<button class="btn btn-ghost btn-sm" style="font-size:0.72rem;" onclick="practiceMyWords()">🃏 Practicar</button>` : ''}
-          <button class="btn btn-primary btn-sm" style="font-size:0.72rem;" onclick="openAddMyWord()">➕ Agregar</button>
-        </div>
+    <div style="border:1px dashed var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <button class="btn btn-ghost btn-sm" style="font-size:0.78rem;padding:2px 6px;flex:1;text-align:left;justify-content:flex-start;"
+          onclick="state.myWordsOpen=${open ? 'false' : 'true'};save();renderVocabulary(getUnitVocab(getUnit(current.lid,current.uid)), getUnit(current.lid,current.uid));">
+          ✍️ Mis palabras <span style="color:var(--text-3);">(${words.length})</span> ${words.length ? (open ? '▲' : '▼') : ''}
+        </button>
+        ${words.length ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;" onclick="practiceMyWords()">🃏</button>` : ''}
+        <button class="btn btn-primary btn-sm" style="font-size:0.72rem;" onclick="openAddMyWord()">➕ Agregar</button>
       </div>
-      ${words.length ? `
-        <div class="vocab-grid">
+      ${!words.length ? `
+        <div style="font-size:0.74rem;color:var(--text-3);line-height:1.45;margin-top:6px;">
+          Palabras que encontraste leyendo y que la extracción no trajo. Escribes la palabra y la app completa lo demás.
+        </div>` : open ? `
+        <div class="vocab-grid" style="margin-top:10px;">
           ${words.map((w, i) => `
             <div class="vocab-card" style="border-style:dashed;">
-              <div class="vocab-image">✍️</div>
+              <div class="vocab-image">${w.emoji || '✍️'}</div>
               <div class="vocab-word">${escapeHtml(w.word)}</div>
+              <div class="vocab-phonetic">${escapeHtml(w.phonetic || '')}</div>
               <div class="vocab-translation">${escapeHtml(w.translation)}</div>
               ${w.example ? `<div class="vocab-example">"${escapeHtml(w.example)}"</div>` : ''}
               <div class="vocab-footer">
                 <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
+                <span class="vocab-tag">✍️ mía</span>
                 <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deleteMyWord(${i})">🗑</button>
               </div>
             </div>
           `).join('')}
-        </div>` : `
-        <div style="font-size:0.78rem;color:var(--text-3);line-height:1.5;">
-          Palabras que encontraste leyendo (como en la página 58) y que la extracción no trajo.
-          Quedan aparte del vocabulario del libro, con sus propias flashcards.
-        </div>`}
+        </div>` : ''}
     </div>`;
 }
 
@@ -8059,35 +8061,155 @@ function openAddMyWord() {
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('myword-overlay').remove()">✕</button>
       </div>
       <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Palabra (inglés)</label>
-      <input type="text" id="myword-en" maxlength="60" autocomplete="off"
-        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
-      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Traducción (español)</label>
-      <input type="text" id="myword-es" maxlength="80" autocomplete="off"
-        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
-      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Frase donde la viste (opcional)</label>
-      <input type="text" id="myword-ex" maxlength="140" autocomplete="off"
-        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;margin-bottom:18px;">
-      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="saveMyWord()">Guardar</button>
+      <input type="text" id="myword-en" maxlength="60" autocomplete="off" autocapitalize="none"
+        oninput="checkMyWordExists(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();saveMyWord();}"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:10px;">
+      <div style="font-size:0.72rem;color:var(--text-3);line-height:1.45;margin-bottom:14px;">
+        La app completa traducción, pronunciación y un ejemplo — usando el tema de esta unidad.
+      </div>
+      <div id="myword-fb" style="font-size:0.78rem;min-height:20px;margin-bottom:10px;"></div>
+      <button class="btn btn-primary" id="myword-save" style="width:100%;padding:11px;" onclick="saveMyWord()">Guardar</button>
+      <button class="btn btn-ghost btn-sm" style="width:100%;padding:8px;margin-top:8px;font-size:0.72rem;" onclick="toggleMyWordManual()">
+        ✍️ Prefiero escribirla yo
+      </button>
+      <div id="myword-manual" style="display:none;margin-top:12px;">
+        <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Traducción (español)</label>
+        <input type="text" id="myword-es" maxlength="80" autocomplete="off"
+          style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:10px;">
+        <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Frase donde la viste (opcional)</label>
+        <input type="text" id="myword-ex" maxlength="140" autocomplete="off"
+          style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;">
+      </div>
     </div>`;
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
   document.body.appendChild(ov);
   document.getElementById('myword-en')?.focus();
 }
 
-function saveMyWord() {
+/* With 598 extracted words across units he cannot possibly remember what is
+ * already there — and the old check only looked at myWords, so a word the API
+ * had already pulled from the book could be added again. This searches every
+ * unit, shows the existing translation so he recognises it, and says which unit
+ * it lives in. Runs on each keystroke, debounced, entirely local — no tokens. */
+function findExistingWord(word) {
+  const q = String(word || '').trim().toLowerCase();
+  if (!q) return null;
+  for (const [key, u] of Object.entries(state.units || {})) {
+    const unitName = u.title || key;
+    for (const v of getUnitVocab(u)) {
+      if ((v.word || '').trim().toLowerCase() === q) {
+        return { where: unitName, unitKey: key, translation: v.translation || '', source: 'book' };
+      }
+    }
+    for (const w of (u.myWords || [])) {
+      if ((w.word || '').trim().toLowerCase() === q) {
+        return { where: unitName, unitKey: key, translation: w.translation || '', source: 'mine' };
+      }
+    }
+  }
+  return null;
+}
+
+let _mwLookupTimer = null;
+function checkMyWordExists(value) {
+  clearTimeout(_mwLookupTimer);
+  _mwLookupTimer = setTimeout(() => {
+    const fb  = document.getElementById('myword-fb');
+    const btn = document.getElementById('myword-save');
+    if (!fb) return;
+    const hit = findExistingWord(value);
+    if (!hit) {
+      fb.textContent = '';
+      if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
+      return;
+    }
+    fb.style.color = 'var(--amber, #d29922)';
+    fb.innerHTML = `⚠ <strong>${escapeHtml(value.trim())}</strong> ya está ${hit.source === 'book' ? 'en el vocabulario' : 'en tus palabras'} de <strong>${escapeHtml(hit.where)}</strong>` +
+      (hit.translation ? ` — ${escapeHtml(hit.translation)}` : '');
+    if (btn) { btn.textContent = 'Ya existe'; btn.disabled = true; }
+  }, 250);
+}
+
+function toggleMyWordManual() {
+  const box = document.getElementById('myword-manual');
+  if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+/* Typing translations by hand was the objection: it invites his own mistakes
+ * into a deck he then studies as truth. Letting the same model that extracts
+ * the book fill translation/phonetic/emoji/example keeps these cards
+ * indistinguishable in quality from the extracted ones — the word itself still
+ * comes from his page, only the metadata is generated. Tiny call (~120 tokens).
+ * Manual entry stays available for when there is no key or no signal. */
+async function saveMyWord() {
   const u = current.lid ? getUnit(current.lid, current.uid) : null;
   if (!u) return;
   const en = (document.getElementById('myword-en')?.value || '').trim();
+  if (!en) { toast('Escribe la palabra'); return; }
+
+  u.myWords = u.myWords || [];
+  // Check every unit, book vocab included — the old check only saw myWords.
+  const dup = findExistingWord(en);
+  if (dup) {
+    toast(`"${en}" ya está en ${dup.where}${dup.translation ? ' — ' + dup.translation : ''}`);
+    return;
+  }
+
+  const manualBox = document.getElementById('myword-manual');
+  const manualOpen = manualBox && manualBox.style.display !== 'none';
   const es = (document.getElementById('myword-es')?.value || '').trim();
   const ex = (document.getElementById('myword-ex')?.value || '').trim();
-  if (!en || !es) { toast('Palabra y traducción son obligatorias'); return; }
-  u.myWords = u.myWords || [];
-  if (u.myWords.some(w => w.word.toLowerCase() === en.toLowerCase())) { toast('Esa palabra ya está en tu lista'); return; }
-  u.myWords.push({ word: en, translation: es, example: ex || undefined, ts: Date.now() });
-  save();
-  document.getElementById('myword-overlay')?.remove();
-  renderVocabulary(getUnitVocab(u), u);
-  toast(`✍️ "${en}" agregada`);
+
+  const commit = (entry) => {
+    u.myWords.push({ ...entry, ts: Date.now() });
+    save();
+    document.getElementById('myword-overlay')?.remove();
+    state.myWordsOpen = true;
+    renderVocabulary(getUnitVocab(u), u);
+    toast(`✍️ "${entry.word}" agregada`);
+  };
+
+  if (manualOpen && es) { commit({ word: en, translation: es, example: ex || undefined }); return; }
+
+  const btn = document.getElementById('myword-save');
+  const fb  = document.getElementById('myword-fb');
+  if (btn) { btn.disabled = true; btn.textContent = 'Completando…'; }
+  if (fb) { fb.style.color = 'var(--text-3)'; fb.textContent = '🔎 Buscando traducción y pronunciación…'; }
+
+  try {
+    const topic = u.title || '';
+    const raw = await AIService._callClaude({
+      messages: [{ role: 'user', content: `English word or phrase: "${en}"
+Unit topic: ${topic}
+
+Give the Colombian Spanish translation as it is used in this topic, the IPA phonetic, one emoji, and ONE short A2 example sentence in English that fits the unit topic, with its Spanish translation.
+
+Respond ONLY with JSON:
+{"translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}` }],
+      maxTokens: 200,
+      isJSON: true,
+      timeoutMs: 30000,
+    });
+    const data = AIService._parseClaudeJSON(raw);
+    if (!data || !data.translation) throw new Error('parse');
+    commit({
+      word: en,
+      translation: String(data.translation).trim(),
+      phonetic: String(data.phonetic || '').trim(),
+      emoji: String(data.emoji || '✍️').trim(),
+      example: String(data.example || '').trim() || undefined,
+      exampleTranslation: String(data.exampleTranslation || '').trim() || undefined,
+      type: String(data.type || 'word').trim(),
+    });
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+    if (fb) {
+      fb.style.color = 'var(--amber, #d29922)';
+      fb.textContent = '⚠ No pude completarla. Escribe la traducción abajo y guarda.';
+    }
+    if (manualBox) manualBox.style.display = '';
+  }
 }
 
 function deleteMyWord(idx) {
