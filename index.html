@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-22c -->
+<!-- DEVLEARN_BUILD: 2026-07-22d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4585,7 +4585,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-22c';
+const APP_BUILD = '2026-07-22d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8662,6 +8662,49 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
 // Mari's text carries **bold**, emojis and ✏️ "x" → "y" correction lines. Read
 // aloud raw, the synthesizer says "asterisk asterisk". Clean it once, here, so
 // every caller (flashcards, drills, chat, auto-speak) speaks plain English.
+/* ── SYNC COMPRESSION ────────────────────────────────────────────
+ * Firestore caps a document at 1 MiB and the payload had reached 895 KB —
+ * about seven more page-uploads from breaking. The bulk is not real data:
+ * fcProgress repeats the same field names ("easeFactor", "receptiveScore"…)
+ * once per word, 700 times over. That is exactly what gzip collapses, and the
+ * browser ships it natively, so this needs no library.
+ *
+ * Only the compressed field is written: keeping the plain one too would leave
+ * the document over the limit and defeat the point. A device still running an
+ * older build finds no `state`, throws inside its own try/catch, and simply
+ * shows the red dot — it never overwrites the cloud, so the transition cannot
+ * lose data.
+ */
+const _canGzip = typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
+
+async function _gzipB64(str) {
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  // Chunked: fromCharCode.apply on a large array overflows the call stack.
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  return btoa(bin);
+}
+
+async function _ungzipB64(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+
+/** Reads a cloud doc in either format — compressed now, plain for old docs. */
+async function _readCloudState(data) {
+  if (data && data.stateGz) return JSON.parse(await _ungzipB64(data.stateGz));
+  return JSON.parse((data && data.state) || '{}');
+}
+
+// These live in the Firebase module scope; expose them so the sync format can be
+// verified from a test or the console without reaching into the module.
+window._syncCodec = { canGzip: _canGzip, gzip: _gzipB64, ungzip: _ungzipB64, read: _readCloudState };
+
 function speakableText(text) {
   return String(text || '')
     .replace(/\*\*(.*?)\*\*/g, '$1')       // bold
@@ -15846,6 +15889,8 @@ function cloudMillis(data) {
   return isNaN(t) ? 0 : t;
 }
 
+
+
 window._syncToFirestore = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
   _isSyncing = true;
@@ -15854,20 +15899,23 @@ window._syncToFirestore = async function() {
     const s = getStateForSync();
     _selfPushTime = Date.now();
     const ref = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
-    await window._fb.setDoc(ref, {
-      state: JSON.stringify(s),
+    const json = JSON.stringify(s);
+    const payload = {
       // Server clock — comparing two devices' own clocks picked the wrong
       // winner whenever they drifted apart.
       updatedAt: window._fb.serverTimestamp(),
       updatedAtClient: new Date().toISOString(), // display only
-    });
+    };
+    if (_canGzip) payload.stateGz = await _gzipB64(json);
+    else payload.state = json;
+    await window._fb.setDoc(ref, payload);
     // The cloud now holds exactly the batches we just pushed. Read back the
     // resolved server time so the next open compares server-time to server-time.
     try {
       const fresh = await window._fb.getDoc(ref);
       if (fresh.exists()) {
         window._setCloudSeen && window._setCloudSeen(cloudMillis(fresh.data()));
-        const pushed = JSON.parse(fresh.data().state || '{}');
+        const pushed = await _readCloudState(fresh.data());
         const ids = [];
         Object.values(pushed.units || {}).forEach(u => (u.batches || []).forEach(b => { if (b.id) ids.push(b.id); }));
         window._recordSyncedBatchIds && window._recordSyncedBatchIds(ids);
@@ -15894,7 +15942,7 @@ window._loadFromFirestore = function(forceLoad) {
 
   // On first load: do a one-time check against Firebase
   // After that, only push — never pull automatically while active
-  window._fb.getDoc(userDoc).then(function(snap) {
+  window._fb.getDoc(userDoc).then(async function(snap) {
     if (!snap.exists()) {
       // No cloud data — push local
       if (window._syncToFirestore) window._syncToFirestore();
@@ -15915,7 +15963,7 @@ window._loadFromFirestore = function(forceLoad) {
     if (!hasLocalData || forceLoad || cloudMs > seenMs) {
       // The cloud has something we haven't reconciled with yet. Merging is a
       // union, so this is safe even when our own copy is the newer one.
-      const cloud = JSON.parse(cloudData.state);
+      const cloud = await _readCloudState(cloudData);
       window._mergeCloudState && window._mergeCloudState(cloud);
       window._setCloudSeen && window._setCloudSeen(cloudMs);
       // Push the merged result so the cloud also gets what only we had.
