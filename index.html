@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-22d -->
+<!-- DEVLEARN_BUILD: 2026-07-23a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3850,6 +3850,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <button type="button" class="nav-item" onclick="navigate('flashcards-all')"><span class="nav-icon">🃏</span> Flashcards <span class="nav-badge" id="fc-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('vocab-all')"><span class="nav-icon">📚</span> Vocabulary <span class="nav-badge" id="vocab-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('tutor')"><span class="nav-icon">🎙️</span> AI Tutor</button>
+      <button type="button" class="nav-item" onclick="navigate('podcasts')"><span class="nav-icon">🎧</span> Podcasts</button>
       <button type="button" class="nav-item" onclick="openFocusMode()"><span class="nav-icon">🎯</span> Focus Mode</button>
     </nav>
 
@@ -4109,6 +4110,11 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
     </div>
 
     <!-- ===== VOCAB PAGE ===== -->
+    <div class="page" id="page-podcasts">
+      <div class="section-title">🎧 Podcasts</div>
+      <div id="podcasts-content"></div>
+    </div>
+
     <div class="page" id="page-vocab-all">
       <div class="section-title">All Vocabulary</div>
       <div class="section-sub">Everything you've learned, in one place.</div>
@@ -4585,7 +4591,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-22d';
+const APP_BUILD = '2026-07-23a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5812,6 +5818,7 @@ function migrateState(s) {
   merged.rolePlay = merged.rolePlay || {};
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.classSchedule = merged.classSchedule || {};
+  merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   // Personal words survive sync as a per-unit union by word text.
   Object.values(merged.units || {}).forEach(u => { if (u && !Array.isArray(u.myWords)) u.myWords = u.myWords || []; });
   // Heal a streak that already drifted: the dates are the record, the count was
@@ -6109,10 +6116,10 @@ function navigate(page) {
   const titles = {
     'dashboard': 'Dashboard', 'levels': 'Levels', 'level': 'Level',
     'unit': 'Unit', 'progress': 'Progress', 'flashcards-all': 'Flashcards',
-    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor',
+    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts',
   };
   document.getElementById('page-title').textContent = titles[page] || page;
-  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5 };
+  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6 };
   if (navMap[page] !== undefined) {
     document.querySelectorAll('.nav-item')[navMap[page]].classList.add('active');
   }
@@ -6122,6 +6129,7 @@ function navigate(page) {
   if (page === 'flashcards-all') renderAllFlashcards();
   if (page === 'vocab-all') renderAllVocab();
   if (page === 'tutor') initStandaloneChat();
+  if (page === 'podcasts') renderPodcasts();
   if (window.innerWidth <= 880) {
     const sb = document.getElementById('sidebar');
     sb.classList.remove('open');
@@ -8012,6 +8020,263 @@ function renderVocabulary(vocab, unit) {
  * and practice in their own flashcard deck so they never blur into what the
  * book actually printed. That separation is what keeps the grounding honest.
  */
+/* ── 🎧 PODCASTS ─────────────────────────────────────────────────
+ * Not everything worth doing happens inside the app, and drilling all day is
+ * how people quit. Listening is real input — and it feeds the exact rubric line
+ * that costs him marks (intelligible), because you cannot produce a distinction
+ * you do not hear. This is a log of that outside practice: what he listened to,
+ * how long, and whatever he wants to note. It counts toward the streak, so a
+ * day spent on podcasts stops reading as a day not studied.
+ */
+function renderPodcasts() {
+  const c = document.getElementById('podcasts-content');
+  if (!c) return;
+  const log = (state.podcastLog || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+  const today = todayLocal();
+  const weekAgo = dateLocal(new Date(Date.now() - 6 * 86400000));
+  const week = log.filter(e => e.date >= weekAgo && e.date <= today);
+  const weekMin = week.reduce((a, e) => a + (Number(e.minutes) || 0), 0);
+  const allMin = log.reduce((a, e) => a + (Number(e.minutes) || 0), 0);
+
+  c.innerHTML = `
+    <div style="font-size:0.82rem;color:var(--text-3);line-height:1.5;margin-bottom:14px;">
+      Tu práctica de escucha fuera de la app. Anota qué oíste y lo que quieras recordar.
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:800;color:var(--accent);">${weekMin}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">MIN ESTA SEMANA</div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:800;">${log.length}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">SESIONES</div>
+      </div>
+      <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;font-weight:800;">${allMin >= 60 ? (allMin / 60).toFixed(1) + 'h' : allMin + 'm'}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">EN TOTAL</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:18px;" onclick="openAddPodcast()">
+      ➕ Anotar una sesión
+    </button>
+
+    ${!log.length ? `
+      <div class="empty">
+        <div class="empty-icon">🎧</div>
+        <div class="empty-title">Todavía no has anotado nada</div>
+        <div class="empty-sub">Cuando escuches un podcast, anota qué era y qué entendiste. Cuenta para tu racha.</div>
+      </div>` : log.map(e => `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.92rem;">${escapeHtml(e.title || 'Sesión')}</div>
+            <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
+              ${escapeHtml(e.date || '')}${e.minutes ? ` · ${e.minutes} min` : ''}
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;flex-shrink:0;" onclick="deletePodcast('${e.id}')">🗑</button>
+        </div>
+        ${e.notes ? `<div style="font-size:0.84rem;color:var(--text-2);line-height:1.55;margin-top:10px;white-space:pre-wrap;">${escapeHtml(e.notes)}</div>` : ''}
+        ${(e.words || []).length ? `
+          <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;">🔤 ${e.words.length} palabra${e.words.length !== 1 ? 's' : ''}</div>
+              <div style="display:flex;gap:6px;">
+                ${e.words.some(w => !w.translation) ? `<button class="btn btn-ghost btn-sm" style="font-size:0.66rem;" onclick="completePodcastWords('${e.id}')">🔄 Completar</button>` : ''}
+                ${e.words.some(w => w.translation) ? `<button class="btn btn-ghost btn-sm" style="font-size:0.66rem;" onclick="practicePodcastWords('${e.id}')">🃏 Practicar</button>` : ''}
+              </div>
+            </div>
+            ${e.words.map(w => `
+              <div style="display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+                <div style="font-size:1.1rem;flex-shrink:0;">${w.emoji || '🎧'}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:0.86rem;font-weight:700;">
+                    ${escapeHtml(w.word)}
+                    ${w.phonetic ? `<span style="font-weight:400;color:var(--text-3);font-size:0.74rem;margin-left:6px;">${escapeHtml(w.phonetic)}</span>` : ''}
+                  </div>
+                  ${w.translation ? `<div style="font-size:0.8rem;color:var(--text-2);">${escapeHtml(w.translation)}</div>`
+                    : `<div style="font-size:0.74rem;color:var(--amber, #d29922);">sin completar</div>`}
+                  ${w.example ? `<div style="font-size:0.74rem;color:var(--text-3);margin-top:2px;font-style:italic;">"${escapeHtml(w.example)}"</div>` : ''}
+                </div>
+                <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
+              </div>`).join('')}
+          </div>` : ''}
+      </div>`).join('')}
+  `;
+}
+
+function openAddPodcast() {
+  document.getElementById('podcast-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'podcast-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:400px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-weight:700;">🎧 Anotar sesión</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('podcast-overlay').remove()">✕</button>
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">¿Qué escuchaste?</label>
+      <input type="text" id="pod-title" maxlength="80" autocomplete="off" placeholder="Nombre del podcast o episodio"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Día</label>
+          <input type="date" id="pod-date" value="${todayLocal()}"
+            style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;">
+        </div>
+        <div style="width:110px;">
+          <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Minutos</label>
+          <input type="number" id="pod-min" min="1" max="600" inputmode="numeric" placeholder="30"
+            style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;">
+        </div>
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">🔤 Palabras nuevas que escuchaste</label>
+      <textarea id="pod-words" rows="2" maxlength="500" placeholder="sourdough, to crave, leftovers"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.5;resize:vertical;margin-bottom:4px;"></textarea>
+      <div style="font-size:0.7rem;color:var(--text-3);line-height:1.4;margin-bottom:12px;">
+        Sepáralas por coma. La app les pone fonética, traducción y una frase.
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Notas — lo que entendiste, lo que no</label>
+      <textarea id="pod-notes" rows="5" maxlength="2000" placeholder="Ej: entendí casi todo cuando hablaban despacio. Palabras nuevas: sourdough, to crave…"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.5;resize:vertical;margin-bottom:16px;"></textarea>
+      <div id="pod-fb" style="font-size:0.78rem;min-height:18px;margin-bottom:8px;"></div>
+      <button class="btn btn-primary" id="pod-save" style="width:100%;padding:11px;" onclick="savePodcast()">Guardar</button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('pod-title')?.focus();
+}
+
+/* One call for the whole list, not one per word: a session can bring six or
+ * eight words and six round trips would be slow and needlessly expensive.
+ * Words heard in a podcast have no unit to ground them, so the sentence is
+ * asked to fit how the word is actually used rather than a lesson topic. */
+async function enrichWords(words) {
+  const raw = await AIService._callClaude({
+    messages: [{ role: 'user', content: `English words heard while listening: ${words.map(w => `"${w}"`).join(', ')}
+
+For EACH word give: Colombian Spanish translation, IPA phonetic, one emoji, ONE short natural example sentence at A2 level showing how the word is really used, and its Spanish translation.
+
+Respond ONLY with a JSON array, one object per word, in the same order:
+[{"word":"...","translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}]` }],
+    maxTokens: 180 * words.length + 200,
+    isJSON: true,
+    timeoutMs: 45000,
+  });
+  const data = AIService._parseClaudeJSON(raw);
+  if (!Array.isArray(data)) throw new Error('parse');
+  return data;
+}
+
+async function savePodcast() {
+  const title = (document.getElementById('pod-title')?.value || '').trim();
+  const date  = document.getElementById('pod-date')?.value || todayLocal();
+  const min   = parseInt(document.getElementById('pod-min')?.value, 10);
+  const notes = (document.getElementById('pod-notes')?.value || '').trim();
+  const rawWords = (document.getElementById('pod-words')?.value || '').trim();
+  if (!title && !notes && !rawWords) { toast('Escribe al menos qué escuchaste'); return; }
+
+  const wordList = rawWords
+    .split(/[,\n;]+/).map(w => w.trim()).filter(Boolean)
+    .filter((w, i, a) => a.findIndex(x => x.toLowerCase() === w.toLowerCase()) === i)
+    .slice(0, 12);   // a sane ceiling per session
+
+  let words = [];
+  if (wordList.length) {
+    const btn = document.getElementById('pod-save');
+    const fb  = document.getElementById('pod-fb');
+    if (btn) { btn.disabled = true; btn.textContent = 'Completando palabras…'; }
+    if (fb) { fb.style.color = 'var(--text-3)'; fb.textContent = `🔎 Buscando ${wordList.length} palabra${wordList.length !== 1 ? 's' : ''}…`; }
+    try {
+      const data = await enrichWords(wordList);
+      words = wordList.map((w, i) => {
+        const d = data.find(x => (x.word || '').toLowerCase() === w.toLowerCase()) || data[i] || {};
+        return {
+          word: w,
+          translation: String(d.translation || '').trim(),
+          phonetic: String(d.phonetic || '').trim(),
+          emoji: String(d.emoji || '🎧').trim(),
+          example: String(d.example || '').trim() || undefined,
+          exampleTranslation: String(d.exampleTranslation || '').trim() || undefined,
+          type: String(d.type || 'word').trim(),
+        };
+      });
+    } catch (e) {
+      // Never lose the session over a failed lookup: keep the words bare and
+      // offer to complete them later.
+      words = wordList.map(w => ({ word: w, translation: '', emoji: '🎧' }));
+      toast('⚠ Guardé la sesión, pero no pude completar las palabras');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  }
+
+  state.podcastLog = state.podcastLog || [];
+  state.podcastLog.push({
+    id: 'pod_' + Date.now(),
+    title: title || 'Sesión de escucha',
+    date,
+    minutes: Number.isFinite(min) && min > 0 ? min : null,
+    notes: notes || undefined,
+    words: words.length ? words : undefined,
+    ts: Date.now(),
+  });
+  // Listening is studying. Without this the streak would read a podcast day as
+  // a day off, which is exactly the wrong signal for the habit he is building.
+  if (date === todayLocal()) recordStudyDate();
+  save();
+  document.getElementById('podcast-overlay')?.remove();
+  renderPodcasts();
+  toast('🎧 Sesión anotada');
+}
+
+function practicePodcastWords(id) {
+  const e = (state.podcastLog || []).find(x => x.id === id);
+  if (e) practiceMyWords(e.words || []);
+}
+
+/** Retry the lookup for a session whose words were saved bare. */
+async function completePodcastWords(id) {
+  const e = (state.podcastLog || []).find(x => x.id === id);
+  if (!e || !(e.words || []).length) return;
+  const pending = e.words.filter(w => !w.translation).map(w => w.word);
+  if (!pending.length) return;
+  toast('🔎 Completando…');
+  try {
+    const data = await enrichWords(pending);
+    e.words = e.words.map(w => {
+      if (w.translation) return w;
+      const d = data.find(x => (x.word || '').toLowerCase() === w.word.toLowerCase());
+      if (!d) return w;
+      return {
+        ...w,
+        translation: String(d.translation || '').trim(),
+        phonetic: String(d.phonetic || '').trim(),
+        emoji: String(d.emoji || w.emoji || '🎧').trim(),
+        example: String(d.example || '').trim() || undefined,
+        exampleTranslation: String(d.exampleTranslation || '').trim() || undefined,
+      };
+    });
+    save();
+    renderPodcasts();
+    toast('✅ Listo');
+  } catch (err) {
+    toast('⚠ No pude completarlas. Revisa tu conexión.');
+  }
+}
+
+function deletePodcast(id) {
+  const e = (state.podcastLog || []).find(x => x.id === id);
+  if (!e) return;
+  if (!confirm(`¿Borrar "${e.title}"?`)) return;
+  state.podcastLog = state.podcastLog.filter(x => x.id !== id);
+  save();
+  renderPodcasts();
+}
+
 function renderMyWordsSection(unit) {
   if (!unit) return '';
   const words = unit.myWords || [];
@@ -8226,10 +8491,17 @@ function deleteMyWord(idx) {
 /* Their own tiny flip deck — deliberately NOT the SRS: these cards never mix
  * with the book deck, which is exactly what he asked for. */
 let _mwState = null;
-function practiceMyWords() {
-  const u = current.lid ? getUnit(current.lid, current.uid) : null;
-  const words = (u?.myWords || []).slice();
-  if (!words.length) return;
+function practiceMyWords(list) {
+  // Accepts any word list so the podcast log can reuse this deck; defaults to
+  // the current unit's personal words.
+  let words;
+  if (Array.isArray(list)) words = list.slice();
+  else {
+    const u = current.lid ? getUnit(current.lid, current.uid) : null;
+    words = (u?.myWords || []).slice();
+  }
+  words = words.filter(w => w && w.word && w.translation);
+  if (!words.length) { toast('No hay palabras completas para practicar'); return; }
   for (let i = words.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [words[i], words[j]] = [words[j], words[i]]; }
   _mwState = { words, idx: 0, flipped: false };
   renderMyWordsPractice();
