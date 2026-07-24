@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-23c -->
+<!-- DEVLEARN_BUILD: 2026-07-23d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4591,7 +4591,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-23c';
+const APP_BUILD = '2026-07-23d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8085,6 +8085,7 @@ function renderPodcasts() {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;">🔤 ${e.words.length} palabra${e.words.length !== 1 ? 's' : ''}</div>
               <div style="display:flex;gap:6px;">
+                <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;" onclick="addWordsToSession('${e.id}')">➕</button>
                 ${e.words.some(w => !w.translation) ? `<button class="btn btn-ghost btn-sm" style="font-size:0.66rem;" onclick="completePodcastWords('${e.id}')">🔄 Completar</button>` : ''}
                 ${e.words.some(w => w.translation) ? `<button class="btn btn-ghost btn-sm" style="font-size:0.66rem;" onclick="practicePodcastWords('${e.id}')">🃏 Practicar</button>` : ''}
               </div>
@@ -8155,7 +8156,25 @@ function openAddPodcast() {
  * eight words and six round trips would be slow and needlessly expensive.
  * Words heard in a podcast have no unit to ground them, so the sentence is
  * asked to fit how the word is actually used rather than a lesson topic. */
-async function enrichWords(words) {
+/* Chunked so a long list still works: one request per dozen keeps each response
+ * small enough to come back as valid JSON, and a session with twenty words —
+ * which is exactly what a real podcast produces — costs two calls instead of
+ * losing eight words. */
+async function enrichWords(words, onProgress) {
+  const CHUNK = 10;
+  if (words.length > CHUNK) {
+    const out = [];
+    for (let i = 0; i < words.length; i += CHUNK) {
+      const part = words.slice(i, i + CHUNK);
+      if (onProgress) onProgress(Math.min(i + part.length, words.length), words.length);
+      out.push(...await enrichWordsOnce(part));
+    }
+    return out;
+  }
+  return enrichWordsOnce(words);
+}
+
+async function enrichWordsOnce(words) {
   const raw = await AIService._callClaude({
     messages: [{ role: 'user', content: `English words heard while listening: ${words.map(w => `"${w}"`).join(', ')}
 
@@ -8188,7 +8207,7 @@ async function savePodcast() {
   const wordList = rawWords
     .split(/[,\n;]+/).map(w => w.trim()).filter(Boolean)
     .filter((w, i, a) => a.findIndex(x => x.toLowerCase() === w.toLowerCase()) === i)
-    .slice(0, 12);   // a sane ceiling per session
+    ;   // no cap: a silent .slice() once dropped 8 of his 20 words without a word
 
   let words = [];
   if (wordList.length) {
@@ -8197,7 +8216,9 @@ async function savePodcast() {
     if (btn) { btn.disabled = true; btn.textContent = 'Completando palabras…'; }
     if (fb) { fb.style.color = 'var(--text-3)'; fb.textContent = `🔎 Buscando ${wordList.length} palabra${wordList.length !== 1 ? 's' : ''}…`; }
     try {
-      const data = await enrichWords(wordList);
+      const data = await enrichWords(wordList, (done, total) => {
+        if (fb) fb.textContent = `🔎 Completando ${done} de ${total}…`;
+      });
       words = wordList.map((w, i) => {
         const d = data.find(x => (x.word || '').toLowerCase() === w.toLowerCase()) || data[i] || {};
         return {
@@ -8236,6 +8257,73 @@ async function savePodcast() {
   document.getElementById('podcast-overlay')?.remove();
   renderPodcasts();
   toast('🎧 Sesión anotada');
+}
+
+/* Words remembered after the fact — or, in his case, the eight a silent cap
+ * quietly dropped — go into the session they belong to instead of forcing him
+ * to retype the whole list. */
+function addWordsToSession(id) {
+  const e = (state.podcastLog || []).find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('podword-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'podword-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:700;">➕ Más palabras</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('podword-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.76rem;color:var(--text-3);margin-bottom:14px;">${escapeHtml(e.title || '')}</div>
+      <textarea id="podword-more" rows="3" maxlength="800" placeholder="however, though, regardless, whether"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.5;resize:vertical;margin-bottom:10px;"></textarea>
+      <div id="podword-fb" style="font-size:0.78rem;min-height:18px;margin-bottom:8px;"></div>
+      <button class="btn btn-primary" id="podword-save" style="width:100%;padding:11px;" onclick="saveMoreWords('${e.id}')">Agregar</button>
+    </div>`;
+  ov.addEventListener('click', ev => { if (ev.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('podword-more')?.focus();
+}
+
+async function saveMoreWords(id) {
+  const e = (state.podcastLog || []).find(x => x.id === id);
+  if (!e) return;
+  const raw = (document.getElementById('podword-more')?.value || '').trim();
+  if (!raw) { toast('Escribe al menos una palabra'); return; }
+  const have = new Set((e.words || []).map(w => (w.word || '').toLowerCase()));
+  const list = raw.split(/[,\n;]+/).map(w => w.trim()).filter(Boolean)
+    .filter((w, i, a) => a.findIndex(x => x.toLowerCase() === w.toLowerCase()) === i)
+    .filter(w => !have.has(w.toLowerCase()));
+  if (!list.length) { toast('Esas palabras ya están en la sesión'); return; }
+
+  const btn = document.getElementById('podword-save');
+  const fb  = document.getElementById('podword-fb');
+  if (btn) { btn.disabled = true; btn.textContent = 'Completando…'; }
+  try {
+    const data = await enrichWords(list, (done, total) => {
+      if (fb) { fb.style.color = 'var(--text-3)'; fb.textContent = `🔎 ${done} de ${total}…`; }
+    });
+    e.words = (e.words || []).concat(list.map((w, i) => {
+      const d = data.find(x => (x.word || '').toLowerCase() === w.toLowerCase()) || data[i] || {};
+      return {
+        word: w,
+        translation: String(d.translation || '').trim(),
+        phonetic: String(d.phonetic || '').trim(),
+        emoji: String(d.emoji || '🎧').trim(),
+        example: String(d.example || '').trim() || undefined,
+        exampleTranslation: String(d.exampleTranslation || '').trim() || undefined,
+        type: String(d.type || 'word').trim(),
+      };
+    }));
+  } catch (err) {
+    e.words = (e.words || []).concat(list.map(w => ({ word: w, translation: '', emoji: '🎧' })));
+    toast('⚠ Las guardé sin completar — usa 🔄 después');
+  }
+  save();
+  document.getElementById('podword-overlay')?.remove();
+  renderPodcasts();
+  toast(`➕ ${list.length} palabra${list.length !== 1 ? 's' : ''} agregada${list.length !== 1 ? 's' : ''}`);
 }
 
 function practicePodcastWords(id) {
