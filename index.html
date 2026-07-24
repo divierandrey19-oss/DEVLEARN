@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-23a -->
+<!-- DEVLEARN_BUILD: 2026-07-23c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4591,7 +4591,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-23a';
+const APP_BUILD = '2026-07-23c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8159,7 +8159,12 @@ async function enrichWords(words) {
   const raw = await AIService._callClaude({
     messages: [{ role: 'user', content: `English words heard while listening: ${words.map(w => `"${w}"`).join(', ')}
 
-For EACH word give: Colombian Spanish translation, IPA phonetic, one emoji, ONE short natural example sentence at A2 level showing how the word is really used, and its Spanish translation.
+For EACH word give:
+- translation: the Colombian Spanish meaning
+- phonetic: the IPA of the ENGLISH word itself — never of the Spanish translation. "outside" is /aʊtˈsaɪd/, not /a.ˈfwe.ra/.
+- emoji: one emoji
+- example: ONE short natural sentence at A2 level, in ENGLISH, showing how the word is really used
+- exampleTranslation: that sentence in Spanish
 
 Respond ONLY with a JSON array, one object per word, in the same order:
 [{"word":"...","translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}]` }],
@@ -8448,7 +8453,12 @@ async function saveMyWord() {
       messages: [{ role: 'user', content: `English word or phrase: "${en}"
 Unit topic: ${topic}
 
-Give the Colombian Spanish translation as it is used in this topic, the IPA phonetic, one emoji, and ONE short A2 example sentence in English that fits the unit topic, with its Spanish translation.
+Give:
+- translation: the Colombian Spanish meaning as used in this topic
+- phonetic: the IPA of the ENGLISH word itself — never of the Spanish translation. "outside" is /aʊtˈsaɪd/, not /a.ˈfwe.ra/.
+- emoji: one emoji
+- example: ONE short A2 sentence in ENGLISH that fits the unit topic
+- exampleTranslation: that sentence in Spanish
 
 Respond ONLY with JSON:
 {"translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}` }],
@@ -13533,6 +13543,17 @@ function renderAllVocab() {
   const all = [];
   Object.entries(state.units).forEach(([key, u]) => {
     getUnitVocab(u).forEach(v => all.push({ ...v, unit: key }));
+    // Personal words live apart from the batches, but a search that cannot find
+    // them is a search that lies: he added one and it simply did not exist here.
+    // They keep the ✍️ badge so the distinction from the book stays visible.
+    (u.myWords || []).forEach(w => all.push({ ...w, unit: key, mine: true }));
+  });
+  // Words heard in podcasts belong to no unit, but they are still vocabulary he
+  // will look for later. Same failure otherwise: added, then unfindable.
+  (state.podcastLog || []).forEach(e => {
+    (e.words || []).forEach(w => {
+      if (w && w.word && w.translation) all.push({ ...w, unit: e.title || 'Podcast', heard: true });
+    });
   });
   if (!all.length) {
     c.innerHTML = `<div class="empty"><div class="empty-icon">📚</div><div class="empty-title">No vocabulary yet</div><div class="empty-sub">Start uploading book pages in any unit.</div></div>`;
@@ -13580,15 +13601,15 @@ function filterAllVocab(query) {
   }
 
   grid.innerHTML = list.map(w => `
-    <div class="vocab-card">
+    <div class="vocab-card"${w.mine || w.heard ? ' style="border-style:dashed;"' : ''}>
       <div class="vocab-image">${w.emoji || '📝'}</div>
       <div class="vocab-word">${escapeHtml(w.word || '')}</div>
       <div class="vocab-phonetic">${escapeHtml(w.phonetic || '')}</div>
       <div class="vocab-translation">${escapeHtml(w.translation || '')}</div>
-      <div class="vocab-example">"${escapeHtml(w.example || '')}"</div>
+      ${w.example ? `<div class="vocab-example">"${escapeHtml(w.example)}"</div>` : ''}
       <div class="vocab-footer">
         <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.word)}">🔊</button>
-        <span class="vocab-tag">${escapeHtml(w.type || 'word')}</span>
+        <span class="vocab-tag">${w.mine ? '✍️ mía' : w.heard ? '🎧 escuchada' : escapeHtml(w.type || 'word')}</span>
       </div>
     </div>
   `).join('');
