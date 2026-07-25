@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-23d -->
+<!-- DEVLEARN_BUILD: 2026-07-24b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4511,8 +4511,26 @@ window._mergeCloudState = function(cloud) {
   try {
     const imported = migrateState(cloud);
 
+    /* Union two lists without losing either side. `keyOf` decides identity;
+     * entries present on both keep the cloud's copy. */
+    const unionBy = (localArr, cloudArr, keyOf) => {
+      const out = new Map();
+      (localArr || []).forEach(x => { const k = keyOf(x); if (k != null) out.set(k, x); });
+      (cloudArr || []).forEach(x => { const k = keyOf(x); if (k != null) out.set(k, x); });
+      return [...out.values()];
+    };
+
     // Snapshot anything we need from local BEFORE cloud fields overwrite it
     const localStudyDates = [...(state.studyDates || [])];
+    // Top-level collections the cloud may simply not have yet. The overwrite
+    // loop below copies every cloud field, so without these snapshots a stale
+    // snapshot erases podcast sessions, marked classes and the mistake log.
+    const localPodcast   = [...(state.podcastLog || [])];
+    const localClasses   = [...(state.classesDone || [])];
+    const localSchedule  = { ...(state.classSchedule || {}) };
+    const localMistakes  = [...(state.mistakeLog || [])];
+    const localExamDate  = state.examDate;
+    const localExamLabel = state.examLabel;
     // Batch ids the cloud is known to have held. If a batch is in here but is
     // missing from the incoming snapshot, another device deleted it — so it
     // must NOT be resurrected. If it isn't in here, the cloud simply hasn't
@@ -4550,6 +4568,27 @@ window._mergeCloudState = function(cloud) {
       // ── Progress ──────────────────────────────────────────
       cloudUnit.fcProgress = mergeFcProgress(localUnit.fcProgress, cloudUnit.fcProgress);
 
+      /* ── Everything else the unit carries ──────────────────
+       * Only batches and fcProgress used to survive; the rest was taken from
+       * the cloud verbatim. A pull whose snapshot predated a local upload then
+       * erased the title and description the analysis had just written — which
+       * is exactly how a fully-loaded unit ended up displaying as "Unit 1".
+       * The same silence would have eaten his own added words and his notes. */
+      ['title', 'description', 'notes'].forEach(k => {
+        if (!cloudUnit[k] && localUnit[k]) cloudUnit[k] = localUnit[k];
+      });
+      cloudUnit.myWords = unionBy(localUnit.myWords, cloudUnit.myWords,
+        w => (w && w.word || '').trim().toLowerCase());
+      // Keyed objects: keep both sides, cloud wins per key.
+      ['exerciseState', 'drillState', 'examWrongQuestions', 'ownFeedback', 'ownExamples'].forEach(k => {
+        if (localUnit[k] || cloudUnit[k]) cloudUnit[k] = { ...(localUnit[k] || {}), ...(cloudUnit[k] || {}) };
+      });
+      cloudUnit.failedExercises = [...new Set([...(localUnit.failedExercises || []), ...(cloudUnit.failedExercises || [])])];
+      // Exam scores are an append-only history: never shrink it.
+      if ((localUnit.examScores || []).length > (cloudUnit.examScores || []).length) cloudUnit.examScores = localUnit.examScores;
+      cloudUnit.completed = cloudUnit.completed || localUnit.completed;
+      cloudUnit.startedAt = cloudUnit.startedAt || localUnit.startedAt;
+
       mergedUnits[key] = cloudUnit;
     });
 
@@ -4565,6 +4604,15 @@ window._mergeCloudState = function(cloud) {
     // who actually studied. Derive it from the union instead.
     state.streak = computeStreak(state.studyDates);
     state.lastStudyDate = state.studyDates[state.studyDates.length - 1] || state.lastStudyDate;
+
+    // Same rescue for the other collections the loop just overwrote.
+    state.podcastLog = unionBy(localPodcast, imported.podcastLog, e => e && e.id);
+    state.classesDone = [...new Set([...(localClasses), ...(imported.classesDone || [])])];
+    state.classSchedule = { ...localSchedule, ...(imported.classSchedule || {}) };
+    state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
+      m => `${m && m.source}|${(m && m.wrong || '').toLowerCase()}|${(m && m.right || '').toLowerCase()}`);
+    if (!state.examDate && localExamDate) { state.examDate = localExamDate; state.examLabel = state.examLabel || localExamLabel; }
+    healUnitTitles(state.units);
 
     // We have now reconciled with this snapshot: the cloud holds exactly these
     // batches. A push right after this will widen it to include our local ones.
@@ -4591,7 +4639,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-23d';
+const APP_BUILD = '2026-07-24b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5777,7 +5825,7 @@ function loadState() {
       return imported;
     }
     let raw = localStorage.getItem(KEY);
-    if (raw) return migrateState(JSON.parse(raw));
+    if (raw) { const st = migrateState(JSON.parse(raw)); healUnitTitles(st.units); return st; }
     // Try migrating from older versions
     for (const oldKey of OLD_KEYS) {
       raw = localStorage.getItem(oldKey);
@@ -5811,6 +5859,20 @@ function defaultState() {
   };
 }
 
+/* Heal units whose title was erased by the old sync merge. Every batch keeps the
+ * title its own analysis produced, so the unit recovers from the first one that
+ * has it instead of showing the "Unit N" placeholder forever. Deliberately not
+ * part of migrateState: running it on an incoming cloud snapshot would invent a
+ * title there that then outranks the real one held locally. */
+function healUnitTitles(units) {
+  Object.values(units || {}).forEach(u => {
+    if (!u || u.title) return;
+    const named = (u.batches || []).find(b => b && b.title);
+    if (named) u.title = named.title;
+  });
+  return units;
+}
+
 function migrateState(s) {
   const base = defaultState();
   const merged = { ...base, ...s };
@@ -5819,6 +5881,7 @@ function migrateState(s) {
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
+
   // Personal words survive sync as a per-unit union by word text.
   Object.values(merged.units || {}).forEach(u => { if (u && !Array.isArray(u.myWords)) u.myWords = u.myWords || []; });
   // Heal a streak that already drifted: the dates are the record, the count was
