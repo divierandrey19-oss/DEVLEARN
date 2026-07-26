@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24b -->
+<!-- DEVLEARN_BUILD: 2026-07-24c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4639,7 +4639,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24b';
+const APP_BUILD = '2026-07-24c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6095,7 +6095,7 @@ function showStorageBanner() {
     Si cierras la app ahora, pierdes lo de esta sesión.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="exportData()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">↑ Exportar copia</button>
-      <button onclick="openSettings()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Liberar espacio</button>
+      <button onclick="freeLocalStorage()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Liberar espacio</button>
     </div>`;
   document.body.appendChild(el);
 }
@@ -15809,6 +15809,38 @@ async function checkDeployStatus() {
 }
 
 /** Shows what's stored where. Photos are the big item, so they get their own line. */
+/* The banner used to send him to Settings, whose "Free space" deletes page
+ * photos — but photos live in IndexedDB, so that frees nothing here and costs
+ * him the ability to regenerate. These are the things actually sitting in
+ * localStorage next to the state: a full duplicate left behind by an import
+ * (only ever removed by Undo, so it lingers forever) and finished session keys. */
+function freeLocalStorage() {
+  const before = (() => { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } return n; })();
+
+  const junk = [];
+  const preImport = localStorage.getItem(PRE_IMPORT_KEY);
+  if (preImport) junk.push([PRE_IMPORT_KEY, preImport.length, 'copia de seguridad de una importación anterior']);
+  ['devlearn_quiz_session', 'devlearn_exam_session', 'devlearn_pending_import'].forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v) junk.push([k, v.length, 'sesión terminada']);
+  });
+
+  if (!junk.length) {
+    alert('No hay nada de sobra que borrar.\n\nTu contenido de estudio es lo que ocupa el espacio. Exporta una copia y avísame — toca moverlo a un almacén más grande.');
+    return;
+  }
+
+  const kb = n => (n / 1024).toFixed(0);
+  const detalle = junk.map(([k, n, why]) => `• ${kb(n)} KB — ${why}`).join('\n');
+  if (!confirm(`Se puede liberar ${kb(junk.reduce((a, j) => a + j[1], 0))} KB:\n\n${detalle}\n\nTu vocabulario, progreso y palabras NO se tocan.\n\n¿Liberar?`)) return;
+
+  junk.forEach(([k]) => { try { localStorage.removeItem(k); } catch (e) {} });
+  const after = (() => { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } return n; })();
+  toast(`🧹 ${kb(before - after)} KB liberados`);
+  try { saveNow(); } catch (e) {}
+  setTimeout(() => location.reload(), 900);
+}
+
 async function renderStorageUsage() {
   const el = document.getElementById('storage-usage');
   if (!el) return;
