@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24c -->
+<!-- DEVLEARN_BUILD: 2026-07-24d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4639,7 +4639,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24c';
+const APP_BUILD = '2026-07-24d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -15809,34 +15809,46 @@ async function checkDeployStatus() {
 }
 
 /** Shows what's stored where. Photos are the big item, so they get their own line. */
-/* The banner used to send him to Settings, whose "Free space" deletes page
- * photos — but photos live in IndexedDB, so that frees nothing here and costs
- * him the ability to regenerate. These are the things actually sitting in
- * localStorage next to the state: a full duplicate left behind by an import
- * (only ever removed by Undo, so it lingers forever) and finished session keys. */
 function freeLocalStorage() {
-  const before = (() => { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } return n; })();
+  const kb = n => (n / 1024).toFixed(0);
+  const sizeOf = k => (k.length + (localStorage.getItem(k) || '').length);
+  const total = () => { let n = 0; for (let i = 0; i < localStorage.length; i++) n += sizeOf(localStorage.key(i)); return n; };
+  const before = total();
 
-  const junk = [];
-  const preImport = localStorage.getItem(PRE_IMPORT_KEY);
-  if (preImport) junk.push([PRE_IMPORT_KEY, preImport.length, 'copia de seguridad de una importación anterior']);
-  ['devlearn_quiz_session', 'devlearn_exam_session', 'devlearn_pending_import'].forEach(k => {
-    const v = localStorage.getItem(k);
-    if (v) junk.push([k, v.length, 'sesión terminada']);
-  });
+  // Keys the app is using right now — never offered for deletion.
+  const KEEP = new Set([KEY, 'devlearn_apikey', 'devlearn_nav']);
+
+  /* Scanning every key instead of four known names: the first version of this
+   * reported "0 KB" while the store was full, which means the space was held by
+   * something it never looked at — almost always a state copy left under an
+   * older key name by a previous version of the app. */
+  const all = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    all.push({ k, n: sizeOf(k), keep: KEEP.has(k) });
+  }
+  all.sort((a, b) => b.n - a.n);
+
+  const junk = all.filter(x => !x.keep && x.n > 0);
+  const inventory = all.map(x => `• ${kb(x.n)} KB — ${x.k}${x.keep ? ' (en uso)' : ''}`).join('\n');
 
   if (!junk.length) {
-    alert('No hay nada de sobra que borrar.\n\nTu contenido de estudio es lo que ocupa el espacio. Exporta una copia y avísame — toca moverlo a un almacén más grande.');
+    alert(
+      `Todo lo guardado (${kb(before)} KB):\n\n${inventory}\n\n` +
+      `No hay nada de sobra: lo que ocupa el espacio es tu propio contenido de estudio.\n\n` +
+      `Exporta una copia y avísame — toca moverlo al almacén grande.`
+    );
     return;
   }
 
-  const kb = n => (n / 1024).toFixed(0);
-  const detalle = junk.map(([k, n, why]) => `• ${kb(n)} KB — ${why}`).join('\n');
-  if (!confirm(`Se puede liberar ${kb(junk.reduce((a, j) => a + j[1], 0))} KB:\n\n${detalle}\n\nTu vocabulario, progreso y palabras NO se tocan.\n\n¿Liberar?`)) return;
+  if (!confirm(
+    `Todo lo guardado (${kb(before)} KB):\n\n${inventory}\n\n` +
+    `Se puede liberar ${kb(junk.reduce((a, j) => a + j.n, 0))} KB borrando lo que NO está en uso.\n\n` +
+    `Tu vocabulario, progreso y palabras NO se tocan.\n\n¿Liberar?`
+  )) return;
 
-  junk.forEach(([k]) => { try { localStorage.removeItem(k); } catch (e) {} });
-  const after = (() => { let n = 0; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + (localStorage.getItem(k) || '').length; } return n; })();
-  toast(`🧹 ${kb(before - after)} KB liberados`);
+  junk.forEach(x => { try { localStorage.removeItem(x.k); } catch (e) {} });
+  toast(`🧹 ${kb(before - total())} KB liberados`);
   try { saveNow(); } catch (e) {}
   setTimeout(() => location.reload(), 900);
 }
