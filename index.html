@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24f -->
+<!-- DEVLEARN_BUILD: 2026-07-24h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4462,15 +4462,12 @@ let state = loadState();
     if (!raw.includes('"data:image')) return;
     const clean = JSON.stringify(stateWithoutImages());
     if (clean.length >= raw.length) return;
-    try {
-      localStorage.setItem(KEY, clean);
-    } catch (e) {
-      // Near the cap the browser wants room for both copies — drop the old one
-      // first. The in-memory state still holds everything, so if this write
-      // fails the very next save will try again.
-      localStorage.removeItem(KEY);
-      localStorage.setItem(KEY, clean);
-    }
+    /* Writing a SMALLER value in place needs no room freed, so this never
+     * removes the old one first. An earlier version did, and a rejected write
+     * then left the store empty — losing everything on the next boot. If this
+     * throws, the bloated-but-valid data simply stays and writeState() (which
+     * has its own restore path) tries again once the user does something. */
+    localStorage.setItem(KEY, clean);
     console.info(`Storage healed: ${(raw.length / 1024).toFixed(0)} KB → ${(clean.length / 1024).toFixed(0)} KB`);
   } catch (e) { console.warn('Storage heal skipped:', e); }
 })();
@@ -4663,7 +4660,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24f';
+const APP_BUILD = '2026-07-24h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6132,8 +6129,12 @@ function showStorageBanner() {
     + 'color:#fff;padding:12px 16px;font-size:0.82rem;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.4);'
     + 'display:flex;flex-direction:column;gap:8px;';
   el.innerHTML = `
-    <div><strong>⚠️ Almacenamiento lleno — tu progreso NO se está guardando.</strong><br>
-    Si cierras la app ahora, pierdes lo de esta sesión.</div>
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;"><strong>⚠️ Almacenamiento lleno — tu progreso NO se está guardando.</strong><br>
+      Si cierras la app ahora, pierdes lo de esta sesión.</div>
+      <button onclick="hideStorageBanner()" title="Cerrar"
+        style="background:transparent;border:0;color:#fff;font-size:1.1rem;line-height:1;padding:2px 4px;flex-shrink:0;">✕</button>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="exportData()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">↑ Exportar copia</button>
       <button onclick="freeLocalStorage()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Liberar espacio</button>
