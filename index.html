@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24h -->
+<!-- DEVLEARN_BUILD: 2026-07-26a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4604,7 +4604,12 @@ window._mergeCloudState = function(cloud) {
       ['exerciseState', 'drillState', 'examWrongQuestions', 'ownFeedback', 'ownExamples'].forEach(k => {
         if (localUnit[k] || cloudUnit[k]) cloudUnit[k] = { ...(localUnit[k] || {}), ...(cloudUnit[k] || {}) };
       });
-      cloudUnit.failedExercises = [...new Set([...(localUnit.failedExercises || []), ...(cloudUnit.failedExercises || [])])];
+      /* new Set() on objects dedupes by REFERENCE, not content: every sync
+       * kept both copies and the list doubled, turning 15 real entries into
+       * 199,680 and filling the whole store. Key it by question, and honour the
+       * same 20-item cap the writer applies. */
+      cloudUnit.failedExercises = unionBy(localUnit.failedExercises, cloudUnit.failedExercises,
+        e => e && (e.question || JSON.stringify(e))).slice(0, 20);
       // Exam scores are an append-only history: never shrink it.
       if ((localUnit.examScores || []).length > (cloudUnit.examScores || []).length) cloudUnit.examScores = localUnit.examScores;
       cloudUnit.completed = cloudUnit.completed || localUnit.completed;
@@ -4660,7 +4665,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24h';
+const APP_BUILD = '2026-07-26a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5902,6 +5907,23 @@ function migrateState(s) {
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
+  /* A sync merge that deduped objects by reference doubled this list on every
+   * pull — 15 real entries reached 199,680 and pushed the whole state past the
+   * storage cap, so nothing could save. Collapse it back to the 20 the writer
+   * ever intended to keep. */
+  Object.values(merged.units || {}).forEach(u => {
+    if (!u || !Array.isArray(u.failedExercises) || !u.failedExercises.length) return;
+    const seen = new Set();
+    const clean = [];
+    for (const e of u.failedExercises) {
+      const k = e && (e.question || JSON.stringify(e));
+      if (k == null || seen.has(k)) continue;
+      seen.add(k);
+      clean.push(e);
+      if (clean.length >= 20) break;
+    }
+    u.failedExercises = clean;
+  });
 
   // Personal words survive sync as a per-unit union by word text.
   Object.values(merged.units || {}).forEach(u => { if (u && !Array.isArray(u.myWords)) u.myWords = u.myWords || []; });
