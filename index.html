@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-26a -->
+<!-- DEVLEARN_BUILD: 2026-07-26b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4665,7 +4665,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-26a';
+const APP_BUILD = '2026-07-26b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6078,6 +6078,14 @@ async function pruneImages() {
   const alive = new Set();
   Object.values(state.units || {}).forEach(u =>
     (u.batches || []).forEach(b => { if (b.id) alive.add(b.id); }));
+  /* If the state has no batches at all, this is almost certainly a failed load
+   * rather than an empty library — and pruning against it deletes every photo
+   * the user has. That is exactly how a boot that found localStorage empty
+   * wiped all page images while the cloud quietly restored the text. Photos
+   * only ever live here, so there is no second copy to recover them from.
+   * Refusing to prune costs a little unused space; the alternative is
+   * unrecoverable. */
+  if (!alive.size) { console.warn('pruneImages skipped: no batches in state'); return; }
   const stored = await ImageStore.keys();
   await Promise.all(stored.filter(k => !alive.has(k)).map(k => ImageStore.delete(k)));
 }
