@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24e -->
+<!-- DEVLEARN_BUILD: 2026-07-24f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4451,6 +4451,30 @@ const KEY = 'lingua_v4';
 const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
 let state = loadState();
 
+/* A backup import used to write the photos into localStorage along with the
+ * text, which is what filled the ~5MB cap. Stripping them happens on the next
+ * save — but a device sitting on an already-full store has nothing to save, so
+ * it would keep warning forever. Detect the baked-in photos and rewrite once,
+ * right at boot, before anything else runs. */
+(function healBloatedStore() {
+  try {
+    const raw = localStorage.getItem(KEY) || '';
+    if (!raw.includes('"data:image')) return;
+    const clean = JSON.stringify(stateWithoutImages());
+    if (clean.length >= raw.length) return;
+    try {
+      localStorage.setItem(KEY, clean);
+    } catch (e) {
+      // Near the cap the browser wants room for both copies — drop the old one
+      // first. The in-memory state still holds everything, so if this write
+      // fails the very next save will try again.
+      localStorage.removeItem(KEY);
+      localStorage.setItem(KEY, clean);
+    }
+    console.info(`Storage healed: ${(raw.length / 1024).toFixed(0)} KB → ${(clean.length / 1024).toFixed(0)} KB`);
+  } catch (e) { console.warn('Storage heal skipped:', e); }
+})();
+
 // Firebase sync helpers
 window._appState = function() { return state; };
 /**
@@ -4639,7 +4663,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24e';
+const APP_BUILD = '2026-07-24f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
