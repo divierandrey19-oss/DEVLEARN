@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-24d -->
+<!-- DEVLEARN_BUILD: 2026-07-24e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4639,7 +4639,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-24d';
+const APP_BUILD = '2026-07-24e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6065,7 +6065,24 @@ function writeState() {
     // Photos are NOT written here — they live in IndexedDB. Keeping them in
     // this blob is what filled localStorage's ~5MB cap and forced photos to be
     // deleted. The in-memory state keeps them, so nothing else changes.
-    localStorage.setItem(KEY, JSON.stringify(stateWithoutImages()));
+    const payload = JSON.stringify(stateWithoutImages());
+    try {
+      localStorage.setItem(KEY, payload);
+    } catch (e) {
+      /* Right at the cap a browser can refuse to replace a large value in
+       * place, even when the replacement is smaller — it wants room for both
+       * at once. Dropping the old blob first guarantees the space. The old
+       * value goes back if the write still fails, so a failed save never
+       * costs more than it already did. */
+      const prev = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      try {
+        localStorage.setItem(KEY, payload);
+      } catch (e2) {
+        if (prev) { try { localStorage.setItem(KEY, prev); } catch (e3) {} }
+        throw e2;
+      }
+    }
     _saveDirty = false;
     if (_storageFull) { _storageFull = false; hideStorageBanner(); }
     return true;
@@ -15583,8 +15600,10 @@ function doImport() {
     // them — push them into IndexedDB or they'd disappear on the next reload.
     persistImages().catch(e => console.warn('Image import failed:', e));
 
-    // Step 2: Save directly to localStorage
-    localStorage.setItem(KEY, JSON.stringify(state));
+    // Step 2: Save directly to localStorage — WITHOUT the photos. They were
+    // just handed to IndexedDB above; writing them here too put ~3MB of images
+    // into the 5MB text store and is what filled it.
+    localStorage.setItem(KEY, JSON.stringify(stateWithoutImages()));
 
     // Step 3: Verify
     const verify = localStorage.getItem(KEY);
