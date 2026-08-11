@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-07-26b -->
+<!-- DEVLEARN_BUILD: 2026-08-11a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3851,6 +3851,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <button type="button" class="nav-item" onclick="navigate('vocab-all')"><span class="nav-icon">📚</span> Vocabulary <span class="nav-badge" id="vocab-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('tutor')"><span class="nav-icon">🎙️</span> AI Tutor</button>
       <button type="button" class="nav-item" onclick="navigate('podcasts')"><span class="nav-icon">🎧</span> Podcasts</button>
+      <button type="button" class="nav-item" onclick="navigate('texts')"><span class="nav-icon">📝</span> Mis textos</button>
       <button type="button" class="nav-item" onclick="openFocusMode()"><span class="nav-icon">🎯</span> Focus Mode</button>
     </nav>
 
@@ -4110,6 +4111,11 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
     </div>
 
     <!-- ===== VOCAB PAGE ===== -->
+    <div class="page" id="page-texts">
+      <div class="section-title">📝 Mis textos</div>
+      <div id="texts-content"></div>
+    </div>
+
     <div class="page" id="page-podcasts">
       <div class="section-title">🎧 Podcasts</div>
       <div id="podcasts-content"></div>
@@ -4547,6 +4553,7 @@ window._mergeCloudState = function(cloud) {
     // loop below copies every cloud field, so without these snapshots a stale
     // snapshot erases podcast sessions, marked classes and the mistake log.
     const localPodcast   = [...(state.podcastLog || [])];
+    const localTexts     = [...(state.texts || [])];
     const localClasses   = [...(state.classesDone || [])];
     const localSchedule  = { ...(state.classSchedule || {}) };
     const localMistakes  = [...(state.mistakeLog || [])];
@@ -4633,6 +4640,7 @@ window._mergeCloudState = function(cloud) {
 
     // Same rescue for the other collections the loop just overwrote.
     state.podcastLog = unionBy(localPodcast, imported.podcastLog, e => e && e.id);
+    state.texts = unionBy(localTexts, imported.texts, e => e && e.id);
     state.classesDone = [...new Set([...(localClasses), ...(imported.classesDone || [])])];
     state.classSchedule = { ...localSchedule, ...(imported.classSchedule || {}) };
     state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
@@ -4665,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-07-26b';
+const APP_BUILD = '2026-08-11a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5907,6 +5915,7 @@ function migrateState(s) {
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
+  merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
   /* A sync merge that deduped objects by reference doubled this list on every
    * pull — 15 real entries reached 199,680 and pushed the whole state past the
    * storage cap, so nothing could save. Collapse it back to the 20 the writer
@@ -6251,10 +6260,10 @@ function navigate(page) {
   const titles = {
     'dashboard': 'Dashboard', 'levels': 'Levels', 'level': 'Level',
     'unit': 'Unit', 'progress': 'Progress', 'flashcards-all': 'Flashcards',
-    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts',
+    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts', 'texts': 'Mis textos',
   };
   document.getElementById('page-title').textContent = titles[page] || page;
-  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6 };
+  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6, 'texts': 7 };
   if (navMap[page] !== undefined) {
     document.querySelectorAll('.nav-item')[navMap[page]].classList.add('active');
   }
@@ -6265,6 +6274,7 @@ function navigate(page) {
   if (page === 'vocab-all') renderAllVocab();
   if (page === 'tutor') initStandaloneChat();
   if (page === 'podcasts') renderPodcasts();
+  if (page === 'texts') renderTexts();
   if (window.innerWidth <= 880) {
     const sb = document.getElementById('sidebar');
     sb.classList.remove('open');
@@ -8163,6 +8173,306 @@ function renderVocabulary(vocab, unit) {
  * how long, and whatever he wants to note. It counts toward the streak, so a
  * day spent on podcasts stops reading as a day not studied.
  */
+/* ── 📝 MIS TEXTOS ───────────────────────────────────────────────
+ * He writes short texts, memorises them, and recombines the pieces to answer
+ * in class — his own words, and the reason he stopped translating from Spanish
+ * mid-sentence. This makes that workflow first-class: paste the text, tap any
+ * word you can't say, and shadow the whole thing.
+ *
+ * Shadowing is the point. Repeating over a voice at natural speed is one of
+ * the few things that actually moves "intelligible", his lowest rubric line —
+ * you cannot produce a rhythm you have never matched.
+ */
+function renderTexts() {
+  const c = document.getElementById('texts-content');
+  if (!c) return;
+  const list = (state.texts || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+  c.innerHTML = `
+    <div style="font-size:0.82rem;color:var(--text-3);line-height:1.5;margin-bottom:14px;">
+      Pega aquí los textos que preparas para clase. Toca cualquier palabra para su traducción
+      y pronunciación, o dale ▶ para practicar shadowing.
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:18px;" onclick="openAddText()">
+      ➕ Pegar un texto
+    </button>
+    ${!list.length ? `
+      <div class="empty">
+        <div class="empty-icon">📝</div>
+        <div class="empty-title">Todavía no has guardado ningún texto</div>
+        <div class="empty-sub">Pega el texto que preparaste y practícalo aquí.</div>
+      </div>` : list.map(t => `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.92rem;">${escapeHtml(t.title || 'Texto')}</div>
+            <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
+              ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\\s+/).length} palabras
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;flex-shrink:0;" onclick="deleteText('${t.id}')">🗑</button>
+        </div>
+        <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
+          ▶ Practicar
+        </button>
+      </div>`).join('')}
+  `;
+}
+
+function openAddText() {
+  document.getElementById('text-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'text-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:420px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-weight:700;">📝 Pegar un texto</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('text-overlay').remove()">✕</button>
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Título</label>
+      <input type="text" id="text-title" maxlength="80" autocomplete="off" placeholder="Ej. Unidad 6 · página 61"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">El texto (en inglés)</label>
+      <textarea id="text-body" rows="8" maxlength="6000" placeholder="Pega aquí el texto…"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:16px;"></textarea>
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="saveText()">Guardar</button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('text-body')?.focus();
+}
+
+function saveText() {
+  const title = (document.getElementById('text-title')?.value || '').trim();
+  const body  = (document.getElementById('text-body')?.value || '').trim();
+  if (!body) { toast('Pega el texto primero'); return; }
+  state.texts = state.texts || [];
+  const id = 'txt_' + Date.now();
+  state.texts.push({ id, title: title || 'Texto sin título', body, date: todayLocal(), ts: Date.now(), lookups: {} });
+  save();
+  document.getElementById('text-overlay')?.remove();
+  renderTexts();
+  openText(id);
+}
+
+function deleteText(id) {
+  const t = (state.texts || []).find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`¿Borrar "${t.title}"?`)) return;
+  state.texts = state.texts.filter(x => x.id !== id);
+  save();
+  renderTexts();
+}
+
+/* ── Reader ─────────────────────────────────────────────────────── */
+let _txState = null;
+
+/** Split into sentences for shadowing: whole-text playback gives nothing to
+ *  repeat after, and a sentence is the unit a learner can actually hold. */
+function splitSentences(text) {
+  return String(text || '')
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function openText(id) {
+  const t = (state.texts || []).find(x => x.id === id);
+  if (!t) return;
+  _txState = { id, sentences: splitSentences(t.body), current: -1, rate: state.txRate || 0.85, playing: false };
+  renderTextReader();
+}
+
+function renderTextReader() {
+  const st = _txState;
+  if (!st) return;
+  const t = (state.texts || []).find(x => x.id === st.id);
+  if (!t) return;
+
+  document.getElementById('text-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'text-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:var(--bg, #0d1117);z-index:900;display:flex;flex-direction:column;';
+
+  const rates = [0.7, 0.85, 1.0];
+  ov.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">Toca una palabra para su traducción</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeTextReader()">✕</button>
+    </div>
+
+    <div id="tx-body" style="flex:1;overflow-y:auto;padding:16px;font-size:1.05rem;line-height:2.1;">
+      ${st.sentences.map((sent, si) => `
+        <span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
+          sent.split(/(\s+)/).map(tok => {
+            if (!/\S/.test(tok)) return tok;
+            const clean = tok.replace(/[^A-Za-z'’-]/g, '');
+            if (!clean) return escapeHtml(tok);
+            return `<span onclick="lookupWord(this,'${escapeStr(clean)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+          }).join('')
+        }</span> `).join('')}
+    </div>
+
+    <div id="tx-word" style="flex-shrink:0;"></div>
+
+    <div style="flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-primary" id="tx-play" style="flex:1;padding:12px;" onclick="toggleShadow()">
+        ${st.playing ? '⏸ Pausa' : '▶ Escuchar'}
+      </button>
+      <button class="btn btn-ghost" style="padding:12px 14px;" onclick="repeatSentence()" title="Repetir la frase">🔁</button>
+      <button class="btn btn-ghost" style="padding:12px 14px;font-size:0.8rem;" onclick="cycleShadowRate()" title="Velocidad">${st.rate}×</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function closeTextReader() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  _txState = null;
+  document.getElementById('text-overlay')?.remove();
+  renderTexts();
+}
+
+function cycleShadowRate() {
+  if (!_txState) return;
+  const rates = [0.7, 0.85, 1.0];
+  const i = rates.indexOf(_txState.rate);
+  _txState.rate = rates[(i + 1) % rates.length];
+  state.txRate = _txState.rate;
+  save();
+  const wasPlaying = _txState.playing;
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  _txState.playing = false;
+  renderTextReader();
+  if (wasPlaying) { _txState.current--; toggleShadow(); }
+}
+
+function highlightSentence(si) {
+  document.querySelectorAll('.tx-sent').forEach(el => {
+    const on = Number(el.dataset.si) === si;
+    el.style.background = on ? 'var(--accent-glow, #1f6feb33)' : '';
+  });
+  const el = document.querySelector(`.tx-sent[data-si="${si}"]`);
+  if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+/* Speaks one sentence at a time and waits for it to finish before the next, so
+ * the highlight stays in step with the voice — that pairing is what makes it
+ * shadowing rather than just audio. */
+function toggleShadow() {
+  const st = _txState;
+  if (!st) return;
+  if (!('speechSynthesis' in window)) { toast('Audio no disponible en este navegador'); return; }
+
+  if (st.playing) {
+    window.speechSynthesis.cancel();
+    st.playing = false;
+    const b = document.getElementById('tx-play');
+    if (b) b.textContent = '▶ Escuchar';
+    return;
+  }
+
+  st.playing = true;
+  const b = document.getElementById('tx-play');
+  if (b) b.textContent = '⏸ Pausa';
+
+  const speakNext = () => {
+    if (!_txState || !_txState.playing) return;
+    _txState.current++;
+    if (_txState.current >= _txState.sentences.length) {
+      _txState.current = -1;
+      _txState.playing = false;
+      const bb = document.getElementById('tx-play');
+      if (bb) bb.textContent = '▶ Escuchar';
+      document.querySelectorAll('.tx-sent').forEach(el => { el.style.background = ''; });
+      recordStudyDate();
+      save();
+      return;
+    }
+    highlightSentence(_txState.current);
+    const u = new SpeechSynthesisUtterance(speakableText(_txState.sentences[_txState.current]));
+    u.lang = 'en-US';
+    u.rate = _txState.rate;
+    u.onend = () => setTimeout(speakNext, 260);   // a beat to breathe and repeat
+    u.onerror = () => { if (_txState) { _txState.playing = false; } };
+    window.speechSynthesis.speak(u);
+  };
+  window.speechSynthesis.cancel();
+  speakNext();
+}
+
+function repeatSentence() {
+  const st = _txState;
+  if (!st) return;
+  const i = Math.max(0, st.current);
+  highlightSentence(i);
+  speak(st.sentences[i], st.rate);
+}
+
+/* Looks a word up. His own vocabulary is checked first: with 1126 words
+ * already extracted, most taps resolve instantly and cost nothing. Results are
+ * cached on the text so the same word is never paid for twice. */
+async function lookupWord(el, word) {
+  const st = _txState;
+  if (!st) return;
+  const t = (state.texts || []).find(x => x.id === st.id);
+  if (!t) return;
+  const key = word.toLowerCase();
+  t.lookups = t.lookups || {};
+
+  const show = (data, source) => {
+    const box = document.getElementById('tx-word');
+    if (!box) return;
+    box.innerHTML = `
+      <div style="border-top:1px solid var(--border);background:var(--card);padding:12px 16px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="font-size:1.4rem;flex-shrink:0;">${data.emoji || '📖'}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;">${escapeHtml(word)}
+              ${data.phonetic ? `<span style="font-weight:400;color:var(--text-3);font-size:0.76rem;margin-left:6px;">${escapeHtml(data.phonetic)}</span>` : ''}
+            </div>
+            <div style="font-size:0.86rem;color:var(--text-2);">${escapeHtml(data.translation || '…')}</div>
+            ${source ? `<div style="font-size:0.66rem;color:var(--text-3);margin-top:2px;">${source}</div>` : ''}
+          </div>
+          <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(word)}">🔊</button>
+          <button class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:0.66rem;" onclick="document.getElementById('tx-word').innerHTML=''">✕</button>
+        </div>
+      </div>`;
+  };
+
+  if (t.lookups[key]) { show(t.lookups[key], ''); speak(word); return; }
+
+  const known = typeof findExistingWord === 'function' ? findExistingWord(word) : null;
+  if (known && known.translation) {
+    const data = { translation: known.translation, phonetic: '', emoji: '📗' };
+    t.lookups[key] = data; save();
+    show(data, `ya está en ${known.where}`);
+    speak(word);
+    return;
+  }
+
+  show({ translation: 'buscando…', emoji: '🔎' }, '');
+  speak(word);
+  try {
+    const data = await enrichWords([word]);
+    const d = (data && data[0]) || {};
+    const entry = {
+      translation: String(d.translation || '').trim(),
+      phonetic: String(d.phonetic || '').trim(),
+      emoji: String(d.emoji || '📖').trim(),
+    };
+    if (!entry.translation) throw new Error('empty');
+    t.lookups[key] = entry;
+    save();
+    show(entry, '');
+  } catch (e) {
+    show({ translation: 'No pude buscarla — revisa tu conexión', emoji: '⚠️' }, '');
+  }
+}
+
 function renderPodcasts() {
   const c = document.getElementById('podcasts-content');
   if (!c) return;
