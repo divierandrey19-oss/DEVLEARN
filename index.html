@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-11a -->
+<!-- DEVLEARN_BUILD: 2026-08-11c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-11a';
+const APP_BUILD = '2026-08-11c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8207,7 +8207,7 @@ function renderTexts() {
           <div style="flex:1;min-width:0;">
             <div style="font-weight:700;font-size:0.92rem;">${escapeHtml(t.title || 'Texto')}</div>
             <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
-              ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\\s+/).length} palabras
+              ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} palabras · ${splitSentences(t.body).length} frases
             </div>
           </div>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;flex-shrink:0;" onclick="deleteText('${t.id}')">🗑</button>
@@ -8319,12 +8319,19 @@ function renderTextReader() {
 
     <div id="tx-word" style="flex-shrink:0;"></div>
 
-    <div style="flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-primary" id="tx-play" style="flex:1;padding:12px;" onclick="toggleShadow()">
-        ${st.playing ? '⏸ Pausa' : '▶ Escuchar'}
-      </button>
-      <button class="btn btn-ghost" style="padding:12px 14px;" onclick="repeatSentence()" title="Repetir la frase">🔁</button>
-      <button class="btn btn-ghost" style="padding:12px 14px;font-size:0.8rem;" onclick="cycleShadowRate()" title="Velocidad">${st.rate}×</button>
+    <div style="flex-shrink:0;padding:10px 16px;border-top:1px solid var(--border);">
+      <div id="tx-pos" style="font-size:0.68rem;color:var(--text-3);text-align:center;margin-bottom:8px;">
+        ${st.current >= 0 ? `Frase ${st.current + 1} de ${st.sentences.length}` : `${st.sentences.length} frases`} · ${st.rate}×
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="btn btn-ghost" style="padding:12px 12px;" onclick="restartText()" title="Volver al inicio">⏮</button>
+        <button class="btn btn-ghost" style="padding:12px 12px;" onclick="prevSentence()" title="Frase anterior">◀</button>
+        <button class="btn btn-primary" id="tx-play" style="flex:1;padding:12px;" onclick="toggleShadow()">
+          ${st.playing ? '⏸ Pausa' : '▶ Escuchar'}
+        </button>
+        <button class="btn btn-ghost" style="padding:12px 12px;" onclick="repeatSentence()" title="Repetir esta frase">🔁</button>
+        <button class="btn btn-ghost" style="padding:12px 10px;font-size:0.78rem;" onclick="cycleShadowRate()" title="Velocidad">${st.rate}×</button>
+      </div>
     </div>`;
   document.body.appendChild(ov);
 }
@@ -8338,7 +8345,10 @@ function closeTextReader() {
 
 function cycleShadowRate() {
   if (!_txState) return;
-  const rates = [0.7, 0.85, 1.0];
+  /* 0.7 was the floor, but reading along is far easier than shadowing blind:
+   * with the text covered he needs more room between words. 0.5 and 0.6 make
+   * eyes-closed practice possible without turning it into a different exercise. */
+  const rates = [1.0, 0.85, 0.7, 0.6, 0.5];   // each tap = slower, then wraps
   const i = rates.indexOf(_txState.rate);
   _txState.rate = rates[(i + 1) % rates.length];
   state.txRate = _txState.rate;
@@ -8350,7 +8360,40 @@ function cycleShadowRate() {
   if (wasPlaying) { _txState.current--; toggleShadow(); }
 }
 
+/* Step back one sentence, or jump to the start. Repeat alone was not enough:
+ * missing a line meant restarting the whole text or losing the thread. */
+function prevSentence() {
+  const st = _txState;
+  if (!st) return;
+  st.current = Math.max(0, (st.current < 0 ? 0 : st.current) - 1);
+  highlightSentence(st.current);
+  if (st.playing) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    st.playing = false;
+    st.current--;          // toggleShadow advances before speaking
+    toggleShadow();
+  } else {
+    speak(st.sentences[st.current], st.rate);
+  }
+}
+
+function restartText() {
+  const st = _txState;
+  if (!st) return;
+  const wasPlaying = st.playing;
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  st.playing = false;
+  st.current = -1;
+  document.querySelectorAll('.tx-sent').forEach(el => { el.style.background = ''; });
+  const b = document.getElementById('tx-play');
+  if (b) b.textContent = '▶ Escuchar';
+  if (wasPlaying) toggleShadow();
+  else { highlightSentence(0); document.querySelector('#tx-body')?.scrollTo({ top: 0, behavior: 'smooth' }); }
+}
+
 function highlightSentence(si) {
+  const pos = document.getElementById('tx-pos');
+  if (pos && _txState) pos.textContent = `Frase ${si + 1} de ${_txState.sentences.length} · ${_txState.rate}×`;
   document.querySelectorAll('.tx-sent').forEach(el => {
     const on = Number(el.dataset.si) === si;
     el.style.background = on ? 'var(--accent-glow, #1f6feb33)' : '';
