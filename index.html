@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-12c -->
+<!-- DEVLEARN_BUILD: 2026-08-13a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-12c';
+const APP_BUILD = '2026-08-13a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6441,7 +6441,9 @@ function renderCourseTracker() {
     });
 
   const expanded = state.courseTrackerOpen === true;
-  const visible = expanded ? remaining.slice(0, 12) : remaining.slice(0, 3);
+  // Expanded means "show me the whole course": capping at 12 silently hid the
+  // rest with nothing on screen to suggest more existed.
+  const visible = expanded ? remaining : remaining.slice(0, 3);
   const doneList = COURSE_SYLLABUS.filter(c => done.has(c.id));
 
   const fmtSched = (id) => {
