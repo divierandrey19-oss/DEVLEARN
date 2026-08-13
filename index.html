@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-13b -->
+<!-- DEVLEARN_BUILD: 2026-08-13c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-13b';
+const APP_BUILD = '2026-08-13c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8459,7 +8459,14 @@ function openAddText(id) {
         style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
       <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">El texto (en inglés)</label>
       <textarea id="text-body" rows="8" maxlength="6000" placeholder="Pega aquí el texto…"
-        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:16px;">${t ? escapeHtml(t.body || '') : ''}</textarea>
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:12px;">${t ? escapeHtml(t.body || '') : ''}</textarea>
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Traducción (opcional)</label>
+      <textarea id="text-trans" rows="6" maxlength="6000" placeholder="Pega aquí tu traducción, en el mismo orden de frases…"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:6px;">${t ? escapeHtml(t.trans || '') : ''}</textarea>
+      <div style="font-size:0.7rem;color:var(--text-3);line-height:1.45;margin-bottom:16px;">
+        Se usa solo cuando toques 🔄 en una frase. Nunca se muestra junto al inglés.
+      </div>
       <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="saveText(${t ? `'${t.id}'` : ''})">Guardar</button>
     </div>`;
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
@@ -8470,6 +8477,7 @@ function openAddText(id) {
 function saveText(id) {
   const title = (document.getElementById('text-title')?.value || '').trim();
   const body  = (document.getElementById('text-body')?.value || '').trim();
+  const trans = (document.getElementById('text-trans')?.value || '').trim();
   if (!body) { toast('Pega el texto primero'); return; }
   state.texts = state.texts || [];
 
@@ -8479,6 +8487,7 @@ function saveText(id) {
     const bodyChanged = t.body !== body;
     t.title = title || t.title || 'Texto sin título';
     t.body = body;
+    t.trans = trans;
     // Lookups are keyed by word, so they stay valid for whatever survived the
     // edit — no reason to pay for the same words twice.
     save();
@@ -8490,7 +8499,7 @@ function saveText(id) {
   }
 
   const newId = 'txt_' + Date.now();
-  state.texts.push({ id: newId, title: title || 'Texto sin título', body, date: todayLocal(), ts: Date.now(), lookups: {} });
+  state.texts.push({ id: newId, title: title || 'Texto sin título', body, trans, date: todayLocal(), ts: Date.now(), lookups: {} });
   save();
   document.getElementById('text-overlay')?.remove();
   renderTexts();
@@ -8521,7 +8530,31 @@ function splitSentences(text) {
 function openText(id) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!t) return;
-  _txState = { id, sentences: splitSentences(t.body), current: -1, rate: state.txRate || 0.85, playing: false };
+  const sentences = splitSentences(t.body);
+  /* The translation is his own — written by the same assistant that wrote the
+   * text, so it beats anything regenerated here. Pair it by position, and if
+   * the counts disagree say so rather than quietly showing the wrong Spanish
+   * under an English sentence. */
+  t.translation = t.trans ? splitSentences(t.trans) : [];
+  _txState = {
+    id, sentences,
+    current: -1,
+    rate: state.txRate || 0.85,
+    playing: false,
+    flippedES: new Set(),
+    mismatch: t.translation.length > 0 && t.translation.length !== sentences.length,
+  };
+  renderTextReader();
+}
+
+/* Flips one sentence to Spanish and back. Deliberately silent: the voice reads
+ * English only, and speaking Spanish through an English synthesizer would be
+ * both wrong and beside the point. */
+function flipSentence(si) {
+  const st = _txState;
+  if (!st) return;
+  if (st.flippedES.has(si)) st.flippedES.delete(si);
+  else st.flippedES.add(si);
   renderTextReader();
 }
 
@@ -8541,21 +8574,34 @@ function renderTextReader() {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
-        <div style="font-size:0.68rem;color:var(--text-3);">Toca una palabra para su traducción</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">Toca una palabra para su traducción${(t.translation || []).length ? ' · 🔄 voltea la frase' : ''}</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="closeTextReader()">✕</button>
     </div>
 
+    ${st.mismatch ? `
+      <div style="flex-shrink:0;background:var(--amber-glow, #d2992222);border-bottom:1px solid var(--amber, #d29922);color:var(--amber, #d29922);padding:8px 16px;font-size:0.74rem;line-height:1.4;">
+        ⚠ Tu traducción tiene ${(t.translation || []).length} frases y el texto ${st.sentences.length}. Puede que algunas no correspondan — revísala con ✏️.
+      </div>` : ''}
     <div id="tx-body" style="flex:1;overflow-y:auto;padding:16px;font-size:1.05rem;line-height:2.1;">
-      ${st.sentences.map((sent, si) => `
-        <span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
+      ${st.sentences.map((sent, si) => {
+        const es = (t.translation || [])[si];
+        const flipped = st.flippedES && st.flippedES.has(si);
+        /* Only the tapped sentence swaps. Showing English and Spanish together
+         * is precisely the crutch he is trying to drop — the eye goes to the
+         * Spanish and the effort stops. */
+        if (flipped && es) {
+          return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;color:var(--text-3);font-style:italic;">${escapeHtml(es)}</span><button class="tx-flip" onclick="flipSentence(${si})" style="background:transparent;border:0;color:var(--accent);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button> `;
+        }
+        return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
           sent.split(/(\s+)/).map(tok => {
             if (!/\S/.test(tok)) return tok;
             const clean = tok.replace(/[^A-Za-z'’-]/g, '');
             if (!clean) return escapeHtml(tok);
             return `<span onclick="lookupWord(this,'${escapeStr(clean)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
           }).join('')
-        }</span> `).join('')}
+        }</span>${es ? `<button class="tx-flip" onclick="flipSentence(${si})" title="Ver traducción" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button>` : ''} `;
+      }).join('')}
     </div>
 
     <div id="tx-word" style="flex-shrink:0;"></div>
