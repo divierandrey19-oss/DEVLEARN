@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-13a -->
+<!-- DEVLEARN_BUILD: 2026-08-13b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-13a';
+const APP_BUILD = '2026-08-13b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8730,30 +8730,40 @@ async function lookupWord(el, word) {
   if (t.lookups[key]) { show(t.lookups[key], ''); speak(word); return; }
 
   const known = typeof findExistingWord === 'function' ? findExistingWord(word) : null;
-  if (known && known.translation) {
-    const data = { translation: known.translation, phonetic: '', emoji: '📗' };
+  if (known && known.translation && known.phonetic) {
+    const data = { translation: known.translation, phonetic: known.phonetic, emoji: known.emoji || '📗' };
     t.lookups[key] = data; save();
     show(data, `ya está en ${known.where}`);
     speak(word);
     return;
   }
 
-  show({ translation: 'buscando…', emoji: '🔎' }, '');
+  // Known but with no phonetic recorded: show the translation immediately so
+  // the meaning is never delayed, then fill in the pronunciation — leaving it
+  // blank defeats the whole point of tapping the word.
+  show({ translation: (known && known.translation) || 'buscando…', emoji: (known && known.emoji) || '🔎' }, known ? `ya está en ${known.where}` : '');
   speak(word);
   try {
     const data = await enrichWords([word]);
     const d = (data && data[0]) || {};
     const entry = {
-      translation: String(d.translation || '').trim(),
+      translation: String(d.translation || (known && known.translation) || '').trim(),
       phonetic: String(d.phonetic || '').trim(),
-      emoji: String(d.emoji || '📖').trim(),
+      emoji: String(d.emoji || (known && known.emoji) || '📖').trim(),
     };
     if (!entry.translation) throw new Error('empty');
     t.lookups[key] = entry;
     save();
     show(entry, '');
   } catch (e) {
-    show({ translation: 'No pude buscarla — revisa tu conexión', emoji: '⚠️' }, '');
+    if (known && known.translation) {
+      // Keep what we already knew rather than replacing it with an error.
+      const entry = { translation: known.translation, phonetic: '', emoji: known.emoji || '📗' };
+      t.lookups[key] = entry; save();
+      show(entry, `ya está en ${known.where} · sin pronunciación guardada`);
+    } else {
+      show({ translation: 'No pude buscarla — revisa tu conexión', emoji: '⚠️' }, '');
+    }
   }
 }
 
@@ -9186,12 +9196,17 @@ function findExistingWord(word) {
     const unitName = u.title || key;
     for (const v of getUnitVocab(u)) {
       if ((v.word || '').trim().toLowerCase() === q) {
-        return { where: unitName, unitKey: key, translation: v.translation || '', source: 'book' };
+        // Phonetic and emoji were being dropped here, so a word already in his
+        // vocabulary came back with no pronunciation — which is the reason he
+        // taps a word in the first place.
+        return { where: unitName, unitKey: key, translation: v.translation || '',
+                 phonetic: v.phonetic || '', emoji: v.emoji || '', source: 'book' };
       }
     }
     for (const w of (u.myWords || [])) {
       if ((w.word || '').trim().toLowerCase() === q) {
-        return { where: unitName, unitKey: key, translation: w.translation || '', source: 'mine' };
+        return { where: unitName, unitKey: key, translation: w.translation || '',
+                 phonetic: w.phonetic || '', emoji: w.emoji || '', source: 'mine' };
       }
     }
   }
