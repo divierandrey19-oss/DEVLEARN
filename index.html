@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-12a -->
+<!-- DEVLEARN_BUILD: 2026-08-12c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-12a';
+const APP_BUILD = '2026-08-12c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6459,10 +6459,25 @@ function renderCourseTracker() {
 
   el.innerHTML = `
     <div style="border:1px solid var(--border);background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
         <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 MI CURSO · ${remaining.length} clases restantes</div>
-        <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲ Menos' : '▼ Ver más'}</button>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openBulkSchedule()" title="Programar todas">📆 Todas</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openClearDates()" title="Borrar fechas">🗑</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲' : '▼'}</button>
+        </div>
       </div>
+      ${(() => {
+        /* Once the whole course is laid out, the last scheduled class is the
+         * answer to the question worth asking: when does A2 actually end. */
+        const dated = remaining.filter(c => sched[c.id]).map(c => sched[c.id]).sort();
+        if (dated.length < 2) return '';
+        const end = new Date(dated[dated.length - 1] + 'T00:00:00');
+        const left = remaining.filter(c => !sched[c.id]).length;
+        return `<div style="font-size:0.74rem;color:var(--green);margin-bottom:8px;">
+          🏁 Terminarías el ${end.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}${left ? ` · faltan ${left} sin fecha` : ''}
+        </div>`;
+      })()}
       ${todayClass ? `
         <div style="font-size:0.78rem;color:var(--green);font-weight:700;margin-bottom:8px;">
           🕕 Hoy: clase ${todayClass.id} · ${escapeHtml(todayClass.title)} · ${(sched[todayClass.id + '_t']) || '06:00'}
@@ -6507,6 +6522,206 @@ function renderCourseTracker() {
 /* His academy's first slot is 6:00 AM and classes run 90 minutes, so 06:00 is
  * the default time. Native date/time inputs give the calendar and clock pickers
  * on mobile — one dialog, no typing dates by hand. */
+/* Scheduling 40 classes one dialog at a time is not a plan, it is a chore —
+ * and the thing he actually wants is the finish date, which no single-class
+ * dialog can show. This lays the whole remaining course onto his real weekly
+ * pattern and answers it before committing. */
+/* One missed day shifts every class after it. Without a way to clear dates,
+ * the only remedy was editing them one by one — so this clears a range, and
+ * re-running "Todas" refills the tail from the new start. */
+function openClearDates() {
+  document.getElementById('clear-overlay')?.remove();
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  const dated = COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id]);
+
+  if (!dated.length) { toast('No hay fechas programadas'); return; }
+  const first = dated[0].id, last = dated[dated.length - 1].id;
+
+  const ov = document.createElement('div');
+  ov.id = 'clear-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:700;">🗑 Borrar fechas</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('clear-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.76rem;color:var(--text-3);margin-bottom:16px;">
+        ${dated.length} clase${dated.length !== 1 ? 's' : ''} con fecha, de la ${first} a la ${last}.
+        Solo se borra la fecha — las clases y lo que ya marcaste no se tocan.
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Desde la clase</label>
+          <input type="number" id="clear-from" value="${first}" min="1" max="89" inputmode="numeric" onchange="previewClear()"
+            style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;">
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Hasta la</label>
+          <input type="number" id="clear-to" value="${last}" min="1" max="89" inputmode="numeric" onchange="previewClear()"
+            style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;">
+        </div>
+      </div>
+      <div id="clear-preview" style="font-size:0.8rem;color:var(--amber, #d29922);min-height:22px;margin-bottom:14px;"></div>
+
+      <button class="btn btn-primary" style="width:100%;padding:11px;margin-bottom:8px;" onclick="applyClearDates()">Borrar ese rango</button>
+      <button class="btn btn-ghost" style="width:100%;padding:10px;font-size:0.8rem;" onclick="document.getElementById('clear-from').value=${first};document.getElementById('clear-to').value=${last};previewClear();">
+        Seleccionar todas (${first}–${last})
+      </button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  previewClear();
+}
+
+function clearRangeIds() {
+  const from = parseInt(document.getElementById('clear-from')?.value, 10);
+  const to   = parseInt(document.getElementById('clear-to')?.value, 10);
+  if (!Number.isFinite(from) || !Number.isFinite(to)) return [];
+  const lo = Math.min(from, to), hi = Math.max(from, to);
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  return COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id] && c.id >= lo && c.id <= hi).map(c => c.id);
+}
+
+function previewClear() {
+  const box = document.getElementById('clear-preview');
+  if (!box) return;
+  const ids = clearRangeIds();
+  box.textContent = ids.length
+    ? `Se borrarán ${ids.length} fecha${ids.length !== 1 ? 's' : ''} (clases ${ids[0]}–${ids[ids.length - 1]})`
+    : 'Ese rango no tiene fechas';
+}
+
+function applyClearDates() {
+  const ids = clearRangeIds();
+  if (!ids.length) { toast('Ese rango no tiene fechas'); return; }
+  const sched = state.classSchedule = state.classSchedule || {};
+  ids.forEach(id => { delete sched[id]; delete sched[id + '_t']; });
+  save();
+  document.getElementById('clear-overlay')?.remove();
+  renderCourseTracker();
+  toast(`🗑 ${ids.length} fecha${ids.length !== 1 ? 's' : ''} borrada${ids.length !== 1 ? 's' : ''}`);
+}
+
+function openBulkSchedule() {
+  document.getElementById('bulk-overlay')?.remove();
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  const pending = COURSE_SYLLABUS.filter(c => !done.has(c.id));
+  const sinFecha = pending.filter(c => !sched[c.id]).length;
+
+  const ov = document.createElement('div');
+  ov.id = 'bulk-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  const dias = [['1','L'],['2','M'],['3','X'],['4','J'],['5','V'],['6','S'],['0','D']];
+  const prev = state.bulkDays || ['1','2','3','4','5'];
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:400px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:700;">📆 Programar todas</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bulk-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.76rem;color:var(--text-3);margin-bottom:16px;">
+        ${sinFecha} clase${sinFecha !== 1 ? 's' : ''} sin fecha. Las que ya programaste no se tocan.
+      </div>
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Empezar el</label>
+      <input type="date" id="bulk-start" value="${todayLocal()}" onchange="previewBulk()"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Hora</label>
+      <input type="time" id="bulk-time" value="${state.bulkTime || '06:00'}"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:6px;">Días con clase</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        ${dias.map(([v, l]) => `
+          <button type="button" class="bulk-day" data-d="${v}"
+            onclick="this.dataset.on = this.dataset.on === '1' ? '0' : '1'; this.style.background = this.dataset.on==='1' ? 'var(--accent)' : 'transparent'; this.style.color = this.dataset.on==='1' ? '#fff' : 'var(--text-2)'; previewBulk();"
+            data-on="${prev.includes(v) ? '1' : '0'}"
+            style="flex:1;padding:10px 0;border-radius:10px;border:1px solid var(--border);font-weight:700;font-size:0.8rem;background:${prev.includes(v) ? 'var(--accent)' : 'transparent'};color:${prev.includes(v) ? '#fff' : 'var(--text-2)'};">${l}</button>`).join('')}
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-3);margin-bottom:14px;">
+        Una clase por día. Si ves dos seguidas el mismo día, prográmalas aparte después.
+      </div>
+
+      <div id="bulk-preview" style="font-size:0.82rem;color:var(--green);min-height:40px;margin-bottom:14px;line-height:1.5;"></div>
+
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="applyBulkSchedule()">Programar</button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  previewBulk();
+}
+
+/** Walks forward from the start date, taking only the chosen weekdays. */
+function bulkDates(startStr, days, count) {
+  const out = [];
+  if (!days.length || !startStr) return out;
+  const d = new Date(startStr + 'T00:00:00');
+  let guard = 0;
+  while (out.length < count && guard++ < 2000) {
+    if (days.includes(String(d.getDay()))) out.push(dateLocal(new Date(d)));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+function readBulkDays() {
+  return [...document.querySelectorAll('.bulk-day')].filter(b => b.dataset.on === '1').map(b => b.dataset.d);
+}
+
+function previewBulk() {
+  const box = document.getElementById('bulk-preview');
+  if (!box) return;
+  const days = readBulkDays();
+  const start = document.getElementById('bulk-start')?.value;
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  const pending = COURSE_SYLLABUS.filter(c => !done.has(c.id) && !sched[c.id]);
+  if (!days.length) { box.style.color = 'var(--amber, #d29922)'; box.textContent = 'Escoge al menos un día'; return; }
+  if (!pending.length) { box.style.color = 'var(--text-3)'; box.textContent = 'Todas ya tienen fecha'; return; }
+  const dates = bulkDates(start, days, pending.length);
+  if (!dates.length) { box.textContent = ''; return; }
+  const end = new Date(dates[dates.length - 1] + 'T00:00:00');
+  const exam = pending.findIndex(c => c.exam);
+  box.style.color = 'var(--green)';
+  box.innerHTML = `🏁 ${pending.length} clases · terminarías el <strong>${end.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong>` +
+    (exam >= 0 ? `<br><span style="color:var(--amber, #d29922);">🎯 ${escapeHtml(pending[exam].title)} → ${new Date(dates[exam] + 'T00:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>` : '');
+}
+
+function applyBulkSchedule() {
+  const days = readBulkDays();
+  const start = document.getElementById('bulk-start')?.value;
+  const time = document.getElementById('bulk-time')?.value || '06:00';
+  if (!days.length) { toast('Escoge al menos un día'); return; }
+  if (!start) { toast('Escoge la fecha de inicio'); return; }
+
+  const sched = state.classSchedule = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  // Only fills the empty ones: dates he set by hand reflect what the academy
+  // actually told him and must outrank a generated guess.
+  const pending = COURSE_SYLLABUS.filter(c => !done.has(c.id) && !sched[c.id]);
+  if (!pending.length) { toast('Todas ya tienen fecha'); return; }
+
+  const dates = bulkDates(start, days, pending.length);
+  pending.forEach((c, i) => {
+    if (!dates[i]) return;
+    sched[c.id] = dates[i];
+    sched[c.id + '_t'] = time;
+  });
+  state.bulkDays = days;
+  state.bulkTime = time;
+  save();
+  document.getElementById('bulk-overlay')?.remove();
+  renderCourseTracker();
+  const end = new Date(dates[dates.length - 1] + 'T00:00:00');
+  toast(`📆 ${pending.length} clases · terminas el ${end.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}`);
+}
+
 function scheduleClass(id) {
   const cls = COURSE_SYLLABUS.find(c => c.id === id);
   if (!cls) return;
