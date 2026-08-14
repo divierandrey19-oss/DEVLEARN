@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-13c -->
+<!-- DEVLEARN_BUILD: 2026-08-14a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-13c';
+const APP_BUILD = '2026-08-14a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8597,7 +8597,12 @@ function renderTextReader() {
           sent.split(/(\s+)/).map(tok => {
             if (!/\S/.test(tok)) return tok;
             const clean = tok.replace(/[^A-Za-z'’-]/g, '');
-            if (!clean) return escapeHtml(tok);
+            if (!clean) {
+              // Digits get their own handler: how to say them, not a translation.
+              const num = tok.replace(/[^\d]/g, '');
+              if (num) return `<span onclick="sayNumber(this,'${escapeStr(num)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+              return escapeHtml(tok);
+            }
             return `<span onclick="lookupWord(this,'${escapeStr(clean)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
           }).join('')
         }</span>${es ? `<button class="tx-flip" onclick="flipSentence(${si})" title="Ver traducción" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button>` : ''} `;
@@ -8745,6 +8750,48 @@ function repeatSentence() {
 /* Looks a word up. His own vocabulary is checked first: with 1126 words
  * already extracted, most taps resolve instantly and cost nothing. Results are
  * cached on the text so the same word is never paid for twice. */
+/* Numbers were skipped because "translating" 49 gives 49. But the useful
+ * question is how to SAY it — "page forty-nine" — which is a real speaking
+ * skill and free to answer without the API. */
+function numberToEnglish(n) {
+  n = Number(n);
+  if (!Number.isFinite(n) || n < 0 || n > 999999) return '';
+  const ones = ['zero','one','two','three','four','five','six','seven','eight','nine','ten',
+    'eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+  const tens = ['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  const under1000 = (x) => {
+    if (x < 20) return ones[x];
+    if (x < 100) return tens[Math.floor(x / 10)] + (x % 10 ? '-' + ones[x % 10] : '');
+    const h = ones[Math.floor(x / 100)] + ' hundred';
+    return x % 100 ? h + ' ' + under1000(x % 100) : h;
+  };
+  if (n < 1000) return under1000(n);
+  const th = Math.floor(n / 1000), rest = n % 1000;
+  return under1000(th) + ' thousand' + (rest ? ' ' + under1000(rest) : '');
+}
+
+function sayNumber(el, raw) {
+  const n = String(raw).replace(/[^\d]/g, '');
+  const words = numberToEnglish(n);
+  const box = document.getElementById('tx-word');
+  if (box) {
+    box.innerHTML = `
+      <div style="border-top:1px solid var(--border);background:var(--card);padding:12px 16px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="font-size:1.4rem;flex-shrink:0;">🔢</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;">${escapeHtml(raw)}</div>
+            <div style="font-size:0.86rem;color:var(--text-2);">${escapeHtml(words || 'número')}</div>
+            <div style="font-size:0.66rem;color:var(--text-3);margin-top:2px;">así se dice en voz alta</div>
+          </div>
+          <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(words || raw)}">🔊</button>
+          <button class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:0.66rem;" onclick="document.getElementById('tx-word').innerHTML=''">✕</button>
+        </div>
+      </div>`;
+  }
+  if (words) speak(words);
+}
+
 async function lookupWord(el, word) {
   const st = _txState;
   if (!st) return;
