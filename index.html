@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-14c -->
+<!-- DEVLEARN_BUILD: 2026-08-15a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-14c';
+const APP_BUILD = '2026-08-15a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8404,12 +8404,16 @@ function renderTexts() {
   const c = document.getElementById('texts-content');
   if (!c) return;
   const list = (state.texts || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const sabidos = list.filter(t => t.mastered).length;
 
   c.innerHTML = `
     <div style="font-size:0.82rem;color:var(--text-3);line-height:1.5;margin-bottom:14px;">
       Pega aquí los textos que preparas para clase. Toca cualquier palabra para su traducción
       y pronunciación, o dale ▶ para practicar shadowing.
     </div>
+    ${list.length ? `<div style="font-size:0.74rem;color:${sabidos === list.length ? 'var(--green)' : 'var(--text-3)'};margin-bottom:10px;">
+      ✅ ${sabidos} de ${list.length} me ${sabidos === 1 ? 'lo sé' : 'los sé'}
+    </div>` : ''}
     <button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:18px;" onclick="openAddText()">
       ➕ Pegar un texto
     </button>
@@ -8419,24 +8423,36 @@ function renderTexts() {
         <div class="empty-title">Todavía no has guardado ningún texto</div>
         <div class="empty-sub">Pega el texto que preparaste y practícalo aquí.</div>
       </div>` : list.map(t => `
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="background:${t.mastered ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};border:1px solid ${t.mastered ? 'var(--green)' : 'var(--border)'};border-radius:14px;padding:14px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:0.92rem;">${escapeHtml(t.title || 'Texto')}</div>
+            <div style="font-weight:700;font-size:0.92rem;${t.mastered ? 'color:var(--green);' : ''}">${t.mastered ? '✅ ' : ''}${escapeHtml(t.title || 'Texto')}</div>
             <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
               ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} palabras · ${splitSentences(t.body).length} frases
             </div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;${t.mastered ? 'color:var(--green);' : ''}" onclick="toggleTextMastered('${t.id}')" title="${t.mastered ? 'Marcar como pendiente' : 'Ya me lo sé'}">${t.mastered ? '✅' : '○'}</button>
             <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openAddText('${t.id}')" title="Editar">✏️</button>
             <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deleteText('${t.id}')" title="Borrar">🗑</button>
           </div>
         </div>
-        <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
+        <button class="btn ${t.mastered ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
           ▶ Practicar
         </button>
       </div>`).join('')}
   `;
+}
+
+/* Marking a text as known is what turns a growing pile into a queue: at a
+ * glance he can see what still needs work instead of re-reading everything. */
+function toggleTextMastered(id) {
+  const t = (state.texts || []).find(x => x.id === id);
+  if (!t) return;
+  t.mastered = !t.mastered;
+  save();
+  renderTexts();
+  toast(t.mastered ? '✅ Ya te lo sabes' : '○ De vuelta a pendientes');
 }
 
 function openAddText(id) {
