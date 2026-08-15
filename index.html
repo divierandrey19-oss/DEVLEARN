@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-14a -->
+<!-- DEVLEARN_BUILD: 2026-08-14c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-14a';
+const APP_BUILD = '2026-08-14c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8729,7 +8729,9 @@ function toggleShadow() {
     }
     highlightSentence(_txState.current);
     const u = new SpeechSynthesisUtterance(speakableText(_txState.sentences[_txState.current]));
-    u.lang = 'en-US';
+    const v = pickVoice();
+    try { if (v) u.voice = v; } catch (e) { _ttsVoice = null; }
+    u.lang = (v && v.lang) || 'en-US';
     u.rate = _txState.rate;
     u.onend = () => setTimeout(speakNext, 260);   // a beat to breathe and repeat
     u.onerror = () => { if (_txState) { _txState.playing = false; } };
@@ -9927,14 +9929,51 @@ function speakableText(text) {
     .trim();
 }
 
+/* Android was free to pick a *network* voice, which fetches audio before it
+ * plays — that is the lag on tapping a word. An offline voice starts instantly.
+ * Resolved once and cached, because getVoices() is empty on first call until
+ * the engine fires voiceschanged. */
+let _ttsVoice = null;
+function pickVoice() {
+  if (_ttsVoice) return _ttsVoice;
+  const vs = (window.speechSynthesis.getVoices && window.speechSynthesis.getVoices()) || [];
+  if (!vs.length) return null;
+  _ttsVoice =
+    vs.find(v => /^en[-_]US/i.test(v.lang) && v.localService) ||
+    vs.find(v => /^en[-_]/i.test(v.lang) && v.localService) ||
+    vs.find(v => /^en[-_]US/i.test(v.lang)) ||
+    vs.find(v => /^en[-_]/i.test(v.lang)) || null;
+  return _ttsVoice;
+}
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => { _ttsVoice = null; pickVoice(); };
+  setTimeout(pickVoice, 0);
+}
+
 function speak(text, rate = 0.88) {
   if (!('speechSynthesis' in window)) { toast('Audio not supported in this browser'); return; }
   const clean = speakableText(text);
   if (!clean) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(clean);
-  u.lang = 'en-US'; u.rate = rate;
-  window.speechSynthesis.speak(u);
+
+  const say = () => {
+    const u = new SpeechSynthesisUtterance(clean);
+    const v = pickVoice();
+    // A refused voice must not cost the audio: fall back to the engine default.
+    try { if (v) u.voice = v; } catch (e) { _ttsVoice = null; }
+    u.lang = (v && v.lang) || 'en-US';
+    u.rate = rate;
+    window.speechSynthesis.speak(u);
+  };
+
+  /* cancel() is asynchronous inside the engine: speaking in the same tick can
+   * be swallowed or stall until the teardown finishes. Only cancel when
+   * something is actually running, and give it a tick when we do. */
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+    setTimeout(say, 60);
+  } else {
+    say();
+  }
 }
 
 function playAllVocab() {
@@ -9946,7 +9985,10 @@ function playAllVocab() {
   const playNext = () => {
     if (i >= vocab.length) { toast('✓ All words played'); return; }
     const ut = new SpeechSynthesisUtterance(vocab[i].word);
-    ut.lang = 'en-US'; ut.rate = 0.82;
+    const v = pickVoice();
+    try { if (v) ut.voice = v; } catch (e) { _ttsVoice = null; }
+    ut.lang = (v && v.lang) || 'en-US';
+    ut.rate = 0.82;
     ut.onend = () => { i++; setTimeout(playNext, 600); };
     window.speechSynthesis.speak(ut);
   };
