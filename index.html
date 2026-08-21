@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-15a -->
+<!-- DEVLEARN_BUILD: 2026-08-15b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4673,7 +4673,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-15a';
+const APP_BUILD = '2026-08-15b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8406,6 +8406,24 @@ function renderTexts() {
   const list = (state.texts || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const sabidos = list.filter(t => t.mastered).length;
 
+  /* Group by whatever comes before the "·" in the title — "U6 · pág 70-71"
+   * groups under "U6", "Daily speaking training" groups with its siblings.
+   * He already types that prefix, so grouping needs no new field and he stays
+   * in control of it. */
+  const groupKey = (t) => {
+    const title = (t.title || '').trim();
+    const head = title.split('·')[0].trim();
+    return head || 'Otros';
+  };
+  const groups = [];
+  const byKey = new Map();
+  list.forEach(t => {
+    const k = groupKey(t);
+    if (!byKey.has(k)) { byKey.set(k, { key: k, items: [] }); groups.push(byKey.get(k)); }
+    byKey.get(k).items.push(t);
+  });
+  state.textGroupsOpen = state.textGroupsOpen || {};
+
   c.innerHTML = `
     <div style="font-size:0.82rem;color:var(--text-3);line-height:1.5;margin-bottom:14px;">
       Pega aquí los textos que preparas para clase. Toca cualquier palabra para su traducción
@@ -8422,26 +8440,49 @@ function renderTexts() {
         <div class="empty-icon">📝</div>
         <div class="empty-title">Todavía no has guardado ningún texto</div>
         <div class="empty-sub">Pega el texto que preparaste y practícalo aquí.</div>
-      </div>` : list.map(t => `
-      <div style="background:${t.mastered ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};border:1px solid ${t.mastered ? 'var(--green)' : 'var(--border)'};border-radius:14px;padding:14px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:0.92rem;${t.mastered ? 'color:var(--green);' : ''}">${t.mastered ? '✅ ' : ''}${escapeHtml(t.title || 'Texto')}</div>
-            <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
-              ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} palabras · ${splitSentences(t.body).length} frases
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;${t.mastered ? 'color:var(--green);' : ''}" onclick="toggleTextMastered('${t.id}')" title="${t.mastered ? 'Marcar como pendiente' : 'Ya me lo sé'}">${t.mastered ? '✅' : '○'}</button>
-            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openAddText('${t.id}')" title="Editar">✏️</button>
-            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deleteText('${t.id}')" title="Borrar">🗑</button>
-          </div>
-        </div>
-        <button class="btn ${t.mastered ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
-          ▶ Practicar
+      </div>` : groups.map(g => {
+      const open = state.textGroupsOpen[g.key] === true;
+      const gDone = g.items.filter(t => t.mastered).length;
+      const allDone = gDone === g.items.length;
+      return `
+      <div style="margin-bottom:12px;">
+        <button onclick="toggleTextGroup('${escapeStr(g.key)}')"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
+                 border:1px solid ${allDone ? 'var(--green)' : 'var(--border)'};
+                 background:${allDone ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};color:var(--text-1);text-align:left;">
+          <span style="font-size:0.9rem;">${open ? '▾' : '▸'}</span>
+          <span style="flex:1;font-weight:700;font-size:0.92rem;${allDone ? 'color:var(--green);' : ''}">${escapeHtml(g.key)}</span>
+          <span style="font-size:0.72rem;color:${allDone ? 'var(--green)' : 'var(--text-3)'};">${gDone}/${g.items.length} ${allDone ? '✅' : ''}</span>
         </button>
-      </div>`).join('')}
+        ${open ? g.items.map(t => `
+          <div style="background:${t.mastered ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};border:1px solid ${t.mastered ? 'var(--green)' : 'var(--border)'};border-radius:14px;padding:14px;margin:10px 0 0 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:0.9rem;${t.mastered ? 'color:var(--green);' : ''}">${t.mastered ? '✅ ' : ''}${escapeHtml(t.title || 'Texto')}</div>
+                <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
+                  ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} palabras · ${splitSentences(t.body).length} frases
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-shrink:0;">
+                <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;${t.mastered ? 'color:var(--green);' : ''}" onclick="toggleTextMastered('${t.id}')" title="${t.mastered ? 'Marcar como pendiente' : 'Ya me lo sé'}">${t.mastered ? '✅' : '○'}</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openAddText('${t.id}')" title="Editar">✏️</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deleteText('${t.id}')" title="Borrar">🗑</button>
+              </div>
+            </div>
+            <button class="btn ${t.mastered ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
+              ▶ Practicar
+            </button>
+          </div>`).join('') : ''}
+      </div>`;
+    }).join('')}
   `;
+}
+
+function toggleTextGroup(key) {
+  state.textGroupsOpen = state.textGroupsOpen || {};
+  state.textGroupsOpen[key] = !state.textGroupsOpen[key];
+  save();
+  renderTexts();
 }
 
 /* Marking a text as known is what turns a growing pile into a queue: at a
