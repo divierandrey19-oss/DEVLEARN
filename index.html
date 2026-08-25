@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-15b -->
+<!-- DEVLEARN_BUILD: 2026-08-23a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3897,6 +3897,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 
     <!-- ===== DASHBOARD ===== -->
     <div class="page active" id="page-dashboard">
+      <!-- Study stopwatch + daily total -->
+      <div id="study-timer"></div>
       <!-- Exam countdown — set the date in Settings -->
       <div id="exam-countdown"></div>
       <!-- Course syllabus tracker — remaining classes only -->
@@ -4554,6 +4556,7 @@ window._mergeCloudState = function(cloud) {
     // snapshot erases podcast sessions, marked classes and the mistake log.
     const localPodcast   = [...(state.podcastLog || [])];
     const localTexts     = [...(state.texts || [])];
+    const localStudyLog  = { ...(state.studyLog || {}) };
     const localClasses   = [...(state.classesDone || [])];
     const localSchedule  = { ...(state.classSchedule || {}) };
     const localMistakes  = [...(state.mistakeLog || [])];
@@ -4641,6 +4644,20 @@ window._mergeCloudState = function(cloud) {
     // Same rescue for the other collections the loop just overwrote.
     state.podcastLog = unionBy(localPodcast, imported.podcastLog, e => e && e.id);
     state.texts = unionBy(localTexts, imported.texts, e => e && e.id);
+    /* Per-day study minutes: keep whichever side recorded more for a given day
+     * rather than letting a stale snapshot erase an afternoon of work. */
+    {
+      const merged = { ...localStudyLog };
+      Object.entries(imported.studyLog || {}).forEach(([d, v]) => {
+        const a = merged[d] || {}, b = v || {};
+        merged[d] = {
+          app: Math.max(a.app || 0, b.app || 0),
+          manual: Math.max(a.manual || 0, b.manual || 0),
+          clase: Math.max(a.clase || 0, b.clase || 0),
+        };
+      });
+      state.studyLog = merged;
+    }
     state.classesDone = [...new Set([...(localClasses), ...(imported.classesDone || [])])];
     state.classSchedule = { ...localSchedule, ...(imported.classSchedule || {}) };
     state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
@@ -4673,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-15b';
+const APP_BUILD = '2026-08-23a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5916,6 +5933,7 @@ function migrateState(s) {
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
+  merged.studyLog = (merged.studyLog && typeof merged.studyLog === 'object') ? merged.studyLog : {};
   /* A sync merge that deduped objects by reference doubled this list on every
    * pull — 15 real entries reached 199,680 and pushed the whole state past the
    * storage cap, so nothing could save. Collapse it back to the 20 the writer
@@ -6781,15 +6799,179 @@ function clearClassSchedule(id) {
 }
 
 function unmarkClass(id) {
+  const estaba = (state.classesDone || []).includes(id);
   state.classesDone = (state.classesDone || []).filter(x => x !== id);
+  if (estaba) {
+    // Give the 90 minutes back, or an accidental tap would inflate the day.
+    const dia = (state.classSchedule || {})[id] || todayLocal();
+    const log = studyLog();
+    if (log[dia]) log[dia].clase = Math.max(0, (log[dia].clase || 0) - CLASS_MINUTES);
+  }
   save();
   renderCourseTracker();
   toast(`↩︎ Clase ${id} de vuelta en pendientes`);
 }
 
+/* ── ⏱ TIEMPO DE ESTUDIO ─────────────────────────────────────────
+ * The old clock added a minute for every minute the app was merely visible,
+ * so the total counted staring at an open tab. What he wants is the honest
+ * number: time he decided was studying. Three sources, one ledger keyed by
+ * day — the stopwatch, minutes typed by hand, and 90 per class attended.
+ *
+ * The stopwatch keeps a start timestamp rather than ticking a counter, so it
+ * survives closing the app or locking the screen: he records himself speaking
+ * and has to leave, and that time still counts.
+ */
+const CLASS_MINUTES = 90;
+
+function studyLog() {
+  state.studyLog = state.studyLog || {};
+  return state.studyLog;
+}
+
+function addStudyMinutes(mins, day, kind) {
+  const m = Math.round(Number(mins) || 0);
+  if (m <= 0) return;
+  const d = day || todayLocal();
+  const log = studyLog();
+  log[d] = log[d] || { app: 0, manual: 0, clase: 0 };
+  log[d][kind || 'manual'] = (log[d][kind || 'manual'] || 0) + m;
+  save();
+}
+
+function dayTotal(d) {
+  const e = studyLog()[d];
+  if (!e) return 0;
+  return (e.app || 0) + (e.manual || 0) + (e.clase || 0);
+}
+
+function fmtMins(m) {
+  m = Math.round(m || 0);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h}h ${r}m` : `${h}h`;
+}
+
+/* Running state lives as a timestamp, not a tick, so time keeps accruing while
+ * the app is closed — which is the whole point when he steps out to record. */
+function toggleStopwatch() {
+  if (state.swStart) {
+    const mins = (Date.now() - state.swStart) / 60000;
+    state.swStart = null;
+    addStudyMinutes(mins, todayLocal(), 'app');
+    recordStudyDate();
+    save();
+    renderStudyTimer();
+    toast(`⏱ +${fmtMins(mins)}`);
+  } else {
+    state.swStart = Date.now();
+    save();
+    renderStudyTimer();
+    toast('⏱ Cronómetro andando — sigue contando aunque cierres la app');
+  }
+}
+
+function renderStudyTimer() {
+  const el = document.getElementById('study-timer');
+  if (!el) return;
+  const hoy = todayLocal();
+  const log = studyLog();
+  const running = !!state.swStart;
+  const live = running ? (Date.now() - state.swStart) / 60000 : 0;
+  const hoyTotal = dayTotal(hoy) + live;
+
+  const dias = Object.keys(log);
+  const total = dias.reduce((a, d) => a + dayTotal(d), 0) + live;
+  let mejor = null;
+  dias.forEach(d => { if (!mejor || dayTotal(d) > dayTotal(mejor)) mejor = d; });
+  if (mejor && hoyTotal > dayTotal(mejor)) mejor = hoy;
+
+  const e = log[hoy] || {};
+  const desglose = [
+    e.clase ? `🎓 clase ${fmtMins(e.clase)}` : '',
+    (e.app || live) ? `⏱ ${fmtMins((e.app || 0) + live)}` : '',
+    e.manual ? `➕ ${fmtMins(e.manual)}` : '',
+  ].filter(Boolean).join(' · ');
+
+  el.innerHTML = `
+    <div style="border:1px solid ${running ? 'var(--green)' : 'var(--border)'};background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.68rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">HOY</div>
+          <div style="font-size:1.35rem;font-weight:800;color:${running ? 'var(--green)' : 'var(--text-1)'};">
+            ${fmtMins(hoyTotal)}${running ? ' ⏱' : ''}
+          </div>
+          ${desglose ? `<div style="font-size:0.68rem;color:var(--text-3);margin-top:2px;">${desglose}</div>` : ''}
+        </div>
+        <button class="btn ${running ? 'btn-ghost' : 'btn-primary'}" style="padding:10px 16px;flex-shrink:0;" onclick="toggleStopwatch()">
+          ${running ? '⏸ Parar' : '▶ Empezar'}
+        </button>
+        <button class="btn btn-ghost btn-sm" style="padding:10px 12px;flex-shrink:0;" onclick="openAddMinutes()" title="Anotar minutos">➕</button>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-3);">
+        <div>📚 total <strong style="color:var(--text-2);">${fmtMins(total)}</strong></div>
+        ${mejor ? `<div>🏆 mejor día <strong style="color:var(--text-2);">${fmtMins(dayTotal(mejor) + (mejor === hoy ? live : 0))}</strong> · ${mejor === hoy ? 'hoy' : new Date(mejor + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function openAddMinutes() {
+  document.getElementById('mins-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'mins-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:360px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:700;">➕ Anotar minutos</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mins-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.74rem;color:var(--text-3);margin-bottom:14px;">
+        TikToks, videos, grabarte hablando — lo que hiciste fuera de la app.
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Día</label>
+      <input type="date" id="mins-date" value="${todayLocal()}"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:12px;">
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:6px;">Minutos</label>
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        ${[10, 15, 20, 30, 45].map(m => `<button type="button" class="btn btn-ghost" style="flex:1;padding:10px 0;font-size:0.8rem;" onclick="document.getElementById('mins-n').value=${m};">${m}</button>`).join('')}
+      </div>
+      <input type="number" id="mins-n" min="1" max="600" inputmode="numeric" placeholder="o escribe otro"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:16px;">
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="saveMinutes()">Guardar</button>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function saveMinutes() {
+  const n = parseInt(document.getElementById('mins-n')?.value, 10);
+  const d = document.getElementById('mins-date')?.value || todayLocal();
+  if (!Number.isFinite(n) || n <= 0) { toast('Escribe cuántos minutos'); return; }
+  addStudyMinutes(n, d, 'manual');
+  if (d === todayLocal()) recordStudyDate();
+  save();
+  document.getElementById('mins-overlay')?.remove();
+  renderStudyTimer();
+  toast(`➕ ${fmtMins(n)} anotados`);
+}
+
 function markClassDone(id) {
   if (!Array.isArray(state.classesDone)) state.classesDone = [];
-  if (!state.classesDone.includes(id)) state.classesDone.push(id);
+  const yaEstaba = state.classesDone.includes(id);
+  if (!yaEstaba) state.classesDone.push(id);
+  /* 90 minutes of class credited to the DAY IT WAS SCHEDULED FOR: he often
+   * marks classes a day or two later, and putting the time on the wrong day
+   * would make both days wrong. Only on the first mark, so re-marking after an
+   * accidental ↩︎ cannot double it. */
+  if (!yaEstaba) {
+    const dia = (state.classSchedule || {})[id] || todayLocal();
+    addStudyMinutes(CLASS_MINUTES, dia, 'clase');
+    if (!(state.studyDates || []).includes(dia)) {
+      state.studyDates = [...new Set([...(state.studyDates || []), dia])].sort();
+      state.streak = computeStreak(state.studyDates);
+    }
+  }
   save();
   Sound.correct?.();
   renderCourseTracker();
@@ -6834,6 +7016,7 @@ function renderExamCountdown() {
 }
 
 function renderDashboard() {
+  renderStudyTimer();
   renderExamCountdown();
   renderCourseTracker();
   const h = new Date().getHours();
@@ -11608,7 +11791,7 @@ function renderGrammar(grammar, unit) {
           let done = 0;
           (batch.grammar || []).forEach((g, gi) => {
             const pfx = `b${realIdx}_${gi}`;
-            const drills = g.drillSentences?.length ? g.drillSentences : (g.examples || []).slice(0, 3);
+            const drills = g.drillSentences?.length ? g.drillSentences : [];
             drills.forEach((d, di) => {
               const key = `${pfx}-${di}`;
               if (drillState[key]?.date === today) done++;
@@ -11619,7 +11802,7 @@ function renderGrammar(grammar, unit) {
         const totalDrills = (batch, realIdx) => {
           let total = 0;
           (batch.grammar || []).forEach((g, gi) => {
-            const drills = g.drillSentences?.length ? g.drillSentences : (g.examples || []).slice(0, 3);
+            const drills = g.drillSentences?.length ? g.drillSentences : [];
             total += drills.length;
           });
           return total;
@@ -11697,15 +11880,12 @@ function renderGrammarItems(grammar, batchPrefix = '') {
       </div>` : '';
 
     // ── Inline drill from drillSentences ───────────────────────
-    // Fallback for older batches without typed drills: generate from examples
-    const drills = g.drillSentences && g.drillSentences.length
-      ? g.drillSentences
-      : (g.examples || []).slice(0, 3).map(ex => ({
-          type: 'translation',
-          prompt: ex.es || ex.en || '',
-          answer: ex.en || '',
-          hint: '',
-        }));
+    /* There used to be a fallback that built drills from the examples when the
+     * extraction returned none. But the examples are printed directly above, so
+     * it asked him to translate a sentence already on screen — an exercise that
+     * tests nothing and quietly teaches that copying is the way through. No
+     * practice section is better than a fake one. */
+    const drills = (g.drillSentences && g.drillSentences.length) ? g.drillSentences : [];
 
     const typeLabel = {
       translation:     '🌐 Translate to English',
@@ -17164,13 +17344,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 2500); // 2.5 seconds max — well after normal 1.4s splash
 
   // Track study time — store reference to avoid accumulation on hot-reload
+  /* The old clock added a minute for every minute the app was visible, so the
+   * total counted an open tab as study. The stopwatch replaces it: time is
+   * counted when he says he is studying, which is the number he asked for.
+   * A light repaint keeps the running display honest. */
   if (window._studyTimer) clearInterval(window._studyTimer);
   window._studyTimer = setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      state.studyMinutes = (state.studyMinutes || 0) + 1;
-      save();
-    }
-  }, 60000);
+    if (state.swStart && document.visibilityState === 'visible') renderStudyTimer();
+  }, 30000);
 
   // Clean up on tab close
 
