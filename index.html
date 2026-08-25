@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-23a -->
+<!-- DEVLEARN_BUILD: 2026-08-24a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-23a';
+const APP_BUILD = '2026-08-24a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17344,14 +17344,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 2500); // 2.5 seconds max — well after normal 1.4s splash
 
   // Track study time — store reference to avoid accumulation on hot-reload
-  /* The old clock added a minute for every minute the app was visible, so the
-   * total counted an open tab as study. The stopwatch replaces it: time is
-   * counted when he says he is studying, which is the number he asked for.
-   * A light repaint keeps the running display honest. */
+  /* Removing the old clock left real work inside the app — flashcards,
+   * exercises, reading a text — counting for nothing unless he remembered to
+   * start the stopwatch. That was wrong: studying in the app is studying.
+   *
+   * So: credit a minute only when he actually touched something in the last
+   * two minutes. An app left open on a table stops counting on its own, which
+   * was the whole complaint about the old clock, while a session of flashcards
+   * adds up without him having to remember anything. */
+  const IDLE_MS = 120000;
+  window._lastTouch = Date.now();
+  ['pointerdown', 'keydown', 'input'].forEach(ev =>
+    document.addEventListener(ev, () => { window._lastTouch = Date.now(); }, { passive: true, capture: true }));
+
   if (window._studyTimer) clearInterval(window._studyTimer);
   window._studyTimer = setInterval(() => {
-    if (state.swStart && document.visibilityState === 'visible') renderStudyTimer();
-  }, 30000);
+    const activo = document.visibilityState === 'visible' && (Date.now() - window._lastTouch) < IDLE_MS;
+    // The stopwatch already owns this minute; never count it twice.
+    if (activo && !state.swStart) {
+      addStudyMinutes(1, todayLocal(), 'app');
+      recordStudyDate();
+    }
+    if (activo || state.swStart) renderStudyTimer();
+  }, 60000);
 
   // Clean up on tab close
 
