@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-24c -->
+<!-- DEVLEARN_BUILD: 2026-08-24e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-24c';
+const APP_BUILD = '2026-08-24e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6841,29 +6841,41 @@ function totalStudyMinutes() {
   return Math.round((state.studyMinutes || 0) + nuevo + enCurso);
 }
 
-/* Which activity is on screen right now. The total answers "how much"; this
- * answers "on what" — the question that can actually change how he studies. */
+/* Which activity is on screen right now — or null when the minute should not
+ * count at all. Being on the Dashboard reading the timer is not studying, and
+ * neither is sitting on the flashcards start screen: the session has to be
+ * actually running. Counting those inflated the number with exactly the time
+ * he cares least about. */
 function currentActivity() {
-  const unidad = document.getElementById('page-unit');
-  if (unidad && unidad.classList.contains('active')) {
-    const porTab = {
-      vocab: '📖 Vocabulario', flashcards: '🃏 Flashcards', grammar: '📐 Gramática',
-      exercises: '✏️ Ejercicios', tutor: '🎙️ Mari', exam: '🏆 Examen',
-      speaking: '🎤 Speaking Test', roleplay: '🎭 Role Play', notes: '📝 Notas',
-      start: '▶ Hoy',
-    };
-    return porTab[current.tab] || '📚 Unidad';
-  }
   // The text reader is an overlay, so it wins over whatever page is beneath it.
   if (document.getElementById('text-overlay')) return '📝 Mis textos';
+
+  const unidad = document.getElementById('page-unit');
+  if (unidad && unidad.classList.contains('active')) {
+    // A flashcard card on screen means a session is running; the prep screen
+    // with its "start" button does not count.
+    if (current.tab === 'flashcards') {
+      return document.getElementById('fc-card') ? '🃏 Flashcards' : null;
+    }
+    const porTab = {
+      vocab: '📖 Vocabulario', grammar: '📐 Gramática', exercises: '✏️ Ejercicios',
+      tutor: '🎙️ Mari', exam: '🏆 Examen', speaking: '🎤 Speaking Test',
+      roleplay: '🎭 Role Play', notes: '📝 Notas',
+    };
+    return porTab[current.tab] || null;   // "Today" is a menu, not study
+  }
+
   const activa = document.querySelector('.page.active');
   const porPagina = {
-    'page-dashboard': '⊞ Dashboard', 'page-levels': '📊 Niveles', 'page-level': '📊 Niveles',
-    'page-progress': '📈 Progreso', 'page-flashcards-all': '🃏 Flashcards',
-    'page-vocab-all': '📖 Vocabulario', 'page-tutor': '🎙️ Mari',
-    'page-podcasts': '🎧 Podcasts', 'page-texts': '📝 Mis textos',
+    // Dashboard, Progreso y Niveles quedan fuera a propósito: son de mirar.
+    'page-flashcards-all': document.getElementById('fc-card') ? '🃏 Flashcards' : null,
+    'page-vocab-all': '📖 Vocabulario',
+    'page-tutor': '🎙️ Mari',
+    // Podcasts queda fuera: ahí se anota lo escuchado, y esos minutos ya se
+    // suman aparte — contar también la pantalla sería contarlo dos veces.
+    'page-texts': '📝 Mis textos',
   };
-  return (activa && porPagina[activa.id]) || '📚 Estudio';
+  return (activa && porPagina[activa.id]) || null;
 }
 
 function addActivityMinute(mins, day, actividad) {
@@ -17461,9 +17473,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window._studyTimer = setInterval(() => {
     const activo = document.visibilityState === 'visible' && (Date.now() - window._lastTouch) < IDLE_MS;
     // The stopwatch already owns this minute; never count it twice.
-    if (activo && !state.swStart) {
+    /* No activity means the minute is not study — looking at the Dashboard or
+     * the flashcards start screen. It must not reach the daily total either,
+     * or the breakdown and the total would disagree. */
+    const actividad = activo && !state.swStart ? currentActivity() : null;
+    if (actividad) {
       addStudyMinutes(1, todayLocal(), 'app');
-      addActivityMinute(1, todayLocal(), currentActivity());
+      addActivityMinute(1, todayLocal(), actividad);
       recordStudyDate();
     }
     if (activo || state.swStart) renderStudyTimer();
