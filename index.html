@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-24g -->
+<!-- DEVLEARN_BUILD: 2026-08-25b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-24g';
+const APP_BUILD = '2026-08-25b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5935,6 +5935,7 @@ function migrateState(s) {
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
   merged.studyLog = (merged.studyLog && typeof merged.studyLog === 'object') ? merged.studyLog : {};
   merged.activityLog = (merged.activityLog && typeof merged.activityLog === 'object') ? merged.activityLog : {};
+  if (typeof merged.focusEndAt !== 'number') merged.focusEndAt = null;
   /* A sync merge that deduped objects by reference doubled this list on every
    * pull — 15 real entries reached 199,680 and pushed the whole state past the
    * storage cap, so nothing could save. Collapse it back to the 20 the writer
@@ -8891,6 +8892,122 @@ function splitSentences(text) {
     .filter(Boolean);
 }
 
+/* The reader serves two sources now: his own texts and podcast transcripts.
+ * They differ in purpose — a text is memorised, a transcript is understood —
+ * so the reader adapts rather than being copied. */
+function readerItem() {
+  if (!_txState) return null;
+  return _txState.kind === 'podcast'
+    ? (state.podcastLog || []).find(x => x.id === _txState.id)
+    : (state.texts || []).find(x => x.id === _txState.id);
+}
+
+function openPodcastReader(id) {
+  const pod = (state.podcastLog || []).find(x => x.id === id);
+  if (!pod || !(pod.transcript || '').trim()) return;
+  const sentences = splitSentences(pod.transcript);
+  pod.body = pod.transcript;            // the reader reads `body`
+  pod.translation = pod.trans ? splitSentences(pod.trans) : [];
+  _txState = {
+    id, kind: 'podcast', sentences,
+    current: -1,
+    rate: state.txRate || 0.85,
+    playing: false,
+    flippedES: new Set(),
+    mismatch: pod.translation.length > 0 && pod.translation.length !== sentences.length,
+  };
+  renderTextReader();
+}
+
+/* A word he had to look up while listening is exactly the word worth keeping.
+ * Without this the translation is a dead end; with it, the transcript feeds the
+ * session's vocabulary, which already flows into search and practice. */
+function podHasWord(word) {
+  const pod = readerItem();
+  if (!pod || !_txState || _txState.kind !== 'podcast') return false;
+  const q = String(word || '').trim().toLowerCase();
+  return (pod.words || []).some(w => (w.word || '').trim().toLowerCase() === q);
+}
+
+function addWordToPodcast(word) {
+  const pod = readerItem();
+  if (!pod || !_txState || _txState.kind !== 'podcast') return;
+  const key = String(word || '').trim().toLowerCase();
+  if (!key || podHasWord(key)) return;
+  const d = (pod.lookups || {})[key] || {};
+  pod.words = pod.words || [];
+  pod.words.push({
+    word: String(word).trim(),
+    translation: d.translation || '',
+    phonetic: d.phonetic || '',
+    emoji: d.emoji || '🎧',
+  });
+  save();
+  toast(`➕ "${word}" añadida a la sesión`);
+  const box = document.getElementById('tx-word');
+  if (box) {
+    const btn = box.querySelector('button.btn-primary');
+    if (btn) { btn.textContent = '✓ Ya está en esta sesión'; btn.disabled = true; btn.classList.replace('btn-primary', 'btn-ghost'); }
+  }
+}
+
+/* A transcript is for understanding, not memorising — so no "me lo sé" here.
+ * The translation stays optional: with a podcast he usually has the transcript
+ * and not a translation, and an empty field should not look like a gap. */
+function openPodTranscript(id) {
+  const pod = (state.podcastLog || []).find(x => x.id === id);
+  if (!pod) return;
+  document.getElementById('podtx-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'podtx-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:420px;width:100%;padding:20px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-weight:700;">📄 Transcripción</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('podtx-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.74rem;color:var(--text-3);margin-bottom:14px;">${escapeHtml(pod.title || 'Sesión')}</div>
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">El texto del podcast (en inglés)</label>
+      <textarea id="podtx-body" rows="9" maxlength="20000" placeholder="Pega aquí la transcripción…"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:12px;">${escapeHtml(pod.transcript || '')}</textarea>
+
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Traducción (opcional)</label>
+      <textarea id="podtx-trans" rows="5" maxlength="20000" placeholder="Solo si la tienes — se usa al tocar 🔄 en una frase"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.9rem;line-height:1.6;resize:vertical;margin-bottom:16px;">${escapeHtml(pod.trans || '')}</textarea>
+
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="savePodTranscript('${id}')">Guardar</button>
+      ${(pod.transcript || '').trim() ? `<button class="btn btn-ghost" style="width:100%;padding:9px;margin-top:8px;font-size:0.78rem;" onclick="clearPodTranscript('${id}')">Quitar la transcripción</button>` : ''}
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('podtx-body')?.focus();
+}
+
+function savePodTranscript(id) {
+  const pod = (state.podcastLog || []).find(x => x.id === id);
+  if (!pod) return;
+  const body = (document.getElementById('podtx-body')?.value || '').trim();
+  if (!body) { toast('Pega la transcripción primero'); return; }
+  pod.transcript = body;
+  pod.trans = (document.getElementById('podtx-trans')?.value || '').trim() || undefined;
+  save();
+  document.getElementById('podtx-overlay')?.remove();
+  renderPodcasts();
+  toast(`📄 ${splitSentences(body).length} frases listas`);
+}
+
+function clearPodTranscript(id) {
+  const pod = (state.podcastLog || []).find(x => x.id === id);
+  if (!pod) return;
+  if (!confirm('¿Quitar la transcripción? Las palabras que ya añadiste a la sesión se quedan.')) return;
+  delete pod.transcript; delete pod.trans; delete pod.body; delete pod.translation;
+  save();
+  document.getElementById('podtx-overlay')?.remove();
+  renderPodcasts();
+}
+
 function openText(id) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!t) return;
@@ -8901,7 +9018,7 @@ function openText(id) {
    * under an English sentence. */
   t.translation = t.trans ? splitSentences(t.trans) : [];
   _txState = {
-    id, sentences,
+    id, kind: 'text', sentences,
     current: -1,
     rate: state.txRate || 0.85,
     playing: false,
@@ -8925,7 +9042,7 @@ function flipSentence(si) {
 function renderTextReader() {
   const st = _txState;
   if (!st) return;
-  const t = (state.texts || []).find(x => x.id === st.id);
+  const t = readerItem();
   if (!t) return;
 
   document.getElementById('text-overlay')?.remove();
@@ -8994,9 +9111,10 @@ function renderTextReader() {
 
 function closeTextReader() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  const era = _txState && _txState.kind;
   _txState = null;
   document.getElementById('text-overlay')?.remove();
-  renderTexts();
+  if (era === 'podcast') renderPodcasts(); else renderTexts();
 }
 
 function cycleShadowRate() {
@@ -9161,7 +9279,7 @@ function sayNumber(el, raw) {
 async function lookupWord(el, word) {
   const st = _txState;
   if (!st) return;
-  const t = (state.texts || []).find(x => x.id === st.id);
+  const t = readerItem();
   if (!t) return;
   const key = word.toLowerCase();
   t.lookups = t.lookups || {};
@@ -9183,6 +9301,11 @@ async function lookupWord(el, word) {
           <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(word)}">🔊</button>
           <button class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:0.66rem;" onclick="document.getElementById('tx-word').innerHTML=''">✕</button>
         </div>
+        ${_txState && _txState.kind === 'podcast' && data.translation && !/buscando|No pude/.test(data.translation) ? `
+          <button class="btn ${podHasWord(word) ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:8px;margin-top:10px;font-size:0.78rem;"
+            ${podHasWord(word) ? 'disabled' : `onclick="addWordToPodcast('${escapeStr(word)}')"`}>
+            ${podHasWord(word) ? '✓ Ya está en esta sesión' : '➕ Añadir a las palabras de esta sesión'}
+          </button>` : ''}
       </div>`;
   };
 
@@ -9275,9 +9398,19 @@ function renderPodcasts() {
               ${escapeHtml(e.date || '')}${e.minutes ? ` · ${e.minutes} min` : ''}
             </div>
           </div>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;flex-shrink:0;" onclick="deletePodcast('${e.id}')">🗑</button>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openPodTranscript('${e.id}')" title="${e.transcript ? 'Editar transcripción' : 'Pegar transcripción'}">📄</button>
+            <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="deletePodcast('${e.id}')">🗑</button>
+          </div>
         </div>
         ${e.notes ? `<div style="font-size:0.84rem;color:var(--text-2);line-height:1.55;margin-top:10px;white-space:pre-wrap;">${escapeHtml(e.notes)}</div>` : ''}
+        ${(e.transcript || '').trim() ? `
+          <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:10px;" onclick="openPodcastReader('${e.id}')">
+            ▶ Escuchar y seguir · ${splitSentences(e.transcript).length} frases
+          </button>` : `
+          <button class="btn btn-ghost" style="width:100%;padding:9px;margin-top:10px;font-size:0.78rem;" onclick="openPodTranscript('${e.id}')">
+            📄 Pegar la transcripción para practicar shadowing
+          </button>`}
         ${(e.words || []).length ? `
           <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -16146,27 +16279,30 @@ function toggleFocusTimer() {
   if (focusTimer.running) {
     clearInterval(focusTimer.interval);
     focusTimer.running = false;
+    focusTimer.seconds = Math.max(0, Math.ceil((focusTimer.endAt - Date.now()) / 1000));
+    state.focusEndAt = null;
+    save();
     timerEl.classList.remove('running');
     document.getElementById('focus-timer-btn').textContent = 'Resume';
   } else {
     focusTimer.running = true;
+    focusTimer.endAt = Date.now() + focusTimer.seconds * 1000;
+    // Persisted so a session that ends while the app is closed still counts.
+    state.focusEndAt = focusTimer.endAt;
+    save();
     timerEl.classList.add('running');
     document.getElementById('focus-timer-btn').textContent = 'Pause';
     Sound.tap();
     focusTimer.interval = setInterval(() => {
-      focusTimer.seconds--;
+      /* Anchored to a finish time instead of counting down a variable: phones
+       * freeze one-second intervals when the screen locks, so a session studied
+       * with the screen off never reached zero and its 25 minutes were lost
+       * without a trace. Real elapsed time cannot be frozen. */
+      focusTimer.seconds = Math.max(0, Math.ceil((focusTimer.endAt - Date.now()) / 1000));
       const m = Math.floor(focusTimer.seconds / 60), s = focusTimer.seconds % 60;
-      document.getElementById('focus-timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
-      if (focusTimer.seconds <= 0) {
-        clearInterval(focusTimer.interval);
-        focusTimer.running = false;
-        addStudyMinutes(25, todayLocal(), 'app');   // into the day ledger, not the frozen total
-        recordStudyDate();
-        save();
-        if (typeof renderStudyTimer === 'function') renderStudyTimer();
-        Sound.complete();
-        celebrate('🎯', 'Focus session complete', 'Beautiful work. You studied with full presence for 25 minutes. Time for a short break.');
-      }
+      const el = document.getElementById('focus-timer');
+      if (el) el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      if (focusTimer.seconds <= 0) finishFocusSession();
     }, 1000);
   }
 }
@@ -16174,6 +16310,37 @@ function toggleFocusTimer() {
 /* ============================================================
    UTILITIES
    ============================================================ */
+/* One place to close a focus session, so the credit is identical whether it
+ * finished on screen or while the app was closed. */
+function finishFocusSession(silencioso) {
+  if (focusTimer.interval) { clearInterval(focusTimer.interval); focusTimer.interval = null; }
+  focusTimer.running = false;
+  focusTimer.seconds = 25 * 60;
+  state.focusEndAt = null;
+  addStudyMinutes(25, todayLocal(), 'app');
+  addActivityMinute(25, todayLocal(), '🎯 Focus');   // faltaba: por eso no salía en el desglose
+  recordStudyDate();
+  save();
+  if (typeof renderStudyTimer === 'function') renderStudyTimer();
+  const el = document.getElementById('focus-timer');
+  if (el) el.textContent = '25:00';
+  const btn = document.getElementById('focus-timer-btn');
+  if (btn) btn.textContent = 'Start';
+  if (silencioso) { toast('🎯 Sesión de Focus completada · +25 min'); return; }
+  Sound.complete();
+  celebrate('🎯', 'Focus session complete', 'Beautiful work. You studied with full presence for 25 minutes. Time for a short break.');
+}
+
+/* A session can end while the app is closed or the screen is locked. Settle it
+ * on the way back in — the work happened, so the credit must too. */
+function resumeFocusIfDue() {
+  const endAt = state.focusEndAt;
+  if (!endAt) return;
+  if (Date.now() >= endAt) { finishFocusSession(true); return; }
+  focusTimer.endAt = endAt;
+  focusTimer.seconds = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+}
+
 function recordStudyDate() {
   const today = todayLocal();
   if (!state.studyDates.includes(today)) {
@@ -17482,6 +17649,11 @@ document.addEventListener('DOMContentLoaded', () => {
   window._lastTouch = Date.now();
   ['pointerdown', 'keydown', 'input'].forEach(ev =>
     document.addEventListener(ev, () => { window._lastTouch = Date.now(); }, { passive: true, capture: true }));
+
+  resumeFocusIfDue();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resumeFocusIfDue();
+  });
 
   if (window._studyTimer) clearInterval(window._studyTimer);
   window._studyTimer = setInterval(() => {
