@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-24b -->
+<!-- DEVLEARN_BUILD: 2026-08-24c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-24b';
+const APP_BUILD = '2026-08-24c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5934,6 +5934,7 @@ function migrateState(s) {
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
   merged.studyLog = (merged.studyLog && typeof merged.studyLog === 'object') ? merged.studyLog : {};
+  merged.activityLog = (merged.activityLog && typeof merged.activityLog === 'object') ? merged.activityLog : {};
   /* A sync merge that deduped objects by reference doubled this list on every
    * pull — 15 real entries reached 199,680 and pushed the whole state past the
    * storage cap, so nothing could save. Collapse it back to the 20 the writer
@@ -6806,6 +6807,11 @@ function unmarkClass(id) {
     const dia = (state.classSchedule || {})[id] || todayLocal();
     const log = studyLog();
     if (log[dia]) log[dia].clase = Math.max(0, (log[dia].clase || 0) - CLASS_MINUTES);
+    const al = (state.activityLog || {})[dia];
+    if (al && al['🎓 Clase']) {
+      al['🎓 Clase'] = Math.max(0, al['🎓 Clase'] - CLASS_MINUTES);
+      if (!al['🎓 Clase']) delete al['🎓 Clase'];
+    }
   }
   save();
   renderCourseTracker();
@@ -6833,6 +6839,38 @@ function totalStudyMinutes() {
   const nuevo = Object.keys(log).reduce((a, d) => a + dayTotal(d), 0);
   const enCurso = state.swStart ? (Date.now() - state.swStart) / 60000 : 0;
   return Math.round((state.studyMinutes || 0) + nuevo + enCurso);
+}
+
+/* Which activity is on screen right now. The total answers "how much"; this
+ * answers "on what" — the question that can actually change how he studies. */
+function currentActivity() {
+  const unidad = document.getElementById('page-unit');
+  if (unidad && unidad.classList.contains('active')) {
+    const porTab = {
+      vocab: '📖 Vocabulario', flashcards: '🃏 Flashcards', grammar: '📐 Gramática',
+      exercises: '✏️ Ejercicios', tutor: '🎙️ Mari', exam: '🏆 Examen',
+      speaking: '🎤 Speaking Test', roleplay: '🎭 Role Play', notes: '📝 Notas',
+      start: '▶ Hoy',
+    };
+    return porTab[current.tab] || '📚 Unidad';
+  }
+  // The text reader is an overlay, so it wins over whatever page is beneath it.
+  if (document.getElementById('text-overlay')) return '📝 Mis textos';
+  const activa = document.querySelector('.page.active');
+  const porPagina = {
+    'page-dashboard': '⊞ Dashboard', 'page-levels': '📊 Niveles', 'page-level': '📊 Niveles',
+    'page-progress': '📈 Progreso', 'page-flashcards-all': '🃏 Flashcards',
+    'page-vocab-all': '📖 Vocabulario', 'page-tutor': '🎙️ Mari',
+    'page-podcasts': '🎧 Podcasts', 'page-texts': '📝 Mis textos',
+  };
+  return (activa && porPagina[activa.id]) || '📚 Estudio';
+}
+
+function addActivityMinute(mins, day, actividad) {
+  const d = day || todayLocal();
+  state.activityLog = state.activityLog || {};
+  state.activityLog[d] = state.activityLog[d] || {};
+  state.activityLog[d][actividad] = (state.activityLog[d][actividad] || 0) + mins;
 }
 
 function studyLog() {
@@ -6870,6 +6908,7 @@ function toggleStopwatch() {
     const mins = (Date.now() - state.swStart) / 60000;
     state.swStart = null;
     addStudyMinutes(mins, todayLocal(), 'app');
+    addActivityMinute(Math.round(mins), todayLocal(), '⏱ Fuera de la app');
     recordStudyDate();
     save();
     renderStudyTimer();
@@ -6907,8 +6946,8 @@ function renderStudyTimer() {
   el.innerHTML = `
     <div style="border:1px solid ${running ? 'var(--green)' : 'var(--border)'};background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.68rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">HOY</div>
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBreakdown()">
+          <div style="font-size:0.68rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">HOY ${hoyTotal ? '›' : ''}</div>
           <div style="font-size:1.35rem;font-weight:800;color:${running ? 'var(--green)' : 'var(--text-1)'};">
             ${fmtMins(hoyTotal)}${running ? ' ⏱' : ''}
           </div>
@@ -6927,6 +6966,49 @@ function renderStudyTimer() {
         ${mejor ? `<div>🏆 mejor día <strong style="color:var(--text-2);">${fmtMins(dayTotal(mejor) + (mejor === hoy ? live : 0))}</strong> · ${mejor === hoy ? 'hoy' : new Date(mejor + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</div>` : ''}
       </div>
     </div>`;
+}
+
+/* Where the time actually went. A total tells him he studied an hour; this
+ * tells him fifty minutes of it were texts and none was speaking — which is
+ * the kind of thing that changes what he does tomorrow. */
+function openBreakdown() {
+  const hoy = todayLocal();
+  const acts = (state.activityLog || {})[hoy] || {};
+  const filas = Object.entries(acts).filter(([, m]) => m > 0).sort((a, b) => b[1] - a[1]);
+  const total = filas.reduce((a, r) => a + r[1], 0);
+  const live = state.swStart ? Math.round((Date.now() - state.swStart) / 60000) : 0;
+
+  document.getElementById('bd-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'bd-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:400px;width:100%;padding:20px;max-height:85vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-weight:700;">⏱ Hoy · ${fmtMins(total + live)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bd-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-3);margin-bottom:16px;">A qué le dedicaste el tiempo</div>
+      ${!filas.length ? `
+        <div style="font-size:0.84rem;color:var(--text-3);line-height:1.5;padding:8px 0;">
+          Todavía no hay nada hoy. Estudia un rato y vuelve — se va llenando solo.
+        </div>` : filas.map(([nombre, min]) => {
+          const pct = Math.round(min / Math.max(total, 1) * 100);
+          return `
+          <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.86rem;margin-bottom:4px;">
+              <span>${escapeHtml(nombre)}</span>
+              <span style="color:var(--text-3);">${fmtMins(min)} · ${pct}%</span>
+            </div>
+            <div style="height:6px;background:var(--card);border-radius:4px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      ${live ? `<div style="font-size:0.72rem;color:var(--green);margin-top:4px;">⏱ +${fmtMins(live)} andando ahora</div>` : ''}
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 function openAddMinutes() {
@@ -6963,6 +7045,7 @@ function saveMinutes() {
   const d = document.getElementById('mins-date')?.value || todayLocal();
   if (!Number.isFinite(n) || n <= 0) { toast('Escribe cuántos minutos'); return; }
   addStudyMinutes(n, d, 'manual');
+  addActivityMinute(n, d, '➕ Anotado a mano');
   if (d === todayLocal()) recordStudyDate();
   save();
   document.getElementById('mins-overlay')?.remove();
@@ -6981,6 +7064,7 @@ function markClassDone(id) {
   if (!yaEstaba) {
     const dia = (state.classSchedule || {})[id] || todayLocal();
     addStudyMinutes(CLASS_MINUTES, dia, 'clase');
+    addActivityMinute(CLASS_MINUTES, dia, '🎓 Clase');
     if (!(state.studyDates || []).includes(dia)) {
       state.studyDates = [...new Set([...(state.studyDates || []), dia])].sort();
       state.streak = computeStreak(state.studyDates);
@@ -17379,6 +17463,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // The stopwatch already owns this minute; never count it twice.
     if (activo && !state.swStart) {
       addStudyMinutes(1, todayLocal(), 'app');
+      addActivityMinute(1, todayLocal(), currentActivity());
       recordStudyDate();
     }
     if (activo || state.swStart) renderStudyTimer();
