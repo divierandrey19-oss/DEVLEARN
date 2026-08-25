@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-24e -->
+<!-- DEVLEARN_BUILD: 2026-08-24g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-24e';
+const APP_BUILD = '2026-08-24g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6846,36 +6846,50 @@ function totalStudyMinutes() {
  * neither is sitting on the flashcards start screen: the session has to be
  * actually running. Counting those inflated the number with exactly the time
  * he cares least about. */
+/* Which activity is genuinely in progress right now — or null.
+ *
+ * The rule everywhere: a screen being open is NOT studying. Each branch looks
+ * for something that only exists while the work is actually happening — a card
+ * on screen, a reader open, a chat with turns in it. Browsing the list of texts
+ * or sitting on an empty tab used to look identical to real study, which made
+ * the breakdown lie about where the hours went.
+ */
 function currentActivity() {
-  // The text reader is an overlay, so it wins over whatever page is beneath it.
-  if (document.getElementById('text-overlay')) return '📝 Mis textos';
+  // The reader is an overlay: open means he is inside a text, not on the list.
+  if (document.getElementById('tx-body')) return '📝 Mis textos';
+
+  const dentro = (sel) => !!document.querySelector(sel);
 
   const unidad = document.getElementById('page-unit');
   if (unidad && unidad.classList.contains('active')) {
-    // A flashcard card on screen means a session is running; the prep screen
-    // with its "start" button does not count.
-    if (current.tab === 'flashcards') {
-      return document.getElementById('fc-card') ? '🃏 Flashcards' : null;
+    switch (current.tab) {
+      // A card is only rendered mid-session; the prep screen is not.
+      case 'flashcards': return document.getElementById('fc-card') ? '🃏 Flashcards' : null;
+      // The timer only runs while a card is open and being answered.
+      case 'speaking':   return document.getElementById('spk-timer') ? '🎤 Speaking Test' : null;
+      // A scene in progress has an input to answer in.
+      case 'roleplay':   return document.getElementById('rp-input') ? '🎭 Role Play' : null;
+      // Mari counts once the conversation exists, not from the intro screen.
+      case 'tutor':      return dentro('#unit-chat-msgs .msg-user') ? '🎙️ Mari' : null;
+      // An exam is running only while its clock is going.
+      case 'exam':       return (exam && exam.total > 0 && exam.timeLeft > 0) ? '🏆 Examen' : null;
+      // Reading rules and doing drills both happen on the rendered page; an
+      // empty tab (no content generated yet) is not study.
+      case 'grammar':    return dentro('#grammar-content .grammar-card, #grammar-content .grammar-drill') ? '📐 Gramática' : null;
+      case 'exercises':  return dentro('#exercises-content .exercise-input, #exercises-content .exercise-opt') ? '✏️ Ejercicios' : null;
+      case 'vocab':      return dentro('#vocab-content .vocab-card') ? '📖 Vocabulario' : null;
+      default:           return null;   // 'start' y 'notes' no son estudio
     }
-    const porTab = {
-      vocab: '📖 Vocabulario', grammar: '📐 Gramática', exercises: '✏️ Ejercicios',
-      tutor: '🎙️ Mari', exam: '🏆 Examen', speaking: '🎤 Speaking Test',
-      roleplay: '🎭 Role Play', notes: '📝 Notas',
-    };
-    return porTab[current.tab] || null;   // "Today" is a menu, not study
   }
 
   const activa = document.querySelector('.page.active');
-  const porPagina = {
-    // Dashboard, Progreso y Niveles quedan fuera a propósito: son de mirar.
-    'page-flashcards-all': document.getElementById('fc-card') ? '🃏 Flashcards' : null,
-    'page-vocab-all': '📖 Vocabulario',
-    'page-tutor': '🎙️ Mari',
-    // Podcasts queda fuera: ahí se anota lo escuchado, y esos minutos ya se
-    // suman aparte — contar también la pantalla sería contarlo dos veces.
-    'page-texts': '📝 Mis textos',
-  };
-  return (activa && porPagina[activa.id]) || null;
+  const id = activa && activa.id;
+  // Dashboard, Progreso, Niveles y la lista de textos quedan fuera: son de
+  // mirar. Podcasts también — sus minutos ya se anotan a mano ahí mismo.
+  if (id === 'page-flashcards-all') return document.getElementById('fc-card') ? '🃏 Flashcards' : null;
+  if (id === 'page-vocab-all')      return dentro('#vocab-grid .vocab-card') ? '📖 Vocabulario' : null;
+  if (id === 'page-tutor')          return dentro('#standalone-chat-msgs .msg-user') ? '🎙️ Mari' : null;
+  return null;
 }
 
 function addActivityMinute(mins, day, actividad) {
