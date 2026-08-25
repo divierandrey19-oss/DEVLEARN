@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-24a -->
+<!-- DEVLEARN_BUILD: 2026-08-24b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-24a';
+const APP_BUILD = '2026-08-24b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6824,6 +6824,17 @@ function unmarkClass(id) {
  */
 const CLASS_MINUTES = 90;
 
+/* Total study time across the whole history. studyMinutes holds everything the
+ * old clock accumulated before the per-day ledger existed; studyLog holds
+ * everything since. Adding them keeps Progress truthful instead of freezing at
+ * the number the old clock happened to reach. */
+function totalStudyMinutes() {
+  const log = state.studyLog || {};
+  const nuevo = Object.keys(log).reduce((a, d) => a + dayTotal(d), 0);
+  const enCurso = state.swStart ? (Date.now() - state.swStart) / 60000 : 0;
+  return Math.round((state.studyMinutes || 0) + nuevo + enCurso);
+}
+
 function studyLog() {
   state.studyLog = state.studyLog || {};
   return state.studyLog;
@@ -6903,11 +6914,14 @@ function renderStudyTimer() {
           </div>
           ${desglose ? `<div style="font-size:0.68rem;color:var(--text-3);margin-top:2px;">${desglose}</div>` : ''}
         </div>
-        <button class="btn ${running ? 'btn-ghost' : 'btn-primary'}" style="padding:10px 16px;flex-shrink:0;" onclick="toggleStopwatch()">
-          ${running ? '⏸ Parar' : '▶ Empezar'}
-        </button>
-        <button class="btn btn-ghost btn-sm" style="padding:10px 12px;flex-shrink:0;" onclick="openAddMinutes()" title="Anotar minutos">➕</button>
+        <button class="btn btn-ghost btn-sm" style="padding:10px 12px;flex-shrink:0;" onclick="openAddMinutes()" title="Anotar minutos a mano">➕</button>
       </div>
+      <button class="btn ${running ? 'btn-primary' : 'btn-ghost'}" style="width:100%;padding:10px;margin-top:10px;font-size:0.8rem;" onclick="toggleStopwatch()">
+        ${running ? '⏸ Parar — llevas ' + fmtMins(live) : '⏱ Estudiando fuera de la app'}
+      </button>
+      ${running ? '' : `<div style="font-size:0.66rem;color:var(--text-3);text-align:center;margin-top:6px;line-height:1.4;">
+        Dentro de la app el tiempo se cuenta solo. Usa esto para TikToks, videos o cuando te grabas.
+      </div>`}
       <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-3);">
         <div>📚 total <strong style="color:var(--text-2);">${fmtMins(total)}</strong></div>
         ${mejor ? `<div>🏆 mejor día <strong style="color:var(--text-2);">${fmtMins(dayTotal(mejor) + (mejor === hoy ? live : 0))}</strong> · ${mejor === hoy ? 'hoy' : new Date(mejor + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</div>` : ''}
@@ -7115,7 +7129,7 @@ function renderDashboard() {
 
   // ── Stats ─────────────────────────────────────────────────────
   animateCounter(document.getElementById('st-words'), totalWords);
-  document.getElementById('st-time').textContent = formatMinutes(state.studyMinutes);
+  document.getElementById('st-time').textContent = formatMinutes(totalStudyMinutes());
   animateCounter(document.getElementById('st-units'), allUnits.filter(u => u.completed).length);
   document.getElementById('st-score').textContent = state.stats.avgScore ? state.stats.avgScore + '%' : '—';
 
@@ -7159,7 +7173,7 @@ function renderDashboard() {
     document.getElementById('cc-sub').textContent   = `Across ${allUnits.length} unit${allUnits.length !== 1 ? 's' : ''}. Keep uploading pages to grow your vocabulary.`;
     document.getElementById('cc-progress').style.width = '0%';
     document.getElementById('cc-meta-progress').textContent = '';
-    document.getElementById('cc-meta-time').textContent = formatMinutes(state.studyMinutes) + ' total';
+    document.getElementById('cc-meta-time').textContent = formatMinutes(totalStudyMinutes()) + ' total';
     document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Browse levels →</button>`;
   }
 
@@ -15529,7 +15543,7 @@ function renderProgressPage() {
   const masteryPct = totalWords > 0 ? Math.round((totalMastered / totalWords) * 100) : 0;
 
   // Study time
-  const timeStr = formatMinutes(state.studyMinutes);
+  const timeStr = formatMinutes(totalStudyMinutes());
 
   // Dynamic headline
   const headline = totalWords === 0
@@ -16036,8 +16050,10 @@ function toggleFocusTimer() {
       if (focusTimer.seconds <= 0) {
         clearInterval(focusTimer.interval);
         focusTimer.running = false;
-        state.studyMinutes += 25;
+        addStudyMinutes(25, todayLocal(), 'app');   // into the day ledger, not the frozen total
+        recordStudyDate();
         save();
+        if (typeof renderStudyTimer === 'function') renderStudyTimer();
         Sound.complete();
         celebrate('🎯', 'Focus session complete', 'Beautiful work. You studied with full presence for 25 minutes. Time for a short break.');
       }
