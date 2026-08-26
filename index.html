@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-25b -->
+<!-- DEVLEARN_BUILD: 2026-08-25c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-25b';
+const APP_BUILD = '2026-08-25c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12078,7 +12078,12 @@ function renderGrammar(grammar, unit) {
       c.innerHTML = emptyState('📐', 'No grammar yet', 'Grammar rules from your book will appear here.');
       return;
     }
-    c.innerHTML = batchesWithGrammar.map(({ b, realIdx }) => `
+    const drillsHechos = Object.keys(unit.drillState || {}).length;
+    c.innerHTML = (drillsHechos ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="font-size:0.74rem;color:var(--text-3);">${drillsHechos} respondido${drillsHechos !== 1 ? 's' : ''}</div>
+        <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetGrammarDrills()">↺ Reiniciar</button>
+      </div>` : '') + batchesWithGrammar.map(({ b, realIdx }) => `
       <div class="batch-section">
         ${batchSectionHeader(b, realIdx, unit.batches)}
         ${renderGrammarItems(b.grammar, `b${realIdx}_`)}
@@ -12102,17 +12107,7 @@ function renderGrammarItems(grammar, batchPrefix = '') {
   if (u && !u.drillState) u.drillState = {};
   const drillState = u?.drillState || {};
 
-  // Daily reset: clear drill states from previous days
-  if (u && u.drillState) {
-    let changed = false;
-    Object.keys(u.drillState).forEach(key => {
-      if (u.drillState[key].date !== today) {
-        delete u.drillState[key];
-        changed = true;
-      }
-    });
-    if (changed) save();
-  }
+  // Same reasoning as the exercises: resetting is his call, not the calendar's.
 
   return grammar.map((g, gi) => {
     const pfx = `${batchPrefix}${gi}`; // unique prefix per batch+grammar index
@@ -12325,20 +12320,42 @@ Respond with ONLY the one-sentence explanation, no preamble.`;
 /* ============================================================
    EXERCISES
    ============================================================ */
+/* Clearing the answers is now deliberate. It used to happen at midnight, which
+ * meant losing yesterday's work without being asked — worst of all the night
+ * before an exam, when reviewing what he got wrong is the point. */
+function resetExercises() {
+  const u = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+  const n = Object.keys(u.exerciseState || {}).length;
+  if (!n) { toast('No hay respuestas que reiniciar'); return; }
+  if (!confirm(`¿Reiniciar los ${n} ejercicios respondidos de esta unidad?\n\nPodrás volver a hacerlos desde cero.`)) return;
+  u.exerciseState = {};
+  save();
+  renderExercises(getUnitExercises(u), u);
+  toast('↺ Ejercicios reiniciados');
+}
+
+function resetGrammarDrills() {
+  const u = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+  const n = Object.keys(u.drillState || {}).length;
+  if (!n) { toast('No hay ejercicios de gramática que reiniciar'); return; }
+  if (!confirm(`¿Reiniciar los ${n} ejercicios de gramática de esta unidad?`)) return;
+  u.drillState = {};
+  save();
+  renderGrammar(getUnitGrammar(u), u);
+  toast('↺ Gramática reiniciada');
+}
+
 function renderExercises(exercises, unit) {
   const c = document.getElementById('exercises-content');
   if (!c) return;
 
-  // Daily reset: clear stale exercise states BEFORE sorting batches,
-  // so pages reset to "incomplete" move back to the top correctly
+  /* The answers used to be wiped whenever the date changed. That threw away
+   * work he might still want to look at — the night before an exam, reviewing
+   * yesterday's mistakes matters more than a clean slate — and he had no say in
+   * when it happened. Resetting is now his call, via the button below. */
   const today = todayLocal();
-  if (unit && unit.exerciseState) {
-    let changed = false;
-    Object.keys(unit.exerciseState).forEach(key => {
-      if (unit.exerciseState[key].date !== today) { delete unit.exerciseState[key]; changed = true; }
-    });
-    if (changed) save();
-  }
 
   // If called with a unit with multiple batches, render per-batch
   if (unit && unit.batches && unit.batches.length > 1) {
@@ -12371,7 +12388,12 @@ function renderExercises(exercises, unit) {
       return;
     }
     let globalIdx = 0;
-    c.innerHTML = batchesWithEx.map(({ b, realIdx }) => {
+    const hechos = Object.keys(unit.exerciseState || {}).length;
+    c.innerHTML = (hechos ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="font-size:0.74rem;color:var(--text-3);">${hechos} respondido${hechos !== 1 ? 's' : ''}</div>
+        <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetExercises()">↺ Reiniciar</button>
+      </div>` : '') + batchesWithEx.map(({ b, realIdx }) => {
       const items = renderExerciseItems(b.exercises, globalIdx);
       globalIdx += b.exercises.length;
       return `
@@ -12406,14 +12428,7 @@ function renderExerciseItems(exercises, startIdx = 0) {
   const today = todayLocal();
   const u = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
   if (u && !u.exerciseState) u.exerciseState = {};
-  // Daily reset: clear old exercise states
-  if (u && u.exerciseState) {
-    let changed = false;
-    Object.keys(u.exerciseState).forEach(key => {
-      if (u.exerciseState[key].date !== today) { delete u.exerciseState[key]; changed = true; }
-    });
-    if (changed) save();
-  }
+  // Tercer sitio que borraba por fecha; ahora reiniciar es decisión suya.
   const exState = u?.exerciseState || {};
 
   // Only shuffle if no exercises have been completed today yet
