@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-25c -->
+<!-- DEVLEARN_BUILD: 2026-08-26b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-25c';
+const APP_BUILD = '2026-08-26b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12078,12 +12078,7 @@ function renderGrammar(grammar, unit) {
       c.innerHTML = emptyState('📐', 'No grammar yet', 'Grammar rules from your book will appear here.');
       return;
     }
-    const drillsHechos = Object.keys(unit.drillState || {}).length;
-    c.innerHTML = (drillsHechos ? `
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="font-size:0.74rem;color:var(--text-3);">${drillsHechos} respondido${drillsHechos !== 1 ? 's' : ''}</div>
-        <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetGrammarDrills()">↺ Reiniciar</button>
-      </div>` : '') + batchesWithGrammar.map(({ b, realIdx }) => `
+    c.innerHTML = grammarToolbar(unit) + batchesWithGrammar.map(({ b, realIdx }) => `
       <div class="batch-section">
         ${batchSectionHeader(b, realIdx, unit.batches)}
         ${renderGrammarItems(b.grammar, `b${realIdx}_`)}
@@ -12097,7 +12092,26 @@ function renderGrammar(grammar, unit) {
     c.innerHTML = emptyState('📐', 'No grammar yet', 'Grammar rules from your book will appear here.');
     return;
   }
-  c.innerHTML = renderGrammarItems(grammar, '');
+  const u1 = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
+  c.innerHTML = grammarToolbar(u1 || unit) + renderGrammarItems(grammar, '');
+}
+
+/* Shared by both render paths. It used to live only in the multi-page branch,
+ * so a unit with a single page silently never offered to create its exercises. */
+function grammarToolbar(unit) {
+  if (!unit) return '';
+  const hechos = Object.keys(unit.drillState || {}).length;
+  const sinDrills = (unit.batches || []).reduce((n, b) =>
+    n + (b.grammar || []).filter(g => !(g.drillSentences || []).length).length, 0);
+  if (!hechos && !sinDrills) return '';
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <div style="font-size:0.74rem;color:var(--text-3);">${hechos ? `${hechos} respondido${hechos !== 1 ? 's' : ''}` : `${sinDrills} tema${sinDrills !== 1 ? 's' : ''} sin ejercicios`}</div>
+      <div style="display:flex;gap:6px;">
+        ${sinDrills ? `<button id="gen-drills-btn" class="btn btn-primary btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="generateDrillsForUnit()">✨ Crear ejercicios (${sinDrills})</button>` : ''}
+        ${hechos ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetGrammarDrills()">↺ Reiniciar</button>` : ''}
+      </div>
+    </div>`;
 }
 
 function renderGrammarItems(grammar, batchPrefix = '') {
@@ -12323,6 +12337,85 @@ Respond with ONLY the one-sentence explanation, no preamble.`;
 /* Clearing the answers is now deliberate. It used to happen at midnight, which
  * meant losing yesterday's work without being asked — worst of all the night
  * before an exam, when reviewing what he got wrong is the point. */
+/* Three units arrived with no grammar drills at all — the extraction stopped
+ * returning them, and the app hid it by using the examples as exercises.
+ * Regenerating from the page is impossible (those photos were lost), but the
+ * rule, the examples and the common errors are still here, and that is all a
+ * drill actually needs. So they get built from what is already loaded.
+ */
+async function generateDrillsForUnit() {
+  const u = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
+  if (!u) return;
+
+  const faltantes = [];
+  (u.batches || []).forEach((b, bi) => {
+    (b.grammar || []).forEach((g, gi) => {
+      if (!(g.drillSentences || []).length) faltantes.push({ bi, gi, g });
+    });
+  });
+  if (!faltantes.length) { toast('Todos los temas ya tienen ejercicios'); return; }
+
+  if (!AIService.getKey()) { toast('Configura tu clave en Ajustes'); return; }
+  if (!confirm(`Crear ejercicios para ${faltantes.length} tema${faltantes.length !== 1 ? 's' : ''} de gramática.\n\nSe usan la regla y los ejemplos que ya tienes — no hacen falta las fotos.\n\n¿Continuar?`)) return;
+
+  const btn = document.getElementById('gen-drills-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creando…'; }
+
+  const CHUNK = 4;
+  let hechos = 0, fallos = 0;
+  for (let i = 0; i < faltantes.length; i += CHUNK) {
+    const parte = faltantes.slice(i, i + CHUNK);
+    if (btn) btn.textContent = `Creando… ${i}/${faltantes.length}`;
+    try {
+      const temas = parte.map((f, n) => {
+        const ex = (f.g.examples || []).map(e => e.en || e).filter(Boolean);
+        return `TEMA ${n + 1}: ${f.g.title}
+Regla: ${String(f.g.rule || '').slice(0, 400)}
+Ejemplos que YA se le muestran (NO los repitas): ${ex.map(x => `"${x}"`).join(', ') || 'ninguno'}`;
+      }).join('\n\n');
+
+      const raw = await AIService._callClaude({
+        messages: [{ role: 'user', content: `Eres profesor de inglés A2 para un estudiante colombiano.
+
+${temas}
+
+Para CADA tema crea 3 ejercicios de práctica, con estos tipos exactos: uno "translation", uno "fill_blank", uno "error_correction".
+
+REGLAS ESTRICTAS:
+- Las frases deben ser NUEVAS. Nunca uses los ejemplos listados arriba ni una variación mínima de ellos: el estudiante los tiene a la vista y copiaría la respuesta.
+- Vocabulario y situaciones de nivel A2, cotidianas.
+- "translation": prompt en español, answer en inglés.
+- "fill_blank": prompt en inglés con ___ donde va la respuesta; answer es SOLO lo que va en el espacio.
+- "error_correction": prompt es una frase en inglés con UN error típico de hispanohablante; answer es la frase corregida completa.
+- hint: una pista corta en español.
+
+Responde SOLO con un array JSON, un objeto por tema, en el mismo orden:
+[{"drills":[{"type":"translation","prompt":"...","answer":"...","hint":"..."},{"type":"fill_blank","prompt":"...","answer":"...","hint":"..."},{"type":"error_correction","prompt":"...","answer":"...","hint":"..."}]}]` }],
+        maxTokens: 700 * parte.length + 300,
+        isJSON: true,
+        timeoutMs: 90000,
+      });
+
+      const arr = JSON.parse(String(raw).replace(/```json|```/g, '').trim());
+      parte.forEach((f, n) => {
+        const drills = (arr[n] && arr[n].drills) || [];
+        const limpios = drills.filter(d => d && d.type && d.prompt && d.answer).slice(0, 3);
+        if (!limpios.length) { fallos++; return; }
+        u.batches[f.bi].grammar[f.gi].drillSentences = limpios;
+        hechos++;
+      });
+      save();
+    } catch (e) {
+      fallos += parte.length;
+    }
+  }
+
+  save();
+  renderGrammar(getUnitGrammar(u), u);
+  if (hechos) toast(`✨ ${hechos} tema${hechos !== 1 ? 's' : ''} con ejercicios nuevos${fallos ? ` · ${fallos} fallaron` : ''}`);
+  else toast('No pude crearlos — revisa tu conexión e inténtalo de nuevo');
+}
+
 function resetExercises() {
   const u = (current.lid && current.uid) ? getUnit(current.lid, current.uid) : null;
   if (!u) return;
