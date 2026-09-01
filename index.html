@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-26b -->
+<!-- DEVLEARN_BUILD: 2026-08-28a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4690,7 +4690,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-26b';
+const APP_BUILD = '2026-08-28a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5062,15 +5062,20 @@ RULES:
     };
 
     const raw = await this._callClaude({
-      // 8000 truncated rich 2-page batches. The schema ends with speakingPrompts,
-      // so a truncated response silently dropped the role play scenes.
-      // Raising the cap costs no MONEY (billing is per token generated, not per
-      // cap) but it does cost TIME: a dense page generates 6-8k tokens, which on
-      // a phone connection runs past the 120s default. That timeout fired after
-      // the tokens were already billed — paid for, and nothing to show. This is
-      // a long background job with its own progress screen, so give it room.
+      /* 8000 truncated rich 2-page batches: the schema ends with speakingPrompts,
+       * so a cut response silently dropped the role play scenes. 16000 brought
+       * those back — but drillSentences sit INSIDE each grammar topic, and a
+       * page with ten topics exhausts the budget before reaching them all. The
+       * repair pipeline then salvaged the JSON with the exercises missing and
+       * said nothing, which is how three whole units arrived with no grammar
+       * practice at all.
+       *
+       * Raising the cap costs no MONEY (billing is per token generated, not per
+       * cap) but it does cost TIME: a dense page runs past the 120s default,
+       * and that timeout used to fire after the tokens were already billed.
+       * This is a background job with its own progress screen, so give it room. */
       messages: [{ role: 'user', content: [...imageBlocks, prompt] }],
-      maxTokens: 16000,
+      maxTokens: 32000,
       isJSON: true,
       timeoutMs: 300000,
     });
@@ -8453,6 +8458,19 @@ async function analyzeWithAI(images, unit, batch) {
     batch.generatedAt = Date.now();
     unit.analyzedAt   = Date.now();
 
+    /* The repair pipeline can salvage a truncated response and store it as if
+     * nothing happened — which is exactly how three units arrived with no
+     * grammar exercises and no warning. Say what is missing: he can act on a
+     * warning, and cannot act on silence. */
+    const faltan = [];
+    const sinDrills = (batch.grammar || []).filter(g => !(g.drillSentences || []).length).length;
+    if (sinDrills) faltan.push(`${sinDrills} tema${sinDrills !== 1 ? 's' : ''} de gramática sin ejercicios`);
+    if (!(batch.speakingPrompts || []).length) faltan.push('sin escenas de role play');
+    if (!(batch.exercises || []).length) faltan.push('sin ejercicios de práctica');
+    if (faltan.length) {
+      setTimeout(() => toast(`⚠ La página quedó incompleta: ${faltan.join(' · ')}. Usa ✨ en Grammar o vuelve a subirla.`), 1200);
+    }
+
     // Update unit-level display fields from the latest batch (only if not set)
     if (parsed.unitTitle && !unit.title) {
       unit.title = parsed.unitTitle;
@@ -9084,7 +9102,7 @@ function renderTextReader() {
               if (num) return `<span onclick="sayNumber(this,'${escapeStr(num)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
               return escapeHtml(tok);
             }
-            return `<span onclick="lookupWord(this,'${escapeStr(clean)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+            return `<span onclick="lookupWord(this,this.dataset.w)" data-w="${escapeStr(clean)}" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
           }).join('')
         }</span>${es ? `<button class="tx-flip" onclick="flipSentence(${si})" title="Ver traducción" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button>` : ''} `;
       }).join('')}
@@ -9303,7 +9321,7 @@ async function lookupWord(el, word) {
         </div>
         ${_txState && _txState.kind === 'podcast' && data.translation && !/buscando|No pude/.test(data.translation) ? `
           <button class="btn ${podHasWord(word) ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:8px;margin-top:10px;font-size:0.78rem;"
-            ${podHasWord(word) ? 'disabled' : `onclick="addWordToPodcast('${escapeStr(word)}')"`}>
+            data-w="${escapeStr(word)}" ${podHasWord(word) ? 'disabled' : `onclick="addWordToPodcast(this.dataset.w)"`}>
             ${podHasWord(word) ? '✓ Ya está en esta sesión' : '➕ Añadir a las palabras de esta sesión'}
           </button>` : ''}
       </div>`;
