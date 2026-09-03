@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate de fotos — DEV Learn</title>
+<style>
+  :root{ --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
+         --dim:#8b949e; --ok:#3fb950; --bad:#f85149; --warn:#d29922; }
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 16px 60px;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,system-ui,"Segoe UI",sans-serif;max-width:640px;margin:0 auto}
+  h1{font-size:1.3rem;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:.85rem;margin:0 0 20px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:14px 16px;margin-bottom:14px}
+  .big{font-size:1.3rem;font-weight:700;margin:2px 0}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .note{font-size:.82rem;color:var(--dim);margin-top:6px}
+  .grp-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .grp-head .k{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;color:var(--dim)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ph{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#000}
+  .ph img{display:block;width:100%;height:120px;object-fit:cover}
+  .ph a{position:absolute;right:5px;bottom:5px;background:rgba(0,0,0,.72);color:#fff;
+        border-radius:6px;padding:4px 8px;font-size:.72rem;text-decoration:none;font-weight:600}
+  button{background:#238636;color:#fff;border:0;border-radius:8px;padding:12px 18px;
+         font:inherit;font-weight:600;cursor:pointer;width:100%;margin-top:6px}
+  button.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
+</style>
+
+<h1>Rescate de fotos</h1>
+<p class="sub">Lee las fotos guardadas en este celular. No borra ni modifica nada — solo <code>get</code>, nunca <code>put</code> ni <code>delete</code>.</p>
+<div id="out">Buscando…</div>
+
+<script>
+const DB_NAME = 'devlearn_images', STORE = 'batches';
+const out = document.getElementById('out');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function abrirSoloLectura(){
+  return new Promise((resolve, reject) => {
+    // Mismo nombre y versión que la app, así que NO dispara onupgradeneeded
+    // y no toca el esquema. Si la base no existe, esto la crearía vacía —
+    // por eso se verifica aparte con indexedDB.databases() cuando está disponible.
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => { /* no crear nada aquí a propósito */ };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function existeLaBase(){
+  if (!indexedDB.databases) return null; // el navegador no lo soporta, seguimos igual
+  try {
+    const dbs = await indexedDB.databases();
+    return dbs.some(d => d.name === DB_NAME);
+  } catch(e) { return null; }
+}
+
+async function leerTodo(db){
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains(STORE)) { resolve({ keys: [], values: [] }); return; }
+    const tx = db.transaction(STORE, 'readonly');   // ← solo lectura
+    const store = tx.objectStore(STORE);
+    const rk = store.getAllKeys(), rv = store.getAll();
+    tx.oncomplete = () => resolve({ keys: rk.result || [], values: rv.result || [] });
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function descargarUrl(url, nombre){
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+}
+
+async function main(){
+  const habia = await existeLaBase();
+  if (habia === false) {
+    out.innerHTML = `<div class="box"><div class="big bad">No hay ninguna base de fotos en este celular</div>
+      <div class="note">Puede que estés en un navegador distinto al que usabas con la app
+      (por ejemplo Chrome normal vs. la app instalada). Ábrelo desde donde siempre usaste DEV Learn.</div></div>`;
+    return;
+  }
+
+  let db;
+  try { db = await abrirSoloLectura(); }
+  catch(e){ out.innerHTML = `<div class="box"><div class="big bad">No se pudo abrir</div><div class="note">${esc(e.message||e)}</div></div>`; return; }
+
+  const { keys, values } = await leerTodo(db);
+  const grupos = keys.map((k,i) => ({ id:k, imgs:(values[i]||[]).filter(Boolean) }))
+                      .filter(g => g.imgs.length);
+  const total = grupos.reduce((n,g) => n + g.imgs.length, 0);
+
+  if (!total) {
+    out.innerHTML = `<div class="box"><div class="big bad">No quedan fotos guardadas</div></div>`;
+    return;
+  }
+
+  out.innerHTML = `<div class="box">
+    <div class="big ok">${total} foto${total===1?'':'s'} encontradas</div>
+    <div class="note">Repartidas en ${grupos.length} lote${grupos.length===1?'':'s'}. No traen el nombre de
+    la página — descárgalas y mira cada una para saber a qué unidad corresponde.</div>
+    <button id="btn-all">Descargar todas</button>
+  </div>` + grupos.map((g, gi) => `
+    <div class="box">
+      <div class="grp-head"><b>Lote ${gi+1}</b><span class="k">${esc(g.id)} · ${g.imgs.length} foto${g.imgs.length===1?'':'s'}</span></div>
+      <div class="grid">
+        ${g.imgs.map((src, i) => `<div class="ph">
+          <img src="${src}" loading="lazy">
+          <a href="${src}" download="lote${gi+1}_foto${i+1}.jpg">↓</a>
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('btn-all').onclick = async () => {
+    for (let gi = 0; gi < grupos.length; gi++) {
+      const g = grupos[gi];
+      for (let i = 0; i < g.imgs.length; i++) {
+        descargarUrl(g.imgs[i], `lote${gi+1}_foto${i+1}.jpg`);
+        await new Promise(r => setTimeout(r, 250)); // el navegador bota descargas si van todas de golpe
+      }
+    }
+  };
+}
+
+main().catch(e => {
+  out.innerHTML = `<div class="box"><div class="big bad">Error</div><div class="note">${esc(e.message||e)}</div></div>`;
+});
+</script>
