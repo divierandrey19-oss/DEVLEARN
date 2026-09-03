@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate en la nube — DEV Learn</title>
+<style>
+  :root{ --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
+         --dim:#8b949e; --ok:#3fb950; --bad:#f85149; --warn:#d29922; }
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 16px 60px;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,system-ui,"Segoe UI",sans-serif;max-width:640px;margin:0 auto}
+  h1{font-size:1.3rem;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:.85rem;margin:0 0 20px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:14px 16px;margin-bottom:12px}
+  .k{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:var(--dim);
+     word-break:break-all;white-space:pre-wrap}
+  .big{font-size:1.4rem;font-weight:700;margin:2px 0}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  td{padding:6px 0;border-top:1px solid var(--line);font-size:.85rem;vertical-align:top}
+  td:last-child{text-align:right;color:var(--dim);white-space:nowrap;padding-left:10px}
+  button{background:#238636;color:#fff;border:0;border-radius:8px;padding:12px 18px;
+         font:inherit;font-weight:600;cursor:pointer;width:100%;margin-top:10px}
+  button.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  button:disabled{opacity:.5}
+  .note{font-size:.82rem;color:var(--dim);margin-top:8px}
+  .g{display:inline-flex;align-items:center;gap:8px;background:#fff;color:#1f1f1f;
+     border-radius:8px;padding:10px 16px;font-weight:600}
+</style>
+
+<h1>Rescate en la nube</h1>
+<p class="sub">Esta página solo lee tu documento de Firestore. Nunca escribe ni sincroniza — no importa el import de Firebase que hace, en ninguna parte del código.</p>
+<div id="out"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
+
+/* La misma configuración pública que ya usa tu app — no hay nada secreto aquí,
+ * es la misma que ya vive en tu index.html. */
+const firebaseConfig = {
+  apiKey: "AIzaSyAx3yQ5gUIXN2nvs6QVlZ5w_rYRPYRL-_0",
+  authDomain: "devlearn-367f8.firebaseapp.com",
+  projectId: "devlearn-367f8",
+  storageBucket: "devlearn-367f8.firebasestorage.app",
+  messagingSenderId: "779027585114",
+  appId: "1:779027585114:web:195f189c72ce671fc12063"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+const out = document.getElementById('out');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const kb = n => n < 1024 ? n + ' B' : (n/1024).toFixed(1) + ' KB';
+
+async function ungzipB64(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return await new Response(stream).text();
+}
+
+function resumen(s){
+  const units = s.units || {};
+  let nUnits = 0, nBatches = 0, nVocab = 0;
+  const walk = u => { if (!u || typeof u !== 'object') return;
+    if (Array.isArray(u.batches)) { nUnits++; u.batches.forEach(b => { nBatches++; nVocab += (b.vocab||[]).length; }); }
+    else Object.values(u).forEach(walk); };
+  Object.values(units).forEach(walk);
+  return { nUnits, nBatches, nVocab, textos:(s.texts||[]).length,
+           dias:(s.studyDates||[]).length, min:s.studyMinutes||0,
+           palabras:(s.stats&&s.stats.wordsLearned)||0 };
+}
+
+function pintarInicio(){
+  out.innerHTML = `<div class="box">
+    <div class="note" style="margin-bottom:12px;">Entra con la MISMA cuenta de Google que usas en la app.</div>
+    <button id="btn-in" class="g" style="width:100%;justify-content:center;">Iniciar sesión con Google</button>
+  </div>`;
+  document.getElementById('btn-in').onclick = () => signInWithPopup(auth, new GoogleAuthProvider())
+    .catch(e => mostrarError('No se pudo iniciar sesión', e));
+}
+
+function mostrarError(titulo, e){
+  out.innerHTML = `<div class="box">
+    <div class="big bad">${esc(titulo)}</div>
+    <div class="k">${esc(e && e.code || '')}\n${esc(e && e.message || String(e))}</div>
+    <div class="note">Este es el error real. Mándamelo tal cual.</div>
+    <button class="sec" onclick="location.reload()">Reintentar</button>
+  </div>`;
+}
+
+let ultimoJson = null, ultimoNombre = 'nube';
+
+async function leerNube(user){
+  out.innerHTML = `<div class="box"><div class="big warn">Leyendo tu documento…</div></div>`;
+  try{
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);   // ← única operación de red. Es una lectura.
+
+    if (!snap.exists()){
+      out.innerHTML = `<div class="box">
+        <div class="big bad">No hay ningún documento tuyo en la nube</div>
+        <div class="note">Con esta cuenta (${esc(user.email)}) nunca se guardó nada en Firestore,
+        o se guardó con otra cuenta de Google. Si usas más de una cuenta, prueba con la otra.</div>
+        <button class="sec" id="btn-out">Cambiar de cuenta</button>
+      </div>`;
+      document.getElementById('btn-out').onclick = () => signOut(auth);
+      return;
+    }
+
+    const data = snap.data();
+    const fecha = data.updatedAtClient || (data.updatedAt && data.updatedAt.toDate
+      ? data.updatedAt.toDate().toLocaleString('es-CO') : 'desconocida');
+
+    let json, raw;
+    if (data.stateGz) { raw = data.stateGz; json = JSON.parse(await ungzipB64(data.stateGz)); }
+    else { raw = data.state || '{}'; json = JSON.parse(raw); }
+
+    const r = resumen(json);
+    const vacio = r.nUnits === 0 && r.textos === 0;
+    ultimoJson = json;
+    ultimoNombre = 'nube_' + (user.email||'').split('@')[0];
+
+    out.innerHTML = `<div class="box">
+      <div class="big ${vacio ? 'bad' : 'ok'}">${vacio ? 'El documento existe, pero está vacío' : 'Encontrado en la nube'}</div>
+      <div class="k">${esc(user.email)} · última escritura: ${esc(fecha)} · ${kb((raw||'').length)}</div>
+      <table>
+        <tr><td>Unidades</td><td>${r.nUnits}</td></tr>
+        <tr><td>Lotes de páginas</td><td>${r.nBatches}</td></tr>
+        <tr><td>Palabras de vocabulario</td><td>${r.nVocab}</td></tr>
+        <tr><td>Mis textos</td><td>${r.textos}</td></tr>
+        <tr><td>Días estudiados</td><td>${r.dias}</td></tr>
+        <tr><td>Minutos</td><td>${r.min}</td></tr>
+        <tr><td>Palabras aprendidas</td><td>${r.palabras}</td></tr>
+      </table>
+      ${vacio ? `<div class="note">Este documento ya estaba vacío antes de que abrieras esta página — nada de lo que hagas aquí lo cambia, porque esta página nunca escribe.</div>`
+              : `<button id="btn-dl">Descargar este respaldo</button>
+                 <div class="note">Guárdalo, y en la app: Ajustes → Importar backup. Eso trae de vuelta tus unidades sin tocar nada más.</div>`}
+      <button class="sec" id="btn-out2" style="margin-top:14px;">Cerrar sesión</button>
+    </div>`;
+    if (!vacio) document.getElementById('btn-dl').onclick = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(json)], {type:'application/json'}));
+      a.download = `${ultimoNombre}_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    };
+    document.getElementById('btn-out2').onclick = () => signOut(auth);
+
+  } catch(e){
+    mostrarError('No se pudo leer el documento', e);
+  }
+}
+
+onAuthStateChanged(auth, user => { user ? leerNube(user) : pintarInicio(); });
+</script>
