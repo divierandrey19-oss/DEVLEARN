@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03d -->
+<!-- DEVLEARN_BUILD: 2026-09-03e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4749,7 +4749,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03d';
+const APP_BUILD = '2026-09-03e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6057,6 +6057,36 @@ function migrateState(s) {
   if (merged.examDate === undefined) {
     merged.examDate = '2026-07-31';
     merged.examLabel = 'Speaking Test · Units 5-6';
+  }
+  // Seed the 5 Unit 7 texts drafted together in chat, once — same rule as the
+  // exam date above: only when this has never run before. The flag, not the
+  // texts' presence, is what's checked, so deleting one later (on purpose,
+  // from Mis textos like any other) is never undone by a future reload.
+  if (!merged._u7TextsSeeded) {
+    merged._u7TextsSeeded = true;
+    const already = new Set(merged.texts.map(t => t && t.id));
+    const seed = [
+      { id: 'txt_u7_p73', title: 'U7 · pág 73',
+        body: "I like three kinds of vacations. First, I like exciting vacations, because I want to try new things. For example, I want to go to a big water park and ride the slides. Second, I like interesting vacations, because I like to visit new places and learn about the people and the history. But my favorite kind is relaxing vacations, and for me that means good food, good music, and time with my family. I don't want to stay in the hotel all day, so I always walk or swim too. My vacations are short because I have a small business, so I travel on weekends. I usually travel with my brother and his girlfriend's family, and a big group is more fun. So my perfect vacation is relaxing, but with my family and a little activity too.",
+        trans: "Me gustan tres tipos de vacaciones. Primero, me gustan las vacaciones emocionantes, porque quiero probar cosas nuevas. Por ejemplo, quiero ir a un parque acuático grande y lanzarme por los toboganes. Segundo, me gustan las vacaciones interesantes, porque me gusta visitar lugares nuevos y aprender sobre la gente y la historia. Pero mi tipo favorito son las vacaciones relajantes, y para mí eso significa buena comida, buena música y tiempo con mi familia. No quiero quedarme en el hotel todo el día, así que siempre camino o nado también. Mis vacaciones son cortas porque tengo un negocio pequeño, así que viajo los fines de semana. Normalmente viajo con mi hermano y la familia de su novia, y un grupo grande es más divertido. Así que mis vacaciones perfectas son relajantes, pero con mi familia y un poco de actividad también." },
+      { id: 'txt_u7_p7475', title: 'U7 · pág 74 - 75',
+        body: "My favorite vacation activities are taking a tour, visiting a museum, and learning about other cultures. In my opinion, taking a tour is interesting, because the guide explains the history of the place. I also like hanging out with friends, because for me a good vacation is good food, good music, and my family. But I don't like going sport fishing, because you wait for many hours and I get bored. My favorite kind is a family vacation, so one day I want to go snorkeling with my brothers. For example, sometimes I take a staycation: I stay home and I sleep late. It isn't exciting, but it's relaxing. Finally, my vacations are short because I have a small business, so I travel on weekends.",
+        trans: "Mis actividades favoritas en vacaciones son hacer un tour, visitar un museo y aprender sobre otras culturas. En mi opinión, hacer un tour es interesante, porque el guía explica la historia del lugar. También me gusta pasar el rato con amigos, porque para mí unas buenas vacaciones son buena comida, buena música y mi familia. Pero no me gusta la pesca deportiva, porque esperas muchas horas y me aburro. Mi tipo favorito son las vacaciones familiares, así que algún día quiero hacer snorkel con mis hermanos. Por ejemplo, a veces hago un staycation: me quedo en casa y duermo hasta tarde. No es emocionante, pero es relajante. Finalmente, mis vacaciones son cortas porque tengo un negocio pequeño, así que viajo los fines de semana." },
+      { id: 'txt_u7_p7677', title: 'U7 · pág 76 - 77',
+        body: "Three months ago I went to Melgar with my parents and my brothers. First, the drive was pretty long and kind of boring, but the road was quite scenic. Our hotel was very comfortable, and the pools were really nice, so we swam every day. Then we took a tour, and it was really interesting, because the guide was so friendly. After that, I was next to the pool and I fell asleep in the sun, so my back was really red. That night I wasn't comfortable, so I didn't sleep well. On Sunday the town was very hot, but the shops were quite cheap. Finally, the trip was pretty short, but it was so nice, because we were all together.",
+        trans: "Hace tres meses fui a Melgar con mis papás y mis hermanos. Primero, el viaje en carro fue bastante largo y algo aburrido, pero la carretera era muy panorámica. Nuestro hotel era muy cómodo, y las piscinas estaban muy bonitas, así que nadamos todos los días. Luego hicimos un tour, y fue muy interesante, porque el guía era muy amable. Después, estaba al lado de la piscina y me quedé dormido al sol, así que mi espalda quedó muy roja. Esa noche no estaba cómodo, así que no dormí bien. El domingo el pueblo estaba muy caliente, pero las tiendas estaban bastante baratas. Finalmente, el viaje fue bastante corto, pero fue muy agradable, porque estuvimos todos juntos." },
+      { id: 'txt_u7_p7879', title: 'U7 · pág 78 - 79',
+        body: "Three months ago I went to Melgar with my parents and my brothers. First, we bought round-trip tickets, because we wanted to come back on Sunday night. I got a window seat, but my brother wanted an aisle seat, so we changed. Then the bus left at six in the morning, and the trip took four hours. After that, we arrived at the hotel and we had lunch. I didn't take a tour on Saturday, because I was really tired, so I relaxed next to the pool. On Sunday we walked in the town and we bought some gifts. Finally, we came back at night, and it was so nice, because we were all together.",
+        trans: "Hace tres meses fui a Melgar con mis papás y mis hermanos. Primero, compramos tiquetes de ida y vuelta, porque queríamos regresar el domingo en la noche. Me tocó una silla de ventana, pero mi hermano quería una de pasillo, así que cambiamos. Luego el bus salió a las seis de la mañana, y el viaje tomó cuatro horas. Después, llegamos al hotel y almorzamos. No hice el tour el sábado, porque estaba muy cansado, así que descansé al lado de la piscina. El domingo caminamos por el pueblo y compramos unos regalos. Finalmente, volvimos en la noche, y estuvo muy bueno, porque estábamos todos juntos." },
+      { id: 'txt_u7_p8081', title: 'U7 · pág 80 - 81',
+        body: "Three months ago, in 2026, I went to Melgar with my parents and my brothers. It was a mixture of good and bad experiences. First, the bus had mechanical problems, so we arrived two hours late, and that drove me crazy. But the hotel was very comfortable, and the pools were really nice, so we relaxed every day. Then we visited the town and we walked in the market, because we wanted to buy some gifts. After that, I stayed in the sun too long, so my back was really red and I didn't sleep well that night. But it wasn't the end of the world, because my family was there and we talked and laughed all afternoon. Finally, we came back on Sunday night, and I really liked the trip.",
+        trans: "Hace tres meses, en 2026, fui a Melgar con mis papás y mis hermanos. Fue una mezcla de experiencias buenas y malas. Primero, el bus tuvo problemas mecánicos, así que llegamos dos horas tarde, y eso me volvió loco. Pero el hotel era muy cómodo, y las piscinas estaban muy bonitas, así que descansamos todos los días. Luego visitamos el pueblo y caminamos por el mercado, porque queríamos comprar unos regalos. Después, me quedé mucho tiempo al sol, así que mi espalda quedó muy roja y no dormí bien esa noche. Pero no fue el fin del mundo, porque mi familia estaba ahí y hablamos y nos reímos toda la tarde. Finalmente, volvimos el domingo en la noche, y el viaje me gustó mucho." },
+    ];
+    seed.forEach((t, i) => {
+      if (already.has(t.id)) return; // already there — don't duplicate
+      merged.texts.push({ id: t.id, title: t.title, body: t.body, trans: t.trans,
+        date: todayLocal(), ts: Date.now() - (seed.length - i) * 1000, lookups: {} });
+    });
   }
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
   merged.settings = merged.settings || base.settings;
