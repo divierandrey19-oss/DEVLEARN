@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03a -->
+<!-- DEVLEARN_BUILD: 2026-09-03c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4514,7 +4514,9 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
    ============================================================ */
 const KEY = 'lingua_v4';
 const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
+const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();
+if (window.__loadCorrupt) showLoadCorruptBanner();
 
 /* A backup import used to write the photos into localStorage along with the
  * text, which is what filled the ~5MB cap. Stripping them happens on the next
@@ -4747,7 +4749,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03a';
+const APP_BUILD = '2026-09-03c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5928,6 +5930,7 @@ RULES:
 
 
 function loadState() {
+  let raw = null;
   try {
     // Check for pending import first (set by doImport before reload)
     const pendingImport = localStorage.getItem('devlearn_pending_import');
@@ -5937,7 +5940,7 @@ function loadState() {
       localStorage.setItem(KEY, pendingImport);
       return imported;
     }
-    let raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) { const st = migrateState(JSON.parse(raw)); healUnitTitles(st.units); return st; }
     // Try migrating from older versions
     for (const oldKey of OLD_KEYS) {
@@ -5948,7 +5951,31 @@ function loadState() {
         return migrated;
       }
     }
-  } catch (e) { console.warn('Load state failed:', e); }
+    // Nothing under the keys the app writes during normal use. Before treating
+    // this as a genuinely fresh install, check the daily auto-backup — the
+    // primary key can end up empty for reasons that have nothing to do with
+    // whether a backup exists, so this is a legitimate second source, not a
+    // guess.
+    raw = localStorage.getItem(BACKUP_KEY);
+    if (raw) {
+      const st = migrateState(JSON.parse(raw));
+      healUnitTitles(st.units);
+      window.__loadedFromAutoBackup = true;
+      return st;
+    }
+  } catch (e) {
+    console.warn('Load state failed:', e);
+    // `raw` held something — there WAS a saved value — but parsing or
+    // migrating it threw. Falling through to an empty state here is exactly
+    // what let one bad boot silently overwrite a good save on the very next
+    // write: the empty state looked identical to a fresh install, and nothing
+    // stopped it from being persisted as if it were one. Flag it instead;
+    // writeState() below refuses to save while this flag is set.
+    if (raw && raw.length > 20) {
+      window.__loadCorrupt = true;
+      window.__loadCorruptRaw = raw;
+    }
+  }
   return defaultState();
 }
 
@@ -6204,8 +6231,34 @@ let _storageFull = false;
  * with no warning at all.
  */
 function writeState() {
+  // Guard 1: a load that couldn't be read is not the same thing as a fresh
+  // install. Saving now would make that indistinguishable permanent — the
+  // in-memory (empty) state would overwrite the raw value that's still
+  // sitting in localStorage, unread. Refuse until the person resolves it
+  // (the banner below offers a real backup or a deliberate restart).
+  if (window.__loadCorrupt) {
+    console.warn('writeState: blocked — unresolved load failure, see the recovery banner');
+    return false;
+  }
   try {
     state.lastSaved = new Date().toISOString();
+    // Guard 2: about to persist zero units while the copy already on disk has
+    // some. Nothing in this app is supposed to make that happen on purpose
+    // except a deliberate import, which sets window.__allowEmptyOverwrite
+    // itself. Anything else reaching here with an empty state is far more
+    // likely a bad boot than an intentional wipe.
+    if (!window.__allowEmptyOverwrite && !Object.keys(state.units || {}).length) {
+      try {
+        const onDisk = localStorage.getItem(KEY);
+        const prevUnits = onDisk ? Object.keys(JSON.parse(onDisk).units || {}).length : 0;
+        if (prevUnits > 0) {
+          console.warn('writeState: blocked — would replace', prevUnits, 'saved units with none');
+          showEmptyOverwriteBanner(prevUnits);
+          _saveDirty = true;
+          return false;
+        }
+      } catch (e) { /* on-disk copy unreadable — fall through, nothing to protect */ }
+    }
     // Photos are NOT written here — they live in IndexedDB. Keeping them in
     // this blob is what filled localStorage's ~5MB cap and forced photos to be
     // deleted. The in-memory state keeps them, so nothing else changes.
@@ -6229,6 +6282,17 @@ function writeState() {
     }
     _saveDirty = false;
     if (_storageFull) { _storageFull = false; hideStorageBanner(); }
+    // Guard 3: mirror today's first successful save into a second key. This
+    // is what a corrupted primary key now has to fall back to, instead of
+    // straight to empty. Once a day, not every save — it only needs to be
+    // recent, and the extra writes would double the storage cost for nothing.
+    try {
+      const today = todayLocal();
+      if (localStorage.getItem(BACKUP_KEY + '_date') !== today) {
+        localStorage.setItem(BACKUP_KEY, payload);
+        localStorage.setItem(BACKUP_KEY + '_date', today);
+      }
+    } catch (e) { /* best-effort — never let the backup mirror block the real save */ }
     return true;
   } catch (e) {
     // Anything unsaved is now memory-only and dies with the tab.
@@ -6266,6 +6330,57 @@ function showStorageBanner() {
 }
 function hideStorageBanner() {
   document.getElementById('storage-banner')?.remove();
+}
+
+/* Guard 1's banner. Shown once, at boot, when loadState() found something in
+ * localStorage but couldn't read it. Nothing here writes anything — every
+ * button either downloads what's already there or hands off to the app's own
+ * (already-guarded) import flow. */
+function showLoadCorruptBanner() {
+  if (document.getElementById('load-corrupt-banner')) return;
+  const el = document.createElement('div');
+  el.id = 'load-corrupt-banner';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--red,#ff3b30);'
+    + 'color:#fff;padding:12px 16px;font-size:0.82rem;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.4);'
+    + 'display:flex;flex-direction:column;gap:8px;';
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;"><strong>⚠️ No se pudo leer lo que tenías guardado.</strong><br>
+      Nada se ha borrado ni se va a sobrescribir mientras esto siga aquí. Restaura desde un backup en Ajustes,
+      o descarga el archivo dañado para revisarlo.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="openSettings()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Ir a Ajustes → Importar</button>
+      <button onclick="downloadCorruptRaw()" style="flex:1;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">Descargar lo dañado</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+function downloadCorruptRaw() {
+  if (!window.__loadCorruptRaw) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([window.__loadCorruptRaw], { type: 'application/json' }));
+  a.download = `devlearn_dañado_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+}
+
+/* Guard 2's banner. Shown when a save was blocked because it would have
+ * replaced units that are still on disk with none. Whatever emptied the
+ * in-memory state, reloading is the fix — it re-runs loadState() and picks
+ * the good copy back up, since writeState() never let the empty one land. */
+function showEmptyOverwriteBanner(prevUnits) {
+  if (document.getElementById('empty-overwrite-banner')) return;
+  const el = document.createElement('div');
+  el.id = 'empty-overwrite-banner';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--red,#ff3b30);'
+    + 'color:#fff;padding:12px 16px;font-size:0.82rem;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.4);'
+    + 'display:flex;flex-direction:column;gap:8px;';
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;"><strong>⚠️ Se evitó un guardado que iba a borrar ${prevUnits} unidad${prevUnits === 1 ? '' : 'es'}.</strong><br>
+      Lo que hay en el celular sigue intacto. Recarga la página para volver a leerlo.</div>
+    </div>
+    <button onclick="location.reload()" style="padding:8px;border-radius:8px;border:0;font-weight:600;">Recargar</button>`;
+  document.body.appendChild(el);
 }
 
 function save() {
@@ -17603,6 +17718,13 @@ function doImport() {
     const verify = localStorage.getItem(KEY);
     if (!verify || verify.length < 100) throw new Error('No se pudo guardar en localStorage');
 
+    // A deliberate, confirmed import is exactly what the load-failure guard
+    // was waiting for — it can stand down now, and so can its banner.
+    window.__loadCorrupt = false;
+    window.__loadCorruptRaw = null;
+    document.getElementById('load-corrupt-banner')?.remove();
+    document.getElementById('empty-overwrite-banner')?.remove();
+
     window._pendingImport = null;
 
     // Step 4: Show success and re-render WITHOUT reloading
@@ -18420,6 +18542,20 @@ function cloudMillis(data) {
 
 window._syncToFirestore = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
+  // Same guard as writeState(), for the same reason: this path never touches
+  // it, since it pushes straight from memory to Firestore. If it ever had
+  // batches the cloud is known to hold and now has none, that's far more
+  // likely a bad in-memory state than a deliberate wipe — refuse rather than
+  // carry the local bug up to the one copy that was supposed to survive it.
+  if (!window.__allowEmptyOverwrite) {
+    const aboutToPush = allBatchIds(state).length;
+    const cloudHad = (state.syncedBatchIds || []).length;
+    if (aboutToPush === 0 && cloudHad > 0) {
+      console.warn('_syncToFirestore: blocked — would replace', cloudHad, 'cloud batches with none');
+      showEmptyOverwriteBanner(Object.keys(state.units || {}).length || cloudHad);
+      return;
+    }
+  }
   _isSyncing = true;
   try {
     window._updateSyncStatus && window._updateSyncStatus('syncing');
