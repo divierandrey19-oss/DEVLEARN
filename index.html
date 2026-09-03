@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-08-28a -->
+<!-- DEVLEARN_BUILD: 2026-09-03a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3754,6 +3754,40 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 .pr-weak-row { min-width: 0; }
 .pr-unit-row, .pr-unit-row-head { min-width: 0; }
 .pr-unit-row-head > * { min-width: 0; }
+/* ── Verbos: familias de sonido ──────────────────────────────
+ * Su propia sección. Los verbos no son vocabulario de una unidad
+ * ni un texto, así que no se mezclan con ninguno de los dos.    */
+#page-verbs .vb-switch{display:flex;gap:6px;background:var(--surface-2);padding:5px;border-radius:var(--r-sm);margin-bottom:16px}
+#page-verbs .vb-switch button{flex:1;padding:9px 8px;border:0;border-radius:var(--r-xs);cursor:pointer;background:transparent;color:var(--text-2);font:inherit;font-weight:600;font-size:var(--fs-small)}
+#page-verbs .vb-switch button[aria-selected="true"]{background:var(--accent);color:#fff}
+#page-verbs .vb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+#page-verbs .vb-fam{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:left;cursor:pointer;color:var(--text);font:inherit;display:flex;flex-direction:column;gap:2px;position:relative}
+#page-verbs .vb-fam:active{transform:scale(.99)}
+#page-verbs .vb-sound{font-size:1.6rem;font-weight:800;color:var(--amber);line-height:1.1;letter-spacing:-.02em}
+#page-verbs .vb-name{font-size:var(--fs-small);font-weight:600;line-height:1.3}
+#page-verbs .vb-eg{font-size:var(--fs-caption);color:var(--text-3);margin-top:3px}
+#page-verbs .vb-n{position:absolute;top:12px;right:13px;font-size:var(--fs-caption);color:var(--text-3)}
+#page-verbs .vb-bar{height:3px;background:var(--surface-3);border-radius:2px;margin-top:10px;overflow:hidden}
+#page-verbs .vb-bar i{display:block;height:100%;background:var(--green);width:0}
+#page-verbs .vb-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+#page-verbs .vb-count{margin-left:auto;font-size:var(--fs-small);color:var(--text-3)}
+#page-verbs .vb-card{background:var(--surface-elev);border:1px solid var(--border);border-radius:var(--r-lg);padding:30px 20px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;cursor:pointer}
+#page-verbs .vb-base{font-size:2.3rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+#page-verbs .vb-es{color:var(--text-2);font-size:var(--fs-body-lg)}
+#page-verbs .vb-hint{color:var(--text-3);font-size:var(--fs-small);margin-top:16px}
+#page-verbs .vb-past{font-size:2.4rem;font-weight:800;color:var(--amber);letter-spacing:-.03em;line-height:1.05}
+#page-verbs .vb-ipa{font-size:1.1rem;color:var(--text-2);font-weight:600}
+#page-verbs .vb-sent{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:var(--fs-body);line-height:1.5;max-width:34ch}
+#page-verbs .vb-sent b{color:var(--amber)}
+#page-verbs .vb-sent span{display:block;color:var(--text-3);font-size:var(--fs-small);margin-top:4px}
+#page-verbs .vb-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+#page-verbs .vb-rate button{padding:14px 6px;border-radius:var(--r-sm);border:1px solid var(--border-2);background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:var(--fs-small);cursor:pointer}
+#page-verbs .vb-rate .r0{border-color:var(--red);color:var(--red)}
+#page-verbs .vb-rate .r2{border-color:var(--green);color:var(--green)}
+#page-verbs .vb-rate .r3{border-color:var(--teal);color:var(--teal)}
+#page-verbs .vb-note{margin-top:20px;padding:13px 15px;background:var(--surface-2);border-left:3px solid var(--amber);border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:var(--fs-small);color:var(--text-2);line-height:1.5}
+#page-verbs .vb-done{text-align:center;padding:44px 16px}
+#page-verbs .vb-done .vb-sound{font-size:2.8rem;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -3851,6 +3885,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <button type="button" class="nav-item" onclick="navigate('vocab-all')"><span class="nav-icon">📚</span> Vocabulary <span class="nav-badge" id="vocab-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('tutor')"><span class="nav-icon">🎙️</span> AI Tutor</button>
       <button type="button" class="nav-item" onclick="navigate('podcasts')"><span class="nav-icon">🎧</span> Podcasts</button>
+      <button type="button" class="nav-item" onclick="navigate('verbs')"><span class="nav-icon">🔤</span> Verbos <span class="nav-badge" id="verbs-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('texts')"><span class="nav-icon">📝</span> Mis textos</button>
       <button type="button" class="nav-item" onclick="openFocusMode()"><span class="nav-icon">🎯</span> Focus Mode</button>
     </nav>
@@ -4110,6 +4145,11 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
     <!-- ===== FLASHCARDS PAGE (all) ===== -->
     <div class="page" id="page-flashcards-all">
       <div id="fc-all-content"></div>
+    </div>
+
+    <!-- ===== VERBS PAGE (past simple, by sound family) ===== -->
+    <div class="page" id="page-verbs">
+      <div id="verbs-content"></div>
     </div>
 
     <!-- ===== VOCAB PAGE ===== -->
@@ -4690,7 +4730,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-08-28a';
+const APP_BUILD = '2026-09-03a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5905,6 +5945,7 @@ function defaultState() {
     studyDates: [],
     studyMinutes: 0,
     units: {},
+    verbProgress: {},
     weakAreas: {},
     tutorMemory: {},
     rolePlay: {},
@@ -5940,6 +5981,7 @@ function migrateState(s) {
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
   merged.studyLog = (merged.studyLog && typeof merged.studyLog === 'object') ? merged.studyLog : {};
   merged.activityLog = (merged.activityLog && typeof merged.activityLog === 'object') ? merged.activityLog : {};
+  merged.verbProgress = (merged.verbProgress && typeof merged.verbProgress === 'object') ? merged.verbProgress : {};
   if (typeof merged.focusEndAt !== 'number') merged.focusEndAt = null;
   /* A sync merge that deduped objects by reference doubled this list on every
    * pull — 15 real entries reached 199,680 and pushed the whole state past the
@@ -6285,10 +6327,10 @@ function navigate(page) {
   const titles = {
     'dashboard': 'Dashboard', 'levels': 'Levels', 'level': 'Level',
     'unit': 'Unit', 'progress': 'Progress', 'flashcards-all': 'Flashcards',
-    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts', 'texts': 'Mis textos',
+    'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts', 'verbs': 'Verbos', 'texts': 'Mis textos',
   };
   document.getElementById('page-title').textContent = titles[page] || page;
-  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6, 'texts': 7 };
+  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6, 'verbs': 7, 'texts': 8 };
   if (navMap[page] !== undefined) {
     document.querySelectorAll('.nav-item')[navMap[page]].classList.add('active');
   }
@@ -6299,6 +6341,7 @@ function navigate(page) {
   if (page === 'vocab-all') renderAllVocab();
   if (page === 'tutor') initStandaloneChat();
   if (page === 'podcasts') renderPodcasts();
+  if (page === 'verbs') renderVerbs();
   if (page === 'texts') renderTexts();
   if (window.innerWidth <= 880) {
     const sb = document.getElementById('sidebar');
@@ -6313,6 +6356,395 @@ function navigate(page) {
   try { localStorage.setItem('devlearn_nav', JSON.stringify({ page })); } catch(e) {}
   // Sync to Firebase on page change
   if (window._syncToFirestore) window._syncToFirestore();
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   VERBOS EN PASADO SIMPLE — por familia de sonido
+   ---------------------------------------------------------------
+   Sección propia, separada del vocabulario de las unidades y de
+   Mis textos. Los verbos que riman se estudian juntos: una familia
+   son seis palabras con un solo sonido, no seis palabras sueltas.
+
+   Reusa el motor SRS de la app (SRS.readCard / SRS.rate) sobre su
+   propio mapa de progreso, state.verbProgress, para que un verbo
+   nunca se mezcle con el vocabulario de una unidad.
+   ═══════════════════════════════════════════════════════════════ */
+const VERB_FAMILIES = [
+  { id:'id', kind:'reg', sound:'/ɪd/', name:'Suenan con sílaba extra', diff:'medium',
+    note:'Después de sonido t o d. La única familia donde la -ed se oye aparte.',
+    verbs:[
+      ['want','wanted','/ˈwɑːntɪd/','querer','I <b>wanted</b> a window seat.','Yo quería una silla de ventana.'],
+      ['need','needed','/ˈniːdɪd/','necesitar','We <b>needed</b> a round-trip ticket.','Necesitábamos un tiquete de ida y vuelta.'],
+      ['visit','visited','/ˈvɪzɪtɪd/','visitar','We <b>visited</b> a museum in Melgar.','Visitamos un museo en Melgar.'],
+      ['start','started','/ˈstɑːrtɪd/','empezar','The tour <b>started</b> at nine.','El tour empezó a las nueve.'],
+      ['wait','waited','/ˈweɪtɪd/','esperar','I <b>waited</b> two hours for the bus.','Esperé dos horas el bus.'],
+      ['decide','decided','/dɪˈsaɪdɪd/','decidir','We <b>decided</b> to travel on Saturday.','Decidimos viajar el sábado.'],
+      ['rest','rested','/ˈrestɪd/','descansar','I <b>rested</b> next to the pool.','Descansé al lado de la piscina.'],
+      ['invite','invited','/ɪnˈvaɪtɪd/','invitar','My brother <b>invited</b> his girlfriend.','Mi hermano invitó a su novia.'],
+      ['end','ended','/ˈendɪd/','terminar','The trip <b>ended</b> on Sunday night.','El viaje terminó el domingo en la noche.'],
+      ['hate','hated','/ˈheɪtɪd/','odiar','I <b>hated</b> the long drive.','Odié el viaje largo en carro.'],
+      ['last','lasted','/ˈlæstɪd/','durar','The tour <b>lasted</b> four hours.','El tour duró cuatro horas.'],
+      ['paint','painted','/ˈpeɪntɪd/','pintar','I <b>painted</b> the wall of my shop.','Pinté la pared de mi negocio.'],
+      ['repeat','repeated','/rɪˈpiːtɪd/','repetir','I <b>repeated</b> the words out loud.','Repetí las palabras en voz alta.'],
+      ['count','counted','/ˈkaʊntɪd/','contar','I <b>counted</b> the money at night.','Conté la plata en la noche.'],
+      ['add','added','/ˈædɪd/','añadir','I <b>added</b> new words to my list.','Añadí palabras nuevas a mi lista.'],
+      ['land','landed','/ˈlændɪd/','aterrizar','The plane <b>landed</b> very late.','El avión aterrizó muy tarde.']
+    ]},
+  { id:'t', kind:'reg', sound:'/t/', name:'Terminan seco', diff:'medium',
+    note:'Después de p, k, f, s, sh, ch. Suena como una t y no añade sílaba.',
+    verbs:[
+      ['walk','walked','/wɔːkt/','caminar','We <b>walked</b> in the town.','Caminamos por el pueblo.'],
+      ['work','worked','/wɜːrkt/','trabajar','I <b>worked</b> on Monday.','Trabajé el lunes.'],
+      ['look','looked','/lʊkt/','mirar','I <b>looked</b> out the window.','Miré por la ventana.'],
+      ['cook','cooked','/kʊkt/','cocinar','My mother <b>cooked</b> fish and rice.','Mi mamá cocinó pescado y arroz.'],
+      ['help','helped','/helpt/','ayudar','My brother <b>helped</b> me with the bags.','Mi hermano me ayudó con las maletas.'],
+      ['stop','stopped','/stɑːpt/','parar','The bus <b>stopped</b> at a small town.','El bus paró en un pueblo pequeño.'],
+      ['watch','watched','/wɑːtʃt/','ver, mirar','We <b>watched</b> a movie at night.','Vimos una película en la noche.'],
+      ['finish','finished','/ˈfɪnɪʃt/','terminar','The tour <b>finished</b> at noon.','El tour terminó al mediodía.'],
+      ['like','liked','/laɪkt/','gustar','I <b>liked</b> the hotel.','Me gustó el hotel.'],
+      ['miss','missed','/mɪst/','perder (algo)','We almost <b>missed</b> the bus.','Casi perdemos el bus.'],
+      ['ask','asked','/æskt/','preguntar','I <b>asked</b> the guide a question.','Le hice una pregunta al guía.'],
+      ['relax','relaxed','/rɪˈlækst/','descansar','I <b>relaxed</b> all afternoon.','Descansé toda la tarde.'],
+      ['talk','talked','/tɔːkt/','hablar','We <b>talked</b> all afternoon.','Hablamos toda la tarde.'],
+      ['dance','danced','/dænst/','bailar','My family <b>danced</b> after dinner.','Mi familia bailó después de la cena.'],
+      ['wash','washed','/wɑːʃt/','lavar','I <b>washed</b> the dogs on Saturday.','Lavé los perros el sábado.'],
+      ['pass','passed','/pæst/','pasar','We <b>passed</b> three small towns.','Pasamos por tres pueblos pequeños.'],
+      ['practice','practiced','/ˈpræktɪst/','practicar','I <b>practiced</b> English every day.','Practiqué inglés todos los días.'],
+      ['laugh','laughed','/læft/','reír','We <b>laughed</b> a lot on the bus.','Nos reímos mucho en el bus.'],
+      ['check','checked','/tʃekt/','revisar','I <b>checked</b> the tickets twice.','Revisé los tiquetes dos veces.'],
+      ['book','booked','/bʊkt/','reservar','We <b>booked</b> the hotel online.','Reservamos el hotel por internet.']
+    ]},
+  { id:'d', kind:'reg', sound:'/d/', name:'Terminan suave', diff:'medium',
+    note:'Después de todo lo demás. Suena como una d y tampoco añade sílaba.',
+    verbs:[
+      ['play','played','/pleɪd/','jugar, tocar','We <b>played</b> in the pool.','Jugamos en la piscina.'],
+      ['rain','rained','/reɪnd/','llover','It <b>rained</b> on Sunday morning.','Llovió el domingo en la mañana.'],
+      ['arrive','arrived','/əˈraɪvd/','llegar','We <b>arrived</b> two hours late.','Llegamos dos horas tarde.'],
+      ['live','lived','/lɪvd/','vivir','I <b>lived</b> in the same house for years.','Viví en la misma casa por años.'],
+      ['love','loved','/lʌvd/','encantar','I <b>loved</b> the food there.','Me encantó la comida de allá.'],
+      ['close','closed','/kloʊzd/','cerrar','I <b>closed</b> my shop on Saturday.','Cerré mi negocio el sábado.'],
+      ['listen','listened','/ˈlɪsənd/','escuchar','We <b>listened</b> to music all day.','Escuchamos música todo el día.'],
+      ['open','opened','/ˈoʊpənd/','abrir','The museum <b>opened</b> at ten.','El museo abrió a las diez.'],
+      ['study','studied','/ˈstʌdid/','estudiar','I <b>studied</b> English on the bus.','Estudié inglés en el bus.'],
+      ['try','tried','/traɪd/','intentar, probar','I <b>tried</b> a new dish.','Probé un plato nuevo.'],
+      ['stay','stayed','/steɪd/','quedarse','We <b>stayed</b> at CAFAM.','Nos quedamos en CAFAM.'],
+      ['travel','traveled','/ˈtrævəld/','viajar','We <b>traveled</b> on the weekend.','Viajamos el fin de semana.'],
+      ['enjoy','enjoyed','/ɪnˈdʒɔɪd/','disfrutar','I <b>enjoyed</b> the trip a lot.','Disfruté mucho el viaje.'],
+      ['learn','learned','/lɜːrnd/','aprender','We <b>learned</b> about other cultures.','Aprendimos sobre otras culturas.'],
+      ['call','called','/kɔːld/','llamar','I <b>called</b> my family at night.','Llamé a mi familia en la noche.'],
+      ['change','changed','/tʃeɪndʒd/','cambiar','We <b>changed</b> seats on the bus.','Cambiamos de silla en el bus.'],
+      ['answer','answered','/ˈænsərd/','responder','I <b>answered</b> all the questions.','Respondí todas las preguntas.'],
+      ['carry','carried','/ˈkærid/','cargar','My father <b>carried</b> the big bag.','Mi papá cargó la maleta grande.'],
+      ['clean','cleaned','/kliːnd/','limpiar','I <b>cleaned</b> the shop before the trip.','Limpié el negocio antes del viaje.'],
+      ['happen','happened','/ˈhæpənd/','pasar, ocurrir','Something funny <b>happened</b> on Sunday.','Algo chistoso pasó el domingo.'],
+      ['remember','remembered','/rɪˈmembərd/','recordar','I <b>remembered</b> the guide\'s name.','Recordé el nombre del guía.'],
+      ['show','showed','/ʃoʊd/','mostrar','I <b>showed</b> the photos to my family.','Le mostré las fotos a mi familia.'],
+      ['use','used','/juːzd/','usar','I <b>used</b> my phone for the map.','Usé mi celular para el mapa.'],
+      ['follow','followed','/ˈfɑːloʊd/','seguir','We <b>followed</b> the tour guide.','Seguimos al guía del tour.']
+    ]},
+  { id:'same', kind:'irr', sound:'=', name:'No cambian', diff:'easy',
+    note:'Se escriben y suenan igual que el presente. El contexto dice si es pasado.',
+    verbs:[
+      ['cost','cost','/kɔːst/','costar','The tickets <b>cost</b> very little.','Los tiquetes costaron muy poco.'],
+      ['cut','cut','/kʌt/','cortar','I <b>cut</b> the bread for lunch.','Corté el pan para el almuerzo.'],
+      ['hit','hit','/hɪt/','golpear','The sun <b>hit</b> my back all afternoon.','El sol me pegó en la espalda toda la tarde.'],
+      ['hurt','hurt','/hɜːrt/','doler','My back <b>hurt</b> that night.','Me dolió la espalda esa noche.'],
+      ['let','let','/let/','dejar','My father <b>let</b> me drive.','Mi papá me dejó manejar.'],
+      ['put','put','/pʊt/','poner','I <b>put</b> my bag on the seat.','Puse mi maleta en la silla.'],
+      ['shut','shut','/ʃʌt/','cerrar','I <b>shut</b> the door of the room.','Cerré la puerta del cuarto.'],
+      ['set','set','/set/','poner, fijar','I <b>set</b> the alarm for five.','Puse la alarma a las cinco.'],
+      ['spread','spread','/spred/','untar, extender','I <b>spread</b> butter on the bread.','Unté mantequilla en el pan.'],
+      ['quit','quit','/kwɪt/','renunciar, dejar','He <b>quit</b> his job last year.','Él renunció a su trabajo el año pasado.'],
+      ['bet','bet','/bet/','apostar','My brothers <b>bet</b> on the game.','Mis hermanos apostaron en el partido.'],
+      ['split','split','/splɪt/','dividir','We <b>split</b> the bill at dinner.','Dividimos la cuenta en la cena.']
+    ]},
+  { id:'ought', kind:'irr', sound:'/ɔːt/', name:'Terminan en -ought, -aught', diff:'hard',
+    note:'Siete verbos, un solo sonido. La familia más rentable y la que más se pronuncia mal.',
+    verbs:[
+      ['buy','bought','/bɔːt/','comprar','We <b>bought</b> round-trip tickets.','Compramos tiquetes de ida y vuelta.'],
+      ['bring','brought','/brɔːt/','traer','I <b>brought</b> gifts for my family.','Traje regalos para mi familia.'],
+      ['catch','caught','/kɔːt/','tomar, atrapar','We <b>caught</b> the last bus.','Tomamos el último bus.'],
+      ['teach','taught','/tɔːt/','enseñar','My mother <b>taught</b> me to cook.','Mi mamá me enseñó a cocinar.'],
+      ['think','thought','/θɔːt/','pensar','I <b>thought</b> about my business.','Pensé en mi negocio.'],
+      ['fight','fought','/fɔːt/','pelear','My brothers <b>fought</b> about the seat.','Mis hermanos pelearon por la silla.'],
+      ['seek','sought','/sɔːt/','buscar','They <b>sought</b> help from the guide.','Ellos buscaron ayuda del guía.']
+    ]},
+  { id:'ew', kind:'irr', sound:'/uː/', name:'Terminan en -ew', diff:'hard',
+    note:'Todas riman. Suena como una u larga.',
+    verbs:[
+      ['know','knew','/nuː/','saber, conocer','I <b>knew</b> the way to the hotel.','Yo sabía el camino al hotel.'],
+      ['fly','flew','/fluː/','volar','We <b>flew</b> to the coast last year.','Volamos a la costa el año pasado.'],
+      ['grow','grew','/gruː/','crecer','My business <b>grew</b> this year.','Mi negocio creció este año.'],
+      ['throw','threw','/θruː/','lanzar','My brother <b>threw</b> me in the pool.','Mi hermano me tiró a la piscina.'],
+      ['draw','drew','/druː/','dibujar','I <b>drew</b> a map for my family.','Dibujé un mapa para mi familia.'],
+      ['blow','blew','/bluː/','soplar','The wind <b>blew</b> all night.','El viento sopló toda la noche.']
+    ]},
+  { id:'oke', kind:'irr', sound:'/oʊ/', name:'Terminan en -oke, -ove, -ote', diff:'hard',
+    note:'Cambian a un sonido "ou" largo, como en "no".',
+    verbs:[
+      ['break','broke','/broʊk/','romper','I <b>broke</b> my sunglasses.','Rompí mis gafas de sol.'],
+      ['speak','spoke','/spoʊk/','hablar','I <b>spoke</b> English with the guide.','Hablé inglés con el guía.'],
+      ['wake','woke','/woʊk/','despertar','I <b>woke</b> up at six.','Me desperté a las seis.'],
+      ['steal','stole','/stoʊl/','robar','Someone <b>stole</b> a wallet at the mall.','Alguien robó una billetera en el centro comercial.'],
+      ['drive','drove','/droʊv/','manejar','My father <b>drove</b> to the station.','Mi papá manejó hasta la estación.'],
+      ['choose','chose','/tʃoʊz/','escoger','I <b>chose</b> a window seat.','Escogí una silla de ventana.'],
+      ['ride','rode','/roʊd/','montar','We <b>rode</b> the slides all morning.','Nos lanzamos por los toboganes toda la mañana.'],
+      ['write','wrote','/roʊt/','escribir','I <b>wrote</b> a text about my trip.','Escribí un texto sobre mi viaje.'],
+      ['freeze','froze','/froʊz/','congelar','The water <b>froze</b> in the mountains.','El agua se congeló en la montaña.'],
+      ['rise','rose','/roʊz/','subir, salir (el sol)','The sun <b>rose</b> at six.','El sol salió a las seis.']
+    ]},
+  { id:'ore', kind:'irr', sound:'/ɔːr/', name:'Terminan en -ore', diff:'hard',
+    note:'Cuatro verbos que riman entre sí. Suena como la o de "por", alargada.',
+    verbs:[
+      ['wear','wore','/wɔːr/','usar (ropa)','I <b>wore</b> a shirt because of the sun.','Usé una camisa por el sol.'],
+      ['tear','tore','/tɔːr/','rasgar','I <b>tore</b> the ticket by accident.','Rompí el tiquete sin querer.'],
+      ['swear','swore','/swɔːr/','jurar','He <b>swore</b> he closed the door.','Él juró que cerró la puerta.'],
+      ['bear','bore','/bɔːr/','soportar','I <b>bore</b> the heat all afternoon.','Soporté el calor toda la tarde.']
+    ]},
+  { id:'an', kind:'irr', sound:'/æ/', name:'La i se abre en a', diff:'medium',
+    note:'begin → began. La vocal del presente se abre en el pasado.',
+    verbs:[
+      ['begin','began','/bɪˈgæn/','empezar','The trip <b>began</b> on Saturday.','El viaje empezó el sábado.'],
+      ['drink','drank','/dræŋk/','beber','We <b>drank</b> juice at lunch.','Tomamos jugo en el almuerzo.'],
+      ['run','ran','/ræn/','correr','My brothers <b>ran</b> to the pool.','Mis hermanos corrieron a la piscina.'],
+      ['swim','swam','/swæm/','nadar','We <b>swam</b> every day.','Nadamos todos los días.'],
+      ['sing','sang','/sæŋ/','cantar','My family <b>sang</b> on the bus.','Mi familia cantó en el bus.'],
+      ['ring','rang','/ræŋ/','sonar','My phone <b>rang</b> at midnight.','Mi celular sonó a medianoche.'],
+      ['sink','sank','/sæŋk/','hundirse','My phone <b>sank</b> in the pool.','Mi celular se hundió en la piscina.'],
+      ['spring','sprang','/spræŋ/','saltar','The dog <b>sprang</b> out of the car.','El perro saltó fuera del carro.']
+    ]},
+  { id:'u', kind:'irr', sound:'/ʌ/', name:'La vocal se cierra en u', diff:'medium',
+    note:'Familia grande y muy regular: la i o la a del presente se vuelve u.',
+    verbs:[
+      ['hang','hung','/hʌŋ/','colgar','I <b>hung</b> my shirt in the room.','Colgué mi camisa en el cuarto.'],
+      ['dig','dug','/dʌg/','cavar','The dogs <b>dug</b> in the sand.','Los perros cavaron en la arena.'],
+      ['stick','stuck','/stʌk/','pegar, atascar','The bus <b>stuck</b> in the mud.','El bus se atascó en el barro.'],
+      ['swing','swung','/swʌŋ/','balancear','My brother <b>swung</b> the bag.','Mi hermano balanceó la maleta.'],
+      ['win','won','/wʌn/','ganar','My brother <b>won</b> the game.','Mi hermano ganó el juego.'],
+      ['spin','spun','/spʌn/','girar','The wheel <b>spun</b> very fast.','La rueda giró muy rápido.'],
+      ['sting','stung','/stʌŋ/','picar','A bee <b>stung</b> me at the pool.','Una abeja me picó en la piscina.'],
+      ['strike','struck','/strʌk/','golpear','The ball <b>struck</b> the window.','La pelota golpeó la ventana.']
+    ]},
+  { id:'short', kind:'irr', sound:'/e/', name:'Se acortan', diff:'medium',
+    note:'Pierden sílabas y quedan cortos, con una e cerrada. La familia más numerosa.',
+    verbs:[
+      ['sleep','slept','/slept/','dormir','I <b>slept</b> badly that night.','Dormí mal esa noche.'],
+      ['keep','kept','/kept/','guardar','I <b>kept</b> the tickets in my bag.','Guardé los tiquetes en mi maleta.'],
+      ['leave','left','/left/','salir, dejar','We <b>left</b> at six in the morning.','Salimos a las seis de la mañana.'],
+      ['meet','met','/met/','conocer','We <b>met</b> other people on the tour.','Conocimos otra gente en el tour.'],
+      ['feel','felt','/felt/','sentir','I <b>felt</b> tired after the trip.','Me sentí cansado después del viaje.'],
+      ['send','sent','/sent/','enviar','I <b>sent</b> photos to my family.','Envié fotos a mi familia.'],
+      ['spend','spent','/spent/','gastar, pasar','We <b>spent</b> two days there.','Pasamos dos días allá.'],
+      ['hold','held','/held/','sostener','I <b>held</b> my bag all the trip.','Sostuve mi maleta todo el viaje.'],
+      ['lend','lent','/lent/','prestar','I <b>lent</b> my brother some money.','Le presté plata a mi hermano.'],
+      ['bend','bent','/bent/','doblar','I <b>bent</b> the ticket in my pocket.','Doblé el tiquete en el bolsillo.'],
+      ['deal','dealt','/delt/','tratar, lidiar','I <b>dealt</b> with the problem alone.','Manejé el problema solo.'],
+      ['mean','meant','/ment/','significar','I didn\'t know what it <b>meant</b>.','No sabía qué significaba.'],
+      ['feed','fed','/fed/','alimentar','I <b>fed</b> the dogs before the trip.','Alimenté a los perros antes del viaje.'],
+      ['lead','led','/led/','guiar','The guide <b>led</b> us to the museum.','El guía nos llevó al museo.']
+    ]},
+  { id:'i', kind:'irr', sound:'/ɪ/', name:'La i se acorta', diff:'medium',
+    note:'Cuatro verbos donde la i larga del presente se vuelve corta.',
+    verbs:[
+      ['bite','bit','/bɪt/','morder','A dog <b>bit</b> my shoe.','Un perro me mordió el zapato.'],
+      ['hide','hid','/hɪd/','esconder','I <b>hid</b> the gifts in my bag.','Escondí los regalos en mi maleta.'],
+      ['slide','slid','/slɪd/','deslizarse','We <b>slid</b> down the water slides.','Nos deslizamos por los toboganes.'],
+      ['light','lit','/lɪt/','encender','My mother <b>lit</b> the candles.','Mi mamá encendió las velas.']
+    ]},
+  { id:'dt', kind:'irr', sound:'-d / -t', name:'Terminan en d o t', diff:'medium',
+    note:'No riman entre sí, pero todas cierran con d o t. Son de las más usadas del idioma.',
+    verbs:[
+      ['have','had','/hæd/','tener','We <b>had</b> a good time.','La pasamos bien.'],
+      ['make','made','/meɪd/','hacer','My mother <b>made</b> lunch for everybody.','Mi mamá hizo almuerzo para todos.'],
+      ['find','found','/faʊnd/','encontrar','I <b>found</b> a cheap hotel.','Encontré un hotel barato.'],
+      ['hear','heard','/hɜːrd/','oír','I <b>heard</b> music from the pool.','Escuché música desde la piscina.'],
+      ['pay','paid','/peɪd/','pagar','I <b>paid</b> for the tickets.','Pagué los tiquetes.'],
+      ['say','said','/sed/','decir','My father <b>said</b> it was late.','Mi papá dijo que era tarde.'],
+      ['sell','sold','/soʊld/','vender','I <b>sold</b> pet food last week.','Vendí comida para mascotas la semana pasada.'],
+      ['tell','told','/toʊld/','contar','I <b>told</b> my family about the trip.','Le conté a mi familia sobre el viaje.'],
+      ['lose','lost','/lɔːst/','perder','I <b>lost</b> my sunglasses.','Perdí mis gafas de sol.'],
+      ['build','built','/bɪlt/','construir','They <b>built</b> a new pool there.','Construyeron una piscina nueva allá.'],
+      ['understand','understood','/ˌʌndərˈstʊd/','entender','I <b>understood</b> the guide.','Entendí al guía.'],
+      ['read','read','/red/','leer','I <b>read</b> a book on the bus.','Leí un libro en el bus.'],
+      ['lay','laid','/leɪd/','poner, acostar','I <b>laid</b> the towel on the sand.','Puse la toalla en la arena.']
+    ]},
+  { id:'wild', kind:'irr', sound:'★', name:'Cambian del todo', diff:'hard',
+    note:'No siguen ningún patrón, pero son los más usados de todos. Estos sí toca uno por uno.',
+    verbs:[
+      ['be','was / were','/wʌz/ /wɜːr/','ser, estar','The trip <b>was</b> short.','El viaje fue corto.'],
+      ['go','went','/went/','ir','I <b>went</b> to Melgar.','Fui a Melgar.'],
+      ['do','did','/dɪd/','hacer','We <b>did</b> nothing on Sunday.','No hicimos nada el domingo.'],
+      ['see','saw','/sɔː/','ver','We <b>saw</b> the whole town.','Vimos todo el pueblo.'],
+      ['eat','ate','/eɪt/','comer','We <b>ate</b> fish and rice.','Comimos pescado y arroz.'],
+      ['get','got','/gɑːt/','conseguir, llegar','I <b>got</b> a window seat.','Conseguí una silla de ventana.'],
+      ['take','took','/tʊk/','tomar, llevar','We <b>took</b> a tour of the town.','Hicimos un tour por el pueblo.'],
+      ['come','came','/keɪm/','venir','We <b>came</b> back on Sunday night.','Volvimos el domingo en la noche.'],
+      ['give','gave','/geɪv/','dar','I <b>gave</b> a gift to my mother.','Le di un regalo a mi mamá.'],
+      ['become','became','/bɪˈkeɪm/','volverse','The town <b>became</b> very hot.','El pueblo se puso muy caliente.'],
+      ['fall','fell','/fel/','caer','I <b>fell</b> asleep in the sun.','Me quedé dormido al sol.'],
+      ['sit','sat','/sæt/','sentarse','I <b>sat</b> next to my brother.','Me senté al lado de mi hermano.'],
+      ['stand','stood','/stʊd/','pararse','We <b>stood</b> in line for the tour.','Hicimos fila para el tour.'],
+      ['forget','forgot','/fərˈgɑːt/','olvidar','I <b>forgot</b> my sunglasses at the pool.','Olvidé mis gafas de sol en la piscina.'],
+      ['forgive','forgave','/fərˈgeɪv/','perdonar','My brother <b>forgave</b> me quickly.','Mi hermano me perdonó rápido.'],
+      ['lie','lay','/leɪ/','acostarse','I <b>lay</b> in the sun too long.','Me acosté al sol demasiado tiempo.']
+    ]}
+];
+
+/* La clave SRS es "vb:base" — el prefijo evita que un verbo choque con
+ * una palabra igual del vocabulario si algún día comparten mapa. */
+const VB_BOOK = new Set(['buy','come','do','drive','eat','find','fly','get','go','have','leave','lose','make','meet','read','say','see','sleep','steal','take']);
+const vbKey = base => 'vb:' + base;
+function vbProgress() {
+  state.verbProgress = state.verbProgress || {};
+  return state.verbProgress;
+}
+function vbCard(fam, base) {
+  return SRS.readCard(vbProgress(), vbKey(base), fam.diff);
+}
+/* "Aprendido" = ya salió del ciclo de aprendizaje y tiene intervalo real. */
+function vbLearned(fam) {
+  return fam.verbs.filter(v => {
+    const c = vbCard(fam, v[0]);
+    return c.state === 'review' || c.state === 'mature' || c.interval >= 1;
+  }).length;
+}
+function vbDueCount() {
+  let n = 0;
+  VERB_FAMILIES.forEach(f => f.verbs.forEach(v => {
+    if (SRS.isDue(vbCard(f, v[0]))) n++;
+  }));
+  return n;
+}
+
+let vbDeck = 'reg';
+let vbSes  = null;   // { famId, queue, at, shown }
+
+/* Los 20 de la p.78 viven repartidos en sus familias de sonido, pero antes
+ * del examen conviene poder repasarlos solos. Es la misma tarjeta: responder
+ * aquí mueve el mismo calendario que responder en la familia. */
+function vbBookFam() {
+  const verbs = [];
+  VERB_FAMILIES.forEach(f => f.verbs.forEach(v => { if (VB_BOOK.has(v[0])) verbs.push(v); }));
+  return { id:'book', kind:'book', sound:'★', name:'Los 20 de tu libro', diff:'hard',
+           note:'La lista de la página 78 — los que entran en tu examen.', verbs };
+}
+function vbAllFams() { return VERB_FAMILIES.concat([vbBookFam()]); }
+
+function renderVerbs() {
+  vbSes = null;
+  const el = document.getElementById('verbs-content');
+  if (!el) return;
+  const fams = vbDeck === 'book' ? [vbBookFam()] : VERB_FAMILIES.filter(f => f.kind === vbDeck);
+  const total = fams.reduce((n, f) => n + f.verbs.length, 0);
+  el.innerHTML = `
+    <div class="section-title">🔤 Verbos en pasado</div>
+    <div class="section-sub">Por familia de sonido. Los que riman se aprenden juntos.</div>
+    <div class="vb-switch" role="tablist">
+      <button role="tab" aria-selected="${vbDeck === 'reg'}" onclick="vbSetDeck('reg')">Regulares</button>
+      <button role="tab" aria-selected="${vbDeck === 'irr'}" onclick="vbSetDeck('irr')">Irregulares</button>
+      <button role="tab" aria-selected="${vbDeck === 'book'}" onclick="vbSetDeck('book')">★ Del libro</button>
+    </div>
+    <div class="vb-grid">
+      ${fams.map(f => {
+        const done = vbLearned(f);
+        const pct  = Math.round(done / f.verbs.length * 100);
+        const book = f.verbs.filter(v => VB_BOOK.has(v[0])).length;
+        return `<button class="vb-fam" onclick="vbStart('${f.id}')">
+          <span class="vb-n">${done}/${f.verbs.length}</span>
+          <span class="vb-sound">${escapeHtml(f.sound)}</span>
+          <span class="vb-name">${escapeHtml(f.name)}</span>
+          <span class="vb-eg">${escapeHtml(f.verbs.slice(0, 3).map(v => v[1]).join(' · '))}</span>
+          ${(book && f.id !== 'book') ? `<span class="vb-eg" style="color:var(--amber);">★ ${book} de tu libro</span>` : ''}
+          <span class="vb-bar"><i style="width:${pct}%"></i></span>
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="vb-note">${vbDeck === 'book'
+      ? 'Estos 20 son los de la página 78. Son las mismas tarjetas de las familias, así que lo que repases aquí cuenta allá.'
+      : `${total} verbos en esta pestaña, pero solo estudias una familia a la vez. Cuando una te salga sin pensarlo, pasa a la siguiente — no abras dos el mismo día.`}</div>`;
+  updateNavBadges();
+}
+
+function vbSetDeck(k) { vbDeck = k; Sound.tap(); renderVerbs(); }
+
+function vbStart(id) {
+  const fam = vbAllFams().find(f => f.id === id);
+  if (!fam) return;
+  /* Lo que toca hoy: lo vencido y lo nuevo. Si ya está todo al día,
+   * repasa la familia completa igual — practicar de más no rompe el SRS
+   * porque solo las respuestas cambian el calendario. */
+  const due = fam.verbs.filter(v => {
+    const c = vbCard(fam, v[0]);
+    return c.state === 'new' || SRS.isDue(c);
+  });
+  const list = (due.length ? due : fam.verbs).slice();
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  vbSes = { famId: id, queue: list, at: 0, shown: false };
+  renderVerbCard();
+}
+
+function renderVerbCard() {
+  const el = document.getElementById('verbs-content');
+  if (!el || !vbSes) return;
+  const fam = vbAllFams().find(f => f.id === vbSes.famId);
+  if (vbSes.at >= vbSes.queue.length) return renderVerbDone(fam);
+
+  const [base, past, ipa, es, eg, egEs] = vbSes.queue[vbSes.at];
+  el.innerHTML = `
+    <div class="vb-top">
+      <button class="btn btn-ghost btn-sm" onclick="renderVerbs()">← Familias</button>
+      <span class="vb-count">${vbSes.at + 1} / ${vbSes.queue.length} · ${escapeHtml(fam.sound)}</span>
+    </div>
+    <div class="vb-card" id="vb-card" ${vbSes.shown ? '' : 'onclick="vbFlip()"'}>
+      ${vbSes.shown ? `
+        <div class="vb-past">${escapeHtml(past)}</div>
+        <div class="vb-ipa">${escapeHtml(ipa)}</div>
+        <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(past)}">🔊</button>
+        <div class="vb-sent">${eg}<span>${escapeHtml(egEs)}</span></div>
+      ` : `
+        <div class="vb-base">${escapeHtml(base)}</div>
+        <div class="vb-es">${escapeHtml(es)}</div>
+        <div class="vb-hint">Dilo en pasado en voz alta, después toca</div>
+      `}
+    </div>
+    ${vbSes.shown ? `
+      <div class="vb-rate">
+        <button class="r0" onclick="vbRate(0)">Otra vez</button>
+        <button class="r2" onclick="vbRate(2)">Bien</button>
+        <button class="r3" onclick="vbRate(3)">Fácil</button>
+      </div>` : ''}`;
+  if (vbSes.shown) speak(past);
+}
+
+function vbFlip() { if (vbSes) { vbSes.shown = true; Sound.tap(); renderVerbCard(); } }
+
+function vbRate(rating) {
+  if (!vbSes) return;
+  const item = vbSes.queue[vbSes.at];
+  SRS.rate(vbProgress(), vbKey(item[0]), rating);
+  save();
+  /* "Otra vez" lo devuelve al final del montón de hoy, como en Flashcards. */
+  if (rating === 0) vbSes.queue.push(item);
+  vbSes.at++;
+  vbSes.shown = false;
+  Sound.tap();
+  renderVerbCard();
+}
+
+function renderVerbDone(fam) {
+  const el = document.getElementById('verbs-content');
+  el.innerHTML = `
+    <div class="vb-done">
+      <div class="vb-sound">${escapeHtml(fam.sound)}</div>
+      <div class="section-title" style="justify-content:center;">${escapeHtml(fam.name)}</div>
+      <div class="section-sub">${escapeHtml(fam.note)}</div>
+      <button class="btn btn-primary" style="margin-top:18px;" onclick="renderVerbs()">Volver a las familias</button>
+    </div>`;
+  vbSes = null;
 }
 
 function toggleSidebar() {
@@ -6893,6 +7325,7 @@ function currentActivity() {
   // Dashboard, Progreso, Niveles y la lista de textos quedan fuera: son de
   // mirar. Podcasts también — sus minutos ya se anotan a mano ahí mismo.
   if (id === 'page-flashcards-all') return document.getElementById('fc-card') ? '🃏 Flashcards' : null;
+  if (id === 'page-verbs')          return document.getElementById('vb-card') ? '🔤 Verbos' : null;
   if (id === 'page-vocab-all')      return dentro('#vocab-grid .vocab-card') ? '📖 Vocabulario' : null;
   if (id === 'page-tutor')          return dentro('#standalone-chat-msgs .msg-user') ? '🎙️ Mari' : null;
   return null;
@@ -16505,6 +16938,12 @@ function updateNavBadges() {
   const totalVocab = Object.values(state.units).reduce((sum, u) => sum + getUnitVocab(u).length, 0);
   document.getElementById('fc-count').textContent = totalVocab;
   document.getElementById('vocab-count').textContent = totalVocab;
+  const vb = document.getElementById('verbs-count');
+  if (vb) {
+    const due = vbDueCount();
+    vb.textContent = due;
+    vb.style.display = due ? '' : 'none';
+  }
 }
 
 /* ============================================================
