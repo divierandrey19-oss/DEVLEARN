@@ -3766,7 +3766,24 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 #page-verbs .vb-sound{font-size:1.6rem;font-weight:800;color:var(--amber);line-height:1.1;letter-spacing:-.02em}
 #page-verbs .vb-name{font-size:var(--fs-small);font-weight:600;line-height:1.3}
 #page-verbs .vb-eg{font-size:var(--fs-caption);color:var(--text-3);margin-top:3px}
-#page-verbs .vb-n{position:absolute;top:12px;right:13px;font-size:var(--fs-caption);color:var(--text-3)}
+#page-verbs .vb-n{position:absolute;top:12px;right:38px;font-size:var(--fs-caption);color:var(--text-3)}
+#page-verbs .vb-why{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border-2);color:var(--text-3);font-size:0.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+#page-verbs .vb-why:hover,#page-verbs .vb-why:focus-visible{color:var(--amber);border-color:var(--amber);outline:none}
+
+/* Hoja de la regla — se abre desde el "?" de cada familia */
+.vb-ov{position:fixed;inset:0;background:var(--blur-bg-strong);backdrop-filter:blur(8px);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px}
+.vb-sheet{background:var(--surface-solid);border:1px solid var(--border-2);border-radius:var(--r-lg);max-width:400px;width:100%;padding:22px;max-height:85vh;overflow-y:auto}
+.vb-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.vb-sheet-sound{font-size:2rem;font-weight:800;color:var(--amber);line-height:1;letter-spacing:-.02em}
+.vb-sheet-name{font-size:var(--fs-body);color:var(--text-2);margin-top:4px}
+.vb-x{background:none;border:0;color:var(--text-3);font-size:1rem;cursor:pointer;padding:4px 6px;line-height:1}
+.vb-sheet-lbl{font-size:var(--fs-caption);color:var(--text-3);margin-bottom:4px}
+.vb-sheet-txt{font-size:var(--fs-body);line-height:1.55;color:var(--text);margin-bottom:16px}
+.vb-sheet-txt b{color:var(--amber);font-weight:600}
+.vb-demo{width:100%;border-collapse:collapse;margin-top:2px}
+.vb-demo td{padding:8px 0;border-top:1px solid var(--border);font-size:var(--fs-small);color:var(--text-2)}
+.vb-demo .vb-demo-past{color:var(--text);font-weight:600}
+.vb-demo .vb-demo-why{text-align:right;color:var(--text-3);font-size:var(--fs-caption)}
 #page-verbs .vb-bar{height:3px;background:var(--surface-3);border-radius:2px;margin-top:10px;overflow:hidden}
 #page-verbs .vb-bar i{display:block;height:100%;background:var(--green);width:0}
 #page-verbs .vb-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -6373,6 +6390,9 @@ function navigate(page) {
 const VERB_FAMILIES = [
   { id:'id', kind:'reg', sound:'/ɪd/', name:'Suenan con sílaba extra', diff:'medium',
     note:'Después de sonido t o d. La única familia donde la -ed se oye aparte.',
+    when:'El verbo ya termina en sonido <b>t</b> o <b>d</b>.',
+    rule:'No se puede pegar otra t o d al final sin que se traben, así que el inglés mete una vocal en medio. Por eso esta es la única familia que suma una sílaba: <b>want</b> tiene una, <b>wanted</b> tiene dos.',
+    demo:[['want','wanted','termina en t'],['need','needed','termina en d'],['decide','decided','termina en d']],
     verbs:[
       ['want','wanted','/ˈwɑːntɪd/','querer','I <b>wanted</b> a window seat.','Yo quería una silla de ventana.'],
       ['need','needed','/ˈniːdɪd/','necesitar','We <b>needed</b> a round-trip ticket.','Necesitábamos un tiquete de ida y vuelta.'],
@@ -6393,6 +6413,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'t', kind:'reg', sound:'/t/', name:'Terminan seco', diff:'medium',
     note:'Después de p, k, f, s, sh, ch. Suena como una t y no añade sílaba.',
+    when:'El verbo termina en sonido <b>sordo</b>: p, k, f, s, sh, ch, x.',
+    rule:'Sordo quiere decir que la garganta no vibra. La <b>-ed</b> se contagia de ese sonido y sale sorda también, o sea como una t. Ojo: manda el sonido, no la letra — <b>laugh</b> se escribe con gh pero suena f, así que va aquí.',
+    demo:[['walk','walked','k es sorda'],['help','helped','p es sorda'],['wash','washed','sh es sorda']],
     verbs:[
       ['walk','walked','/wɔːkt/','caminar','We <b>walked</b> in the town.','Caminamos por el pueblo.'],
       ['work','worked','/wɜːrkt/','trabajar','I <b>worked</b> on Monday.','Trabajé el lunes.'],
@@ -6417,6 +6440,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'d', kind:'reg', sound:'/d/', name:'Terminan suave', diff:'medium',
     note:'Después de todo lo demás. Suena como una d y tampoco añade sílaba.',
+    when:'El verbo termina en sonido <b>sonoro</b>: vocales, b, g, v, z, m, n, l, r.',
+    rule:'Sonoro quiere decir que la garganta sí vibra. La <b>-ed</b> se contagia y sale sonora, o sea como una d. Prueba fácil: ponte la mano en el cuello y di el verbo — si vibra al final, es /d/.',
+    demo:[['play','played','vocal, vibra'],['call','called','l vibra'],['arrive','arrived','v vibra']],
     verbs:[
       ['play','played','/pleɪd/','jugar, tocar','We <b>played</b> in the pool.','Jugamos en la piscina.'],
       ['rain','rained','/reɪnd/','llover','It <b>rained</b> on Sunday morning.','Llovió el domingo en la mañana.'],
@@ -6445,6 +6471,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'same', kind:'irr', sound:'=', name:'No cambian', diff:'easy',
     note:'Se escriben y suenan igual que el presente. El contexto dice si es pasado.',
+    when:'Casi todos ya terminan en <b>t</b> o <b>d</b>.',
+    rule:'Añadirles -ed los volvería impronunciables, así que el inglés los dejó quietos. La forma no cambia: solo el contexto te dice si es presente o pasado.',
+    demo:[['cut','cut','ya termina en t'],['put','put','ya termina en t'],['spread','spread','ya termina en d']],
     verbs:[
       ['cost','cost','/kɔːst/','costar','The tickets <b>cost</b> very little.','Los tiquetes costaron muy poco.'],
       ['cut','cut','/kʌt/','cortar','I <b>cut</b> the bread for lunch.','Corté el pan para el almuerzo.'],
@@ -6461,6 +6490,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'ought', kind:'irr', sound:'/ɔːt/', name:'Terminan en -ought, -aught', diff:'hard',
     note:'Siete verbos, un solo sonido. La familia más rentable y la que más se pronuncia mal.',
+    when:'El pasado se escribe con <b>-ought</b> o <b>-aught</b>.',
+    rule:'Los presentes no se parecen en nada entre sí, pero todos caen en la misma terminación. Lo importante: esas letras siempre suenan /ɔːt/ y la <b>gh</b> es muda, nunca se pronuncia.',
+    demo:[['buy','bought','gh muda'],['teach','taught','gh muda'],['think','thought','gh muda']],
     verbs:[
       ['buy','bought','/bɔːt/','comprar','We <b>bought</b> round-trip tickets.','Compramos tiquetes de ida y vuelta.'],
       ['bring','brought','/brɔːt/','traer','I <b>brought</b> gifts for my family.','Traje regalos para mi familia.'],
@@ -6472,6 +6504,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'ew', kind:'irr', sound:'/uː/', name:'Terminan en -ew', diff:'hard',
     note:'Todas riman. Suena como una u larga.',
+    when:'Verbos que terminan en <b>-ow</b> o <b>-y</b>.',
+    rule:'La terminación cambia a <b>-ew</b> y siempre suena como una u larga. Casi toda la familia sale de verbos en -ow.',
+    demo:[['know','knew','-ow → -ew'],['grow','grew','-ow → -ew'],['fly','flew','-y → -ew']],
     verbs:[
       ['know','knew','/nuː/','saber, conocer','I <b>knew</b> the way to the hotel.','Yo sabía el camino al hotel.'],
       ['fly','flew','/fluː/','volar','We <b>flew</b> to the coast last year.','Volamos a la costa el año pasado.'],
@@ -6482,6 +6517,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'oke', kind:'irr', sound:'/oʊ/', name:'Terminan en -oke, -ove, -ote', diff:'hard',
     note:'Cambian a un sonido "ou" largo, como en "no".',
+    when:'Verbos con <b>ea</b>, <b>i</b> o <b>oo</b> en el medio.',
+    rule:'Esa vocal se convierte en una o larga, el sonido "ou" de <b>no</b>. El pasado termina en -oke, -ove, -ote u -ose.',
+    demo:[['break','broke','ea → o'],['drive','drove','i → o'],['choose','chose','oo → o']],
     verbs:[
       ['break','broke','/broʊk/','romper','I <b>broke</b> my sunglasses.','Rompí mis gafas de sol.'],
       ['speak','spoke','/spoʊk/','hablar','I <b>spoke</b> English with the guide.','Hablé inglés con el guía.'],
@@ -6496,6 +6534,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'ore', kind:'irr', sound:'/ɔːr/', name:'Terminan en -ore', diff:'hard',
     note:'Cuatro verbos que riman entre sí. Suena como la o de "por", alargada.',
+    when:'Verbos que terminan en <b>-ear</b>.',
+    rule:'Los cuatro siguen la misma ruta: -ear se vuelve -ore. Es la familia más pequeña y la más predecible de todas.',
+    demo:[['wear','wore','-ear → -ore'],['tear','tore','-ear → -ore'],['swear','swore','-ear → -ore']],
     verbs:[
       ['wear','wore','/wɔːr/','usar (ropa)','I <b>wore</b> a shirt because of the sun.','Usé una camisa por el sol.'],
       ['tear','tore','/tɔːr/','rasgar','I <b>tore</b> the ticket by accident.','Rompí el tiquete sin querer.'],
@@ -6504,6 +6545,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'an', kind:'irr', sound:'/æ/', name:'La i se abre en a', diff:'medium',
     note:'begin → began. La vocal del presente se abre en el pasado.',
+    when:'Verbos con <b>i</b> antes de n, m o ng.',
+    rule:'La i cerrada del presente se abre en una a. Es el mismo cambio en toda la familia, por eso se aprenden de a seis y no de a uno.',
+    demo:[['begin','began','i → a'],['drink','drank','i → a'],['swim','swam','i → a']],
     verbs:[
       ['begin','began','/bɪˈgæn/','empezar','The trip <b>began</b> on Saturday.','El viaje empezó el sábado.'],
       ['drink','drank','/dræŋk/','beber','We <b>drank</b> juice at lunch.','Tomamos jugo en el almuerzo.'],
@@ -6516,6 +6560,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'u', kind:'irr', sound:'/ʌ/', name:'La vocal se cierra en u', diff:'medium',
     note:'Familia grande y muy regular: la i o la a del presente se vuelve u.',
+    when:'Verbos con <b>i</b> o <b>a</b> antes de ng, g, ck o n.',
+    rule:'La vocal se cierra en u. Es de las familias más consistentes del inglés: si el presente tiene i o a en esa posición, el pasado casi siempre lleva u.',
+    demo:[['hang','hung','a → u'],['dig','dug','i → u'],['win','won','i → u']],
     verbs:[
       ['hang','hung','/hʌŋ/','colgar','I <b>hung</b> my shirt in the room.','Colgué mi camisa en el cuarto.'],
       ['dig','dug','/dʌg/','cavar','The dogs <b>dug</b> in the sand.','Los perros cavaron en la arena.'],
@@ -6528,6 +6575,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'short', kind:'irr', sound:'/e/', name:'Se acortan', diff:'medium',
     note:'Pierden sílabas y quedan cortos, con una e cerrada. La familia más numerosa.',
+    when:'Verbos con vocal larga: <b>ee</b>, <b>ea</b>, o que terminan en <b>-nd</b>.',
+    rule:'La vocal larga se acorta a una e cerrada y el verbo cierra con t o d. Los de -nd solo cambian la d por t: send → sent.',
+    demo:[['sleep','slept','ee se acorta'],['feel','felt','ee se acorta'],['send','sent','d → t']],
     verbs:[
       ['sleep','slept','/slept/','dormir','I <b>slept</b> badly that night.','Dormí mal esa noche.'],
       ['keep','kept','/kept/','guardar','I <b>kept</b> the tickets in my bag.','Guardé los tiquetes en mi maleta.'],
@@ -6546,6 +6596,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'i', kind:'irr', sound:'/ɪ/', name:'La i se acorta', diff:'medium',
     note:'Cuatro verbos donde la i larga del presente se vuelve corta.',
+    when:'Verbos con <b>i</b> larga que suena "ai".',
+    rule:'Esa i larga se acorta y pasa a sonar como la i de <b>sit</b>. Cambia el sonido aunque la letra siga siendo i.',
+    demo:[['bite','bit','ai → i corta'],['hide','hid','ai → i corta'],['slide','slid','ai → i corta']],
     verbs:[
       ['bite','bit','/bɪt/','morder','A dog <b>bit</b> my shoe.','Un perro me mordió el zapato.'],
       ['hide','hid','/hɪd/','esconder','I <b>hid</b> the gifts in my bag.','Escondí los regalos en mi maleta.'],
@@ -6554,6 +6607,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'dt', kind:'irr', sound:'-d / -t', name:'Terminan en d o t', diff:'medium',
     note:'No riman entre sí, pero todas cierran con d o t. Son de las más usadas del idioma.',
+    when:'No hay una sola regla, pero todos cierran con <b>d</b> o <b>t</b>.',
+    rule:'Es una familia de reunión: no riman entre sí, pero comparten el final. Se agrupan aquí porque son de los verbos más usados del idioma y conviene tenerlos juntos.',
+    demo:[['have','had','cierra en d'],['pay','paid','cierra en d'],['lose','lost','cierra en t']],
     verbs:[
       ['have','had','/hæd/','tener','We <b>had</b> a good time.','La pasamos bien.'],
       ['make','made','/meɪd/','hacer','My mother <b>made</b> lunch for everybody.','Mi mamá hizo almuerzo para todos.'],
@@ -6571,6 +6627,9 @@ const VERB_FAMILIES = [
     ]},
   { id:'wild', kind:'irr', sound:'★', name:'Cambian del todo', diff:'hard',
     note:'No siguen ningún patrón, pero son los más usados de todos. Estos sí toca uno por uno.',
+    when:'Ninguna regla los cubre.',
+    rule:'Cambian del todo y hay que aprenderlos uno por uno. La buena noticia: son pocos y los usas tanto que se fijan solos al hablar.',
+    demo:[['go','went','sin patrón'],['see','saw','sin patrón'],['be','was / were','dos formas']],
     verbs:[
       ['be','was / were','/wʌz/ /wɜːr/','ser, estar','The trip <b>was</b> short.','El viaje fue corto.'],
       ['go','went','/went/','ir','I <b>went</b> to Melgar.','Fui a Melgar.'],
@@ -6652,6 +6711,9 @@ function renderVerbs() {
         const book = f.verbs.filter(v => VB_BOOK.has(v[0])).length;
         return `<button class="vb-fam" onclick="vbStart('${f.id}')">
           <span class="vb-n">${done}/${f.verbs.length}</span>
+          <span class="vb-why" role="button" tabindex="0" aria-label="Ver la regla"
+                onclick="event.stopPropagation();vbShowRule('${f.id}')"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();vbShowRule('${f.id}')}">?</span>
           <span class="vb-sound">${escapeHtml(f.sound)}</span>
           <span class="vb-name">${escapeHtml(f.name)}</span>
           <span class="vb-eg">${escapeHtml(f.verbs.slice(0, 3).map(v => v[1]).join(' · '))}</span>
@@ -6664,6 +6726,44 @@ function renderVerbs() {
       ? 'Estos 20 son los de la página 78. Son las mismas tarjetas de las familias, así que lo que repases aquí cuenta allá.'
       : `${total} verbos en esta pestaña, pero solo estudias una familia a la vez. Cuando una te salga sin pensarlo, pasa a la siguiente — no abras dos el mismo día.`}</div>`;
   updateNavBadges();
+}
+
+/* La regla detrás del sonido. Vive detrás de un "?" y no en la tarjeta:
+ * la regla se consulta una vez y se entiende; los verbos se repasan cien
+ * veces. Poner las dos cosas al mismo nivel le quitaría sitio al repaso. */
+function vbShowRule(id) {
+  const f = vbAllFams().find(x => x.id === id);
+  if (!f || !f.rule) return;
+  document.getElementById('vb-rule-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'vb-rule-overlay';
+  ov.className = 'vb-ov';
+  ov.innerHTML = `
+    <div class="vb-sheet" role="dialog" aria-modal="true" aria-label="Regla de la familia ${escapeHtml(f.sound)}">
+      <div class="vb-sheet-head">
+        <div>
+          <div class="vb-sheet-sound">${escapeHtml(f.sound)}</div>
+          <div class="vb-sheet-name">${escapeHtml(f.name)}</div>
+        </div>
+        <button class="vb-x" aria-label="Cerrar" onclick="document.getElementById('vb-rule-overlay').remove()">✕</button>
+      </div>
+      <div class="vb-sheet-lbl">Cuándo</div>
+      <div class="vb-sheet-txt">${f.when}</div>
+      <div class="vb-sheet-lbl">Por qué</div>
+      <div class="vb-sheet-txt">${f.rule}</div>
+      <table class="vb-demo">
+        ${f.demo.map(d => `<tr>
+          <td>${escapeHtml(d[0])}</td>
+          <td class="vb-demo-past">${escapeHtml(d[1])}</td>
+          <td class="vb-demo-why">${escapeHtml(d[2])}</td>
+        </tr>`).join('')}
+      </table>
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.addEventListener('keydown', function esc(e) {
+    if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', esc); }
+  });
 }
 
 function vbSetDeck(k) { vbDeck = k; Sound.tap(); renderVerbs(); }
