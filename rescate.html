@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescate — DEV Learn</title>
+<style>
+  :root{ --bg:#0d1117; --card:#161b22; --line:#30363d; --txt:#e6edf3;
+         --dim:#8b949e; --ok:#3fb950; --bad:#f85149; --warn:#d29922; }
+  *{box-sizing:border-box}
+  body{margin:0;padding:18px 16px 60px;background:var(--bg);color:var(--txt);
+       font:15px/1.55 -apple-system,system-ui,"Segoe UI",sans-serif;max-width:640px;margin:0 auto}
+  h1{font-size:1.3rem;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:.85rem;margin:0 0 20px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:12px;
+       padding:14px 16px;margin-bottom:12px}
+  .k{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:var(--dim);
+     word-break:break-all}
+  .big{font-size:1.5rem;font-weight:700;margin:2px 0}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  td{padding:6px 0;border-top:1px solid var(--line);font-size:.85rem;vertical-align:top}
+  td:last-child{text-align:right;color:var(--dim);white-space:nowrap;padding-left:10px}
+  button{background:#238636;color:#fff;border:0;border-radius:8px;padding:12px 18px;
+         font:inherit;font-weight:600;cursor:pointer;width:100%;margin-top:10px}
+  button.sec{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  .note{font-size:.82rem;color:var(--dim);margin-top:8px}
+</style>
+
+<h1>Rescate de datos</h1>
+<p class="sub">Esta página solo lee. No escribe ni borra nada.</p>
+<div id="out">Leyendo…</div>
+
+<script>
+/* Solo lectura. Ni un setItem, ni un removeItem, en todo el archivo. */
+const KEYS_APP = ['lingua_v4','lingua_v3','lingua_v2','devlearn_pre_import','devlearn_pending_import'];
+const out = document.getElementById('out');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const kb = n => n < 1024 ? n + ' B' : (n/1024).toFixed(1) + ' KB';
+
+function resumen(raw){
+  try{
+    const s = JSON.parse(raw);
+    const units = s.units || {};
+    let nUnits = 0, nBatches = 0, nVocab = 0;
+    Object.values(units).forEach(lvl => {
+      Object.values(lvl || {}).forEach(u => {
+        if (!u || typeof u !== 'object') return;
+        nUnits++;
+        (u.batches || []).forEach(b => { nBatches++; nVocab += (b.vocab || []).length; });
+      });
+    });
+    // formato antiguo: units planas
+    if (!nUnits) Object.values(units).forEach(u => {
+      if (!u || typeof u !== 'object') return;
+      nUnits++; (u.batches || []).forEach(b => { nBatches++; nVocab += (b.vocab||[]).length; });
+    });
+    return { ok:true, nUnits, nBatches, nVocab,
+             textos:(s.texts||[]).length, dias:(s.studyDates||[]).length,
+             min:s.studyMinutes||0, palabras:(s.stats&&s.stats.wordsLearned)||0 };
+  }catch(e){ return { ok:false, err:e.message }; }
+}
+
+function render(){
+  let html = '';
+  let encontrado = null;
+
+  const principal = localStorage.getItem('lingua_v4');
+  if (principal && principal.length > 200) {
+    const r = resumen(principal);
+    encontrado = 'lingua_v4';
+    html += `<div class="box">
+      <div class="big ok">Tus datos están aquí</div>
+      <div class="k">lingua_v4 · ${kb(principal.length)}</div>
+      ${r.ok ? `<table>
+        <tr><td>Unidades</td><td>${r.nUnits}</td></tr>
+        <tr><td>Lotes de páginas</td><td>${r.nBatches}</td></tr>
+        <tr><td>Palabras de vocabulario</td><td>${r.nVocab}</td></tr>
+        <tr><td>Mis textos</td><td>${r.textos}</td></tr>
+        <tr><td>Días estudiados</td><td>${r.dias}</td></tr>
+        <tr><td>Minutos</td><td>${r.min}</td></tr>
+      </table>` : `<div class="bad">El contenido está dañado: ${esc(r.err)}</div>`}
+      <button onclick="bajar('lingua_v4')">Descargar copia de seguridad</button>
+      <div class="note">Descárgala antes de abrir la app otra vez.</div>
+    </div>`;
+  } else {
+    html += `<div class="box">
+      <div class="big bad">lingua_v4 está vacío</div>
+      <div class="note">Es la clave principal de la app. Miremos si queda algo en las demás.</div>
+    </div>`;
+  }
+
+  // resto de claves de la app
+  const otras = KEYS_APP.filter(k => k !== 'lingua_v4')
+    .map(k => [k, localStorage.getItem(k)])
+    .filter(([,v]) => v && v.length > 200);
+  if (otras.length) {
+    html += `<div class="box"><div class="big warn">Hay copias en otras claves</div><table>`;
+    otras.forEach(([k,v]) => {
+      const r = resumen(v);
+      html += `<tr><td><span class="k">${esc(k)}</span>${r.ok?` — ${r.nUnits} unidades, ${r.nVocab} palabras`:''}</td><td>${kb(v.length)}</td></tr>`;
+    });
+    html += `</table>`;
+    otras.forEach(([k]) => html += `<button class="sec" onclick="bajar('${k}')">Descargar ${esc(k)}</button>`);
+    html += `<div class="note">Si una de estas tiene tus unidades, se puede restaurar desde Ajustes → Importar.</div></div>`;
+    if (!encontrado) encontrado = otras[0][0];
+  }
+
+  // todo lo demás que haya en este dominio
+  const todas = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    todas.push([k, (localStorage.getItem(k) || '').length]);
+  }
+  todas.sort((a,b) => b[1] - a[1]);
+  html += `<div class="box"><div class="k">Todo lo guardado en este dominio</div><table>`;
+  html += todas.length
+    ? todas.map(([k,n]) => `<tr><td class="k">${esc(k)}</td><td>${kb(n)}</td></tr>`).join('')
+    : `<tr><td class="bad">No hay absolutamente nada guardado.</td><td></td></tr>`;
+  html += `</table></div>`;
+
+  // fotos: viven aparte, en IndexedDB
+  html += `<div class="box" id="idb"><div class="k">Fotos de páginas (IndexedDB)</div>
+           <div class="note">Comprobando…</div></div>`;
+
+  if (!encontrado) {
+    html += `<div class="box">
+      <div class="big">Siguiente paso</div>
+      <div class="note">Si aquí no aparece nada, lo que queda es la nube.
+      Abre la app, entra con Google y <b>no toques nada más</b>: si el respaldo sigue allá,
+      la app lo baja sola al iniciar sesión.</div>
+    </div>`;
+  }
+  out.innerHTML = html;
+  mirarIDB();
+}
+
+function bajar(k){
+  const v = localStorage.getItem(k);
+  if (!v) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([v], {type:'application/json'}));
+  a.download = `rescate_${k}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function mirarIDB(){
+  const box = document.getElementById('idb');
+  let req;
+  try { req = indexedDB.open('devlearn_images'); } catch(e){ return; }
+  req.onsuccess = () => {
+    const db = req.result;
+    const stores = [...db.objectStoreNames];
+    if (!stores.length) {
+      box.innerHTML = `<div class="k">Fotos de páginas (IndexedDB)</div><div class="note bad">Vacío.</div>`;
+      db.close(); return;
+    }
+    const tx = db.transaction(stores[0], 'readonly');
+    const c = tx.objectStore(stores[0]).count();
+    c.onsuccess = () => {
+      const n = c.result;
+      box.innerHTML = `<div class="k">Fotos de páginas (IndexedDB)</div>
+        <div class="big ${n ? 'ok' : 'bad'}">${n} foto${n===1?'':'s'}</div>
+        <div class="note">${n ? 'Las fotos de tus páginas siguen en el celular.' : 'No quedan fotos guardadas.'}</div>`;
+      db.close();
+    };
+  };
+  req.onerror = () => {
+    box.innerHTML = `<div class="k">Fotos de páginas (IndexedDB)</div><div class="note">No se pudo leer.</div>`;
+  };
+}
+
+render();
+</script>
