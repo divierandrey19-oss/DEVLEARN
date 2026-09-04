@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03l -->
+<!-- DEVLEARN_BUILD: 2026-09-03n -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4512,6 +4512,43 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 /* ============================================================
    STATE & STORAGE
    ============================================================ */
+/* Debe quedar inicializada ANTES de la primera llamada a loadState():
+ * migrateState() la usa, y una constante declarada más abajo lanza
+ * ReferenceError al leerla antes de tiempo. loadState() se traga ese
+ * error y devuelve el estado vacío — justo el fallo que borró los datos. */
+const U7_WH_BACKFILL = [
+  ['txt_u7_p73', [
+    { q:'What kinds of vacations do you like?', a:'I like three kinds. I like exciting vacations because I want to try new things, and I also like interesting vacations. But my favorite kind is relaxing vacations with my family.' },
+          { q:'Why are your vacations short?', a:'My vacations are short because I have a small business. I can\'t close it for one week, so I travel on weekends. For example, I go away on Saturday and I come back on Sunday.' },
+          { q:'Who do you travel with?', a:'I travel with my brother and his girlfriend\'s family. We are a big group, so it is more fun. For example, we eat together and we talk a lot.' },
+          { q:'What do you do on a relaxing vacation?', a:'First, I eat good food and I listen to music. Then I talk with my family because I don\'t see them every day. But I don\'t want to stay in the hotel all day, so I always walk or swim.' }
+  ]],
+  ['txt_u7_p7475', [
+    { q:'What are your favorite vacation activities?', a:'My favorites are taking a tour, visiting a museum, and learning about other cultures. In my opinion, taking a tour is interesting, because you learn a lot in one day. I also like hanging out with friends and eating good food.' },
+          { q:'Which activity do you not like?', a:'I don\'t like going sport fishing. You wait for many hours, so I get bored. But my family likes it, and I go with them sometimes.' },
+          { q:'What kinds of vacations do you like?', a:'I like family vacations, because a big group is more fun. We eat together and we talk a lot. But sometimes I take a staycation at home, and that is relaxing too.' },
+          { q:'Why are your vacations short?', a:'My vacations are short because I have a small business. I can\'t go away for one week, so I travel on weekends. For example, I leave on Saturday and I come back on Sunday.' }
+  ]],
+  ['txt_u7_p7677', [
+    { q:'Where were you three months ago?', a:'I was in Melgar with my family. The hotel was very comfortable, and the pools were really nice. It was a short trip, but it was so much fun.' },
+          { q:'How was the drive?', a:'The drive was pretty long and kind of boring. But the road was quite scenic, so I looked out the window. Finally, we arrived at night, and I was really tired.' },
+          { q:'What happened next to the pool?', a:'I was next to the pool, and I fell asleep in the sun. My back was really red, so I wasn\'t comfortable that night. It was funny, but it wasn\'t the end of the world.' },
+          { q:'Who were you with?', a:'I was with my parents and my brothers. We were a big group, so it was more fun. For example, we were all together at dinner, and we talked a lot.' }
+  ]],
+  ['txt_u7_p7879', [
+    { q:'Where did you go three months ago?', a:'I went to Melgar with my parents and my brothers. We took a bus, and the trip took four hours. It was short, but it was really nice.' },
+          { q:'What kind of ticket did you buy?', a:'I bought a round-trip ticket, because I wanted to come back on Sunday. I didn\'t buy a one-way ticket, so we had our seats for both days. For example, we left on Saturday and we came back on Sunday night.' },
+          { q:'How long did the trip take?', a:'The trip took four hours. The bus left at six in the morning, so I slept a little. But I got a window seat, and the road was quite scenic.' },
+          { q:'What did you do on Sunday?', a:'We walked in the town and we bought some gifts. After that, we had lunch together, because it was our last day. Finally, we came back home at night.' }
+  ]],
+  ['txt_u7_p8081', [
+    { q:'How was your trip to Melgar?', a:'It was a mixture of good and bad experiences. The hotel was very comfortable, and the pools were really nice. But the bus had mechanical problems, so we arrived late.' },
+          { q:'What was the bad experience?', a:'The bus had mechanical problems, and that drove me crazy. Also, I stayed in the sun too long, so my back was really red. But it wasn\'t the end of the world.' },
+          { q:'What did you do in the town?', a:'We visited the town and we walked in the market. We wanted to buy some gifts for my family. After that, we had lunch together, because we were really hungry.' },
+          { q:'When did you get back?', a:'We came back on Sunday night, three months ago. The trip was pretty short, but I really liked it. Finally, we arrived home very late.' }
+  ]],
+];
+
 const KEY = 'lingua_v4';
 const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
 const BACKUP_KEY = 'lingua_v4_autobackup';
@@ -4749,7 +4786,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03l';
+const APP_BUILD = '2026-09-03n';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6126,10 +6163,27 @@ function migrateState(s) {
         trans: "Hace tres meses, en 2026, fui a Melgar con mis papás y mis hermanos. Fue una mezcla de experiencias buenas y malas. Primero, el bus tuvo problemas mecánicos, así que llegamos dos horas tarde, y eso me volvió loco. Pero el hotel era muy cómodo, y las piscinas estaban muy bonitas, así que descansamos todos los días. Luego visitamos el pueblo y caminamos por el mercado, porque queríamos comprar unos regalos. Después, me quedé mucho tiempo al sol, así que mi espalda quedó muy roja y no dormí bien esa noche. Pero no fue el fin del mundo, porque mi familia estaba ahí y hablamos y nos reímos toda la tarde. Finalmente, volvimos el domingo en la noche, y el viaje me gustó mucho." },
     ];
     seed.forEach((t, i) => {
-      if (already.has(t.id)) return; // already there — don't duplicate
+      const existente = merged.texts.find(x => x && x.id === t.id);
+      if (existente) {
+        // Seeded by an earlier build, before questions existed. Fill them in —
+        // but only if he hasn't put his own there, and never overwrite.
+        if (!(existente.wh || []).length && (t.wh || []).length) existente.wh = t.wh;
+        return;
+      }
       merged.texts.push({ id: t.id, title: t.title, body: t.body, trans: t.trans,
         wh: t.wh || [],
         date: todayLocal(), ts: Date.now() - (seed.length - i) * 1000, lookups: {} });
+    });
+  }
+  /* The block above only runs once, guarded by _u7TextsSeeded — which an
+   * earlier build already set, before questions were a thing. So the
+   * backfill needs its own flag, or the texts he already has would never
+   * get their questions. */
+  if (!merged._u7WhSeeded) {
+    merged._u7WhSeeded = true;
+    U7_WH_BACKFILL.forEach(([id, wh]) => {
+      const t = merged.texts.find(x => x && x.id === id);
+      if (t && !(t.wh || []).length) t.wh = wh;
     });
   }
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
@@ -10101,7 +10155,8 @@ Reglas:
 Responde SOLO con este JSON:
 {"wh":[{"q":"pregunta","a":"respuesta modelo"}]}` }],
     });
-    const data = typeof out === 'string' ? JSON.parse(out) : out;
+    const data = AIService._parseClaudeJSON(out);
+    if (!data) throw new Error('La respuesta no vino en JSON');
     const wh = (data.wh || []).filter(x => x && x.q && x.a);
     if (!wh.length) throw new Error('sin preguntas');
     t.wh = wh;
@@ -10111,7 +10166,20 @@ Responde SOLO con este JSON:
     renderTextReader();
     toast(`🎤 ${wh.length} preguntas listas`);
   } catch (e) {
-    toast(e.message === 'NO_KEY' ? 'Configura tu clave en Ajustes' : 'No se pudieron crear las preguntas');
+    /* The old message said only "no se pudieron crear", which hid whether the
+     * key was missing, the network failed, or the model returned prose. */
+    const msg = String(e.message || e);
+    const bonito =
+      msg === 'NO_KEY'       ? 'Configura tu clave en Ajustes' :
+      msg === 'INVALID_KEY'  ? 'Tu clave fue rechazada' :
+      msg === 'RATE_LIMIT'   ? 'Demasiadas peticiones, espera un momento' :
+      msg === 'OVERLOADED'   ? 'El servicio está saturado, reintenta' :
+      msg === 'TIMEOUT'      ? 'Se demoró demasiado, reintenta' :
+      msg === 'NETWORK'      ? 'Sin conexión' :
+      msg.startsWith('API_ERROR_') ? 'Error del servidor: ' + msg.slice(10, 60) :
+      'No se pudieron crear: ' + msg.slice(0, 60);
+    toast(bonito);
+    console.warn('generateWh falló:', e);
     if (btn) { btn.disabled = false; btn.textContent = '🎤 Crear preguntas de este texto'; }
   }
 }
