@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03e -->
+<!-- DEVLEARN_BUILD: 2026-09-03h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4749,7 +4749,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03e';
+const APP_BUILD = '2026-09-03h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6051,6 +6051,19 @@ function migrateState(s) {
   // only ever a cache of them. Any device that synced with a stale count gets
   // its real streak back on the next open.
   merged.studyDates = [...new Set(merged.studyDates || [])].filter(Boolean).sort();
+  // Restore the study days lost when the state was wiped. The Aug 20 backup is
+  // where recovery had to start from, so everything studied after it is missing
+  // and the streak reads as broken. Confirmed by the student, seeded once.
+  if (!merged._streakGapRestored) {
+    merged._streakGapRestored = true;
+    const perdidos = ['2026-08-21','2026-08-22','2026-08-23','2026-08-24','2026-08-25',
+                      '2026-08-26','2026-08-27','2026-08-28','2026-08-29','2026-08-30',
+                      '2026-08-31','2026-09-01','2026-09-02','2026-09-03'];
+    const set = new Set(merged.studyDates || []);
+    perdidos.forEach(f => set.add(f));
+    merged.studyDates = Array.from(set).sort();
+    merged.lastStudyDate = merged.studyDates[merged.studyDates.length - 1];
+  }
   merged.streak = computeStreak(merged.studyDates);
   // Seed the known exam once. `examDate === undefined` means the field has never
   // existed; null means the user cleared it on purpose — never re-seed that.
@@ -6360,6 +6373,44 @@ function showStorageBanner() {
 }
 function hideStorageBanner() {
   document.getElementById('storage-banner')?.remove();
+}
+
+/* Weekly nudge to export a real file. Every in-browser copy can be wiped by
+ * the same event; a file in Downloads cannot. Deliberately quiet — it's a
+ * reminder, not a failure: it sits at the bottom, dismisses, blocks nothing. */
+const BACKUP_REMINDER_DAYS = 7;
+function daysSinceExport() {
+  if (!state.lastExport) return null;              // never exported
+  const then = new Date(state.lastExport + 'T00:00:00');
+  const now  = new Date(todayLocal() + 'T00:00:00');
+  return Math.floor((now - then) / 86400000);
+}
+function maybeShowBackupReminder() {
+  if (document.getElementById('backup-reminder')) return;
+  if (state.backupReminderSnoozed === todayLocal()) return;   // "Luego" = not again today
+  if (!Object.keys(state.units || {}).length) return;         // nothing worth backing up yet
+  const d = daysSinceExport();
+  if (d !== null && d < BACKUP_REMINDER_DAYS) return;
+  const el = document.createElement('div');
+  el.id = 'backup-reminder';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9990;background:var(--surface-elev,#2c2c34);'
+    + 'border-top:1px solid var(--border);color:var(--text-1,#fff);padding:12px 16px;font-size:0.82rem;'
+    + 'line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;';
+  el.innerHTML = `
+    <div><strong>💾 Copia de seguridad</strong><br>
+    ${d === null
+      ? 'Nunca has descargado una copia. Es lo único que ningún error puede borrar.'
+      : `Hace ${d} día${d === 1 ? '' : 's'} que no descargas una copia.`}</div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="exportData()" style="flex:2;padding:9px;border-radius:8px;border:0;font-weight:600;background:var(--green,#22c55e);color:#fff;">Descargar ahora</button>
+      <button onclick="snoozeBackupReminder()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-2);font-weight:600;">Luego</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+function snoozeBackupReminder() {
+  state.backupReminderSnoozed = todayLocal();
+  save();
+  document.getElementById('backup-reminder')?.remove();
 }
 
 /* Guard 1's banner. Shown once, at boot, when loadState() found something in
@@ -17866,6 +17917,13 @@ function exportData() {
     a.click();
     URL.revokeObjectURL(url);
 
+    // The reminder counts from here, not from a fixed weekday: what matters is
+    // days since the last real backup, so exporting early just moves the next
+    // nudge instead of leaving a stale one queued.
+    state.lastExport = todayLocal();
+    save();
+    document.getElementById('backup-reminder')?.remove();
+
     const status = document.getElementById('import-export-status');
     if (status) {
       status.style.color = 'var(--green)';
@@ -18325,6 +18383,16 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDashboard();
   updateNavBadges();
 
+  /* Last, and only if nothing more urgent is on screen: a corrupt-load or
+   * blocked-save banner needs the spot more than a routine backup nudge, and
+   * two red bars stacked at the bottom would bury both. */
+  setTimeout(() => {
+    if (document.getElementById('load-corrupt-banner')) return;
+    if (document.getElementById('empty-overwrite-banner')) return;
+    if (document.getElementById('storage-banner')) return;
+    maybeShowBackupReminder();
+  }, 2500);
+
   try {
     const saved = localStorage.getItem('devlearn_nav');
     if (saved) {
@@ -18639,11 +18707,19 @@ function cloudMillis(data) {
 
 window._syncToFirestore = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
-  // Same guard as writeState(), for the same reason: this path never touches
-  // it, since it pushes straight from memory to Firestore. If it ever had
-  // batches the cloud is known to hold and now has none, that's far more
-  // likely a bad in-memory state than a deliberate wipe — refuse rather than
-  // carry the local bug up to the one copy that was supposed to survive it.
+  // A load that couldn't be read must not reach the cloud either. writeState()
+  // already refuses in this case, but this path never goes through it — and
+  // the batch check below can't catch it, because a failed load leaves
+  // syncedBatchIds undefined, which reads as "the cloud has nothing to lose".
+  if (window.__loadCorrupt) {
+    console.warn('_syncToFirestore: blocked — unresolved load failure');
+    return;
+  }
+  // Same guard as writeState(), for the same reason: this path pushes straight
+  // from memory to Firestore. If it ever had batches the cloud is known to
+  // hold and now has none, that's far more likely a bad in-memory state than a
+  // deliberate wipe — refuse rather than carry the local bug up to the one
+  // copy that was supposed to survive it.
   if (!window.__allowEmptyOverwrite) {
     const aboutToPush = allBatchIds(state).length;
     const cloudHad = (state.syncedBatchIds || []).length;
