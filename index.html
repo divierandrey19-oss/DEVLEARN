@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03h -->
+<!-- DEVLEARN_BUILD: 2026-09-03j -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4749,7 +4749,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03h';
+const APP_BUILD = '2026-09-03j';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7657,7 +7657,11 @@ function totalStudyMinutes() {
  */
 function currentActivity() {
   // The reader is an overlay: open means he is inside a text, not on the list.
-  if (document.getElementById('tx-body')) return '📝 Mis textos';
+  // Which bucket depends on what he's actually doing in there — see
+  // toggleSpeakMode(). Same screen, two very different activities.
+  if (document.getElementById('tx-body')) {
+    return (_txState && _txState.speakMode) ? '🗣️ Hablando' : '📝 Mis textos';
+  }
 
   const dentro = (sel) => !!document.querySelector(sel);
 
@@ -9836,6 +9840,7 @@ function openText(id) {
     current: -1,
     rate: state.txRate || 0.85,
     playing: false,
+    speakMode: !!state.txSpeakMode,
     flippedES: new Set(),
     mismatch: t.translation.length > 0 && t.translation.length !== sentences.length,
   };
@@ -9865,12 +9870,20 @@ function renderTextReader() {
   ov.style.cssText = 'position:fixed;inset:0;background:var(--bg, #0d1117);z-index:900;display:flex;flex-direction:column;';
 
   const rates = [0.7, 0.85, 1.0];
+  const grabando = !!(_rec.mr && _rec.mr.state === 'recording');
   ov.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
         <div style="font-size:0.68rem;color:var(--text-3);">Toca una palabra para su traducción${(t.translation || []).length ? ' · 🔄 voltea la frase' : ''}</div>
       </div>
+      <button class="btn btn-sm" id="tx-speak-toggle" onclick="toggleSpeakMode()"
+        title="Cuenta este rato como práctica de habla"
+        style="flex-shrink:0;padding:8px 10px;font-size:0.78rem;${st.speakMode
+          ? 'background:var(--green,#22c55e);color:#fff;border:0;'
+          : 'background:transparent;color:var(--text-3);border:1px solid var(--border-2);'}">
+        🗣️${st.speakMode ? ' ON' : ''}
+      </button>
       <button class="btn btn-ghost btn-sm" onclick="closeTextReader()">✕</button>
     </div>
 
@@ -9919,12 +9932,118 @@ function renderTextReader() {
         <button class="btn btn-ghost" style="padding:12px 12px;" onclick="repeatSentence()" title="Repetir esta frase">🔁</button>
         <button class="btn btn-ghost" style="padding:12px 10px;font-size:0.78rem;" onclick="cycleShadowRate()" title="Velocidad">${st.rate}×</button>
       </div>
+      ${recSupported() ? `
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        <button class="btn btn-sm" onclick="toggleRecord()" style="flex:1;padding:10px;font-size:0.8rem;${grabando
+          ? 'background:var(--red,#ff3b30);color:#fff;border:0;'
+          : 'background:transparent;color:var(--text-2);border:1px solid var(--border-2);'}">
+          ${grabando ? '⏹ Detener' : '🎙️ Grabarme'}
+        </button>
+        <button class="btn btn-sm" onclick="playMyTake()" ${_rec.url ? '' : 'disabled'}
+          style="flex:1;padding:10px;font-size:0.8rem;background:transparent;color:var(--text-2);border:1px solid var(--border-2);${_rec.url ? '' : 'opacity:.4;'}">
+          ▶ Mi voz
+        </button>
+        <button class="btn btn-sm" onclick="compareTake()" ${_rec.url ? '' : 'disabled'}
+          style="flex:1;padding:10px;font-size:0.8rem;background:transparent;color:var(--accent);border:1px solid var(--accent);${_rec.url ? '' : 'opacity:.4;'}">
+          ⇄ Comparar
+        </button>
+      </div>
+      ${_rec.url && _rec.si >= 0 ? `<div style="font-size:0.66rem;color:var(--text-3);text-align:center;margin-top:6px;">Tu grabación es de la frase ${_rec.si + 1}</div>` : ''}
+      ` : ''}
     </div>`;
   document.body.appendChild(ov);
 }
 
+/* Reciting a text out loud and reading it silently happen on the same screen,
+ * so the tracker counted both as reading — which is why the breakdown read 96%
+ * reading / 3% speaking even on days spent rehearsing aloud. This flag is the
+ * only thing that can tell them apart: the app cannot hear him. */
+/* ── Grabadora de frase ────────────────────────────────────────────
+ * Pronunciation and fluency are the two criteria he can't self-check by
+ * reading: the mistake sounds correct from the inside. Hearing the model and
+ * his own take back to back on the SAME sentence is what makes the gap
+ * audible. Deliberately scoped to one sentence — a whole text played back is
+ * too long to compare anything.
+ * Nothing is uploaded and nothing is stored: the clip lives in memory until
+ * the next take replaces it. */
+let _rec = { mr: null, chunks: [], url: null, si: -1, stream: null };
+
+function recSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+}
+
+async function toggleRecord() {
+  if (!_txState) return;
+  if (!recSupported()) { toast('Este navegador no permite grabar'); return; }
+
+  if (_rec.mr && _rec.mr.state === 'recording') { _rec.mr.stop(); return; }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _rec.stream = stream;
+    _rec.chunks = [];
+    _rec.si = Math.max(0, _txState.current);
+    const mr = new MediaRecorder(stream);
+    _rec.mr = mr;
+    mr.ondataavailable = e => { if (e.data && e.data.size) _rec.chunks.push(e.data); };
+    mr.onstop = () => {
+      // Free the mic as soon as the take ends — leaving it open keeps the
+      // recording indicator on and worries anyone who notices it.
+      stream.getTracks().forEach(t => t.stop());
+      _rec.stream = null;
+      if (_rec.url) URL.revokeObjectURL(_rec.url);
+      _rec.url = _rec.chunks.length ? URL.createObjectURL(new Blob(_rec.chunks)) : null;
+      renderTextReader();
+    };
+    mr.start();
+    renderTextReader();
+  } catch (e) {
+    toast('No se pudo usar el micrófono');
+  }
+}
+
+function playMyTake() {
+  if (!_rec.url) return;
+  const a = new Audio(_rec.url);
+  a.play().catch(() => toast('No se pudo reproducir'));
+}
+
+/* The whole point of the feature: model, then his take, without a tap in
+ * between. Comparing from memory across two separate taps is exactly where the
+ * difference stops being audible. */
+function compareTake() {
+  if (!_txState || !_rec.url) return;
+  const frase = _txState.sentences[_rec.si];
+  if (!frase) return;
+  toast('🔊 Modelo…');
+  speak(frase, _txState.rate);
+  const esperar = setInterval(() => {
+    if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return;
+    clearInterval(esperar);
+    setTimeout(() => { toast('🎙️ Tu voz…'); playMyTake(); }, 350);
+  }, 200);
+}
+
+function toggleSpeakMode() {
+  if (!_txState) return;
+  _txState.speakMode = !_txState.speakMode;
+  state.txSpeakMode = _txState.speakMode;   // remembered for the next text
+  save();
+  Sound.tap();
+  toast(_txState.speakMode
+    ? '🗣️ Contando como práctica de habla'
+    : '📖 Contando como lectura');
+  renderTextReader();
+}
+
 function closeTextReader() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  // Closing mid-take must not leave the mic open — the phone would keep showing
+  // the recording indicator with nothing running.
+  try { if (_rec.mr && _rec.mr.state === 'recording') _rec.mr.stop(); } catch (e) {}
+  if (_rec.stream) { _rec.stream.getTracks().forEach(t => t.stop()); _rec.stream = null; }
+  if (_rec.url) { URL.revokeObjectURL(_rec.url); _rec.url = null; }
+  _rec.mr = null; _rec.chunks = []; _rec.si = -1;
   const era = _txState && _txState.kind;
   _txState = null;
   document.getElementById('text-overlay')?.remove();
