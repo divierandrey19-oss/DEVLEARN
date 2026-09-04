@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03n -->
+<!-- DEVLEARN_BUILD: 2026-09-03p -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4786,7 +4786,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03n';
+const APP_BUILD = '2026-09-03p';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -9929,6 +9929,8 @@ function openText(id) {
     flippedES: new Set(),
     mismatch: t.translation.length > 0 && t.translation.length !== sentences.length,
   };
+  _long.takes = [];
+  loadTakes().then(() => { if (_long.takes.length) renderTextReader(); });
   renderTextReader();
 }
 
@@ -9956,6 +9958,7 @@ function renderTextReader() {
 
   const rates = [0.7, 0.85, 1.0];
   const grabando = !!(_rec.mr && _rec.mr.state === 'recording');
+  const grabandoLargo = !!(_long.mr && _long.mr.state === 'recording');
   ov.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
@@ -10087,6 +10090,36 @@ function renderTextReader() {
         </button>
       </div>
       ${_rec.url && _rec.si >= 0 ? `<div style="font-size:0.66rem;color:var(--text-3);text-align:center;margin-top:6px;">Tu grabación es de la frase ${_rec.si + 1}</div>` : ''}
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <button class="btn btn-sm" onclick="toggleLongRecord()" style="flex:1;padding:10px;font-size:0.8rem;${grabandoLargo
+          ? 'background:var(--red,#ff3b30);color:#fff;border:0;'
+          : 'background:transparent;color:var(--text-2);border:1px solid var(--border-2);'}">
+          ${grabandoLargo
+            ? `⏹ Detener · <span id="long-timer">00:00</span>`
+            : '⏺ Grabar el texto completo'}
+        </button>
+      </div>
+      ${_long.borrador ? `
+        <div style="margin-top:8px;padding:10px;border:1px solid var(--amber,#d29922);border-radius:var(--r-sm);background:var(--surface-2);">
+          <div style="font-size:0.74rem;color:var(--amber,#d29922);font-weight:600;margin-bottom:8px;">
+            Grabación de ${_long.borrador.secs}s — óyela antes de decidir
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="playBorrador()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:transparent;color:var(--text-1);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">▶ Oír</button>
+            <button onclick="guardarBorrador()" style="flex:1;padding:9px;border-radius:8px;border:0;background:var(--green,#22c55e);color:#fff;font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">💾 Guardar</button>
+            <button onclick="descartarYRefrescar()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:transparent;color:var(--text-3);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">🗑 Descartar</button>
+          </div>
+        </div>` : ''}
+      ${_long.takes.length ? `
+        <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+          <div style="font-size:0.66rem;color:var(--text-3);margin-bottom:6px;">Tus grabaciones de este texto</div>
+          ${_long.takes.map(t => `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;">
+              <button onclick="playTake('${escapeStr(t.key)}')" style="background:transparent;border:0;color:var(--accent);font-size:0.9rem;cursor:pointer;padding:2px 4px;">▶</button>
+              <span style="flex:1;font-size:0.76rem;color:var(--text-2);">${escapeHtml(fechaTake(t.ts))}</span>
+              <button onclick="deleteTake('${escapeStr(t.key)}')" style="background:transparent;border:0;color:var(--text-3);font-size:0.8rem;cursor:pointer;padding:2px 6px;">🗑</button>
+            </div>`).join('')}
+        </div>` : ''}
       ` : ''}
     </div>`;
   document.body.appendChild(ov);
@@ -10184,6 +10217,184 @@ Responde SOLO con este JSON:
   }
 }
 
+/* Recordings live in their own database, not alongside the photos. Adding a
+ * store to devlearn_images would mean bumping its version, and an upgrade that
+ * goes wrong takes the page photos with it. A separate database can't touch
+ * them at all — and audio is heavy enough that keeping it separable matters. */
+const AudioStore = {
+  _db: null,
+  DB_NAME: 'devlearn_audio',
+  STORE: 'takes',
+  MAX_POR_TEXTO: 3,
+
+  async open() {
+    if (this._db) return this._db;
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(this.STORE)) db.createObjectStore(this.STORE);
+      };
+      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async _run(mode, fn) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, mode);
+      const req = fn(tx.objectStore(this.STORE));
+      tx.oncomplete = () => resolve(req ? req.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  },
+
+  /* Key is `${textId}::${timestamp}` so every take of a text sorts by date and
+   * a text's takes can be found without an index. */
+  async save(textId, blob) {
+    const key = `${textId}::${Date.now()}`;
+    await this._run('readwrite', s => s.put({ textId, blob, ts: Date.now() }, key));
+    await this._prune(textId);
+    return key;
+  },
+
+  async listFor(textId) {
+    try {
+      const keys = await this._run('readonly', s => s.getAllKeys());
+      const vals = await this._run('readonly', s => s.getAll());
+      return keys.map((k, i) => ({ key: k, ...vals[i] }))
+                 .filter(x => x.textId === textId)
+                 .sort((a, b) => b.ts - a.ts);          // más reciente primero
+    } catch (e) { return []; }
+  },
+
+  async delete(key) {
+    try { return await this._run('readwrite', s => s.delete(key)); } catch (e) {}
+  },
+
+  /* Audio adds up fast. Three takes per text is enough to hear progress
+   * without letting the database grow without limit. */
+  async _prune(textId) {
+    const takes = await this.listFor(textId);
+    for (const t of takes.slice(this.MAX_POR_TEXTO)) await this.delete(t.key);
+  },
+};
+
+/* ── Grabación larga: el texto completo ────────────────────────────
+ * The sentence recorder is for pronunciation; this one is for the thing the
+ * exam actually measures — 90 seconds of continuous speech, where fluency and
+ * coherence either hold up or don't. Takes are kept so he can hear this week
+ * against last week, which is the only honest way to know he's improving. */
+let _long = { mr: null, chunks: [], stream: null, t0: 0, tick: null, takes: [],
+              borrador: null };   // la toma recién hecha, todavía sin guardar
+
+async function toggleLongRecord() {
+  if (!_txState) return;
+  if (!recSupported()) { toast('Este navegador no permite grabar'); return; }
+
+  if (_long.mr && _long.mr.state === 'recording') { _long.mr.stop(); return; }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _long.stream = stream;
+    _long.chunks = [];
+    _long.t0 = Date.now();
+    descartarBorrador();          // una toma nueva reemplaza la anterior sin guardar
+    const mr = new MediaRecorder(stream);
+    _long.mr = mr;
+    mr.ondataavailable = e => { if (e.data && e.data.size) _long.chunks.push(e.data); };
+    mr.onstop = () => {
+      clearInterval(_long.tick); _long.tick = null;
+      stream.getTracks().forEach(t => t.stop());
+      _long.stream = null;
+      const secs = Math.round((Date.now() - _long.t0) / 1000);
+      /* Nothing is written yet. He records often, and often gets interrupted
+       * mid-take — saving automatically would push the good takes out of the
+       * three-slot list to make room for the ruined ones. So the take waits
+       * here until he has heard it and decided. */
+      if (_long.chunks.length && secs >= 3) {
+        const blob = new Blob(_long.chunks);
+        _long.borrador = { blob, secs, url: URL.createObjectURL(blob) };
+      } else {
+        toast('Muy corta — se descartó');
+      }
+      renderTextReader();
+    };
+    mr.start();
+    // The elapsed counter is the whole point: he's aiming at 60–90 seconds.
+    _long.tick = setInterval(() => {
+      const el = document.getElementById('long-timer');
+      if (el) {
+        const s = Math.round((Date.now() - _long.t0) / 1000);
+        el.textContent = `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+      }
+    }, 500);
+    renderTextReader();
+  } catch (e) {
+    toast('No se pudo usar el micrófono');
+  }
+}
+
+function playBorrador() {
+  if (!_long.borrador) return;
+  new Audio(_long.borrador.url).play().catch(() => toast('No se pudo reproducir'));
+}
+
+function descartarBorrador() {
+  if (!_long.borrador) return;
+  URL.revokeObjectURL(_long.borrador.url);
+  _long.borrador = null;
+}
+
+function descartarYRefrescar() {
+  descartarBorrador();
+  renderTextReader();
+}
+
+async function guardarBorrador() {
+  if (!_long.borrador || !_txState) return;
+  const secs = _long.borrador.secs;
+  try {
+    await AudioStore.save(_txState.id, _long.borrador.blob);
+    descartarBorrador();
+    await loadTakes();
+    toast(`💾 Guardada · ${secs}s`);
+  } catch (e) {
+    toast('No se pudo guardar');
+  }
+  renderTextReader();
+}
+
+async function loadTakes() {
+  if (!_txState) return;
+  _long.takes = await AudioStore.listFor(_txState.id);
+}
+
+function playTake(key) {
+  const t = _long.takes.find(x => x.key === key);
+  if (!t) return;
+  const url = URL.createObjectURL(t.blob);
+  const a = new Audio(url);
+  a.onended = () => URL.revokeObjectURL(url);
+  a.play().catch(() => toast('No se pudo reproducir'));
+}
+
+async function deleteTake(key) {
+  await AudioStore.delete(key);
+  await loadTakes();
+  renderTextReader();
+}
+
+function fechaTake(ts) {
+  const d = new Date(ts);
+  const hoy = new Date();
+  const mismoDia = d.toDateString() === hoy.toDateString();
+  const hora = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  return mismoDia ? `Hoy ${hora}` : d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) + ` ${hora}`;
+}
+
 /* ── Grabadora de frase ────────────────────────────────────────────
  * Pronunciation and fluency are the two criteria he can't self-check by
  * reading: the mistake sounds correct from the inside. Hearing the model and
@@ -10270,6 +10481,13 @@ function closeTextReader() {
   if (_rec.stream) { _rec.stream.getTracks().forEach(t => t.stop()); _rec.stream = null; }
   if (_rec.url) { URL.revokeObjectURL(_rec.url); _rec.url = null; }
   _rec.mr = null; _rec.chunks = []; _rec.si = -1;
+  // Same for the long take — a running interval and an open mic must not
+  // outlive the screen that owns them.
+  try { if (_long.mr && _long.mr.state === 'recording') _long.mr.stop(); } catch (e) {}
+  if (_long.stream) { _long.stream.getTracks().forEach(t => t.stop()); _long.stream = null; }
+  clearInterval(_long.tick); _long.tick = null;
+  descartarBorrador();
+  _long.mr = null; _long.chunks = []; _long.takes = [];
   const era = _txState && _txState.kind;
   _txState = null;
   document.getElementById('text-overlay')?.remove();
