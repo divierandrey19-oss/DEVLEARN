@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03j -->
+<!-- DEVLEARN_BUILD: 2026-09-03l -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4749,7 +4749,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03j';
+const APP_BUILD = '2026-09-03l';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6080,24 +6080,55 @@ function migrateState(s) {
     const already = new Set(merged.texts.map(t => t && t.id));
     const seed = [
       { id: 'txt_u7_p73', title: 'U7 · pág 73',
+        wh: [
+          { q:'What kinds of vacations do you like?', a:'I like three kinds. I like exciting vacations because I want to try new things, and I also like interesting vacations. But my favorite kind is relaxing vacations with my family.' },
+          { q:'Why are your vacations short?', a:'My vacations are short because I have a small business. I can\'t close it for one week, so I travel on weekends. For example, I go away on Saturday and I come back on Sunday.' },
+          { q:'Who do you travel with?', a:'I travel with my brother and his girlfriend\'s family. We are a big group, so it is more fun. For example, we eat together and we talk a lot.' },
+          { q:'What do you do on a relaxing vacation?', a:'First, I eat good food and I listen to music. Then I talk with my family because I don\'t see them every day. But I don\'t want to stay in the hotel all day, so I always walk or swim.' }
+        ],
         body: "I like three kinds of vacations. First, I like exciting vacations, because I want to try new things. For example, I want to go to a big water park and ride the slides. Second, I like interesting vacations, because I like to visit new places and learn about the people and the history. But my favorite kind is relaxing vacations, and for me that means good food, good music, and time with my family. I don't want to stay in the hotel all day, so I always walk or swim too. My vacations are short because I have a small business, so I travel on weekends. I usually travel with my brother and his girlfriend's family, and a big group is more fun. So my perfect vacation is relaxing, but with my family and a little activity too.",
         trans: "Me gustan tres tipos de vacaciones. Primero, me gustan las vacaciones emocionantes, porque quiero probar cosas nuevas. Por ejemplo, quiero ir a un parque acuático grande y lanzarme por los toboganes. Segundo, me gustan las vacaciones interesantes, porque me gusta visitar lugares nuevos y aprender sobre la gente y la historia. Pero mi tipo favorito son las vacaciones relajantes, y para mí eso significa buena comida, buena música y tiempo con mi familia. No quiero quedarme en el hotel todo el día, así que siempre camino o nado también. Mis vacaciones son cortas porque tengo un negocio pequeño, así que viajo los fines de semana. Normalmente viajo con mi hermano y la familia de su novia, y un grupo grande es más divertido. Así que mis vacaciones perfectas son relajantes, pero con mi familia y un poco de actividad también." },
       { id: 'txt_u7_p7475', title: 'U7 · pág 74 - 75',
+        wh: [
+          { q:'What are your favorite vacation activities?', a:'My favorites are taking a tour, visiting a museum, and learning about other cultures. In my opinion, taking a tour is interesting, because you learn a lot in one day. I also like hanging out with friends and eating good food.' },
+          { q:'Which activity do you not like?', a:'I don\'t like going sport fishing. You wait for many hours, so I get bored. But my family likes it, and I go with them sometimes.' },
+          { q:'What kinds of vacations do you like?', a:'I like family vacations, because a big group is more fun. We eat together and we talk a lot. But sometimes I take a staycation at home, and that is relaxing too.' },
+          { q:'Why are your vacations short?', a:'My vacations are short because I have a small business. I can\'t go away for one week, so I travel on weekends. For example, I leave on Saturday and I come back on Sunday.' }
+        ],
         body: "My favorite vacation activities are taking a tour, visiting a museum, and learning about other cultures. In my opinion, taking a tour is interesting, because the guide explains the history of the place. I also like hanging out with friends, because for me a good vacation is good food, good music, and my family. But I don't like going sport fishing, because you wait for many hours and I get bored. My favorite kind is a family vacation, so one day I want to go snorkeling with my brothers. For example, sometimes I take a staycation: I stay home and I sleep late. It isn't exciting, but it's relaxing. Finally, my vacations are short because I have a small business, so I travel on weekends.",
         trans: "Mis actividades favoritas en vacaciones son hacer un tour, visitar un museo y aprender sobre otras culturas. En mi opinión, hacer un tour es interesante, porque el guía explica la historia del lugar. También me gusta pasar el rato con amigos, porque para mí unas buenas vacaciones son buena comida, buena música y mi familia. Pero no me gusta la pesca deportiva, porque esperas muchas horas y me aburro. Mi tipo favorito son las vacaciones familiares, así que algún día quiero hacer snorkel con mis hermanos. Por ejemplo, a veces hago un staycation: me quedo en casa y duermo hasta tarde. No es emocionante, pero es relajante. Finalmente, mis vacaciones son cortas porque tengo un negocio pequeño, así que viajo los fines de semana." },
       { id: 'txt_u7_p7677', title: 'U7 · pág 76 - 77',
+        wh: [
+          { q:'Where were you three months ago?', a:'I was in Melgar with my family. The hotel was very comfortable, and the pools were really nice. It was a short trip, but it was so much fun.' },
+          { q:'How was the drive?', a:'The drive was pretty long and kind of boring. But the road was quite scenic, so I looked out the window. Finally, we arrived at night, and I was really tired.' },
+          { q:'What happened next to the pool?', a:'I was next to the pool, and I fell asleep in the sun. My back was really red, so I wasn\'t comfortable that night. It was funny, but it wasn\'t the end of the world.' },
+          { q:'Who were you with?', a:'I was with my parents and my brothers. We were a big group, so it was more fun. For example, we were all together at dinner, and we talked a lot.' }
+        ],
         body: "Three months ago I went to Melgar with my parents and my brothers. First, the drive was pretty long and kind of boring, but the road was quite scenic. Our hotel was very comfortable, and the pools were really nice, so we swam every day. Then we took a tour, and it was really interesting, because the guide was so friendly. After that, I was next to the pool and I fell asleep in the sun, so my back was really red. That night I wasn't comfortable, so I didn't sleep well. On Sunday the town was very hot, but the shops were quite cheap. Finally, the trip was pretty short, but it was so nice, because we were all together.",
         trans: "Hace tres meses fui a Melgar con mis papás y mis hermanos. Primero, el viaje en carro fue bastante largo y algo aburrido, pero la carretera era muy panorámica. Nuestro hotel era muy cómodo, y las piscinas estaban muy bonitas, así que nadamos todos los días. Luego hicimos un tour, y fue muy interesante, porque el guía era muy amable. Después, estaba al lado de la piscina y me quedé dormido al sol, así que mi espalda quedó muy roja. Esa noche no estaba cómodo, así que no dormí bien. El domingo el pueblo estaba muy caliente, pero las tiendas estaban bastante baratas. Finalmente, el viaje fue bastante corto, pero fue muy agradable, porque estuvimos todos juntos." },
       { id: 'txt_u7_p7879', title: 'U7 · pág 78 - 79',
+        wh: [
+          { q:'Where did you go three months ago?', a:'I went to Melgar with my parents and my brothers. We took a bus, and the trip took four hours. It was short, but it was really nice.' },
+          { q:'What kind of ticket did you buy?', a:'I bought a round-trip ticket, because I wanted to come back on Sunday. I didn\'t buy a one-way ticket, so we had our seats for both days. For example, we left on Saturday and we came back on Sunday night.' },
+          { q:'How long did the trip take?', a:'The trip took four hours. The bus left at six in the morning, so I slept a little. But I got a window seat, and the road was quite scenic.' },
+          { q:'What did you do on Sunday?', a:'We walked in the town and we bought some gifts. After that, we had lunch together, because it was our last day. Finally, we came back home at night.' }
+        ],
         body: "Three months ago I went to Melgar with my parents and my brothers. First, we bought round-trip tickets, because we wanted to come back on Sunday night. I got a window seat, but my brother wanted an aisle seat, so we changed. Then the bus left at six in the morning, and the trip took four hours. After that, we arrived at the hotel and we had lunch. I didn't take a tour on Saturday, because I was really tired, so I relaxed next to the pool. On Sunday we walked in the town and we bought some gifts. Finally, we came back at night, and it was so nice, because we were all together.",
         trans: "Hace tres meses fui a Melgar con mis papás y mis hermanos. Primero, compramos tiquetes de ida y vuelta, porque queríamos regresar el domingo en la noche. Me tocó una silla de ventana, pero mi hermano quería una de pasillo, así que cambiamos. Luego el bus salió a las seis de la mañana, y el viaje tomó cuatro horas. Después, llegamos al hotel y almorzamos. No hice el tour el sábado, porque estaba muy cansado, así que descansé al lado de la piscina. El domingo caminamos por el pueblo y compramos unos regalos. Finalmente, volvimos en la noche, y estuvo muy bueno, porque estábamos todos juntos." },
       { id: 'txt_u7_p8081', title: 'U7 · pág 80 - 81',
+        wh: [
+          { q:'How was your trip to Melgar?', a:'It was a mixture of good and bad experiences. The hotel was very comfortable, and the pools were really nice. But the bus had mechanical problems, so we arrived late.' },
+          { q:'What was the bad experience?', a:'The bus had mechanical problems, and that drove me crazy. Also, I stayed in the sun too long, so my back was really red. But it wasn\'t the end of the world.' },
+          { q:'What did you do in the town?', a:'We visited the town and we walked in the market. We wanted to buy some gifts for my family. After that, we had lunch together, because we were really hungry.' },
+          { q:'When did you get back?', a:'We came back on Sunday night, three months ago. The trip was pretty short, but I really liked it. Finally, we arrived home very late.' }
+        ],
         body: "Three months ago, in 2026, I went to Melgar with my parents and my brothers. It was a mixture of good and bad experiences. First, the bus had mechanical problems, so we arrived two hours late, and that drove me crazy. But the hotel was very comfortable, and the pools were really nice, so we relaxed every day. Then we visited the town and we walked in the market, because we wanted to buy some gifts. After that, I stayed in the sun too long, so my back was really red and I didn't sleep well that night. But it wasn't the end of the world, because my family was there and we talked and laughed all afternoon. Finally, we came back on Sunday night, and I really liked the trip.",
         trans: "Hace tres meses, en 2026, fui a Melgar con mis papás y mis hermanos. Fue una mezcla de experiencias buenas y malas. Primero, el bus tuvo problemas mecánicos, así que llegamos dos horas tarde, y eso me volvió loco. Pero el hotel era muy cómodo, y las piscinas estaban muy bonitas, así que descansamos todos los días. Luego visitamos el pueblo y caminamos por el mercado, porque queríamos comprar unos regalos. Después, me quedé mucho tiempo al sol, así que mi espalda quedó muy roja y no dormí bien esa noche. Pero no fue el fin del mundo, porque mi familia estaba ahí y hablamos y nos reímos toda la tarde. Finalmente, volvimos el domingo en la noche, y el viaje me gustó mucho." },
     ];
     seed.forEach((t, i) => {
       if (already.has(t.id)) return; // already there — don't duplicate
       merged.texts.push({ id: t.id, title: t.title, body: t.body, trans: t.trans,
+        wh: t.wh || [],
         date: todayLocal(), ts: Date.now() - (seed.length - i) * 1000, lookups: {} });
     });
   }
@@ -9919,6 +9950,59 @@ function renderTextReader() {
 
     <div id="tx-word" style="flex-shrink:0;"></div>
 
+    ${st.kind === 'text' ? `
+    <div id="tx-wh" style="flex-shrink:0;border-top:1px solid var(--border);max-height:45vh;overflow-y:auto;">
+      ${(t.wh || []).length ? `
+        <button onclick="toggleWhPanel()" style="width:100%;background:transparent;border:0;color:var(--text-2);padding:10px 16px;font-size:0.78rem;font-weight:600;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+          <span>🎤 Preguntas · ${t.wh.length}</span>
+          <span style="color:var(--text-3);">${st.whOpen ? '▼' : '▲'}</span>
+        </button>
+        ${st.whOpen ? `<div style="padding:0 16px 14px;">
+          <div style="display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:var(--r-sm);margin-bottom:10px;">
+            <button onclick="setWhMode('answer')" style="flex:1;padding:7px;border:0;border-radius:var(--r-xs);font:inherit;font-size:0.74rem;font-weight:600;cursor:pointer;${st.whMode !== 'ask' ? 'background:var(--accent);color:#fff;' : 'background:transparent;color:var(--text-2);'}">Responder</button>
+            <button onclick="setWhMode('ask')" style="flex:1;padding:7px;border:0;border-radius:var(--r-xs);font:inherit;font-size:0.74rem;font-weight:600;cursor:pointer;${st.whMode === 'ask' ? 'background:var(--accent);color:#fff;' : 'background:transparent;color:var(--text-2);'}">Preguntar</button>
+          </div>
+          ${st.whMode === 'ask' ? `
+            <div style="font-size:0.68rem;color:var(--text-3);margin-bottom:10px;line-height:1.45;">
+              Lee la respuesta y arma la pregunta en voz alta.
+              <span style="color:var(--amber);">Recuerda: <b>did</b> ya lleva el pasado, el verbo va en base</span> — <i>Did you <b>go</b>?</i>, nunca <i>Did you went?</i>
+            </div>
+            ${t.wh.map((w, wi) => `
+              <div style="border-top:1px solid var(--border);padding:10px 0;">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <div style="flex:1;font-size:0.86rem;color:var(--text-2);line-height:1.55;">${escapeHtml(w.a)}</div>
+                  <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.a)}" style="flex-shrink:0;">🔊</button>
+                </div>
+                ${(st.whShown && st.whShown.has(wi))
+                  ? `<div style="margin-top:8px;font-size:0.92rem;font-weight:600;line-height:1.4;color:var(--green);">${escapeHtml(w.q)}
+                       <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.q)}" style="margin-left:6px;">🔊</button>
+                     </div>`
+                  : `<button onclick="revealWh(${wi})" style="margin-top:8px;background:transparent;border:1px solid var(--border-2);color:var(--text-3);border-radius:8px;padding:6px 12px;font-size:0.74rem;cursor:pointer;">Ver la pregunta</button>`}
+              </div>`).join('')}
+          ` : `
+            <div style="font-size:0.68rem;color:var(--text-3);margin-bottom:10px;line-height:1.4;">
+              Responde en voz alta antes de destapar. Mínimo 3 frases encadenadas.
+            </div>
+            ${t.wh.map((w, wi) => `
+              <div style="border-top:1px solid var(--border);padding:10px 0;">
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <div style="flex:1;font-size:0.92rem;font-weight:600;line-height:1.4;">${escapeHtml(w.q)}</div>
+                  <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.q)}" style="flex-shrink:0;">🔊</button>
+                </div>
+                ${(st.whShown && st.whShown.has(wi))
+                  ? `<div style="margin-top:8px;font-size:0.86rem;color:var(--text-2);line-height:1.55;">${escapeHtml(w.a)}
+                       <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeStr(w.a)}" style="margin-left:6px;">🔊</button>
+                     </div>`
+                  : `<button onclick="revealWh(${wi})" style="margin-top:8px;background:transparent;border:1px solid var(--border-2);color:var(--text-3);border-radius:8px;padding:6px 12px;font-size:0.74rem;cursor:pointer;">Ver respuesta modelo</button>`}
+              </div>`).join('')}
+          `}
+        </div>` : ''}
+      ` : `
+        <button onclick="generateWh()" id="wh-gen-btn" style="width:100%;background:transparent;border:0;color:var(--text-3);padding:11px 16px;font-size:0.76rem;cursor:pointer;">
+          🎤 Crear preguntas de este texto
+        </button>`}
+    </div>` : ''}
+
     <div style="flex-shrink:0;padding:10px 16px;border-top:1px solid var(--border);">
       <div id="tx-pos" style="font-size:0.68rem;color:var(--text-3);text-align:center;margin-bottom:8px;">
         ${st.current >= 0 ? `Frase ${st.current + 1} de ${st.sentences.length}` : `${st.sentences.length} frases`} · ${st.rate}×
@@ -9958,6 +10042,80 @@ function renderTextReader() {
  * so the tracker counted both as reading — which is why the breakdown read 96%
  * reading / 3% speaking even on days spent rehearsing aloud. This flag is the
  * only thing that can tell them apart: the app cannot hear him. */
+/* ── Preguntas WH del texto ────────────────────────────────────────
+ * The speaking test is answering questions, not reciting. A text he can
+ * recite perfectly still leaves him stuck when the examiner asks something
+ * slightly different — so the questions live behind a drawer, closed by
+ * default, and the model answer stays hidden until he has already answered
+ * out loud. Revealing it first turns the exercise into reading. */
+function toggleWhPanel() {
+  if (!_txState) return;
+  _txState.whOpen = !_txState.whOpen;
+  if (!_txState.whShown) _txState.whShown = new Set();
+  Sound.tap();
+  renderTextReader();
+}
+/* Answering and asking are different skills, and his feedback flagged the
+ * second one specifically ("Keep working on WH questions"). Same 20 pairs,
+ * read backwards: the answer is the prompt, the question is what he has to
+ * build. Switching mode clears what was revealed — otherwise the questions
+ * he just uncovered while answering would be sitting there as freebies. */
+function setWhMode(mode) {
+  if (!_txState || _txState.whMode === mode) return;
+  _txState.whMode = mode;
+  _txState.whShown = new Set();
+  Sound.tap();
+  renderTextReader();
+}
+
+function revealWh(wi) {
+  if (!_txState) return;
+  if (!_txState.whShown) _txState.whShown = new Set();
+  _txState.whShown.add(wi);
+  renderTextReader();
+}
+
+async function generateWh() {
+  const t = readerItem();
+  if (!t || !_txState) return;
+  const btn = document.getElementById('wh-gen-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando preguntas…'; }
+  try {
+    const out = await AIService._callClaude({
+      isJSON: true,
+      maxTokens: 1200,
+      systemPrompt: 'Eres profesor de inglés A2. Respondes SOLO con JSON válido, sin texto alrededor.',
+      messages: [{ role: 'user', content:
+`Este es un texto de un estudiante A2 de inglés:
+
+"""${t.body}"""
+
+Escribe 4 preguntas WH en inglés sobre este texto, del tipo que haría un examinador en un speaking test oral.
+
+Reglas:
+- Las preguntas deben poder responderse con la información del texto.
+- Nivel A2, cortas y claras.
+- Cada respuesta modelo: mínimo 3 frases ENCADENADAS con conectores (and, but, because, so, also, first, then, after that, finally). Nunca frases sueltas.
+- Las respuestas van en primera persona, como las diría el estudiante.
+
+Responde SOLO con este JSON:
+{"wh":[{"q":"pregunta","a":"respuesta modelo"}]}` }],
+    });
+    const data = typeof out === 'string' ? JSON.parse(out) : out;
+    const wh = (data.wh || []).filter(x => x && x.q && x.a);
+    if (!wh.length) throw new Error('sin preguntas');
+    t.wh = wh;
+    save();
+    _txState.whOpen = true;
+    _txState.whShown = new Set();
+    renderTextReader();
+    toast(`🎤 ${wh.length} preguntas listas`);
+  } catch (e) {
+    toast(e.message === 'NO_KEY' ? 'Configura tu clave en Ajustes' : 'No se pudieron crear las preguntas');
+    if (btn) { btn.disabled = false; btn.textContent = '🎤 Crear preguntas de este texto'; }
+  }
+}
+
 /* ── Grabadora de frase ────────────────────────────────────────────
  * Pronunciation and fluency are the two criteria he can't self-check by
  * reading: the mistake sounds correct from the inside. Hearing the model and
