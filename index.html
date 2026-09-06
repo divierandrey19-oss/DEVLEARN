@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-05b -->
+<!-- DEVLEARN_BUILD: 2026-09-06a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4547,6 +4547,12 @@ const U7_WH_BACKFILL = [
           { q:'What did you do in the town?', a:'We visited the town and we walked in the market. We wanted to buy some gifts for my family. After that, we had lunch together, because we were really hungry.' },
           { q:'When did you get back?', a:'We came back on Sunday night, three months ago. The trip was pretty short, but I really liked it. Finally, we arrived home very late.' }
   ]],
+  ['txt_u7_p8283', [
+    { q:'When did you fly to Cartagena?', a:'I flew to Cartagena in February 2024. I went with my family, and it was a short trip. But we really enjoyed it, because the city was beautiful.' },
+          { q:'What happened before the flight?', a:'There was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, and we made it on time.' },
+          { q:'Did you have any problems on the flight?', a:'No, I didn\'t. The plane took off on time and it landed on time. It wasn\'t bumpy, and they didn\'t lose my luggage.' },
+          { q:'How was Cartagena?', a:'Cartagena was very hot, but the trip was great. We were all together, and that is the best part for me. Finally, I want to go back one day.' }
+  ]],
 ];
 
 const KEY = 'lingua_v4';
@@ -4786,7 +4792,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-05b';
+const APP_BUILD = '2026-09-06a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6112,8 +6118,14 @@ function migrateState(s) {
   // exam date above: only when this has never run before. The flag, not the
   // texts' presence, is what's checked, so deleting one later (on purpose,
   // from Mis textos like any other) is never undone by a future reload.
-  if (!merged._u7TextsSeeded) {
-    merged._u7TextsSeeded = true;
+  /* Version, not a boolean: the first seed shipped five texts and no
+   * questions, and there will be more later. A plain flag freezes whoever ran
+   * an earlier build out of everything added afterwards — which is exactly
+   * what happened with the questions. The number says how much has landed. */
+  const SEED_VERSION = 2;
+  if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
+    merged._u7SeedVersion = SEED_VERSION;
+    merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
     const already = new Set(merged.texts.map(t => t && t.id));
     const seed = [
       { id: 'txt_u7_p73', title: 'U7 · pág 73',
@@ -6161,6 +6173,15 @@ function migrateState(s) {
         ],
         body: "Three months ago, in 2026, I went to Melgar with my parents and my brothers. It was a mixture of good and bad experiences. First, the bus had mechanical problems, so we arrived two hours late, and that drove me crazy. But the hotel was very comfortable, and the pools were really nice, so we relaxed every day. Then we visited the town and we walked in the market, because we wanted to buy some gifts. After that, I stayed in the sun too long, so my back was really red and I didn't sleep well that night. But it wasn't the end of the world, because my family was there and we talked and laughed all afternoon. Finally, we came back on Sunday night, and I really liked the trip.",
         trans: "Hace tres meses, en 2026, fui a Melgar con mis papás y mis hermanos. Fue una mezcla de experiencias buenas y malas. Primero, el bus tuvo problemas mecánicos, así que llegamos dos horas tarde, y eso me volvió loco. Pero el hotel era muy cómodo, y las piscinas estaban muy bonitas, así que descansamos todos los días. Luego visitamos el pueblo y caminamos por el mercado, porque queríamos comprar unos regalos. Después, me quedé mucho tiempo al sol, así que mi espalda quedó muy roja y no dormí bien esa noche. Pero no fue el fin del mundo, porque mi familia estaba ahí y hablamos y nos reímos toda la tarde. Finalmente, volvimos el domingo en la noche, y el viaje me gustó mucho." },
+      { id: 'txt_u7_p8283', title: 'U7 · pág 82 - 83',
+        wh: [
+          { q:'When did you fly to Cartagena?', a:'I flew to Cartagena in February 2024. I went with my family, and it was a short trip. But we really enjoyed it, because the city was beautiful.' },
+          { q:'What happened before the flight?', a:'There was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, and we made it on time.' },
+          { q:'Did you have any problems on the flight?', a:'No, I didn\'t. The plane took off on time and it landed on time. It wasn\'t bumpy, and they didn\'t lose my luggage.' },
+          { q:'How was Cartagena?', a:'Cartagena was very hot, but the trip was great. We were all together, and that is the best part for me. Finally, I want to go back one day.' }
+        ],
+        body: "In February 2024, I flew to Cartagena with my family. First, we left home very early, but there was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, so I went through security and I got my boarding pass on time. After that, we ran to the departure lounge and an agent called our flight. Then the plane took off on time and it landed on time too. It wasn\'t bumpy, and they didn\'t lose my luggage, so we had no problems. Finally, Cartagena was very hot, but the trip was great, because we were all together.",
+        trans: "En febrero de 2024, volé a Cartagena con mi familia. Primero, salimos de la casa muy temprano, pero había mucho trancón en Bogotá, así que llegamos tarde al aeropuerto. Yo estaba muy nervioso, porque no quería perder el vuelo. Pero la fila fue rápida, así que pasé por seguridad y me dieron mi pasabordo a tiempo. Después, corrimos a la sala de embarque y un agente llamó nuestro vuelo. Luego el avión despegó a tiempo y aterrizó a tiempo también. No estuvo movido, y no perdieron mi maleta, así que no tuvimos problemas. Finalmente, Cartagena estaba muy caliente, pero el viaje estuvo muy bueno, porque estábamos todos juntos." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
