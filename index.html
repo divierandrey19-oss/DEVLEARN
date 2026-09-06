@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-03p -->
+<!-- DEVLEARN_BUILD: 2026-09-05b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4786,7 +4786,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-03p';
+const APP_BUILD = '2026-09-05b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7303,6 +7303,8 @@ function renderCourseTracker() {
         <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 MI CURSO · ${remaining.length} clases restantes</div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openBulkSchedule()" title="Programar todas">📆 Todas</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openBulkTime()" title="Cambiar la hora sin tocar los días">🕕</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="copyScheduleText()" title="Copiar el horario">📋</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openClearDates()" title="Borrar fechas">🗑</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲' : '▼'}</button>
         </div>
@@ -7629,6 +7631,91 @@ function applyBulkSchedule() {
   toast(`📆 ${pending.length} clases · terminas el ${end.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })}`);
 }
 
+/* Changing only the time, keeping every date. The bulk scheduler above can't
+ * do this: it only fills classes that have no date, so once dates are set by
+ * hand there was no way to correct the hour short of reopening each class. */
+function openBulkTime() {
+  document.getElementById('bulktime-overlay')?.remove();
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  const conFecha = COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id]);
+  if (!conFecha.length) { toast('No hay clases con fecha'); return; }
+
+  const ov = document.createElement('div');
+  ov.id = 'bulktime-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-2,#161b22);border:1px solid var(--border);border-radius:18px;max-width:380px;width:100%;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-weight:700;">🕕 Cambiar la hora</div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('bulktime-overlay').remove()">✕</button>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-3);margin-bottom:16px;line-height:1.45;">
+        Se cambia la hora de las <b>${conFecha.length}</b> clases pendientes que ya tienen fecha.
+        Los días no se tocan.
+      </div>
+      <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Nueva hora</label>
+      <input type="time" id="bulktime-value" value="06:00"
+        style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;margin-bottom:18px;">
+      <button class="btn btn-primary" style="width:100%;padding:11px;" onclick="applyBulkTime()">Aplicar a las ${conFecha.length}</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function applyBulkTime() {
+  const time = document.getElementById('bulktime-value')?.value;
+  if (!time) { toast('Escoge una hora'); return; }
+  const sched = state.classSchedule = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  let n = 0;
+  COURSE_SYLLABUS.forEach(c => {
+    if (done.has(c.id) || !sched[c.id]) return;   // sin fecha o ya vista: no se toca
+    sched[c.id + '_t'] = time;
+    n++;
+  });
+  save();
+  document.getElementById('bulktime-overlay')?.remove();
+  renderCourseTracker();
+  toast(`🕕 ${n} clases a las ${time}`);
+}
+
+/* Plain text on purpose: he wants to paste the schedule into a chat to plan
+ * around it, and a JSON file or a screenshot can't be read there. */
+function copyScheduleText() {
+  const sched = state.classSchedule || {};
+  const done = new Set(state.classesDone || []);
+  const clave = c => (sched[c.id] || '9999') + (sched[c.id + '_t'] || '');
+  const linea = c => {
+    if (!sched[c.id]) return `${c.id} · (sin fecha) · ${c.title}`;
+    const d = new Date(sched[c.id] + 'T00:00:00');
+    const dia = d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+    return `${c.id} · ${dia} ${sched[c.id + '_t'] || ''} · ${c.title}`;
+  };
+
+  const vistas = COURSE_SYLLABUS.filter(c => done.has(c.id)).sort((a, b) => clave(a).localeCompare(clave(b)));
+  const pend   = COURSE_SYLLABUS.filter(c => !done.has(c.id)).sort((a, b) => clave(a).localeCompare(clave(b)));
+  if (!vistas.length && !pend.length) { toast('No hay clases'); return; }
+
+  /* Both halves, clearly split: the pending list is what he plans around, the
+   * completed one is what he's already covered. Merging them into one list
+   * would make him work out which is which. */
+  let txt = `MI CURSO — ${vistas.length} vistas · ${pend.length} pendientes\n`;
+  if (pend.length)   txt += `\nPENDIENTES\n${pend.map(linea).join('\n')}\n`;
+  if (vistas.length) txt += `\nYA VISTAS\n${vistas.map(linea).join('\n')}\n`;
+
+  const caer = () => {
+    // Clipboard can be blocked; a file always works, and he can share it.
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+    a.download = `mis-clases-${todayLocal()}.txt`;
+    a.click();
+    toast('📄 Descargado');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => toast('📋 Copiado — pégalo en el chat')).catch(caer);
+  } else caer();
+}
+
 function scheduleClass(id) {
   const cls = COURSE_SYLLABUS.find(c => c.id === id);
   if (!cls) return;
@@ -7742,10 +7829,13 @@ function totalStudyMinutes() {
  */
 function currentActivity() {
   // The reader is an overlay: open means he is inside a text, not on the list.
-  // Which bucket depends on what he's actually doing in there — see
-  // toggleSpeakMode(). Same screen, two very different activities.
+  // Which bucket depends on what he's actually doing in there. The toggle is
+  // his declaration; an open microphone is proof — if either says speaking,
+  // it's speaking.
   if (document.getElementById('tx-body')) {
-    return (_txState && _txState.speakMode) ? '🗣️ Hablando' : '📝 Mis textos';
+    const grabando = (_rec.mr && _rec.mr.state === 'recording')
+                  || (_long.mr && _long.mr.state === 'recording');
+    return (grabando || (_txState && _txState.speakMode)) ? '🗣️ Hablando' : '📝 Mis textos';
   }
 
   const dentro = (sel) => !!document.querySelector(sel);
