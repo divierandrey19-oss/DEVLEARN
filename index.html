@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-07a -->
+<!-- DEVLEARN_BUILD: 2026-09-07b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4804,7 +4804,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-07a';
+const APP_BUILD = '2026-09-07b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -19337,7 +19337,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const flushState = () => {
     saveNow();
     if (exam && exam.timer) ExamSession.save(); // capture the paused exam clock
-    if (window._syncToFirestore) window._syncToFirestore();
+    // Immediate on purpose: the tab may not live long enough for a timer.
+    if (window._syncToFirestoreNow) window._syncToFirestoreNow();
   };
 
   window.addEventListener('pagehide', (e) => {
@@ -19409,7 +19410,10 @@ function cloudMillis(data) {
 
 
 
-window._syncToFirestore = async function() {
+/* The real push. Everything calls the debounced wrapper below instead — this
+ * one runs immediately and is reserved for the moments where waiting would
+ * mean losing the change (leaving the page, the manual button). */
+window._syncToFirestoreNow = async function() {
   if (!window._fb._user || !window._fb.db || _isSyncing) return;
   // A load that couldn't be read must not reach the cloud either. writeState()
   // already refuses in this case, but this path never goes through it — and
@@ -19472,6 +19476,20 @@ window._syncToFirestore = async function() {
 
 let _unsubscribeListener = null;
 
+/* Pushing on every page change meant serializing, gzipping and uploading the
+ * whole state — over a megabyte — on each tap, which is what made navigation
+ * drag. Waiting a few seconds collapses a burst of taps into one upload. The
+ * data still leaves as soon as he pauses, and flushState() below bypasses this
+ * entirely, so closing the tab never loses the last change. */
+let _syncPending = null;
+window._syncToFirestore = function() {
+  clearTimeout(_syncPending);
+  _syncPending = setTimeout(() => {
+    _syncPending = null;
+    window._syncToFirestoreNow && window._syncToFirestoreNow();
+  }, 4000);
+};
+
 window._loadFromFirestore = function(forceLoad) {
   if (!window._fb._user) return;
 
@@ -19485,7 +19503,8 @@ window._loadFromFirestore = function(forceLoad) {
   window._fb.getDoc(userDoc).then(async function(snap) {
     if (!snap.exists()) {
       // No cloud data — push local
-      if (window._syncToFirestore) window._syncToFirestore();
+      // Immediate: the status flips to 'synced' on the next line.
+      if (window._syncToFirestoreNow) window._syncToFirestoreNow();
       window._updateSyncStatus && window._updateSyncStatus('synced');
       return;
     }
@@ -19507,10 +19526,11 @@ window._loadFromFirestore = function(forceLoad) {
       window._mergeCloudState && window._mergeCloudState(cloud);
       window._setCloudSeen && window._setCloudSeen(cloudMs);
       // Push the merged result so the cloud also gets what only we had.
-      if (window._syncToFirestore) window._syncToFirestore();
+      // Immediate, like the others in this block: 'synced' is set below.
+      if (window._syncToFirestoreNow) window._syncToFirestoreNow();
     } else {
       // Nothing new up there — just make sure our changes are up.
-      if (window._syncToFirestore) window._syncToFirestore();
+      if (window._syncToFirestoreNow) window._syncToFirestoreNow();
     }
     window._updateSyncStatus && window._updateSyncStatus('synced');
   }).catch(function(e) {
@@ -19549,7 +19569,8 @@ window._signInGoogle = async function() {
 window._handleSyncBtn = function() {
   if (window._fb && window._fb._user) {
     // Already signed in — just push local data to cloud
-    window._syncToFirestore && window._syncToFirestore();
+    // Immediate: the toast below tells him it's done, so it has to be done.
+    window._syncToFirestoreNow && window._syncToFirestoreNow();
     toast('☁️ Datos enviados a la nube');
   } else {
     window._signInGoogle && window._signInGoogle();
