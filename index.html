@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-07b -->
+<!-- DEVLEARN_BUILD: 2026-09-07c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -275,7 +275,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   transform: translate(var(--mx), var(--my));
 }
 .ambient::before, .ambient::after {
-  content: ''; position: absolute; border-radius: 50%; filter: blur(140px);
+  content: ''; position: absolute; border-radius: 50%; filter: blur(60px);
   will-change: transform;
 }.ambient::before {
   width: 600px; height: 600px;
@@ -293,7 +293,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   position: absolute;
   width: 400px; height: 400px;
   background: radial-gradient(circle, var(--teal-bg), transparent 70%);
-  filter: blur(120px);
+  filter: blur(60px);
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   animation: floatC 30s var(--ease) infinite;
@@ -2443,7 +2443,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   content: '';
   position: absolute;
   border-radius: 50%;
-  filter: blur(160px);
+  filter: blur(60px);
   pointer-events: none;
   z-index: 0;
   will-change: transform, opacity;
@@ -4804,7 +4804,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-07b';
+const APP_BUILD = '2026-09-07c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -18239,19 +18239,13 @@ function attachParallax() {
     return;
   }
 
-  let raf = null;
-  let mx = 0, my = 0;
-  document.addEventListener('mousemove', (e) => {
-    mx = (e.clientX / window.innerWidth - 0.5) * 30;
-    my = (e.clientY / window.innerHeight - 0.5) * 30;
-    if (!raf) {
-      raf = requestAnimationFrame(() => {
-        raf = null;
-        ambient.style.setProperty('--mx', mx.toFixed(1) + 'px');
-        ambient.style.setProperty('--my', my.toFixed(1) + 'px');
-      });
-    }
-  });
+  /* Parallax removed. It repainted three blurred orbs — 600, 500 and 400px
+   * wide — on every mouse move, which made hover and clicks feel delayed on
+   * integrated graphics. The orbs keep their own slow animation, so the effect
+   * is still there; it just stopped reacting to the cursor. Mobile never ran
+   * this at all, which is why only the computer felt heavy. */
+  ambient.style.transform = 'none';
+  ambient.style.willChange = 'auto';
 }
 
 function toast(msg) {
