@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-06a -->
+<!-- DEVLEARN_BUILD: 2026-09-07a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4553,6 +4553,18 @@ const U7_WH_BACKFILL = [
           { q:'Did you have any problems on the flight?', a:'No, I didn\'t. The plane took off on time and it landed on time. It wasn\'t bumpy, and they didn\'t lose my luggage.' },
           { q:'How was Cartagena?', a:'Cartagena was very hot, but the trip was great. We were all together, and that is the best part for me. Finally, I want to go back one day.' }
   ]],
+  ['txt_u8_p85', [
+    { q:'Where do you usually buy your clothes?', a:'That depends. Sometimes I go to a department store at the mall, but it\'s expensive, so I don\'t go very often. Other times I buy online, and I also buy in small shops near my house.' },
+    { q:'Why do you like small shops?', a:'I like small shops because they are cheaper. I also know the people there, so it\'s more comfortable for me. For example, I bought a shirt there for my trip to Melgar.' },
+    { q:'What is the problem with buying online?', a:'Sometimes the size is wrong, and then I have to send it back. But it is easy, because I can compare many shops on my phone. So I still buy online, but not every time.' },
+    { q:'Do you go to the mall often?', a:'No, I don\'t. The clothes are too expensive at the mall, so I don\'t go very often. But I like to try them on before I pay, and that\'s the good part.' }
+  ]],
+  ['txt_u8_p8687', [
+    { q:'What do you usually wear at home?', a:'I usually wear sweatpants and a T-shirt at home and in my shop. They are comfortable, and I move a lot at work. But I don\'t wear them to a party, so I put on a shirt and jeans.' },
+    { q:'What is important to you when you shop for clothes?', a:'All three are important to me. First, the price, because I don\'t want to spend a lot of money. Then the selection and the service, since I like to compare before I decide.' },
+    { q:'Why is service important to you?', a:'Service is important because I have a shop too. I know that good service brings people back, so I look for it. For example, I always go back to the small shops near my house.' },
+    { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cool, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
+  ]],
 ];
 
 const KEY = 'lingua_v4';
@@ -4792,7 +4804,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-06a';
+const APP_BUILD = '2026-09-07a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6122,7 +6134,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 2;
+  const SEED_VERSION = 3;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6182,6 +6194,24 @@ function migrateState(s) {
         ],
         body: "In February 2024, I flew to Cartagena with my family. First, we left home very early, but there was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, so I went through security and I got my boarding pass on time. After that, we ran to the departure lounge and an agent called our flight. Then the plane took off on time and it landed on time too. It wasn\'t bumpy, and they didn\'t lose my luggage, so we had no problems. Finally, Cartagena was very hot, but the trip was great, because we were all together.",
         trans: "En febrero de 2024, volé a Cartagena con mi familia. Primero, salimos de la casa muy temprano, pero había mucho trancón en Bogotá, así que llegamos tarde al aeropuerto. Yo estaba muy nervioso, porque no quería perder el vuelo. Pero la fila fue rápida, así que pasé por seguridad y me dieron mi pasabordo a tiempo. Después, corrimos a la sala de embarque y un agente llamó nuestro vuelo. Luego el avión despegó a tiempo y aterrizó a tiempo también. No estuvo movido, y no perdieron mi maleta, así que no tuvimos problemas. Finalmente, Cartagena estaba muy caliente, pero el viaje estuvo muy bueno, porque estábamos todos juntos." },
+      { id: 'txt_u8_p85', title: 'U8 · pág 85',
+        wh: [
+          { q:'Where do you usually buy your clothes?', a:'That depends. Sometimes I go to a department store at the mall, but it\'s expensive, so I don\'t go very often. Other times I buy online, and I also buy in small shops near my house.' },
+          { q:'Why do you like small shops?', a:'I like small shops because they are cheaper. I also know the people there, so it\'s more comfortable for me. For example, I bought a shirt there for my trip to Melgar.' },
+          { q:'What is the problem with buying online?', a:'Sometimes the size is wrong, and then I have to send it back. But it is easy, because I can compare many shops on my phone. So I still buy online, but not every time.' },
+          { q:'Do you go to the mall often?', a:'No, I don\'t. The clothes are too expensive at the mall, so I don\'t go very often. But I like to try them on before I pay, and that\'s the good part.' }
+        ],
+        body: "That depends. Sometimes I buy my clothes in a department store at the mall, because I like to try them on before I pay. But they're too expensive at the mall, so I don't go very often. Other times I buy online, and that is easy because I can compare many shops on my phone. But sometimes the size is wrong, and then I have to send it back. I also buy in small shops near my house, because they are cheaper and I know the people there. For example, I bought a shirt in a small shop for my trip to Melgar. Finally, it depends on the money and the time, but I usually prefer the small shops.",
+        trans: "Eso depende. A veces compro mi ropa en un almacén por departamentos en el centro comercial, porque me gusta medírmela antes de pagar. Pero es muy cara en el centro comercial, así que no voy muy seguido. Otras veces compro por internet, y eso es fácil porque puedo comparar muchas tiendas en mi celular. Pero a veces la talla no queda, y entonces me toca devolverla. También compro en tiendas pequeñas cerca de mi casa, porque son más baratas y conozco a la gente de ahí. Por ejemplo, compré una camisa en una tienda pequeña para mi viaje a Melgar. Finalmente, depende de la plata y del tiempo, pero normalmente prefiero las tiendas pequeñas." },
+      { id: 'txt_u8_p8687', title: 'U8 · pág 86 - 87',
+        wh: [
+          { q:'What do you usually wear at home?', a:'I usually wear sweatpants and a T-shirt at home and in my shop. They are comfortable, and I move a lot at work. But I don\'t wear them to a party, so I put on a shirt and jeans.' },
+          { q:'What is important to you when you shop for clothes?', a:'All three are important to me. First, the price, because I don\'t want to spend a lot of money. Then the selection and the service, since I like to compare before I decide.' },
+          { q:'Why is service important to you?', a:'Service is important because I have a shop too. I know that good service brings people back, so I look for it. For example, I always go back to the small shops near my house.' },
+          { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cool, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
+        ],
+        body: "At home and in my shop I usually wear sweatpants and a T-shirt, because they are comfortable and I move a lot at work. But for a party at a friend's home I don't wear them, so I put on a shirt and jeans. In Bogotá the weather is cool, so I also wear a sweater over my shirt almost every day. For example, I take a light coat when it rains in the morning. When I shop for clothes, three things are important to me. First, the price, because I don't want to spend a lot of money. Then the selection, since I like to compare many things before I decide. Finally, the service, because I have a shop too and I know that good service brings people back. So my favorite store is the one with the lowest prices, the biggest selection and the best service.",
+        trans: "En la casa y en mi local normalmente uso sudadera y camiseta, porque son cómodas y me muevo mucho trabajando. Pero para una fiesta en casa de un amigo no las uso, así que me pongo una camisa y jean. En Bogotá el clima es fresco, así que también uso un saco sobre la camisa casi todos los días. Por ejemplo, llevo una chaqueta liviana cuando llueve en la mañana. Cuando compro ropa, tres cosas me importan. Primero, el precio, porque no quiero gastar mucha plata. Luego la variedad, ya que me gusta comparar muchas cosas antes de decidir. Finalmente, la atención, porque yo también tengo un negocio y sé que la buena atención hace que la gente vuelva. Así que mi tienda favorita es la que tiene los precios más bajos, la mayor variedad y la mejor atención." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
