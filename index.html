@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-07c -->
+<!-- DEVLEARN_BUILD: 2026-09-07d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4563,7 +4563,13 @@ const U7_WH_BACKFILL = [
     { q:'What do you usually wear at home?', a:'I usually wear sweatpants and a T-shirt at home and in my shop. They are comfortable, and I move a lot at work. But I don\'t wear them to a party, so I put on a shirt and jeans.' },
     { q:'What is important to you when you shop for clothes?', a:'All three are important to me. First, the price, because I don\'t want to spend a lot of money. Then the selection and the service, since I like to compare before I decide.' },
     { q:'Why is service important to you?', a:'Service is important because I have a shop too. I know that good service brings people back, so I look for it. For example, I always go back to the small shops near my house.' },
-    { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cool, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
+    { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cold, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
+  ]],
+  ['txt_u8_p8889', [
+    { q:'What are your favorite clothes?', a:'My favorite clothes are running shoes and T-shirts. I like them because they are very comfortable, and I usually wear them in my shop. But I don\'t wear them to a party.' },
+    { q:'Who gave you your favorite sweater?', a:'My mother gave it to me last year. It\'s a crewneck, and I wear it when I open the shop in the morning. I like it because it\'s very cold at that hour in Bogotá.' },
+    { q:'What did you buy for your mother?', a:'I bought a nice purse for her last December. I saw it in a small shop near my house, and it was on sale, so I took it. She liked it a lot, and she still uses it.' },
+    { q:'What do you wear to a party?', a:'I don\'t wear running shoes to a party. I put on a polo shirt and jeans, because they look better. But at home and in my shop I always wear something comfortable.' }
   ]],
 ];
 
@@ -4804,7 +4810,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-07c';
+const APP_BUILD = '2026-09-07d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6119,6 +6125,21 @@ function migrateState(s) {
     merged.studyDates = Array.from(set).sort();
     merged.lastStudyDate = merged.studyDates[merged.studyDates.length - 1];
   }
+
+  /* El texto 86-87 se sembró con "cool" y "fresco"; él corrigió que en Bogotá
+   * el clima es frío. Se arregla en su sitio, solo si sigue con la palabra
+   * vieja — si lo editó él, no se toca. */
+  if (!merged._u8ColdFix) {
+    merged._u8ColdFix = true;
+    const t = merged.texts.find(x => x && x.id === 'txt_u8_p8687');
+    if (t) {
+      if (t.body)  t.body  = t.body.replace('the weather is cool', 'the weather is cold');
+      if (t.trans) t.trans = t.trans.replace('el clima es fresco', 'el clima es frío');
+      (t.wh || []).forEach(w => {
+        if (w.a) w.a = w.a.replace('in Bogotá is cool', 'in Bogotá is cold');
+      });
+    }
+  }
   merged.streak = computeStreak(merged.studyDates);
   // Seed the known exam once. `examDate === undefined` means the field has never
   // existed; null means the user cleared it on purpose — never re-seed that.
@@ -6134,7 +6155,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 3;
+  const SEED_VERSION = 4;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6208,10 +6229,19 @@ function migrateState(s) {
           { q:'What do you usually wear at home?', a:'I usually wear sweatpants and a T-shirt at home and in my shop. They are comfortable, and I move a lot at work. But I don\'t wear them to a party, so I put on a shirt and jeans.' },
           { q:'What is important to you when you shop for clothes?', a:'All three are important to me. First, the price, because I don\'t want to spend a lot of money. Then the selection and the service, since I like to compare before I decide.' },
           { q:'Why is service important to you?', a:'Service is important because I have a shop too. I know that good service brings people back, so I look for it. For example, I always go back to the small shops near my house.' },
-          { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cool, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
+          { q:'What do you wear when it\'s cool in Bogotá?', a:'The weather in Bogotá is cold, so I wear a sweater over my shirt almost every day. I also take a light coat when it rains in the morning. But I don\'t need a heavy jacket, because it isn\'t very cold.' }
         ],
-        body: "At home and in my shop I usually wear sweatpants and a T-shirt, because they are comfortable and I move a lot at work. But for a party at a friend's home I don't wear them, so I put on a shirt and jeans. In Bogotá the weather is cool, so I also wear a sweater over my shirt almost every day. For example, I take a light coat when it rains in the morning. When I shop for clothes, three things are important to me. First, the price, because I don't want to spend a lot of money. Then the selection, since I like to compare many things before I decide. Finally, the service, because I have a shop too and I know that good service brings people back. So my favorite store is the one with the lowest prices, the biggest selection and the best service.",
-        trans: "En la casa y en mi local normalmente uso sudadera y camiseta, porque son cómodas y me muevo mucho trabajando. Pero para una fiesta en casa de un amigo no las uso, así que me pongo una camisa y jean. En Bogotá el clima es fresco, así que también uso un saco sobre la camisa casi todos los días. Por ejemplo, llevo una chaqueta liviana cuando llueve en la mañana. Cuando compro ropa, tres cosas me importan. Primero, el precio, porque no quiero gastar mucha plata. Luego la variedad, ya que me gusta comparar muchas cosas antes de decidir. Finalmente, la atención, porque yo también tengo un negocio y sé que la buena atención hace que la gente vuelva. Así que mi tienda favorita es la que tiene los precios más bajos, la mayor variedad y la mejor atención." },
+        body: "At home and in my shop I usually wear sweatpants and a T-shirt, because they are comfortable and I move a lot at work. But for a party at a friend's home I don't wear them, so I put on a shirt and jeans. In Bogotá the weather is cold, so I also wear a sweater over my shirt almost every day. For example, I take a light coat when it rains in the morning. When I shop for clothes, three things are important to me. First, the price, because I don't want to spend a lot of money. Then the selection, since I like to compare many things before I decide. Finally, the service, because I have a shop too and I know that good service brings people back. So my favorite store is the one with the lowest prices, the biggest selection and the best service.",
+        trans: "En la casa y en mi local normalmente uso sudadera y camiseta, porque son cómodas y me muevo mucho trabajando. Pero para una fiesta en casa de un amigo no las uso, así que me pongo una camisa y jean. En Bogotá el clima es frío, así que también uso un saco sobre la camisa casi todos los días. Por ejemplo, llevo una chaqueta liviana cuando llueve en la mañana. Cuando compro ropa, tres cosas me importan. Primero, el precio, porque no quiero gastar mucha plata. Luego la variedad, ya que me gusta comparar muchas cosas antes de decidir. Finalmente, la atención, porque yo también tengo un negocio y sé que la buena atención hace que la gente vuelva. Así que mi tienda favorita es la que tiene los precios más bajos, la mayor variedad y la mejor atención." },
+      { id: 'txt_u8_p8889', title: 'U8 · pág 88 - 89',
+        wh: [
+          { q:'What are your favorite clothes?', a:'My favorite clothes are running shoes and T-shirts. I like them because they are very comfortable, and I usually wear them in my shop. But I don\'t wear them to a party.' },
+          { q:'Who gave you your favorite sweater?', a:'My mother gave it to me last year. It\'s a crewneck, and I wear it when I open the shop in the morning. I like it because it\'s very cold at that hour in Bogotá.' },
+          { q:'What did you buy for your mother?', a:'I bought a nice purse for her last December. I saw it in a small shop near my house, and it was on sale, so I took it. She liked it a lot, and she still uses it.' },
+          { q:'What do you wear to a party?', a:'I don\'t wear running shoes to a party. I put on a polo shirt and jeans, because they look better. But at home and in my shop I always wear something comfortable.' }
+        ],
+        body: "My favorite clothes are running shoes and T-shirts. I like them because they are very comfortable, and I usually wear them in my shop. But I don't wear them to a party, so for a party I put on a polo shirt and jeans. In Bogotá the weather is cold, so I also need a sweater. My favorite one is a crewneck, and my mother gave it to me last year. For example, I wear it when I open the shop in the morning, because it's very cold at that hour. Then last December I bought a nice purse for my mother. I saw it in a small shop near my house, and it was on sale, so I took it. She liked it a lot, and she still uses it. Finally, I don't buy many clothes, but when I buy them I want good prices and good service.",
+        trans: "Mi ropa favorita son los tenis y las camisetas. Me gustan porque son muy cómodos, y normalmente los uso en mi local. Pero no me los pongo para una fiesta, así que para una fiesta me pongo un polo y jean. En Bogotá el clima es frío, así que también necesito un saco. Mi favorito es uno de cuello redondo, y mi mamá me lo regaló el año pasado. Por ejemplo, me lo pongo cuando abro el local en la mañana, porque hace mucho frío a esa hora. Luego, en diciembre pasado le compré un bolso bonito a mi mamá. Lo vi en una tienda pequeña cerca de mi casa, y estaba en promoción, así que lo llevé. A ella le gustó mucho, y todavía lo usa. Finalmente, no compro mucha ropa, pero cuando la compro quiero buenos precios y buena atención." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
