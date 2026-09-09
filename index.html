@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-07d -->
+<!-- DEVLEARN_BUILD: 2026-09-08a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4571,6 +4571,12 @@ const U7_WH_BACKFILL = [
     { q:'What did you buy for your mother?', a:'I bought a nice purse for her last December. I saw it in a small shop near my house, and it was on sale, so I took it. She liked it a lot, and she still uses it.' },
     { q:'What do you wear to a party?', a:'I don\'t wear running shoes to a party. I put on a polo shirt and jeans, because they look better. But at home and in my shop I always wear something comfortable.' }
   ]],
+  ['txt_u8_p9091', [
+    { q:'Where\'s the best place to buy clothes in your city?', a:'That depends. What are you looking for? For cheap clothes, the small shops near my house have the lowest prices. But the mall has the newest clothes, so it depends on your money.' },
+    { q:'Why don\'t you always go to the small shops?', a:'They don\'t have the biggest selection, so sometimes I can\'t find my size. The mall has more clothes, but it\'s the most expensive place. So I go to the small shops first, and then the mall.' },
+    { q:'What do you think about shopping online?', a:'It\'s the easiest way, since you can compare many shops on your phone. But it\'s the worst option when you need something fast. So I only buy online when I have time.' },
+    { q:'Which store do you recommend?', a:'I recommend the small shop near my house. It has good prices, and the people there are the friendliest. That\'s why I always go back.' }
+  ]],
 ];
 
 const KEY = 'lingua_v4';
@@ -4810,7 +4816,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-07d';
+const APP_BUILD = '2026-09-08a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6155,7 +6161,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 4;
+  const SEED_VERSION = 5;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6242,6 +6248,15 @@ function migrateState(s) {
         ],
         body: "My favorite clothes are running shoes and T-shirts. I like them because they are very comfortable, and I usually wear them in my shop. But I don't wear them to a party, so for a party I put on a polo shirt and jeans. In Bogotá the weather is cold, so I also need a sweater. My favorite one is a crewneck, and my mother gave it to me last year. For example, I wear it when I open the shop in the morning, because it's very cold at that hour. Then last December I bought a nice purse for my mother. I saw it in a small shop near my house, and it was on sale, so I took it. She liked it a lot, and she still uses it. Finally, I don't buy many clothes, but when I buy them I want good prices and good service.",
         trans: "Mi ropa favorita son los tenis y las camisetas. Me gustan porque son muy cómodos, y normalmente los uso en mi local. Pero no me los pongo para una fiesta, así que para una fiesta me pongo un polo y jean. En Bogotá el clima es frío, así que también necesito un saco. Mi favorito es uno de cuello redondo, y mi mamá me lo regaló el año pasado. Por ejemplo, me lo pongo cuando abro el local en la mañana, porque hace mucho frío a esa hora. Luego, en diciembre pasado le compré un bolso bonito a mi mamá. Lo vi en una tienda pequeña cerca de mi casa, y estaba en promoción, así que lo llevé. A ella le gustó mucho, y todavía lo usa. Finalmente, no compro mucha ropa, pero cuando la compro quiero buenos precios y buena atención." },
+      { id: 'txt_u8_p9091', title: 'U8 · pág 90 - 91',
+        wh: [
+          { q:'Where\'s the best place to buy clothes in your city?', a:'That depends. What are you looking for? For cheap clothes, the small shops near my house have the lowest prices. But the mall has the newest clothes, so it depends on your money.' },
+          { q:'Why don\'t you always go to the small shops?', a:'They don\'t have the biggest selection, so sometimes I can\'t find my size. The mall has more clothes, but it\'s the most expensive place. So I go to the small shops first, and then the mall.' },
+          { q:'What do you think about shopping online?', a:'It\'s the easiest way, since you can compare many shops on your phone. But it\'s the worst option when you need something fast. So I only buy online when I have time.' },
+          { q:'Which store do you recommend?', a:'I recommend the small shop near my house. It has good prices, and the people there are the friendliest. That\'s why I always go back.' }
+        ],
+        body: "When a friend asks me where to buy clothes, I always say: that depends. First, what are you looking for? Because the answer is different for shoes and for a jacket. For example, if you want cheap clothes, the small shops near my house have the lowest prices in my neighborhood. But they don't have the biggest selection, so sometimes you can't find your size. Then there is the mall. It has the newest clothes and the most comfortable stores, but it's the most expensive place too. After that, I always talk about online shopping. It's the easiest way, since you can compare many shops on your phone. But for me it's the worst option when you need something fast. Finally, the best place is the small shop near my house, because it has good prices and the friendliest people.",
+        trans: "Cuando un amigo me pregunta dónde comprar ropa, siempre digo: eso depende. Primero, ¿qué estás buscando? Porque la respuesta es distinta para zapatos y para una chaqueta. Por ejemplo, si quieres ropa barata, las tiendas pequeñas cerca de mi casa tienen los precios más bajos de mi barrio. Pero no tienen la mayor variedad, así que a veces no encuentras tu talla. Luego está el centro comercial. Tiene la ropa más nueva y las tiendas más cómodas, pero también es el lugar más caro. Después, siempre hablo de comprar por internet. Es la forma más fácil, ya que puedes comparar muchas tiendas en el celular. Pero para mí es la peor opción cuando necesitas algo rápido. Finalmente, el mejor lugar es la tienda pequeña cerca de mi casa, porque tiene buenos precios y la gente más amable." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
