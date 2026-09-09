@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-08a -->
+<!-- DEVLEARN_BUILD: 2026-09-08b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4816,7 +4816,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-08a';
+const APP_BUILD = '2026-09-08b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -9381,6 +9381,70 @@ const QuizSession = {
 };
 
 /* ============================================================
+   STUDY SESSION — lo mismo que QuizSession, para Classic, Write,
+   Sentence y Listen.
+   Hasta ahora solo Quiz recordaba dónde ibas: los demás modos
+   armaban la baraja de cero en cada entrada. Con 89 palabras eso
+   significa volver a ver las primeras aunque ya las hubieras hecho,
+   y es la razón por la que dejó de estudiarlas. El progreso SRS
+   nunca se perdió — lo que faltaba era el sitio en la fila.
+   ============================================================ */
+const STUDY_SESSION_KEY = 'devlearn_study_session';
+
+const StudySession = {
+  save(session) {
+    try { localStorage.setItem(STUDY_SESSION_KEY, JSON.stringify(session)); } catch(e) {}
+  },
+  load() {
+    try {
+      const s = localStorage.getItem(STUDY_SESSION_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch(e) { return null; }
+  },
+  clear() {
+    try { localStorage.removeItem(STUDY_SESSION_KEY); } catch(e) {}
+  },
+
+  /* La cola guarda índices del vocabulario. Si subió páginas nuevas, esos
+   * índices ya no apuntan a lo mismo, así que la sesión se descarta: mejor
+   * empezar de nuevo que mostrarle la palabra equivocada. */
+  getActive(lid, uid, mode, vocabLen) {
+    const s = this.load();
+    if (!s) return null;
+    if (s.lid !== lid || s.uid !== uid) return null;
+    if (s.mode !== mode) return null;              // cada modo tiene su fila
+    if (s.completedAt) return null;
+    if (!s.queue || !s.queue.length) return null;
+    if (s.position >= s.queue.length) return null;
+    if (vocabLen != null && s.vocabLen !== vocabLen) return null;
+    return s;
+  },
+
+  start(lid, uid, mode, queue, vocabLen) {
+    const session = { lid, uid, mode, queue: [...queue], position: 0,
+                      vocabLen, startedAt: Date.now(), completedAt: null, version: 1 };
+    this.save(session);
+    return session;
+  },
+
+  advance(session) {
+    if (!session) return;
+    session.position++;
+    this.save(session);
+  },
+
+  complete(session) {
+    if (!session) return;
+    session.completedAt = Date.now();
+    this.save(session);
+  },
+
+  remaining(session) {
+    return session ? Math.max(0, session.queue.length - session.position) : 0;
+  },
+};
+
+/* ============================================================
    EXAM SESSION — survives backgrounding, reload and app close.
    An exam costs an API call and ~25 minutes, so losing it to a
    phone call is unacceptable. Mirrors QuizSession deliberately.
@@ -12429,6 +12493,9 @@ function nextFc() {
       fc.quizSession.position = Object.keys(fc.quizSession.results).length;
       QuizSession.save(fc.quizSession);
     }
+  } else if (fc.studySession) {
+    // Same idea for Classic / Write / Sentence / Listen.
+    StudySession.advance(fc.studySession);
   }
 
   fc.queue.shift();
@@ -17070,6 +17137,9 @@ function openFcStudy(lid, uid, newOnly = false) {
   </div>`;
 
   // Quiz session info block — shown when active session exists
+  const activeStudy = activeQuiz ? null
+    : StudySession.getActive(lid, uid, fc.mode || 'classic', vocab.length);
+
   const quizSessionBlock = activeQuiz ? `
     <div style="background:var(--surface-2);border:1px solid var(--accent);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;text-align:left;">
       <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:6px;">⚡ Quiz session in progress</div>
@@ -17081,6 +17151,18 @@ function openFcStudy(lid, uid, newOnly = false) {
     </button>
     <button class="btn btn-ghost btn-sm" onclick="startFcSession(false)" style="margin-bottom:4px;">
       Start new session
+    </button>
+  ` : activeStudy ? `
+    <div style="background:var(--surface-2);border:1px solid var(--green);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;text-align:left;">
+      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:6px;">🃏 Sesión sin terminar</div>
+      <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:2px;">Vas en la ${activeStudy.position + 1} de ${activeStudy.queue.length} — te faltan ${StudySession.remaining(activeStudy)}</div>
+      <div style="font-size:0.72rem;color:var(--text-3);">Empezaste a las ${new Date(activeStudy.startedAt).toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+    <button class="btn btn-primary btn-lg" style="background:var(--green);min-width:200px;margin-bottom:8px;" onclick="startFcSession(true)">
+      Seguir donde iba →
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="startFcSession(false)" style="margin-bottom:4px;">
+      Empezar de nuevo
     </button>
   ` : `
     <button class="btn btn-primary btn-lg" style="background:${lvlColor};min-width:160px;" onclick="startFcSession()">
@@ -17182,10 +17264,27 @@ function startFcSession(continueExisting = false) {
     // If there are due cards, only show those (Memory Review mode)
     // If newOnly, show only the first 5 unseen words (Learn new words mode)
     fc.quizSession = null;
-    fc.queue = buildFcQueue(fc.unitLid, fc.unitUid, fc.hasDue === true, fc.newOnly === true);
-    fc.idx   = fc.queue[0];
+    const vocabLen = (fc.vocab || []).length;
+    const saved = continueExisting
+      ? StudySession.getActive(fc.unitLid, fc.unitUid, fc.mode, vocabLen)
+      : null;
+    if (saved) {
+      // Pick up exactly where he stopped, same order.
+      fc.studySession = saved;
+      fc.queue        = saved.queue.slice(saved.position);
+      fc.idx          = fc.queue[0];
+      fc.sessionSeen  = saved.position;
+      const pct = saved.queue.length ? (saved.position / saved.queue.length) * 100 : 0;
+      const fill = document.getElementById('fc-deck-fill');
+      if (fill) fill.style.width = pct + '%';
+    } else {
+      StudySession.clear();
+      fc.queue = buildFcQueue(fc.unitLid, fc.unitUid, fc.hasDue === true, fc.newOnly === true);
+      fc.idx   = fc.queue[0];
+      fc.studySession = StudySession.start(fc.unitLid, fc.unitUid, fc.mode, fc.queue, vocabLen);
+      fc.sessionSeen  = 0;
+    }
     fc.sessionCorrect    = 0;
-    fc.sessionSeen       = 0;
     fc.sessionAppearances = {};
   }
 
@@ -17251,6 +17350,9 @@ function updateFcProgress() {
 function showFcResult() {
   // Sync to Firebase at natural pause point
   if (window._syncToFirestore) window._syncToFirestore();
+  // Deck finished: the session is done, so the next visit builds a fresh one
+  // instead of offering to resume something already completed.
+  if (fc.studySession) { StudySession.complete(fc.studySession); fc.studySession = null; }
   // ── Quiz session completion ─────────────────────────────────
   if (fc.quizSession && fc.mode === 'quiz') {
     QuizSession.complete(fc.quizSession);
