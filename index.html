@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-09b -->
+<!-- DEVLEARN_BUILD: 2026-09-10a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4822,7 +4822,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-09b';
+const APP_BUILD = '2026-09-10a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6153,18 +6153,27 @@ function migrateState(s) {
     }
   }
 
-  /* El texto 92-93 pasó por varias versiones en el chat antes de quedar en
-   * la definitiva (edificio + cómo llegar, sin hablar de lo que vende la
-   * tienda por dentro). Se reemplaza una sola vez, y solo si sigue siendo
-   * alguna de las versiones anteriores — si él ya lo reescribió a su manera,
-   * no se toca. */
-  if (!merged._u8ShopTextFixed) {
-    merged._u8ShopTextFixed = true;
+  /* El texto 92-93 pasó por muchos borradores en el chat antes de quedar en
+   * la versión final (edificio + cómo llegar, sin hablar de lo que vende la
+   * tienda por dentro). El primer intento de corregirlo buscaba solo 3 de
+   * esos borradores — pero hubo más de diez, y justo el que de verdad
+   * quedó guardado no estaba en esa lista, así que nunca se reemplazó.
+   * Van los 9, tomados palabra por palabra de cada versión que se le
+   * mostró en el chat. Bandera nueva (_v2) porque la vieja ya quedó
+   * marcada como hecha sin haber hecho nada. */
+  if (!merged._u8ShopTextFixedV2) {
+    merged._u8ShopTextFixedV2 = true;
     const t = merged.texts.find(x => x && x.id === 'txt_u8_p9293');
     const versionesViejas = [
+      'Last month I went to Gran Plaza Bosa',
+      'Last month I went to Titán Plaza to buy some clothes',
+      'I go to Titán Plaza every day, because my shop is very close to it',
+      "Last week I went to Titán Plaza. I don't know that mall",
       'I work in a clothing shop',
-      "My pet shop is a small pet shop",
+      'I work in a small pet shop with my brother',
+      'My pet shop is a small pet shop',
       'My shop is a small pet shop',
+      'My pet shop is inside a mall, on the second floor',
     ];
     if (t && versionesViejas.some(v => (t.body || '').includes(v))) {
       t.body  = `My pet shop is inside the mall, on the second floor, and it's a big shop, with a lot of space. When you walk in the main entrance, you'll see a coffee shop in the front, on the ground floor. To get to my shop, take the escalator up to the second floor. When you get off, my shop is right there, in the back, next to a clothing store. There's also a shoe store across from it. I work there with my brother, so if a customer can't find me, they can always ask him. It's easy to find, because it's the first shop you see when you take the escalator up.`;
