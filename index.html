@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-09a -->
+<!-- DEVLEARN_BUILD: 2026-09-09b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4578,10 +4578,10 @@ const U7_WH_BACKFILL = [
     { q:'Which store do you recommend?', a:'I recommend the small shop near my house. It has good prices, and the people there are the friendliest. That\'s why I always go back.' }
   ]],
   ['txt_u8_p9293', [
-    { q:'Where is the clothing department, and how do I get there?', a:'Take the escalator to the second floor. The clothing department is in the back, so keep walking after you get off the escalator. It\'s easy to find once you\'re on that floor.' },
-    { q:'How do I get to electronics?', a:'You don\'t need the escalator, because electronics is in the basement. So just take the stairs down. It\'s easy, and you\'ll see it right away.' },
-    { q:'Where can I get a coffee?', a:'The coffee shop is on the ground floor, in the front, near the entrance. You don\'t need the escalator or the stairs, because it\'s on the same floor as the entrance. It\'s a good place to rest before you keep shopping.' },
-    { q:'What\'s your favorite part of the mall?', a:'My favorite spot is the coffee shop, since I always stop there before I go back to work. I go to Titán Plaza every day, so I know it very well. That\'s why I can give directions easily.' }
+    { q:'Where\'s your shop in the mall?', a:'It\'s on the second floor, in the back, next to a clothing store. There\'s also a shoe store across from it. It\'s a big shop, with a lot of space.' },
+    { q:'How do I get there from the main entrance?', a:'First, take the escalator up to the second floor. When you get off, my shop is right there, in the back. It\'s easy, because it\'s the first shop you see.' },
+    { q:'What\'s near the entrance, on the ground floor?', a:'There\'s a coffee shop in the front, near the main entrance. That\'s the first thing you see when you walk in. My shop is above that, on the second floor.' },
+    { q:'Who works with you?', a:'I work there with my brother. So if a customer can\'t find me, they can always ask him. We take care of the shop together.' }
   ]],
 ];
 
@@ -4822,7 +4822,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-09a';
+const APP_BUILD = '2026-09-09b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6152,6 +6152,29 @@ function migrateState(s) {
       });
     }
   }
+
+  /* El texto 92-93 pasó por varias versiones en el chat antes de quedar en
+   * la definitiva (edificio + cómo llegar, sin hablar de lo que vende la
+   * tienda por dentro). Se reemplaza una sola vez, y solo si sigue siendo
+   * alguna de las versiones anteriores — si él ya lo reescribió a su manera,
+   * no se toca. */
+  if (!merged._u8ShopTextFixed) {
+    merged._u8ShopTextFixed = true;
+    const t = merged.texts.find(x => x && x.id === 'txt_u8_p9293');
+    const versionesViejas = [
+      'I work in a clothing shop',
+      "My pet shop is a small pet shop",
+      'My shop is a small pet shop',
+    ];
+    if (t && versionesViejas.some(v => (t.body || '').includes(v))) {
+      t.body  = `My pet shop is inside the mall, on the second floor, and it's a big shop, with a lot of space. When you walk in the main entrance, you'll see a coffee shop in the front, on the ground floor. To get to my shop, take the escalator up to the second floor. When you get off, my shop is right there, in the back, next to a clothing store. There's also a shoe store across from it. I work there with my brother, so if a customer can't find me, they can always ask him. It's easy to find, because it's the first shop you see when you take the escalator up.`;
+      t.trans = `Mi pet shop está dentro del centro comercial, en el segundo piso, y es una tienda grande, con bastante espacio. Cuando entras por la entrada principal, ves una cafetería al frente, en el primer piso. Para llegar a mi tienda, toma la escalera eléctrica hasta el segundo piso. Cuando te bajas, mi tienda está justo ahí, al fondo, al lado de una tienda de ropa. También hay una zapatería enfrente. Yo trabajo ahí con mi hermano, así que si un cliente no me encuentra a mí, siempre puede preguntarle a él. Es fácil de encontrar, porque es la primera tienda que ves al subir por la escalera eléctrica.`;
+      t.wh    = [{ q:'Where\'s your shop in the mall?', a:'It\'s on the second floor, in the back, next to a clothing store. There\'s also a shoe store across from it. It\'s a big shop, with a lot of space.' },
+      { q:'How do I get there from the main entrance?', a:'First, take the escalator up to the second floor. When you get off, my shop is right there, in the back. It\'s easy, because it\'s the first shop you see.' },
+      { q:'What\'s near the entrance, on the ground floor?', a:'There\'s a coffee shop in the front, near the main entrance. That\'s the first thing you see when you walk in. My shop is above that, on the second floor.' },
+      { q:'Who works with you?', a:'I work there with my brother. So if a customer can\'t find me, they can always ask him. We take care of the shop together.' }];
+    }
+  }
   merged.streak = computeStreak(merged.studyDates);
   // Seed the known exam once. `examDate === undefined` means the field has never
   // existed; null means the user cleared it on purpose — never re-seed that.
@@ -6167,7 +6190,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 6;
+  const SEED_VERSION = 7;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6265,13 +6288,13 @@ function migrateState(s) {
         trans: "Cuando un amigo me pregunta dónde comprar ropa, siempre digo: eso depende. Primero, ¿qué estás buscando? Porque la respuesta es distinta para zapatos y para una chaqueta. Por ejemplo, si quieres ropa barata, las tiendas pequeñas cerca de mi casa tienen los precios más bajos de mi barrio. Pero no tienen la mayor variedad, así que a veces no encuentras tu talla. Luego está el centro comercial. Tiene la ropa más nueva y las tiendas más cómodas, pero también es el lugar más caro. Después, siempre hablo de comprar por internet. Es la forma más fácil, ya que puedes comparar muchas tiendas en el celular. Pero para mí es la peor opción cuando necesitas algo rápido. Finalmente, el mejor lugar es la tienda pequeña cerca de mi casa, porque tiene buenos precios y la gente más amable." },
       { id: 'txt_u8_p9293', title: 'U8 · pág 92 - 93',
         wh: [
-          { q:'Where is the clothing department, and how do I get there?', a:'Take the escalator to the second floor. The clothing department is in the back, so keep walking after you get off the escalator. It\'s easy to find once you\'re on that floor.' },
-          { q:'How do I get to electronics?', a:'You don\'t need the escalator, because electronics is in the basement. So just take the stairs down. It\'s easy, and you\'ll see it right away.' },
-          { q:'Where can I get a coffee?', a:'The coffee shop is on the ground floor, in the front, near the entrance. You don\'t need the escalator or the stairs, because it\'s on the same floor as the entrance. It\'s a good place to rest before you keep shopping.' },
-          { q:'What\'s your favorite part of the mall?', a:'My favorite spot is the coffee shop, since I always stop there before I go back to work. I go to Titán Plaza every day, so I know it very well. That\'s why I can give directions easily.' }
+          { q:'Where\'s your shop in the mall?', a:'It\'s on the second floor, in the back, next to a clothing store. There\'s also a shoe store across from it. It\'s a big shop, with a lot of space.' },
+          { q:'How do I get there from the main entrance?', a:'First, take the escalator up to the second floor. When you get off, my shop is right there, in the back. It\'s easy, because it\'s the first shop you see.' },
+          { q:'What\'s near the entrance, on the ground floor?', a:'There\'s a coffee shop in the front, near the main entrance. That\'s the first thing you see when you walk in. My shop is above that, on the second floor.' },
+          { q:'Who works with you?', a:'I work there with my brother. So if a customer can\'t find me, they can always ask him. We take care of the shop together.' }
         ],
-        body: "I go to Titán Plaza every day, because my shop is very close to it, so I know the mall very well. If you're looking for clothes, take the escalator to the second floor, and the clothing department is in the back. If you want electronics, you don't need the escalator, because it's in the basement, so take the stairs down. The coffee shop is on the ground floor, in the front, near the entrance. For furniture, take the elevator to the third floor, and it's in the back too. It's a big mall, but it's easy to find things once you know the floors. My favorite spot is the coffee shop, since I always stop there before I go back to work. When a friend asks me for directions, I always say the same thing: first, decide what floor you need, and then take the escalator, the stairs, or the elevator.",
-        trans: "Voy a Titán Plaza todos los días, porque mi negocio queda muy cerca, así que conozco muy bien el centro comercial. Si buscas ropa, toma la escalera eléctrica al segundo piso, y el departamento de ropa está en la parte de atrás. Si quieres electrónica, no necesitas la escalera eléctrica, porque está en el sótano, así que baja por las escaleras. La cafetería está en el primer piso, al frente, cerca de la entrada. Para muebles, toma el ascensor al tercer piso, y también está en la parte de atrás. Es un centro comercial grande, pero es fácil encontrar las cosas una vez conoces los pisos. Mi lugar favorito es la cafetería, ya que siempre paro ahí antes de volver al trabajo. Cuando un amigo me pide direcciones, siempre digo lo mismo: primero, decide qué piso necesitas, y luego toma la escalera eléctrica, las escaleras, o el ascensor." },
+        body: "My pet shop is inside the mall, on the second floor, and it's a big shop, with a lot of space. When you walk in the main entrance, you'll see a coffee shop in the front, on the ground floor. To get to my shop, take the escalator up to the second floor. When you get off, my shop is right there, in the back, next to a clothing store. There's also a shoe store across from it. I work there with my brother, so if a customer can't find me, they can always ask him. It's easy to find, because it's the first shop you see when you take the escalator up.",
+        trans: "Mi pet shop está dentro del centro comercial, en el segundo piso, y es una tienda grande, con bastante espacio. Cuando entras por la entrada principal, ves una cafetería al frente, en el primer piso. Para llegar a mi tienda, toma la escalera eléctrica hasta el segundo piso. Cuando te bajas, mi tienda está justo ahí, al fondo, al lado de una tienda de ropa. También hay una zapatería enfrente. Yo trabajo ahí con mi hermano, así que si un cliente no me encuentra a mí, siempre puede preguntarle a él. Es fácil de encontrar, porque es la primera tienda que ves al subir por la escalera eléctrica." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
