@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-10a -->
+<!-- DEVLEARN_BUILD: 2026-09-10b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4822,7 +4822,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-10a';
+const APP_BUILD = '2026-09-10b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6199,7 +6199,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 7;
+  const SEED_VERSION = 8;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
