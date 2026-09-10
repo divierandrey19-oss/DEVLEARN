@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-10b -->
+<!-- DEVLEARN_BUILD: 2026-09-10c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4583,6 +4583,12 @@ const U7_WH_BACKFILL = [
     { q:'What\'s near the entrance, on the ground floor?', a:'There\'s a coffee shop in the front, near the main entrance. That\'s the first thing you see when you walk in. My shop is above that, on the second floor.' },
     { q:'Who works with you?', a:'I work there with my brother. So if a customer can\'t find me, they can always ask him. We take care of the shop together.' }
   ]],
+  ['txt_u8_p9495', [
+    { q:'Are dress codes liberal or conservative in Colombia?', a:'They\'re pretty liberal, especially on the street or in casual settings. I usually wear something informal, like sweatpants, in my shop. But it depends on the place.' },
+    { q:'What do you wear for a party?', a:'A shirt and jeans, because sweatpants would be inappropriate there. Wearing them at a friend\'s house is more appropriate than at my shop. It\'s more casual than a wedding, but still nicer than my work clothes.' },
+    { q:'When do you dress formal?', a:'For a wedding or a special event. A suit is usually the right choice for that. Those are the only times I really dress up.' },
+    { q:'What\'s your advice for visitors?', a:'Casual is fine almost everywhere in Colombia. But for a formal restaurant or a business meeting, neat clothing is expected. And save something formal for weddings.' }
+  ]],
 ];
 
 const KEY = 'lingua_v4';
@@ -4822,7 +4828,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-10b';
+const APP_BUILD = '2026-09-10c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6199,7 +6205,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 8;
+  const SEED_VERSION = 9;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6304,6 +6310,15 @@ function migrateState(s) {
         ],
         body: "My pet shop is inside the mall, on the second floor, and it's a big shop, with a lot of space. When you walk in the main entrance, you'll see a coffee shop in the front, on the ground floor. To get to my shop, take the escalator up to the second floor. When you get off, my shop is right there, in the back, next to a clothing store. There's also a shoe store across from it. I work there with my brother, so if a customer can't find me, they can always ask him. It's easy to find, because it's the first shop you see when you take the escalator up.",
         trans: "Mi pet shop está dentro del centro comercial, en el segundo piso, y es una tienda grande, con bastante espacio. Cuando entras por la entrada principal, ves una cafetería al frente, en el primer piso. Para llegar a mi tienda, toma la escalera eléctrica hasta el segundo piso. Cuando te bajas, mi tienda está justo ahí, al fondo, al lado de una tienda de ropa. También hay una zapatería enfrente. Yo trabajo ahí con mi hermano, así que si un cliente no me encuentra a mí, siempre puede preguntarle a él. Es fácil de encontrar, porque es la primera tienda que ves al subir por la escalera eléctrica." },
+      { id: 'txt_u8_p9495', title: 'U8 · pág 94 - 95',
+        wh: [
+          { q:'Are dress codes liberal or conservative in Colombia?', a:'They\'re pretty liberal, especially on the street or in casual settings. I usually wear something informal, like sweatpants, in my shop. But it depends on the place.' },
+          { q:'What do you wear for a party?', a:'A shirt and jeans, because sweatpants would be inappropriate there. Wearing them at a friend\'s house is more appropriate than at my shop. It\'s more casual than a wedding, but still nicer than my work clothes.' },
+          { q:'When do you dress formal?', a:'For a wedding or a special event. A suit is usually the right choice for that. Those are the only times I really dress up.' },
+          { q:'What\'s your advice for visitors?', a:'Casual is fine almost everywhere in Colombia. But for a formal restaurant or a business meeting, neat clothing is expected. And save something formal for weddings.' }
+        ],
+        body: "In Colombia, dress codes are pretty liberal, especially on the street or in a casual social setting. For example, in my shop, I wear something informal, like sweatpants and a T-shirt, because it's comfortable for work. But sweatpants at a party would be inappropriate, so I put on a shirt and jeans instead — that's more appropriate for a friend's house. However, for a wedding or a special event, I have to be more formal — a suit is usually the right choice. In my opinion, Colombians aren't very conservative about everyday clothes, but some places, like a formal restaurant or a business meeting, still expect neat clothing. So my advice for visitors is simple: casual is fine almost everywhere, but save something formal for weddings.",
+        trans: "En Colombia, las normas de vestir son bastante liberales, especialmente en la calle o en un ambiente social casual. Por ejemplo, en mi local, uso algo informal, como sudadera y camiseta, porque es cómodo para trabajar. Pero una sudadera en una fiesta sería inapropiado, así que me pongo camisa y jean en su lugar — eso es más apropiado para la casa de un amigo. Sin embargo, para una boda o un evento especial, me toca ser más formal — un traje suele ser la opción correcta. En mi opinión, los colombianos no son muy conservadores con la ropa del día a día, pero algunos lugares, como un restaurante formal o una reunión de negocios, todavía esperan ropa cuidada. Así que mi consejo para los visitantes es simple: lo casual está bien casi en todas partes, pero guarda algo formal para las bodas." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
