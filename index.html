@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-15a -->
+<!-- DEVLEARN_BUILD: 2026-09-15b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4548,10 +4548,10 @@ const U7_WH_BACKFILL = [
           { q:'When did you get back?', a:'We came back on Sunday night, three months ago. The trip was pretty short, but I really liked it. Finally, we arrived home very late.' }
   ]],
   ['txt_u7_p8283', [
-    { q:'When did you fly to Cartagena?', a:'I flew to Cartagena in February 2024. I went with my family, and it was a short trip. But we really enjoyed it, because the city was beautiful.' },
-          { q:'What happened before the flight?', a:'There was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, and we made it on time.' },
-          { q:'Did you have any problems on the flight?', a:'No, I didn\'t. The plane took off on time and it landed on time. It wasn\'t bumpy, and they didn\'t lose my luggage.' },
-          { q:'How was Cartagena?', a:'Cartagena was very hot, but the trip was great. We were all together, and that is the best part for me. Finally, I want to go back one day.' }
+    { q:'When did you go to Melgar?', a:'I went in February 2024, with my family. We took a taxi to the bus terminal, and then a bus to Melgar. It took four hours, but it was a nice trip.' },
+    { q:'What happened before the trip?', a:'There was a lot of traffic in Bogotá, so we arrived at the terminal late. That traffic drove me crazy, because I didn\'t want to miss the bus. But the line was fast, so we got our tickets on time.' },
+    { q:'Did you have any problems on the trip?', a:'No, we didn\'t. The bus wasn\'t bumpy, and they didn\'t lose our bags. It left at six in the morning and the trip took four hours.' },
+    { q:'How did you travel to Melgar?', a:'We took a taxi from my house to the bus terminal, because we had a lot of bags. Then we took the bus to Melgar. So we used two means of transportation that day.' }
   ]],
   ['txt_u8_p85', [
     { q:'Where do you usually buy your clothes?', a:'That depends. Sometimes I go to a department store at the mall, but it\'s expensive, so I don\'t go very often. Other times I buy online, and I also buy in small shops near my house.' },
@@ -4828,7 +4828,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-15a';
+const APP_BUILD = '2026-09-15b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6190,6 +6190,22 @@ function migrateState(s) {
       { q:'Who works with you?', a:'I work there with my brother. So if a customer can\'t find me, they can always ask him. We take care of the shop together.' }];
     }
   }
+
+  /* El texto 82-83 hablaba de un vuelo a Cartagena; él pidió que siguiera
+   * tratando del mismo viaje a Melgar. Se reemplaza una sola vez, y solo si
+   * sigue siendo la versión de Cartagena — si lo editó él, no se toca. */
+  if (!merged._u7FlightTextFixed) {
+    merged._u7FlightTextFixed = true;
+    const t = merged.texts.find(x => x && x.id === 'txt_u7_p8283');
+    if (t && /flew to Cartagena|Cartagena was very hot/.test(t.body || '')) {
+      t.body  = `In February 2024, I went to Melgar with my family. First, we took a taxi from my house to the bus terminal, because we had a lot of bags. But there was a lot of traffic in Bogotá, so we arrived at the terminal late. That traffic drove me crazy, and I was really nervous, because I didn't want to miss the bus. But the line was fast, so we got our tickets on time. After that, we waited a few minutes and we got on the bus. Then the bus left at six in the morning, and the trip took four hours. It wasn't bumpy, and they didn't lose our bags, so we had no problems. Finally, Melgar was very hot, but the trip was great, because we were all together.`;
+      t.trans = `En febrero de 2024, fui a Melgar con mi familia. Primero, tomamos un taxi desde mi casa hasta el terminal de buses, porque llevábamos muchas maletas. Pero había mucho trancón en Bogotá, así que llegamos tarde al terminal. Ese trancón me volvió loco, y estaba muy nervioso, porque no quería perder el bus. Pero la fila fue rápida, así que sacamos los tiquetes a tiempo. Después, esperamos unos minutos y nos subimos al bus. Luego el bus salió a las seis de la mañana, y el viaje tomó cuatro horas. No estuvo movido, y no perdieron nuestras maletas, así que no tuvimos problemas. Finalmente, Melgar estaba muy caliente, pero el viaje estuvo muy bueno, porque estábamos todos juntos.`;
+      t.wh    = [{ q:'When did you go to Melgar?', a:'I went in February 2024, with my family. We took a taxi to the bus terminal, and then a bus to Melgar. It took four hours, but it was a nice trip.' },
+      { q:'What happened before the trip?', a:'There was a lot of traffic in Bogotá, so we arrived at the terminal late. That traffic drove me crazy, because I didn\'t want to miss the bus. But the line was fast, so we got our tickets on time.' },
+      { q:'Did you have any problems on the trip?', a:'No, we didn\'t. The bus wasn\'t bumpy, and they didn\'t lose our bags. It left at six in the morning and the trip took four hours.' },
+      { q:'How did you travel to Melgar?', a:'We took a taxi from my house to the bus terminal, because we had a lot of bags. Then we took the bus to Melgar. So we used two means of transportation that day.' }];
+    }
+  }
   merged.streak = computeStreak(merged.studyDates);
   // Seed the known exam once. `examDate === undefined` means the field has never
   // existed; null means the user cleared it on purpose — never re-seed that.
@@ -6205,7 +6221,7 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 9;
+  const SEED_VERSION = 10;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6258,13 +6274,13 @@ function migrateState(s) {
         trans: "Hace tres meses, en 2026, fui a Melgar con mis papás y mis hermanos. Fue una mezcla de experiencias buenas y malas. Primero, el bus tuvo problemas mecánicos, así que llegamos dos horas tarde, y eso me volvió loco. Pero el hotel era muy cómodo, y las piscinas estaban muy bonitas, así que descansamos todos los días. Luego visitamos el pueblo y caminamos por el mercado, porque queríamos comprar unos regalos. Después, me quedé mucho tiempo al sol, así que mi espalda quedó muy roja y no dormí bien esa noche. Pero no fue el fin del mundo, porque mi familia estaba ahí y hablamos y nos reímos toda la tarde. Finalmente, volvimos el domingo en la noche, y el viaje me gustó mucho." },
       { id: 'txt_u7_p8283', title: 'U7 · pág 82 - 83',
         wh: [
-          { q:'When did you fly to Cartagena?', a:'I flew to Cartagena in February 2024. I went with my family, and it was a short trip. But we really enjoyed it, because the city was beautiful.' },
-          { q:'What happened before the flight?', a:'There was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, and we made it on time.' },
-          { q:'Did you have any problems on the flight?', a:'No, I didn\'t. The plane took off on time and it landed on time. It wasn\'t bumpy, and they didn\'t lose my luggage.' },
-          { q:'How was Cartagena?', a:'Cartagena was very hot, but the trip was great. We were all together, and that is the best part for me. Finally, I want to go back one day.' }
+          { q:'When did you go to Melgar?', a:'I went in February 2024, with my family. We took a taxi to the bus terminal, and then a bus to Melgar. It took four hours, but it was a nice trip.' },
+          { q:'What happened before the trip?', a:'There was a lot of traffic in Bogotá, so we arrived at the terminal late. That traffic drove me crazy, because I didn\'t want to miss the bus. But the line was fast, so we got our tickets on time.' },
+          { q:'Did you have any problems on the trip?', a:'No, we didn\'t. The bus wasn\'t bumpy, and they didn\'t lose our bags. It left at six in the morning and the trip took four hours.' },
+          { q:'How did you travel to Melgar?', a:'We took a taxi from my house to the bus terminal, because we had a lot of bags. Then we took the bus to Melgar. So we used two means of transportation that day.' }
         ],
-        body: "In February 2024, I flew to Cartagena with my family. First, we left home very early, but there was a lot of traffic in Bogotá, so we arrived at the airport late. I was really nervous, because I didn\'t want to miss the flight. But the line was fast, so I went through security and I got my boarding pass on time. After that, we ran to the departure lounge and an agent called our flight. Then the plane took off on time and it landed on time too. It wasn\'t bumpy, and they didn\'t lose my luggage, so we had no problems. Finally, Cartagena was very hot, but the trip was great, because we were all together.",
-        trans: "En febrero de 2024, volé a Cartagena con mi familia. Primero, salimos de la casa muy temprano, pero había mucho trancón en Bogotá, así que llegamos tarde al aeropuerto. Yo estaba muy nervioso, porque no quería perder el vuelo. Pero la fila fue rápida, así que pasé por seguridad y me dieron mi pasabordo a tiempo. Después, corrimos a la sala de embarque y un agente llamó nuestro vuelo. Luego el avión despegó a tiempo y aterrizó a tiempo también. No estuvo movido, y no perdieron mi maleta, así que no tuvimos problemas. Finalmente, Cartagena estaba muy caliente, pero el viaje estuvo muy bueno, porque estábamos todos juntos." },
+        body: "In February 2024, I went to Melgar with my family. First, we took a taxi from my house to the bus terminal, because we had a lot of bags. But there was a lot of traffic in Bogotá, so we arrived at the terminal late. That traffic drove me crazy, and I was really nervous, because I didn't want to miss the bus. But the line was fast, so we got our tickets on time. After that, we waited a few minutes and we got on the bus. Then the bus left at six in the morning, and the trip took four hours. It wasn't bumpy, and they didn't lose our bags, so we had no problems. Finally, Melgar was very hot, but the trip was great, because we were all together.",
+        trans: "En febrero de 2024, fui a Melgar con mi familia. Primero, tomamos un taxi desde mi casa hasta el terminal de buses, porque llevábamos muchas maletas. Pero había mucho trancón en Bogotá, así que llegamos tarde al terminal. Ese trancón me volvió loco, y estaba muy nervioso, porque no quería perder el bus. Pero la fila fue rápida, así que sacamos los tiquetes a tiempo. Después, esperamos unos minutos y nos subimos al bus. Luego el bus salió a las seis de la mañana, y el viaje tomó cuatro horas. No estuvo movido, y no perdieron nuestras maletas, así que no tuvimos problemas. Finalmente, Melgar estaba muy caliente, pero el viaje estuvo muy bueno, porque estábamos todos juntos." },
       { id: 'txt_u8_p85', title: 'U8 · pág 85',
         wh: [
           { q:'Where do you usually buy your clothes?', a:'That depends. Sometimes I go to a department store at the mall, but it\'s expensive, so I don\'t go very often. Other times I buy online, and I also buy in small shops near my house.' },
