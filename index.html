@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-10c -->
+<!-- DEVLEARN_BUILD: 2026-09-15a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4828,7 +4828,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-10c';
+const APP_BUILD = '2026-09-15a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -9969,14 +9969,20 @@ function renderTexts() {
       const allDone = gDone === g.items.length;
       return `
       <div style="margin-bottom:12px;">
-        <button onclick="toggleTextGroup('${escapeStr(g.key)}')"
-          style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
-                 border:1px solid ${allDone ? 'var(--green)' : 'var(--border)'};
-                 background:${allDone ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};color:var(--text-1);text-align:left;">
-          <span style="font-size:0.9rem;">${open ? '▾' : '▸'}</span>
-          <span style="flex:1;font-weight:700;font-size:0.92rem;${allDone ? 'color:var(--green);' : ''}">${escapeHtml(g.key)}</span>
-          <span style="font-size:0.72rem;color:${allDone ? 'var(--green)' : 'var(--text-3)'};">${gDone}/${g.items.length} ${allDone ? '✅' : ''}</span>
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="toggleTextGroup('${escapeStr(g.key)}')"
+            style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;
+                   border:1px solid ${allDone ? 'var(--green)' : 'var(--border)'};
+                   background:${allDone ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};color:var(--text-1);text-align:left;">
+            <span style="font-size:0.9rem;">${open ? '▾' : '▸'}</span>
+            <span style="flex:1;font-weight:700;font-size:0.92rem;${allDone ? 'color:var(--green);' : ''}">${escapeHtml(g.key)}</span>
+            <span style="font-size:0.72rem;color:${allDone ? 'var(--green)' : 'var(--text-3)'};">${gDone}/${g.items.length} ${allDone ? '✅' : ''}</span>
+          </button>
+          <button onclick="copyTextGroup('${escapeStr(g.key)}')" title="Copiar los ${g.items.length} textos de ${escapeStr(g.key)}"
+            style="flex-shrink:0;width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-2);font-size:1rem;">
+            📋
+          </button>
+        </div>
         ${open ? g.items.map(t => `
           <div style="background:${t.mastered ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};border:1px solid ${t.mastered ? 'var(--green)' : 'var(--border)'};border-radius:14px;padding:14px;margin:10px 0 0 12px;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
@@ -10006,6 +10012,35 @@ function toggleTextGroup(key) {
   state.textGroupsOpen[key] = !state.textGroupsOpen[key];
   save();
   renderTexts();
+}
+
+/* Plain text, sorted oldest-first — a podcast tool reads them in order, and
+ * scrambled chronology would make a "conversation about your trip to Melgar"
+ * jump straight to shopping before the trip that started it. The Spanish
+ * translation is left out: he's feeding this to an AI to build listening
+ * practice IN English, and doubling every line would just be noise there. */
+function copyTextGroup(key) {
+  const items = (state.texts || [])
+    .filter(t => {
+      const head = (t.title || '').split('·')[0].trim();
+      return (head || 'Otros') === key;
+    })
+    .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  if (!items.length) { toast('No hay textos en ' + key); return; }
+
+  const txt = items.map(t => `${t.title || key}\n\n${t.body || ''}`).join('\n\n---\n\n');
+  const caer = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+    a.download = `${key.replace(/\s+/g, '_')}_textos_${todayLocal()}.txt`;
+    a.click();
+    toast('📄 Descargado');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt)
+      .then(() => toast(`📋 ${items.length} textos de ${key} copiados`))
+      .catch(caer);
+  } else caer();
 }
 
 /* Marking a text as known is what turns a growing pile into a queue: at a
