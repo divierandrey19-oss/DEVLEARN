@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-15b -->
+<!-- DEVLEARN_BUILD: 2026-09-16a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4828,7 +4828,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-15b';
+const APP_BUILD = '2026-09-16a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7263,6 +7263,7 @@ function renderVerbCard() {
       ` : `
         <div class="vb-base">${escapeHtml(base)}</div>
         <div class="vb-es">${escapeHtml(es)}</div>
+        <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(base)}">🔊</button>
         <div class="vb-hint">Dilo en pasado en voz alta, después toca</div>
       `}
     </div>
