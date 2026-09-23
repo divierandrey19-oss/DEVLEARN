@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-18a -->
+<!-- DEVLEARN_BUILD: 2026-09-22b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4840,7 +4840,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-18a';
+const APP_BUILD = '2026-09-22b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6243,6 +6243,34 @@ function migrateState(s) {
         t.body = body;
         t.trans = trans;
       }
+    });
+  }
+
+  /* Los phrasal verbs de las Units 7 y 8 entran como un lote propio dentro de
+   * su unidad, no mezclados con las demás palabras: así pasan por Flashcards,
+   * Quiz, Write y Listen igual que el resto, pero él los puede estudiar como
+   * grupo, que es donde está fallando. Sin fotos: el lote se crea con el
+   * vocabulario ya listo. */
+  if (!merged._phrasalVerbsSeededV2) {
+    merged._phrasalVerbsSeededV2 = true;
+    merged._phrasalVerbsSeeded = true;
+    const PV = {"a2_7": {"title": "Phrasal verbs — Unit 7", "vocab": [{"word": "go away", "translation": "irse de viaje", "phonetic": "/ɡoʊ əˈweɪ/", "type": "phrasal verb", "emoji": "✈️", "example": "Did you go away last summer?", "exampleTranslation": "¿Se fueron de viaje el verano pasado?", "difficulty": "medium"}, {"word": "get back", "translation": "regresar, volver", "phonetic": "/ɡet bæk/", "type": "phrasal verb", "emoji": "🔙", "example": "We got back from our trip on Sunday night.", "exampleTranslation": "Regresamos del viaje el domingo en la noche.", "difficulty": "medium"}, {"word": "get up", "translation": "levantarse de la cama", "phonetic": "/ɡet ʌp/", "type": "phrasal verb", "emoji": "⏰", "example": "We got up early this morning.", "exampleTranslation": "Nos levantamos temprano esta mañana.", "difficulty": "medium"}, {"word": "find out", "translation": "enterarse de algo", "phonetic": "/faɪnd aʊt/", "type": "phrasal verb", "emoji": "💡", "example": "I found out that the store was closed.", "exampleTranslation": "Me enteré de que la tienda estaba cerrada.", "difficulty": "medium"}, {"word": "look after", "translation": "cuidar de alguien o algo", "phonetic": "/lʊk ˈæftər/", "type": "phrasal verb", "emoji": "🐶", "example": "My brother looked after the shop while I was away.", "exampleTranslation": "Mi hermano cuidó la tienda mientras yo no estaba.", "difficulty": "medium"}, {"word": "pick up", "translation": "recoger, comprar de paso", "phonetic": "/pɪk ʌp/", "type": "phrasal verb", "emoji": "🛍️", "example": "She picked up a small gift at the market.", "exampleTranslation": "Compró un regalito en el mercado.", "difficulty": "medium"}, {"word": "check out", "translation": "salir del hotel, pagar y dejarlo", "phonetic": "/tʃek aʊt/", "type": "phrasal verb", "emoji": "🏨", "example": "We checked out of the hotel at 11:00 am.", "exampleTranslation": "Salimos del hotel a las 11:00 am.", "difficulty": "medium"}, {"word": "get on", "translation": "subirse a un bus, avión o tren", "phonetic": "/ɡet ɑːn/", "type": "phrasal verb", "emoji": "🚌", "example": "We all got on the bus at six in the morning.", "exampleTranslation": "Todos nos subimos al bus a las seis de la mañana.", "difficulty": "medium"}, {"word": "take it easy", "translation": "tomarlo con calma", "phonetic": "/teɪk ɪt ˈiːzi/", "type": "phrasal verb", "emoji": "😌", "example": "We took it easy and just relaxed at the pool.", "exampleTranslation": "La tomamos con calma y solo descansamos en la piscina.", "difficulty": "medium"}, {"word": "hang out with", "translation": "pasar el rato con", "phonetic": "/hæŋ aʊt wɪð/", "type": "phrasal verb", "emoji": "👥", "example": "I like to hang out with my friends on Friday.", "exampleTranslation": "Me gusta pasar el rato con mis amigos los viernes.", "difficulty": "medium"}, {"word": "have a good time", "translation": "pasarla bien", "phonetic": "/hæv ə ɡʊd taɪm/", "type": "phrasal verb", "emoji": "🎉", "example": "Did you have a good time in Melgar?", "exampleTranslation": "¿La pasaste bien en Melgar?", "difficulty": "medium"}, {"word": "not mind", "translation": "no importarle a uno", "phonetic": "/nɑːt maɪnd/", "type": "phrasal verb", "emoji": "🤷", "example": "The trip was long, but we didn't mind.", "exampleTranslation": "El viaje fue largo, pero no nos importó.", "difficulty": "medium"}, {"word": "be in the mood for", "translation": "tener ganas de", "phonetic": "/bi ɪn ðə muːd fɔːr/", "type": "phrasal verb", "emoji": "🍜", "example": "I was in the mood for Japanese food.", "exampleTranslation": "Tenía ganas de comida japonesa.", "difficulty": "medium"}, {"word": "drive someone crazy", "translation": "volver loco a alguien", "phonetic": "/draɪv ˈsʌmwʌn ˈkreɪzi/", "type": "phrasal verb", "emoji": "😤", "example": "The traffic in Bogotá drove me crazy.", "exampleTranslation": "El trancón en Bogotá me volvió loco.", "difficulty": "medium"}, {"word": "get bumped from", "translation": "quedarse fuera de un vuelo lleno", "phonetic": "/ɡet bʌmpt frɑːm/", "type": "phrasal verb", "emoji": "🛫", "example": "We got bumped from our flight.", "exampleTranslation": "Nos dejaron fuera del vuelo porque estaba lleno.", "difficulty": "medium"}, {"word": "gotta run", "translation": "me tengo que ir (informal)", "phonetic": "/ˈɡɑːtə rʌn/", "type": "phrasal verb", "emoji": "🏃", "example": "Gotta run now — see you tomorrow!", "exampleTranslation": "Me tengo que ir — ¡nos vemos mañana!", "difficulty": "medium"}, {"word": "give someone a hand", "translation": "echarle una mano a alguien", "phonetic": "/ɡɪv ˈsʌmwʌn ə hænd/", "type": "phrasal verb", "emoji": "🤝", "example": "Can I give you a hand with those bags?", "exampleTranslation": "¿Le echo una mano con esas maletas?", "difficulty": "medium"}]}, "a2_8": {"title": "Phrasal verbs — Unit 8", "vocab": [{"word": "try on", "translation": "probarse ropa o zapatos", "phonetic": "/traɪ ɑːn/", "type": "phrasal verb", "emoji": "👞", "example": "Can I try these shoes on in size 40?", "exampleTranslation": "¿Puedo probarme estos zapatos en talla 40?", "difficulty": "medium"}, {"word": "I'll take it", "translation": "me lo llevo, lo compro", "phonetic": "/aɪl teɪk ɪt/", "type": "phrasal verb", "emoji": "💳", "example": "Much better. I'll take it.", "exampleTranslation": "Mucho mejor. Me lo llevo.", "difficulty": "medium"}, {"word": "be on sale", "translation": "estar en rebaja", "phonetic": "/bi ɑːn seɪl/", "type": "phrasal verb", "emoji": "🏷️", "example": "Everything's on sale this week.", "exampleTranslation": "Todo está en rebaja esta semana.", "difficulty": "medium"}, {"word": "hold something for you", "translation": "guardárselo a uno", "phonetic": "/hoʊld ˈsʌmθɪŋ fɔːr juː/", "type": "phrasal verb", "emoji": "📦", "example": "I can hold them for you at the counter.", "exampleTranslation": "Se los puedo guardar en el mostrador.", "difficulty": "medium"}, {"word": "keep shopping", "translation": "seguir mirando o comprando", "phonetic": "/kiːp ˈʃɑːpɪŋ/", "type": "phrasal verb", "emoji": "🛒", "example": "If you'd like to keep shopping, I can hold that.", "exampleTranslation": "Si quiere seguir mirando, le guardo eso.", "difficulty": "medium"}, {"word": "look for", "translation": "buscar", "phonetic": "/lʊk fɔːr/", "type": "phrasal verb", "emoji": "🔍", "example": "Excuse me, I'm looking for the men's department.", "exampleTranslation": "Disculpe, estoy buscando el departamento de hombres.", "difficulty": "medium"}, {"word": "go up", "translation": "subir", "phonetic": "/ɡoʊ ʌp/", "type": "phrasal verb", "emoji": "⬆️", "example": "Go up to the second floor for clothes.", "exampleTranslation": "Suba al segundo piso para ropa.", "difficulty": "medium"}, {"word": "go down", "translation": "bajar", "phonetic": "/ɡoʊ daʊn/", "type": "phrasal verb", "emoji": "⬇️", "example": "You have to go down to the basement.", "exampleTranslation": "Tiene que bajar al sótano.", "difficulty": "medium"}, {"word": "take the escalator", "translation": "tomar la escalera eléctrica", "phonetic": "/teɪk ði ˈeskəleɪtər/", "type": "phrasal verb", "emoji": "🛗", "example": "Take the escalator to the third floor.", "exampleTranslation": "Tome la escalera eléctrica al tercer piso.", "difficulty": "medium"}, {"word": "put on", "translation": "ponerse una prenda", "phonetic": "/pʊt ɑːn/", "type": "phrasal verb", "emoji": "🧥", "example": "Put on your coat, it's cold outside.", "exampleTranslation": "Póngase el abrigo, hace frío afuera.", "difficulty": "medium"}, {"word": "pack", "translation": "empacar, meter en la maleta", "phonetic": "/pæk/", "type": "phrasal verb", "emoji": "🧳", "example": "Before you pack your clothes, check the weather.", "exampleTranslation": "Antes de empacar la ropa, revise el clima.", "difficulty": "medium"}, {"word": "no wonder", "translation": "con razón", "phonetic": "/noʊ ˈwʌndər/", "type": "phrasal verb", "emoji": "😮", "example": "No wonder he's tired — he worked all day.", "exampleTranslation": "Con razón está cansado — trabajó todo el día.", "difficulty": "medium"}, {"word": "What a bargain!", "translation": "¡qué ganga!", "phonetic": "/wʌt ə ˈbɑːrɡɪn/", "type": "phrasal verb", "emoji": "💸", "example": "You're right. What a bargain!", "exampleTranslation": "Tienes razón. ¡Qué ganga!", "difficulty": "medium"}, {"word": "That depends.", "translation": "depende", "phonetic": "/ðæt dɪˈpendz/", "type": "phrasal verb", "emoji": "🤔", "example": "That depends. What are you looking for?", "exampleTranslation": "Depende. ¿Qué está buscando?", "difficulty": "medium"}, {"word": "do's and don'ts", "translation": "lo que se hace y lo que no", "phonetic": "/duːz ænd doʊnts/", "type": "phrasal verb", "emoji": "📋", "example": "Learn the clothing do's and don'ts before you travel.", "exampleTranslation": "Aprenda lo que se hace y lo que no con la ropa antes de viajar.", "difficulty": "medium"}, {"word": "anything goes", "translation": "todo se vale, sin reglas", "phonetic": "/ˈeniθɪŋ ɡoʊz/", "type": "phrasal verb", "emoji": "🤸", "example": "In some places anything goes.", "exampleTranslation": "En algunos lugares todo se vale.", "difficulty": "medium"}]}, "a2_9": {"title": "Phrasal verbs — Unit 9", "vocab": [{"word": "go bowling", "translation": "ir a jugar bolos", "phonetic": "/ɡoʊ ˈboʊlɪŋ/", "type": "phrasal verb", "emoji": "🎳", "example": "I went bowling at a mall in Bogotá.", "exampleTranslation": "Fui a jugar bolos en un centro comercial en Bogotá.", "difficulty": "medium"}, {"word": "go bike riding", "translation": "ir a montar bici", "phonetic": "/ɡoʊ baɪk ˈraɪdɪŋ/", "type": "phrasal verb", "emoji": "🚲", "example": "I could go bike riding in the park.", "exampleTranslation": "Podría ir a montar bici en el parque.", "difficulty": "medium"}, {"word": "go running", "translation": "ir a correr", "phonetic": "/ɡoʊ ˈrʌnɪŋ/", "type": "phrasal verb", "emoji": "🏃", "example": "I could go running on the weekend.", "exampleTranslation": "Podría ir a correr el fin de semana.", "difficulty": "medium"}, {"word": "go swimming", "translation": "ir a nadar", "phonetic": "/ɡoʊ ˈswɪmɪŋ/", "type": "phrasal verb", "emoji": "🏊", "example": "My friend says I could go swimming.", "exampleTranslation": "Mi amigo dice que podría ir a nadar.", "difficulty": "medium"}, {"word": "go walking", "translation": "ir a caminar", "phonetic": "/ɡoʊ ˈwɔːkɪŋ/", "type": "phrasal verb", "emoji": "🚶", "example": "I go walking almost every weekend.", "exampleTranslation": "Voy a caminar casi todos los fines de semana.", "difficulty": "medium"}, {"word": "go camping", "translation": "ir de camping", "phonetic": "/ɡoʊ ˈkæmpɪŋ/", "type": "phrasal verb", "emoji": "⛺", "example": "I also go camping sometimes with my brother.", "exampleTranslation": "También voy de camping a veces con mi hermano.", "difficulty": "medium"}, {"word": "go fishing", "translation": "ir a pescar", "phonetic": "/ɡoʊ ˈfɪʃɪŋ/", "type": "phrasal verb", "emoji": "🎣", "example": "I never go fishing, because I get bored.", "exampleTranslation": "Nunca voy a pescar, porque me aburro.", "difficulty": "medium"}, {"word": "go sailing", "translation": "ir a navegar", "phonetic": "/ɡoʊ ˈseɪlɪŋ/", "type": "phrasal verb", "emoji": "⛵", "example": "If you go sailing, you have to wear a life vest.", "exampleTranslation": "Si vas a navegar, tienes que usar chaleco salvavidas.", "difficulty": "medium"}, {"word": "go out", "translation": "salir a divertirse", "phonetic": "/ɡoʊ aʊt/", "type": "phrasal verb", "emoji": "🌃", "example": "I don't go out very much, because I have to save money.", "exampleTranslation": "No salgo mucho, porque tengo que ahorrar.", "difficulty": "medium"}, {"word": "to tell you the truth", "translation": "para ser sincero", "phonetic": "/tə tel juː ðə truːθ/", "type": "phrasal verb", "emoji": "💬", "example": "To tell you the truth, individual sports are boring for me.", "exampleTranslation": "Para ser sincero, los deportes individuales me aburren.", "difficulty": "medium"}, {"word": "doesn't appeal to me", "translation": "no me llama la atención", "phonetic": "/ˈdʌzənt əˈpiːl tuː miː/", "type": "phrasal verb", "emoji": "🙅", "example": "Running on a treadmill doesn't appeal to me.", "exampleTranslation": "Correr en la caminadora no me llama la atención.", "difficulty": "medium"}, {"word": "get bored", "translation": "aburrirse", "phonetic": "/ɡet bɔːrd/", "type": "phrasal verb", "emoji": "🥱", "example": "I get bored on a stationary bike.", "exampleTranslation": "Me aburro en la bicicleta estática.", "difficulty": "medium"}, {"word": "a good fit for me", "translation": "algo que me va bien", "phonetic": "/ə ɡʊd fɪt fɔːr miː/", "type": "phrasal verb", "emoji": "👍", "example": "Swimming is a good fit for me, too.", "exampleTranslation": "Nadar también me viene bien.", "difficulty": "medium"}, {"word": "won't work for me", "translation": "eso no me sirve", "phonetic": "/woʊnt wɜːrk fɔːr miː/", "type": "phrasal verb", "emoji": "❌", "example": "So Tuesday won't work for me.", "exampleTranslation": "Así que el martes no me sirve.", "difficulty": "medium"}, {"word": "and that's all", "translation": "y ya, nada más", "phonetic": "/ænd ðæts ɔːl/", "type": "phrasal verb", "emoji": "🤏", "example": "You could wear running shoes, and that's all.", "exampleTranslation": "Podrías usar tenis de correr, y ya.", "difficulty": "medium"}, {"word": "at the same time", "translation": "al mismo tiempo", "phonetic": "/æt ðə seɪm taɪm/", "type": "phrasal verb", "emoji": "⏱️", "example": "I can relax and do exercise at the same time.", "exampleTranslation": "Puedo relajarme y hacer ejercicio al mismo tiempo.", "difficulty": "medium"}, {"word": "Would you like to...?", "translation": "¿Te gustaría...?", "phonetic": "/wʊd juː laɪk tuː/", "type": "phrasal verb", "emoji": "🙋", "example": "Would you like to play volleyball on Tuesday?", "exampleTranslation": "¿Te gustaría jugar voleibol el martes?", "difficulty": "medium"}, {"word": "Sorry, I can't then.", "translation": "Lo siento, entonces no puedo.", "phonetic": "/ˈsɑːri aɪ kænt ðen/", "type": "phrasal verb", "emoji": "🚫", "example": "Sorry, I can't then. I have English class.", "exampleTranslation": "Lo siento, entonces no puedo. Tengo clase de inglés.", "difficulty": "medium"}, {"word": "Why don't we...?", "translation": "¿Por qué no...?", "phonetic": "/waɪ doʊnt wiː/", "type": "phrasal verb", "emoji": "💡", "example": "Why don't we play on Friday at 5 pm?", "exampleTranslation": "¿Por qué no jugamos el viernes a las 5 pm?", "difficulty": "medium"}, {"word": "Let me check.", "translation": "Déjame revisar.", "phonetic": "/let miː tʃek/", "type": "phrasal verb", "emoji": "📅", "example": "Let me check... Yes, that's good for me.", "exampleTranslation": "Déjame revisar... Sí, ese día me sirve.", "difficulty": "medium"}, {"word": "How about...?", "translation": "¿Qué tal...?", "phonetic": "/haʊ əˈbaʊt/", "type": "phrasal verb", "emoji": "🤷", "example": "How about at the park?", "exampleTranslation": "¿Qué tal en el parque?", "difficulty": "medium"}, {"word": "make that class", "translation": "alcanzar a llegar a esa clase", "phonetic": "/meɪk ðæt klæs/", "type": "phrasal verb", "emoji": "🏫", "example": "I can go at 7:30, so I can make that class.", "exampleTranslation": "Puedo ir a las 7:30, así que alcanzo a llegar a esa clase.", "difficulty": "medium"}, {"word": "work out", "translation": "hacer ejercicio", "phonetic": "/wɜːrk aʊt/", "type": "phrasal verb", "emoji": "💪", "example": "I can't work out in the afternoon.", "exampleTranslation": "No puedo hacer ejercicio en la tarde.", "difficulty": "medium"}, {"word": "get in shape", "translation": "ponerse en forma", "phonetic": "/ɡet ɪn ʃeɪp/", "type": "phrasal verb", "emoji": "🏋️", "example": "I really have to get in shape.", "exampleTranslation": "De verdad tengo que ponerme en forma.", "difficulty": "medium"}, {"word": "know how to", "translation": "saber hacer algo", "phonetic": "/noʊ haʊ tuː/", "type": "phrasal verb", "emoji": "🧠", "example": "Go with someone who knows how to sail.", "exampleTranslation": "Ve con alguien que sepa navegar.", "difficulty": "medium"}, {"word": "fall down", "translation": "caerse", "phonetic": "/fɔːl daʊn/", "type": "phrasal verb", "emoji": "🤕", "example": "Last year I fell down from my bike near my house.", "exampleTranslation": "El año pasado me caí de la bici cerca de mi casa.", "difficulty": "medium"}, {"word": "be in a lot of pain", "translation": "tener mucho dolor", "phonetic": "/bi ɪn ə lɑːt əv peɪn/", "type": "phrasal verb", "emoji": "😣", "example": "I was in a lot of pain for one week.", "exampleTranslation": "Estuve con mucho dolor por una semana.", "difficulty": "medium"}]}};
+    Object.keys(PV).forEach(key => {
+      const u = merged.units && merged.units[key];
+      if (!u) return;                       // la unidad no existe todavía: se salta
+      u.batches = u.batches || [];
+      // No duplicar si ya está
+      if (u.batches.some(b => b && b.title === PV[key].title)) return;
+      u.batches.push({
+        id: 'pv_' + key,
+        images: [],
+        vocab: PV[key].vocab,
+        grammar: [], exercises: [], speakingPrompts: [],
+        title: PV[key].title,
+        description: 'Expresiones que no se traducen por partes.',
+        topics: ['phrasal verbs'],
+        createdAt: Date.now(),
+      });
     });
   }
   merged.streak = computeStreak(merged.studyDates);
@@ -14115,20 +14143,61 @@ async function checkGrammarDrill(pfx, di) {
 
 Exercise type: ${type}
 Prompt: "${input.closest('.grammar-drill-item')?.querySelector('.grammar-drill-prompt')?.textContent?.trim() || ''}"
-Correct answer: "${answer}"
+Expected answer: "${answer}"
 Student wrote: "${userText}"
 
-Explain the grammar mistake in ONE sentence in simple English. Be specific about the rule, not just "wrong".
-Respond with ONLY the one-sentence explanation, no preamble.`;
+The student's wording does not match the expected answer exactly. Decide which of these is true:
 
-        const explanation = await AIService._callClaude({
+A) The student's sentence is ALSO correct — correct grammar, natural English, and it answers the prompt. A different but valid synonym or phrasing counts as correct.
+B) The student's sentence has a real mistake.
+
+Reply with ONLY one line, in this exact format:
+VALID | <one short sentence in Spanish telling him his version also works>
+or
+ERROR | <one sentence in simple English explaining the specific grammar mistake>`;
+
+        const veredicto = await AIService._callClaude({
           messages: [{ role: 'user', content: prompt }],
-          maxTokens: 80,
+          maxTokens: 120,
           timeoutMs: 30000,
         });
 
-        if (explanation) {
-          fb.innerHTML = `❌ ${escapeHtml(explanation.trim())}<br><span style="color:var(--text-3);font-size:0.72rem;margin-top:3px;display:block;">Expected: <strong style="color:var(--text-2);">${escapeHtml(answer)}</strong></span>`;
+        const texto = (veredicto || '').trim();
+        /* Marcarlo mal y luego explicar que estaba bien es peor que no explicar
+         * nada: la comparación de texto no distingue sinónimos ("unwind" vs
+         * "relax"), así que cuando la IA dice que la frase también sirve, su
+         * veredicto manda sobre la comparación. */
+        if (/^VALID\b/i.test(texto)) {
+          const nota = texto.replace(/^VALID\s*\|?\s*/i, '').trim();
+          const distintas = userText.trim().toLowerCase().replace(/[.,!?;:]/g,'')
+                          !== (answer || '').trim().toLowerCase().replace(/[.,!?;:]/g,'');
+          input.style.borderColor = 'var(--green)';
+          fb.style.color = 'var(--green)';
+          fb.innerHTML = `✅ Correct! ${escapeHtml(nota)}`
+            + (distintas
+                ? `<br><span style="color:var(--text-3);font-size:0.72rem;margin-top:3px;display:block;">También válido: <strong style="color:var(--text-2);">${escapeHtml(answer)}</strong></span>`
+                : '')
+            + ` <button class="btn btn-ghost btn-sm" style="padding:2px 8px;margin-left:6px;font-size:0.72rem;" onclick="speak(this.dataset.say)" data-say="${escapeStr(userText)}" title="Escuchar la pronunciación">🔊</button>`;
+          Sound.correct();
+          showFeedback({ type: 'correct' });
+          input.disabled = true;
+          input.style.opacity = '0.7';
+          if (btn) { btn.textContent = '✓'; btn.disabled = true; btn.style.color = 'var(--green)'; }
+          // Se contó como fallo antes de preguntar: deshacer esa marca.
+          input.dataset.fails = String(Math.max(0, fails - 1));
+          // weakAreas.grammar es un contador, no una lista.
+          if (typeof state.weakAreas?.grammar === 'number' && state.weakAreas.grammar > 0) {
+            state.weakAreas.grammar--;
+          }
+          if (current.lid && current.uid) {
+            const u = getUnit(current.lid, current.uid);
+            if (!u.drillState) u.drillState = {};
+            u.drillState[`${pfx}-${di}`] = { answer: userText, date: todayLocal() };
+            saveNow();
+          }
+        } else if (texto) {
+          const explicacion = texto.replace(/^ERROR\s*\|?\s*/i, '').trim();
+          fb.innerHTML = `❌ ${escapeHtml(explicacion)}<br><span style="color:var(--text-3);font-size:0.72rem;margin-top:3px;display:block;">Expected: <strong style="color:var(--text-2);">${escapeHtml(answer)}</strong></span>`;
           fb.style.color = 'var(--text-2)';
         }
       } catch (e) {
