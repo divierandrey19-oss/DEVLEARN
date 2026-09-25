@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-22b -->
+<!-- DEVLEARN_BUILD: 2026-09-25a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4840,7 +4840,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-22b';
+const APP_BUILD = '2026-09-25a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12157,7 +12157,14 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
   const pageNum   = batchIndex + 1;
   const totalPages = allBatches.length;
   const title     = batch.title || (batch.topics && batch.topics[0]) || `Page ${pageNum}`;
-  const isOutdated = (batch.grammarVersion || 0) < GRAMMAR_VERSION;
+  /* Regenerating rebuilds the grammar FROM the page photos, so a batch with no
+   * photos cannot be regenerated — regenerateBatchContent() refuses it outright.
+   * Offering "Update grammar" there promised something the button could not do:
+   * the hand-written vocabulary batches (the phrasal verbs) were flagged as
+   * outdated and the button only answered "No images found". A batch that can't
+   * be upgraded isn't out of date; it's just not that kind of batch. */
+  const puedeRegenerar = !!(batch.images && batch.images.length);
+  const isOutdated = puedeRegenerar && (batch.grammarVersion || 0) < GRAMMAR_VERSION;
   const genDate   = batch.generatedAt
     ? new Date(batch.generatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
     : batch.createdAt
@@ -12168,11 +12175,16 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
     ? `<div class="batch-section-thumb"><img src="${firstImg}" alt="Page ${pageNum}"/></div>`
     : `<div class="batch-section-thumb">📄</div>`;
 
-  const versionBadge = isOutdated
+  /* The version number describes which prompt generated the grammar. A batch
+   * with no grammar has nothing to version, so it gets no badge at all rather
+   * than a "v1" that means nothing. */
+  const versionBadge = !puedeRegenerar
+    ? ''
+    : isOutdated
     ? `<span style="font-size:0.6rem;font-weight:600;background:var(--amber-bg);color:var(--amber);border-radius:999px;padding:2px 7px;margin-left:6px;">v${batch.grammarVersion||1} → upgrade</span>`
     : `<span style="font-size:0.6rem;color:var(--text-3);margin-left:6px;">v${batch.grammarVersion||1}</span>`;
 
-  const regenBtn = current.lid && current.uid ? `
+  const regenBtn = (current.lid && current.uid && puedeRegenerar) ? `
     <button id="regen-btn-${batch.id}"
       class="btn btn-ghost btn-sm"
       style="font-size:0.68rem;padding:4px 10px;${isOutdated ? 'color:var(--amber);border-color:var(--amber);' : ''}"
@@ -16155,7 +16167,8 @@ function renderDebugPanel(u) {
   const totalVocab    = batches.reduce((s, b) => s + (b.vocab?.length || 0), 0);
   const totalGrammar  = batches.reduce((s, b) => s + (b.grammar?.length || 0), 0);
   const totalEx       = batches.reduce((s, b) => s + (b.exercises?.length || 0), 0);
-  const outdatedBatches = batches.filter(b => (b.grammarVersion || 0) < GRAMMAR_VERSION).length;
+  const outdatedBatches = batches.filter(b =>
+    b.images?.length && (b.grammarVersion || 0) < GRAMMAR_VERSION).length;
 
   const lsKey   = 'lingua_v4';
   const lsSize  = new Blob([localStorage.getItem(lsKey) || '']).size;
@@ -16173,7 +16186,7 @@ function renderDebugPanel(u) {
 
     ${outdatedBatches > 0 ? `
       <div style="padding:8px 10px;background:var(--amber-bg);border-radius:8px;color:var(--amber);font-size:0.7rem;margin-bottom:12px;">
-        ⚠ ${outdatedBatches} batch${outdatedBatches !== 1 ? 'es' : ''} generated with old grammar prompts (v${Math.min(...batches.map(b=>b.grammarVersion||1))} → current v${GRAMMAR_VERSION}).
+        ⚠ ${outdatedBatches} batch${outdatedBatches !== 1 ? 'es' : ''} generated with old grammar prompts (v${Math.min(...batches.filter(b => b.images?.length && (b.grammarVersion||0) < GRAMMAR_VERSION).map(b=>b.grammarVersion||1))} → current v${GRAMMAR_VERSION}).
         Use ↺ Regenerate buttons in the Grammar tab to update.
       </div>` : `
       <div style="padding:8px 10px;background:var(--green-bg);border-radius:8px;color:var(--green);font-size:0.7rem;margin-bottom:12px;">
@@ -16185,7 +16198,8 @@ function renderDebugPanel(u) {
         const date = b.generatedAt
           ? new Date(b.generatedAt).toLocaleString('es-CO', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
           : b.createdAt ? new Date(b.createdAt).toLocaleDateString('es-CO') : '—';
-        const isOld = (b.grammarVersion || 0) < GRAMMAR_VERSION;
+        // Sin fotos no hay nada que regenerar, así que tampoco hay nada "viejo".
+        const isOld = !!(b.images?.length) && (b.grammarVersion || 0) < GRAMMAR_VERSION;
         // The batch header that normally carries this button only renders for
         // multi-batch units, leaving a one-page unit with no way to regenerate.
         // This panel always lists every batch, so the button belongs here too.
