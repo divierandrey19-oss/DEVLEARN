@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-25a -->
+<!-- DEVLEARN_BUILD: 2026-09-25c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4840,7 +4840,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-25a';
+const APP_BUILD = '2026-09-25c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7198,26 +7198,48 @@ const VERB_FAMILIES = [
 
 /* La clave SRS es "vb:base" — el prefijo evita que un verbo choque con
  * una palabra igual del vocabulario si algún día comparten mapa. */
+/* El vocabulario del local de Dev (Huellitas de Amor). Vive en su propia
+ * pestaña, FUERA de las unidades A2, por dos razones: no es material del
+ * libro, y palabras tan comunes como open/close/check/give habrían
+ * borrado por duplicadas el vocabulario de las páginas que suba después
+ * — que es justo lo que le pasó a la página 104. */
+const SHOP_FAMILIES = [{"id": "shop_open", "kind": "shop", "sound": "🌅", "name": "Antes de abrir", "diff": "medium", "note": "Lo que haces entre que llegas y abres la puerta.", "rule": "Casi todos son regulares: se les pega -ed. Solo <b>sweep</b> es irregular (swept).", "verbs": [["open", "opened", "/ˈoʊpənd/", "abrir", "I <b>opened</b> the shop at 9 am.", "Abrí el local a las 9 am."], ["turn on", "turned on", "/tɜːrnd ɑːn/", "encender", "I <b>turned on</b> the lights and the music.", "Encendí las luces y la música."], ["sweep", "swept", "/swept/", "barrer", "I <b>swept</b> the floor before opening.", "Barrí el piso antes de abrir."], ["dust", "dusted", "/ˈdʌstɪd/", "sacudir el polvo", "I <b>dusted</b> the shelves this morning.", "Sacudí el polvo de los estantes esta mañana."], ["wipe", "wiped", "/waɪpt/", "limpiar con trapo", "I <b>wiped</b> the counter with a cloth.", "Limpié el mostrador con un trapo."], ["clean", "cleaned", "/kliːnd/", "limpiar", "I <b>cleaned</b> the counter this morning.", "Limpié el mostrador esta mañana."]]}, {"id": "shop_stock", "kind": "shop", "sound": "📦", "name": "Producto y bodega", "diff": "medium", "note": "Pedir, recibir y surtir lo que vendes.", "rule": "<b>put</b> no cambia: put → put. Los demás llevan -ed.", "verbs": [["put", "put", "/pʊt/", "poner", "I <b>put</b> the bags on the shelf.", "Puse los bultos en el estante."], ["restock", "restocked", "/riːˈstɑːkt/", "surtir", "I <b>restocked</b> the shelves yesterday.", "Surtí los estantes ayer."], ["order", "ordered", "/ˈɔːrdərd/", "pedir, encargar", "I <b>ordered</b> dog food from the supplier.", "Pedí comida para perro al proveedor."], ["receive", "received", "/rɪˈsiːvd/", "recibir", "We <b>received</b> a delivery on Monday.", "Recibimos un pedido el lunes."], ["check", "checked", "/tʃekt/", "revisar", "I <b>checked</b> the stock last week.", "Revisé el inventario la semana pasada."], ["weigh", "weighed", "/weɪd/", "pesar", "I <b>weighed</b> the bulk food on the scale.", "Pesé la comida a granel en la balanza."]]}, {"id": "shop_customer", "kind": "shop", "sound": "🧑‍🤝‍🧑", "name": "Atender al cliente", "diff": "medium", "note": "Tu parte del local: atender, vender y cobrar.", "rule": "Dos irregulares: <b>sell</b> → sold y <b>give</b> → gave. En <b>wrap</b> se dobla la p: wrapped.", "verbs": [["help", "helped", "/helpt/", "ayudar, atender", "I <b>helped</b> customers all day.", "Atendí clientes todo el día."], ["answer", "answered", "/ˈænsərd/", "responder", "I <b>answered</b> questions about the products.", "Respondí preguntas sobre los productos."], ["recommend", "recommended", "/ˌrekəˈmendɪd/", "recomendar", "I <b>recommended</b> a shampoo for her dog.", "Le recomendé un shampoo para su perro."], ["sell", "sold", "/soʊld/", "vender", "I <b>sold</b> three bags of dog food today.", "Vendí tres bultos de comida para perro hoy."], ["wrap", "wrapped", "/ræpt/", "envolver", "I <b>wrapped</b> the toy in paper.", "Envolví el juguete en papel."], ["charge", "charged", "/tʃɑːrdʒd/", "cobrar", "I <b>charged</b> him twenty thousand pesos.", "Le cobré veinte mil pesos."], ["give", "gave", "/ɡeɪv/", "dar", "I <b>gave</b> the customer his change.", "Le di el vuelto al cliente."]]}, {"id": "shop_cleaning", "kind": "shop", "sound": "🧽", "name": "El aseo durante el día", "diff": "medium", "note": "Lo que toca hacer cuando el local se ensucia.", "rule": "Todos regulares, pero ojo con la escritura: <b>scrub</b> dobla la b, <b>rinse</b> solo lleva -d, y <b>dry</b> cambia la y: dried.", "verbs": [["pick up", "picked up", "/pɪkt ʌp/", "recoger", "I <b>picked up</b> the food from the floor.", "Recogí la comida del piso."], ["clean up", "cleaned up", "/kliːnd ʌp/", "limpiar un desorden", "I <b>cleaned up</b> after the last customer left.", "Limpié después de que se fue el último cliente."], ["spill", "spilled", "/spɪld/", "derramar, regar", "A customer <b>spilled</b> the cat litter.", "Un cliente regó la arena para gato."], ["scrub", "scrubbed", "/skrʌbd/", "restregar", "I <b>scrubbed</b> the floor because a dog had an accident.", "Restregué el piso porque un perro tuvo un accidente."], ["vacuum", "vacuumed", "/ˈvækjuːmd/", "aspirar", "I <b>vacuumed</b> the pet hair from the carpet.", "Aspiré el pelo de mascota del tapete."], ["wash", "washed", "/wɑːʃt/", "lavar", "I <b>washed</b> the pet bowls.", "Lavé los platos de las mascotas."], ["rinse", "rinsed", "/rɪnst/", "enjuagar", "I <b>rinsed</b> the bucket with clean water.", "Enjuagué el balde con agua limpia."], ["dry", "dried", "/draɪd/", "secar", "I <b>dried</b> the floor with a towel.", "Sequé el piso con una toalla."], ["disinfect", "disinfected", "/ˌdɪsɪnˈfektɪd/", "desinfectar", "I <b>disinfected</b> the grooming table.", "Desinfecté la mesa de peluquería."], ["smell", "smelled", "/smeld/", "oler", "The shop <b>smelled</b> bad after the bath.", "El local olió feo después del baño."]]}, {"id": "shop_close", "kind": "shop", "sound": "🌙", "name": "Cerrar", "diff": "medium", "note": "Lo último del día, antes de irte para la casa.", "rule": "Dos irregulares: <b>throw away</b> → threw away y <b>take out</b> → took out. <b>mop</b> dobla la p y <b>tidy up</b> cambia la y.", "verbs": [["mop", "mopped", "/mɑːpt/", "trapear", "I <b>mopped</b> the floor after closing.", "Trapeé el piso después de cerrar."], ["tidy up", "tidied up", "/ˈtaɪdid ʌp/", "ordenar", "I <b>tidied up</b> the shelves before closing.", "Ordené los estantes antes de cerrar."], ["throw away", "threw away", "/θruː əˈweɪ/", "botar, tirar", "I <b>threw away</b> the empty boxes.", "Boté las cajas vacías."], ["take out", "took out", "/tʊk aʊt/", "sacar la basura", "I <b>took out</b> the trash at 9 pm.", "Saqué la basura a las 9 pm."], ["count", "counted", "/ˈkaʊntɪd/", "contar", "I <b>counted</b> the money at the end of the day.", "Conté la plata al final del día."], ["close", "closed", "/kloʊzd/", "cerrar", "I <b>closed</b> the shop at 9 pm.", "Cerré el local a las 9 pm."], ["lock", "locked", "/lɑːkt/", "cerrar con llave", "I <b>locked</b> the door and went home.", "Cerré la puerta con llave y me fui a casa."]]}, {"id": "shop_day", "kind": "shop", "sound": "🏪", "name": "Tu jornada y tu hermano", "diff": "medium", "note": "Cómo se reparten el local entre los dos.", "rule": "<b>take care of</b> es irregular: took care of.", "verbs": [["work", "worked", "/wɜːrkt/", "trabajar", "I <b>worked</b> from 9 am to 9 pm.", "Trabajé de 9 am a 9 pm."], ["take care of", "took care of", "/tʊk ker əv/", "encargarse de", "My brother <b>took care of</b> the grooming.", "Mi hermano se encargó de la peluquería."]]}, {"id": "shop_tools", "kind": "shop", "sound": "🧹", "name": "Herramientas del aseo", "diff": "easy", "keyPrefix": "tool", "noun": true, "note": "Son sustantivos, no verbos: aquí no hay pasado. Di una frase con la palabra y voltea para comparar.", "rule": "Estas no se conjugan. La tarjeta te pide una frase, y atrás tienes la del local para comparar.", "verbs": [["broom", "", "/bruːm/", "escoba", "The <b>broom</b> is behind the door.", "La escoba está detrás de la puerta."], ["mop", "", "/mɑːp/", "trapeador", "I need a new <b>mop</b>.", "Necesito un trapeador nuevo."], ["bucket", "", "/ˈbʌkɪt/", "balde", "I filled the <b>bucket</b> with water.", "Llené el balde con agua."], ["dustpan", "", "/ˈdʌstpæn/", "recogedor", "I used the <b>dustpan</b> for the kibble.", "Usé el recogedor para el concentrado."], ["rag / cloth", "", "/ræɡ · klɔːθ/", "trapo", "I clean the glass with a <b>rag</b>.", "Limpio el vidrio con un trapo."], ["duster", "", "/ˈdʌstər/", "plumero", "The <b>duster</b> is for the high shelves.", "El plumero es para los estantes altos."], ["trash can", "", "/træʃ kæn/", "caneca", "The <b>trash can</b> is full.", "La caneca está llena."], ["trash bag", "", "/træʃ bæɡ/", "bolsa de basura", "I changed the <b>trash bag</b>.", "Cambié la bolsa de basura."], ["gloves", "", "/ɡlʌvz/", "guantes", "I wear <b>gloves</b> when I clean.", "Uso guantes cuando limpio."], ["soap", "", "/soʊp/", "jabón", "We ran out of <b>soap</b>.", "Se nos acabó el jabón."], ["bleach", "", "/bliːtʃ/", "cloro", "I use <b>bleach</b> for the floor.", "Uso cloro para el piso."], ["disinfectant", "", "/ˌdɪsɪnˈfektənt/", "desinfectante", "The <b>disinfectant</b> is under the counter.", "El desinfectante está debajo del mostrador."], ["vacuum cleaner", "", "/ˈvækjuːm ˌkliːnər/", "aspiradora", "The <b>vacuum cleaner</b> is in the storage room.", "La aspiradora está en la bodega."], ["hose", "", "/hoʊz/", "manguera", "I washed the sidewalk with the <b>hose</b>.", "Lavé el andén con la manguera."], ["drain", "", "/dreɪn/", "desagüe", "The water goes to the <b>drain</b>.", "El agua va al desagüe."], ["pet hair", "", "/pet her/", "pelo de mascota", "There's <b>pet hair</b> everywhere.", "Hay pelo de mascota por todas partes."], ["mess", "", "/mes/", "desorden, reguero", "The puppy made a <b>mess</b>.", "El cachorro hizo un reguero."], ["smell / odor", "", "/smel · ˈoʊdər/", "olor", "I clean to control the <b>smell</b>.", "Limpio para controlar el olor."]]}];
+
 const VB_BOOK = new Set(['buy','come','do','drive','eat','find','fly','get','go','have','leave','lose','make','meet','read','say','see','sleep','steal','take']);
-const vbKey = base => 'vb:' + base;
+/* La familia puede pedir su propio espacio de claves con keyPrefix. Lo usa
+ * "Herramientas del aseo": ahí "mop" es el trapeador, y sin prefijo
+ * compartiría tarjeta con el verbo "mop" (trapear) — calificar uno movería
+ * el calendario del otro, que son cosas distintas.
+ * En la baraja "Todo junto" se mezclan familias, así que el prefijo ya no
+ * puede salir de la familia: cada palabra lleva el suyo en item[6]. */
+const vbKey = (base, fam, item) => {
+  const pref = (item && item[6]) || (fam && fam.keyPrefix) || '';
+  return 'vb:' + (pref ? pref + ':' : '') + base;
+};
 function vbProgress() {
   state.verbProgress = state.verbProgress || {};
   return state.verbProgress;
 }
-function vbCard(fam, base) {
-  return SRS.readCard(vbProgress(), vbKey(base), fam.diff);
+/* Recibe la tupla completa (no solo la base) para poder leer su prefijo.
+ * Acepta una cadena suelta por compatibilidad. */
+function vbCard(fam, item) {
+  const tupla = Array.isArray(item) ? item : null;
+  const base  = tupla ? tupla[0] : item;
+  return SRS.readCard(vbProgress(), vbKey(base, fam, tupla), fam.diff);
 }
 /* "Aprendido" = ya salió del ciclo de aprendizaje y tiene intervalo real. */
 function vbLearned(fam) {
   return fam.verbs.filter(v => {
-    const c = vbCard(fam, v[0]);
+    const c = vbCard(fam, v);
     return c.state === 'review' || c.state === 'mature' || c.interval >= 1;
   }).length;
 }
 function vbDueCount() {
   let n = 0;
-  VERB_FAMILIES.forEach(f => f.verbs.forEach(v => {
-    if (SRS.isDue(vbCard(f, v[0]))) n++;
+  // Las del local también vencen; si no se cuentan, el badge miente.
+  // vbBookFam() se excluye a propósito: sus tarjetas ya están en las familias.
+  VERB_FAMILIES.concat(SHOP_FAMILIES).forEach(f => f.verbs.forEach(v => {
+    if (SRS.isDue(vbCard(f, v))) n++;
   }));
   return n;
 }
@@ -7234,13 +7256,29 @@ function vbBookFam() {
   return { id:'book', kind:'book', sound:'★', name:'Los 20 de tu libro', diff:'hard',
            note:'La lista de la página 78 — los que entran en tu examen.', verbs };
 }
-function vbAllFams() { return VERB_FAMILIES.concat([vbBookFam()]); }
+/* Los 56 del local en una sola baraja. Cada palabra se lleva el prefijo de
+ * su grupo en item[6], porque aquí conviven verbos (sin prefijo) con
+ * herramientas (prefijo "tool") y la familia ya no puede decidirlo sola.
+ * Es la misma tarjeta: lo que califiques aquí cuenta en su grupo. */
+function vbShopAllFam() {
+  const verbs = [];
+  SHOP_FAMILIES.forEach(f => f.verbs.forEach(v => {
+    verbs.push(f.keyPrefix ? v.concat([f.keyPrefix]) : v);
+  }));
+  return { id:'shop_all', kind:'shop', sound:'🏪', name:'Todo junto', diff:'medium',
+           note:'Las 56 palabras del local revueltas, sin separar por momento del día.',
+           rule:'Es la misma tarjeta de cada grupo, así que lo que repases aquí cuenta allá. Los verbos te piden el pasado; las herramientas, una frase.',
+           verbs };
+}
+function vbAllFams() { return VERB_FAMILIES.concat([vbBookFam(), vbShopAllFam()], SHOP_FAMILIES); }
 
 function renderVerbs() {
   vbSes = null;
   const el = document.getElementById('verbs-content');
   if (!el) return;
-  const fams = vbDeck === 'book' ? [vbBookFam()] : VERB_FAMILIES.filter(f => f.kind === vbDeck);
+  const fams = vbDeck === 'book' ? [vbBookFam()]
+             : vbDeck === 'shop' ? [vbShopAllFam()].concat(SHOP_FAMILIES)
+             : VERB_FAMILIES.filter(f => f.kind === vbDeck);
   const total = fams.reduce((n, f) => n + f.verbs.length, 0);
   el.innerHTML = `
     <div class="section-title">🔤 Verbos en pasado</div>
@@ -7249,6 +7287,7 @@ function renderVerbs() {
       <button role="tab" aria-selected="${vbDeck === 'reg'}" onclick="vbSetDeck('reg')">Regulares</button>
       <button role="tab" aria-selected="${vbDeck === 'irr'}" onclick="vbSetDeck('irr')">Irregulares</button>
       <button role="tab" aria-selected="${vbDeck === 'book'}" onclick="vbSetDeck('book')">★ Del libro</button>
+      <button role="tab" aria-selected="${vbDeck === 'shop'}" onclick="vbSetDeck('shop')">🏪 Mi local</button>
     </div>
     <div class="vb-grid">
       ${fams.map(f => {
@@ -7262,7 +7301,7 @@ function renderVerbs() {
                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();vbShowRule('${f.id}')}">?</span>
           <span class="vb-sound">${escapeHtml(f.sound)}</span>
           <span class="vb-name">${escapeHtml(f.name)}</span>
-          <span class="vb-eg">${escapeHtml(f.verbs.slice(0, 3).map(v => v[1]).join(' · '))}</span>
+          <span class="vb-eg">${escapeHtml(f.verbs.slice(0, 3).map(v => v[1] || v[0]).join(' · '))}</span>
           ${(book && f.id !== 'book') ? `<span class="vb-eg" style="color:var(--amber);">★ ${book} de tu libro</span>` : ''}
           <span class="vb-bar"><i style="width:${pct}%"></i></span>
         </button>`;
@@ -7270,6 +7309,8 @@ function renderVerbs() {
     </div>
     <div class="vb-note">${vbDeck === 'book'
       ? 'Estos 20 son los de la página 78. Son las mismas tarjetas de las familias, así que lo que repases aquí cuenta allá.'
+      : vbDeck === 'shop'
+      ? `Las palabras de tu local: ${total} entre verbos y herramientas, ordenadas por el momento del día. No son del libro, así que no cuentan en el repaso de las unidades.`
       : `${total} verbos en esta pestaña, pero solo estudias una familia a la vez. Cuando una te salga sin pensarlo, pasa a la siguiente — no abras dos el mismo día.`}</div>`;
   updateNavBadges();
 }
@@ -7321,7 +7362,7 @@ function vbStart(id) {
    * repasa la familia completa igual — practicar de más no rompe el SRS
    * porque solo las respuestas cambian el calendario. */
   const due = fam.verbs.filter(v => {
-    const c = vbCard(fam, v[0]);
+    const c = vbCard(fam, v);
     return c.state === 'new' || SRS.isDue(c);
   });
   const list = (due.length ? due : fam.verbs).slice();
@@ -7340,6 +7381,9 @@ function renderVerbCard() {
   if (vbSes.at >= vbSes.queue.length) return renderVerbDone(fam);
 
   const [base, past, ipa, es, eg, egEs] = vbSes.queue[vbSes.at];
+  /* Por palabra, no por familia: en "Todo junto" se mezclan verbos y
+   * herramientas, y no tener pasado es la marca fiable de un sustantivo. */
+  const esNombre = !past;
   el.innerHTML = `
     <div class="vb-top">
       <button class="btn btn-ghost btn-sm" onclick="renderVerbs()">← Familias</button>
@@ -7347,15 +7391,15 @@ function renderVerbCard() {
     </div>
     <div class="vb-card" id="vb-card" ${vbSes.shown ? '' : 'onclick="vbFlip()"'}>
       ${vbSes.shown ? `
-        <div class="vb-past">${escapeHtml(past)}</div>
+        <div class="vb-past">${escapeHtml(esNombre ? base : past)}</div>
         <div class="vb-ipa">${escapeHtml(ipa)}</div>
-        <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(past)}">🔊</button>
+        <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(esNombre ? base : past)}">🔊</button>
         <div class="vb-sent">${eg}<span>${escapeHtml(egEs)}</span></div>
       ` : `
         <div class="vb-base">${escapeHtml(base)}</div>
         <div class="vb-es">${escapeHtml(es)}</div>
         <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(base)}">🔊</button>
-        <div class="vb-hint">Dilo en pasado en voz alta, después toca</div>
+        <div class="vb-hint">${esNombre ? 'Di una frase con esta palabra, después toca' : 'Dilo en pasado en voz alta, después toca'}</div>
       `}
     </div>
     ${vbSes.shown ? `
@@ -7364,7 +7408,8 @@ function renderVerbCard() {
         <button class="r2" onclick="vbRate(2)">Bien</button>
         <button class="r3" onclick="vbRate(3)">Fácil</button>
       </div>` : ''}`;
-  if (vbSes.shown) speak(past);
+  // En sustantivos no hay pasado que pronunciar: suena la palabra misma.
+  if (vbSes.shown) speak(esNombre ? base : past);
 }
 
 function vbFlip() { if (vbSes) { vbSes.shown = true; Sound.tap(); renderVerbCard(); } }
@@ -7372,7 +7417,8 @@ function vbFlip() { if (vbSes) { vbSes.shown = true; Sound.tap(); renderVerbCard
 function vbRate(rating) {
   if (!vbSes) return;
   const item = vbSes.queue[vbSes.at];
-  SRS.rate(vbProgress(), vbKey(item[0]), rating);
+  const fam  = vbAllFams().find(f => f.id === vbSes.famId);
+  SRS.rate(vbProgress(), vbKey(item[0], fam, item), rating);
   save();
   /* "Otra vez" lo devuelve al final del montón de hoy, como en Flashcards. */
   if (rating === 0) vbSes.queue.push(item);
