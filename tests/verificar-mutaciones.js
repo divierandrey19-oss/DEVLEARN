@@ -105,6 +105,21 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a sumar las difíciles al globito de Memory review',
+    buscar: `      badge: dueCount || null,`,
+    reemplazo: '      badge: dueCount + leechCount,',
+  },
+  {
+    nombre: 'volver a dibujar las pendientes como un tramo aparte en la barra',
+    buscar: "          ${bar.due        > 0 ? `<div style=\"flex:${bar.due};background:var(--accent);\"></div>` : ''}",
+    reemplazo: "          ${totalDue > 0 ? `<div style=\"flex:${totalDue};background:var(--accent);\"></div>` : ''}",
+  },
+  {
+    nombre: 'dejar las pendientes también en el tramo de su estado',
+    buscar: `  if (card.dueDate && card.dueDate <= today) return 'due';`,
+    reemplazo: '',
+  },
+  {
     nombre: 'volver a mostrar la bienvenida en cada apertura',
     buscar: `    if (localStorage.getItem('devlearn_splash_date') === hoy) return false;`,
     reemplazo: '',

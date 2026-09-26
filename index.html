@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26e -->
+<!-- DEVLEARN_BUILD: 2026-09-26f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4850,7 +4850,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26e';
+const APP_BUILD = '2026-09-26f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -9015,7 +9015,12 @@ function renderTodayTab() {
       color: 'var(--accent)',
       action: `openFcStudy('${u.lid}','${u.uid}')`,
       priority: 'high',
-      badge: dueCount + leechCount,
+      // Las tarjetas que la sesión va a mostrar: las mismas del título de la
+      // pestaña. Antes sumaba también las difíciles, que ya se dicen en el
+      // subtítulo — el título decía 8, el globito 10, y la sesión mostraba 8
+      // (con tarjetas pendientes se arma solo con esas). Una difícil que además
+      // tocaba hoy se contaba dos veces.
+      badge: dueCount || null,
     });
   } else if (newCount > 0) {
     steps.push({
@@ -17194,6 +17199,21 @@ function filterAllVocab(query) {
   `).join('');
 }
 
+/* En qué tramo de la barra de Memory Review va una tarjeta — en uno solo.
+ * "Pendiente" no es un estado más: es una marca encima de learning, review,
+ * mature o mastered. La barra la dibujaba como un tramo aparte además de esos
+ * estados, así que cada tarjeta pendiente contaba dos veces: con 2186 palabras
+ * la barra sumaba ~3100 y el azul se veía más grande de lo que era. Aquí cada
+ * tarjeta cae en un solo tramo y la barra suma exactamente las palabras que hay.
+ * Learning se queda en su tramo ámbar aunque siempre esté pendiente, que es lo
+ * que dice la leyenda. */
+function fcBarBucket(card, today) {
+  if (card.state === 'new') return 'new';
+  if (card.state === 'learning') return 'learning';
+  if (card.dueDate && card.dueDate <= today) return 'due';
+  return card.state === 'review' ? 'scheduled' : card.state;
+}
+
 function renderAllFlashcards() {
   const c = document.getElementById('fc-all-content');
   if (!c) return;
@@ -17216,12 +17236,16 @@ function renderAllFlashcards() {
   // ── Compute true SRS stats across all units ─────────────────
   const today = todayLocal();
   const counts = { new: 0, learning: 0, due: 0, overdue: 0, scheduled: 0, mature: 0, mastered: 0 };
+  // Los tramos de la barra: cada tarjeta en uno solo (ver fcBarBucket).
+  const bar = { new: 0, learning: 0, due: 0, scheduled: 0, mature: 0, mastered: 0 };
 
   unitsWithVocab.forEach(u => {
     const vocab = getUnitVocab(u);
     const prog  = u.fcProgress || {};
     vocab.forEach(v => {
       const card = SRS.readCard(prog, v.word, v.difficulty);
+      const tramo = fcBarBucket(card, today);
+      bar[tramo] = (bar[tramo] || 0) + 1;
       counts[card.state === 'review' ? 'scheduled' : card.state] =
         (counts[card.state === 'review' ? 'scheduled' : card.state] || 0) + 1;
       if (card.state !== 'new') {
@@ -17269,12 +17293,12 @@ function renderAllFlashcards() {
 
         <!-- State legend bar -->
         <div style="margin-top:18px;height:6px;border-radius:99px;overflow:hidden;display:flex;gap:1px;">
-          ${counts.new        > 0 ? `<div style="flex:${counts.new};background:var(--surface-3);"></div>` : ''}
-          ${counts.learning   > 0 ? `<div style="flex:${counts.learning};background:var(--amber);"></div>` : ''}
-          ${totalDue          > 0 ? `<div style="flex:${totalDue};background:var(--accent);"></div>` : ''}
-          ${counts.scheduled  > 0 ? `<div style="flex:${counts.scheduled};background:var(--border-2);"></div>` : ''}
-          ${counts.mature     > 0 ? `<div style="flex:${counts.mature};background:var(--green);opacity:0.7;"></div>` : ''}
-          ${counts.mastered   > 0 ? `<div style="flex:${counts.mastered};background:var(--purple);"></div>` : ''}
+          ${bar.new        > 0 ? `<div style="flex:${bar.new};background:var(--surface-3);"></div>` : ''}
+          ${bar.learning   > 0 ? `<div style="flex:${bar.learning};background:var(--amber);"></div>` : ''}
+          ${bar.due        > 0 ? `<div style="flex:${bar.due};background:var(--accent);"></div>` : ''}
+          ${bar.scheduled  > 0 ? `<div style="flex:${bar.scheduled};background:var(--border-2);"></div>` : ''}
+          ${bar.mature     > 0 ? `<div style="flex:${bar.mature};background:var(--green);opacity:0.7;"></div>` : ''}
+          ${bar.mastered   > 0 ? `<div style="flex:${bar.mastered};background:var(--purple);"></div>` : ''}
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:0.65rem;color:var(--text-3);">
           <span>🟡 Learning = not yet consolidated</span>
