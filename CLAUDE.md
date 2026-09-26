@@ -81,8 +81,10 @@ que no debe mostrarse como desactualizado ni ofrecer el botón.
 ## Antes de publicar
 
 - Revisar la sintaxis de **los dos** bloques `<script>`, no solo el grande.
-- Correr las pruebas. **No publicar con nada en rojo**, ni siquiera un
-  fallo que "parece del arnés" — verificar primero si es del código.
+- Correr las pruebas: `node --test tests/*.test.js`. **No publicar con nada
+  en rojo**, ni siquiera un fallo que "parece del arnés" — verificar primero
+  si es del código. Cubren los tres guardias, el orden del arranque y el
+  sello de build; `tests/README.md` explica el resto.
 - Subir `APP_BUILD` y el comentario `DEVLEARN_BUILD` de la línea 2. La
   app lee ese comentario en tiempo de ejecución para decirle al usuario
   qué versión tiene abierta.
