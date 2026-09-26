@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26g -->
+<!-- DEVLEARN_BUILD: 2026-09-26h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4850,7 +4850,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26g';
+const APP_BUILD = '2026-09-26h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -4883,6 +4883,57 @@ const LEVELS = [
      'local'  — offline simulation (always works, no key)
      'claude' — real Claude API with vision (requires API key)
    ============================================================ */
+/* La gramática que devuelve el análisis de una página, limpia para guardarse.
+ *
+ * Los ejercicios de cada tema se pedían a la IA como `drillSentences` — el
+ * nombre que lee toda la app — pero este filtro conservaba un campo `drills`
+ * que la IA nunca manda y nada lee, y descartaba `drillSentences`. Así cada
+ * página subida llegaba sin ejercicios de gramática, la app avisaba "la página
+ * quedó incompleta" culpando a una respuesta cortada, y el botón ✨ volvía a
+ * pedírselos a la IA: dos llamadas pagadas por lo mismo. */
+function sanitizeGrammar(lista) {
+  if (!Array.isArray(lista)) return [];
+  const TIPOS_DRILL = ['translation', 'fill_blank', 'error_correction'];
+  const seenG = new Set();
+  return lista
+    .filter(g => g && typeof g === 'object' && String(g.title || '').trim())
+    .map(g => ({
+      title:       String(g.title).trim(),
+      // Anything not explicitly and validly marked "book" is "derived".
+      // An unmarked point must never claim the book's authority.
+      source:      String(g.source || '').trim().toLowerCase() === 'book' ? 'book' : 'derived',
+      level:       String(g.level || '').trim(),
+      explanation: String(g.explanation || '').trim(),
+      structure:   String(g.structure || '').trim(),
+      rule:        String(g.rule || '').trim(),
+      spanishTrap: String(g.spanishTrap || '').trim(),
+      examples:    Array.isArray(g.examples)
+        ? g.examples.filter(e => e && typeof e === 'object' && (e.en || e.es))
+                    .map(e => ({ en: String(e.en || '').trim(), es: String(e.es || '').trim() }))
+        : [],
+      commonErrors: Array.isArray(g.commonErrors) ? g.commonErrors.filter(x => x) : [],
+      // Un ejercicio sin enunciado o sin respuesta no se puede contestar: fuera.
+      // Los mismos tres como máximo que guarda el botón ✨ de Grammar.
+      drillSentences: Array.isArray(g.drillSentences)
+        ? g.drillSentences
+            .filter(d => d && typeof d === 'object' && String(d.prompt || '').trim() && String(d.answer || '').trim())
+            .map(d => ({
+              type:   TIPOS_DRILL.includes(String(d.type || '').trim()) ? String(d.type).trim() : 'translation',
+              prompt: String(d.prompt).trim(),
+              answer: String(d.answer).trim(),
+              hint:   String(d.hint || '').trim(),
+            }))
+            .slice(0, 3)
+        : [],
+    }))
+    .filter(g => {
+      const key = g.title.toLowerCase().replace(/[^a-z ]/g, '').trim();
+      if (seenG.has(key)) return false;   // same point extracted twice
+      seenG.add(key);
+      return true;
+    });
+}
+
 const AIService = {
 
   mode: 'local',   // set by loadSettings()
@@ -5274,41 +5325,7 @@ RULES:
     // get none beyond "is it an array?". A null or a bare string in here
     // crashed the grammar tab, and the bad item was saved — so the unit stayed
     // broken forever. The model's output is not trustworthy input.
-    if (Array.isArray(parsed.grammar)) {
-      const seenG = new Set();
-      parsed.grammar = parsed.grammar
-        .filter(g => g && typeof g === 'object' && String(g.title || '').trim())
-        .map(g => ({
-          title:       String(g.title).trim(),
-          // Anything not explicitly and validly marked "book" is "derived".
-          // An unmarked point must never claim the book's authority.
-          source:      String(g.source || '').trim().toLowerCase() === 'book' ? 'book' : 'derived',
-          level:       String(g.level || '').trim(),
-          explanation: String(g.explanation || '').trim(),
-          structure:   String(g.structure || '').trim(),
-          rule:        String(g.rule || '').trim(),
-          spanishTrap: String(g.spanishTrap || '').trim(),
-          examples:    Array.isArray(g.examples)
-            ? g.examples.filter(e => e && typeof e === 'object' && (e.en || e.es))
-                        .map(e => ({ en: String(e.en || '').trim(), es: String(e.es || '').trim() }))
-            : [],
-          commonErrors: Array.isArray(g.commonErrors) ? g.commonErrors.filter(x => x) : [],
-          drills: Array.isArray(g.drills)
-            ? g.drills.filter(d => d && typeof d === 'object' && d.answer)
-                      .map(d => ({ prompt: String(d.prompt || '').trim(),
-                                   answer: String(d.answer).trim(),
-                                   type:   String(d.type || 'translation').trim() }))
-            : [],
-        }))
-        .filter(g => {
-          const key = g.title.toLowerCase().replace(/[^a-z ]/g, '').trim();
-          if (seenG.has(key)) return false;   // same point extracted twice
-          seenG.add(key);
-          return true;
-        });
-    } else {
-      parsed.grammar = [];
-    }
+    parsed.grammar = sanitizeGrammar(parsed.grammar);
 
     // ── Validate exercises ─────────────────────────────────────
     // An exercise with no answer can never be answered correctly; one with no

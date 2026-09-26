@@ -105,6 +105,16 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a descartar los ejercicios de gramática que manda la IA',
+    buscar: `      drillSentences: Array.isArray(g.drillSentences)`,
+    reemplazo: '      drills: Array.isArray(g.drills)',
+  },
+  {
+    nombre: 'que el análisis de páginas deje de usar el filtro de gramática',
+    buscar: `    parsed.grammar = sanitizeGrammar(parsed.grammar);`,
+    reemplazo: '    parsed.grammar = Array.isArray(parsed.grammar) ? parsed.grammar : [];',
+  },
+  {
     nombre: 'volver a ofrecer primero la sesión vieja aunque no traiga las pendientes',
     buscar: `  const pendientesFuera = !!activeStudy && srsCounts.due > 0 && dueEnSesion < srsCounts.due;`,
     reemplazo: '  const pendientesFuera = false;',
