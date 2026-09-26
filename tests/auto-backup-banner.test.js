@@ -56,9 +56,9 @@ test('avisa cuando el respaldo es de ayer, diciendo que puede faltar algo', () =
 
   assert.equal(m.banners.length, 1, 'pone un banner');
   assert.equal(m.banners[0].id, 'auto-backup-banner');
-  assert.match(m.texto, /del respaldo de ayer/, 'dice cuándo se tomó el respaldo');
-  assert.match(m.texto, /puede faltar/, 'advierte que puede faltar trabajo');
-  assert.match(m.texto, /No encontré tu guardado principal/,
+  assert.match(m.texto, /from yesterday's backup/, 'dice cuándo se tomó el respaldo');
+  assert.match(m.texto, /may be missing/, 'advierte que puede faltar trabajo');
+  assert.match(m.texto, /Your main save was not found/,
                'explica por qué pasó, no solo que pasó');
 });
 
@@ -67,15 +67,15 @@ test('con un respaldo viejo dice cuántos días han pasado', () => {
   const m = montarBanner({ fechaRespaldo: '2026-09-20' });
   m.showAutoBackupBanner();
 
-  assert.match(m.texto, /hace 6 días/, `esperaba "hace 6 días" en: ${m.texto.slice(0, 200)}`);
+  assert.match(m.texto, /6 days ago/, `esperaba "6 days ago" en: ${m.texto.slice(0, 200)}`);
 });
 
 test('si el respaldo es de hoy lo dice, sin inventar días', () => {
   const m = montarBanner({ fechaRespaldo: HOY });
   m.showAutoBackupBanner();
 
-  assert.match(m.texto, /del respaldo de hoy/);
-  assert.doesNotMatch(m.texto, /hace .* días|de ayer/);
+  assert.match(m.texto, /from today's backup/);
+  assert.doesNotMatch(m.texto, /days ago|yesterday/);
 });
 
 test('sin fecha de respaldo avisa igual, solo sin la parte del cuándo', () => {
@@ -85,8 +85,8 @@ test('sin fecha de respaldo avisa igual, solo sin la parte del cuándo', () => {
   m.showAutoBackupBanner();
 
   assert.equal(m.banners.length, 1);
-  assert.match(m.texto, /Recuperé tus datos/);
-  assert.doesNotMatch(m.texto, /respaldo de (hoy|ayer)|hace \d+ días/);
+  assert.match(m.texto, /Your data was recovered/);
+  assert.doesNotMatch(m.texto, /(today's|yesterday's) backup|\d+ days ago/);
 });
 
 test('no escribe nada en localStorage', () => {
@@ -116,14 +116,14 @@ test('ofrece descargar una copia, que es lo que resuelve el problema', () => {
 
 test('una fecha ilegible no ensucia el aviso ni entra cruda en el HTML', () => {
   // La fecha viene de localStorage, así que es un dato, no HTML. Y si no se
-  // puede leer, el aviso se da sin el cuándo: "hace NaN días (Invalid Date)"
+  // puede leer, el aviso se da sin el cuándo: "NaN days ago (Invalid Date)"
   // sería peor que no decir la fecha.
   const basura = '<img src=x onerror=alert(1)>';
   const m = montarBanner({ fechaRespaldo: basura });
   m.showAutoBackupBanner();
 
   assert.equal(m.banners.length, 1, 'el aviso se da igual');
-  assert.match(m.texto, /Recuperé tus datos/);
+  assert.match(m.texto, /Your data was recovered/);
   assert.ok(!m.texto.includes(basura), 'la fecha cruda no llega al HTML');
   assert.doesNotMatch(m.texto, /<img/, 'nada de HTML desde la fecha');
   assert.doesNotMatch(m.texto, /NaN|Invalid Date/, 'nada de basura en pantalla');
@@ -134,7 +134,7 @@ test('una fecha con formato raro tampoco imprime NaN', () => {
   m.showAutoBackupBanner();
 
   assert.doesNotMatch(m.texto, /NaN|Invalid Date/);
-  assert.match(m.texto, /Recuperé tus datos/);
+  assert.match(m.texto, /Your data was recovered/);
 });
 
 // ---------------------------------------------------------------------------

@@ -49,18 +49,18 @@ test('sin sesión, o con índices que ya no existen, no lanza', () => {
 // Cuándo empezó la sesión, con el día.
 // ---------------------------------------------------------------------------
 
-test('una sesión de hoy dice "hoy a las …"', () => {
-  assert.match(sessionStartedLabel(Date.now()), /^hoy a las /);
+test('una sesión de hoy dice "today at …"', () => {
+  assert.match(sessionStartedLabel(Date.now()), /^today at /);
 });
 
-test('una sesión de ayer dice "ayer a las …"', () => {
-  assert.match(sessionStartedLabel(Date.now() - 24 * 3600 * 1000), /^ayer a las /);
+test('una sesión de ayer dice "yesterday at …"', () => {
+  assert.match(sessionStartedLabel(Date.now() - 24 * 3600 * 1000), /^yesterday at /);
 });
 
 test('una sesión de hace días dice la fecha', () => {
   const etiqueta = sessionStartedLabel(Date.now() - 5 * 24 * 3600 * 1000);
-  assert.match(etiqueta, /^el .+ a las /);
-  assert.doesNotMatch(etiqueta, /^(hoy|ayer)/);
+  assert.match(etiqueta, /^on .+ at /);
+  assert.doesNotMatch(etiqueta, /^(today|yesterday)/);
 });
 
 // ---------------------------------------------------------------------------
@@ -79,20 +79,20 @@ test('si la sesión guardada deja pendientes fuera, se muestra primero el repaso
 test('el botón principal repasa las pendientes y el secundario sigue la sesión', () => {
   const bloque = pantalla.slice(pantalla.indexOf('activeStudy && pendientesFuera ? `'),
                                 pantalla.indexOf('` : activeStudy ? `'));
-  const repasar = bloque.indexOf('Repasar ');
-  const seguir = bloque.indexOf('Seguir esa sesión');
-  assert.ok(repasar > 0 && seguir > repasar, 'primero "Repasar", después "Seguir esa sesión"');
+  const repasar = bloque.indexOf('Review ');
+  const seguir = bloque.indexOf('Continue that session');
+  assert.ok(repasar > 0 && seguir > repasar, 'primero "Review", después "Continue that session"');
   assert.match(bloque.slice(0, repasar), /onclick="startFcSession\(false\)"/,
-    '"Repasar" arma una sesión nueva con las pendientes');
+    '"Review" arma una sesión nueva con las pendientes');
   assert.match(bloque.slice(repasar, seguir + 60), /onclick="startFcSession\(true\)"/,
-    '"Seguir esa sesión" retoma la guardada');
+    '"Continue that session" retoma la guardada');
 });
 
 test('avisa que repasar cierra la sesión guardada, sin perder lo calificado', () => {
-  assert.match(pantalla, /Si repasas las pendientes, se cierra; lo que ya calificaste queda guardado\./);
+  assert.match(pantalla, /If you review the due cards, it closes; what you already rated stays saved\./);
 });
 
 test('la sesión guardada muestra el día, no solo la hora', () => {
-  assert.doesNotMatch(pantalla, /Empezaste a las \$\{new Date/, 'quedó la versión que solo decía la hora');
+  assert.doesNotMatch(pantalla, /(Empezaste a las|You started it at) \$\{new Date/, 'quedó la versión que solo decía la hora');
   assert.match(pantalla, /sessionStartedLabel\(activeStudy\.startedAt\)/);
 });
