@@ -105,6 +105,44 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a sumar las difíciles al globito de Memory review',
+    buscar: `      badge: dueCount || null,`,
+    reemplazo: '      badge: dueCount + leechCount,',
+  },
+  {
+    nombre: 'volver a dibujar las pendientes como un tramo aparte en la barra',
+    buscar: "          ${bar.due        > 0 ? `<div style=\"flex:${bar.due};background:var(--accent);\"></div>` : ''}",
+    reemplazo: "          ${totalDue > 0 ? `<div style=\"flex:${totalDue};background:var(--accent);\"></div>` : ''}",
+  },
+  {
+    nombre: 'dejar las pendientes también en el tramo de su estado',
+    buscar: `  if (card.dueDate && card.dueDate <= today) return 'due';`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'volver a mostrar la bienvenida en cada apertura',
+    buscar: `    if (localStorage.getItem('devlearn_splash_date') === hoy) return false;`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'dejar de consultar si la bienvenida ya se vio hoy',
+    buscar: `    if (!shouldPlaySplash()) {
+      splashEl.remove();
+      return;
+    }`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'volver a la animación lenta de los elementos de la página',
+    buscar: `  animation: pageChildIn 0.18s var(--ease-ios) backwards;`,
+    reemplazo: '  animation: pageChildIn 0.55s var(--ease-ios) backwards;',
+  },
+  {
+    nombre: 'volver a la entrada lenta de la página',
+    buscar: `--t-page: 0.2s;`,
+    reemplazo: '--t-page: 0.45s;',
+  },
+  {
     nombre: 'volver a sembrar una fecha de examen ya pasada',
     buscar: `    merged.examDate = '2026-10-16';`,
     reemplazo: "    merged.examDate = '2026-07-31';",
