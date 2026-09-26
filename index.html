@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-25c -->
+<!-- DEVLEARN_BUILD: 2026-09-26a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4616,6 +4616,11 @@ if (window.__loadCorrupt) showLoadCorruptBanner();
  * right at boot, before anything else runs. */
 (function healBloatedStore() {
   try {
+    /* Same reason writeState() refuses: a load that couldn't be read leaves
+     * `state` empty, so the "compacted" value would be an empty state written
+     * over the unread raw one — and this path bypasses writeState()'s guard
+     * entirely. There is nothing to compact anyway when the load failed. */
+    if (window.__loadCorrupt) { console.warn('Storage heal skipped: unresolved load failure'); return; }
     const raw = localStorage.getItem(KEY) || '';
     if (!raw.includes('"data:image')) return;
     const clean = JSON.stringify(stateWithoutImages());
@@ -4840,7 +4845,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-25c';
+const APP_BUILD = '2026-09-26a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
