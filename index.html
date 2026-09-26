@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26j -->
+<!-- DEVLEARN_BUILD: 2026-09-26k -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3801,6 +3801,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 #page-verbs .vb-sent{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:var(--fs-body);line-height:1.5;max-width:34ch}
 #page-verbs .vb-sent b{color:var(--amber)}
 #page-verbs .vb-sent span{display:block;color:var(--text-3);font-size:var(--fs-small);margin-top:4px}
+#page-verbs .vb-sent .vb-sent-audio{margin-top:10px}
 #page-verbs .vb-rate{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 #page-verbs .vb-rate button{padding:14px 6px;border-radius:var(--r-sm);border:1px solid var(--border-2);background:var(--surface);color:var(--text);font:inherit;font-weight:600;font-size:var(--fs-small);cursor:pointer}
 #page-verbs .vb-rate .r0{border-color:var(--red);color:var(--red)}
@@ -4850,7 +4851,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26j';
+const APP_BUILD = '2026-09-26k';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7473,7 +7474,7 @@ function vbStart(id) {
     const j = Math.floor(Math.random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]];
   }
-  vbSes = { famId: id, queue: list, at: 0, shown: false };
+  vbSes = { famId: id, queue: list, at: 0, shown: false, seen: false };
   renderVerbCard();
 }
 
@@ -7492,30 +7493,43 @@ function renderVerbCard() {
       <button class="btn btn-ghost btn-sm" onclick="renderVerbs()">← Families</button>
       <span class="vb-count">${vbSes.at + 1} / ${vbSes.queue.length} · ${escapeHtml(fam.sound)}</span>
     </div>
-    <div class="vb-card" id="vb-card" ${vbSes.shown ? '' : 'onclick="vbFlip()"'}>
+    <div class="vb-card" id="vb-card" onclick="vbFlip()">
       ${vbSes.shown ? `
         <div class="vb-past">${escapeHtml(esNombre ? base : past)}</div>
         <div class="vb-ipa">${escapeHtml(ipa)}</div>
         <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(esNombre ? base : past)}">🔊</button>
-        <div class="vb-sent">${eg}<span>${escapeHtml(egEs)}</span></div>
+        <div class="vb-sent">${eg}<span>${escapeHtml(egEs)}</span>
+          <button class="audio-btn vb-sent-audio" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(String(eg || '').replace(/<[^>]*>/g, ''))}" title="Hear the sentence">🔊</button>
+        </div>
       ` : `
         <div class="vb-base">${escapeHtml(base)}</div>
         <div class="vb-es">${escapeHtml(es)}</div>
         <button class="audio-btn" style="margin-top:12px;" onclick="event.stopPropagation();speak(this.dataset.say)" data-say="${escapeStr(base)}">🔊</button>
-        <div class="vb-hint">${esNombre ? 'Say a sentence with this word, then tap' : 'Say it in the past out loud, then tap'}</div>
+        <div class="vb-hint">${vbSes.seen ? 'Tap to see the other side' : esNombre ? 'Say a sentence with this word, then tap' : 'Say it in the past out loud, then tap'}</div>
       `}
     </div>
-    ${vbSes.shown ? `
+    ${vbSes.seen ? `
       <div class="vb-rate">
         <button class="r0" onclick="vbRate(0)">Again</button>
         <button class="r2" onclick="vbRate(2)">Good</button>
         <button class="r3" onclick="vbRate(3)">Easy</button>
       </div>` : ''}`;
-  // En sustantivos no hay pasado que pronunciar: suena la palabra misma.
-  if (vbSes.shown) speak(esNombre ? base : past);
 }
 
-function vbFlip() { if (vbSes) { vbSes.shown = true; Sound.tap(); renderVerbCard(); } }
+/* La tarjeta se voltea las veces que quiera: él vuelve al frente para oír
+ * la forma normal y compararla con el pasado. Los botones de calificar se
+ * quedan una vez que vio la respuesta (`seen`), esté del lado que esté. */
+function vbFlip() {
+  if (!vbSes) return;
+  vbSes.shown = !vbSes.shown;
+  vbSes.seen = true;
+  Sound.tap();
+  renderVerbCard();
+  // Suena la cara que queda a la vista. En sustantivos no hay pasado: suena
+  // la palabra misma.
+  const [base, past] = vbSes.queue[vbSes.at];
+  speak(vbSes.shown && past ? past : base);
+}
 
 function vbRate(rating) {
   if (!vbSes) return;
@@ -7527,6 +7541,7 @@ function vbRate(rating) {
   if (rating === 0) vbSes.queue.push(item);
   vbSes.at++;
   vbSes.shown = false;
+  vbSes.seen = false;
   Sound.tap();
   renderVerbCard();
 }
