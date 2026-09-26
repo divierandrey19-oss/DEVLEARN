@@ -86,7 +86,7 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
-    nombre: 'leer la fecha del respaldo tarde, cuando ya dice "hoy"',
+    nombre: 'leer la fecha del respaldo tarde, cuando ya dice "today"',
     buscar: `      window.__autoBackupDate = localStorage.getItem(BACKUP_KEY + '_date');`,
     reemplazo: '',
   },
@@ -94,10 +94,10 @@ const MUTACIONES = [
     // La fecha viene de localStorage. Pintarla cruda en innerHTML, en vez de la
     // versión ya formateada, sí sería un defecto de verdad.
     nombre: 'meter la fecha cruda del respaldo en el HTML',
-    buscar: `      cuando = dias <= 0 ? \` del respaldo de hoy (\${escapeHtml(bonita)})\`
-             : dias === 1 ? \` del respaldo de ayer (\${escapeHtml(bonita)})\`
-             : \` del respaldo de hace \${dias} días (\${escapeHtml(bonita)})\`;`,
-    reemplazo: '      cuando = ` del respaldo (${fecha})`;',
+    buscar: `      cuando = dias <= 0 ? \` from today's backup (\${escapeHtml(bonita)})\`
+             : dias === 1 ? \` from yesterday's backup (\${escapeHtml(bonita)})\`
+             : \` from the backup of \${dias} days ago (\${escapeHtml(bonita)})\`;`,
+    reemplazo: '      cuando = ` from the backup (${fecha})`;',
   },
   {
     nombre: 'dejar que una fecha ilegible imprima "NaN días / Invalid Date"',
@@ -125,15 +125,15 @@ const MUTACIONES = [
     reemplazo: '  return session.queue',
   },
   {
-    nombre: 'que el botón "Repasar" retome la sesión vieja',
+    nombre: 'que el botón "Review" retome la sesión vieja',
     buscar: `onclick="startFcSession(false)">
-      Repasar `,
+      Review `,
     reemplazo: `onclick="startFcSession(true)">
-      Repasar `,
+      Review `,
   },
   {
     nombre: 'volver a mostrar solo la hora de la sesión guardada',
-    buscar: `  if (dia === hoy) return \`hoy a las \${hora}\`;`,
+    buscar: `  if (dia === hoy) return \`today at \${hora}\`;`,
     reemplazo: '',
   },
   {
