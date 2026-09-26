@@ -81,6 +81,30 @@ const MUTACIONES = [
     if (raw) {`,
   },
   {
+    nombre: 'dejar de avisar cuando se recupera del respaldo diario',
+    buscar: `if (window.__loadedFromAutoBackup) showAutoBackupBanner();`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'leer la fecha del respaldo tarde, cuando ya dice "hoy"',
+    buscar: `      window.__autoBackupDate = localStorage.getItem(BACKUP_KEY + '_date');`,
+    reemplazo: '',
+  },
+  {
+    // La fecha viene de localStorage. Pintarla cruda en innerHTML, en vez de la
+    // versión ya formateada, sí sería un defecto de verdad.
+    nombre: 'meter la fecha cruda del respaldo en el HTML',
+    buscar: `      cuando = dias <= 0 ? \` del respaldo de hoy (\${escapeHtml(bonita)})\`
+             : dias === 1 ? \` del respaldo de ayer (\${escapeHtml(bonita)})\`
+             : \` del respaldo de hace \${dias} días (\${escapeHtml(bonita)})\`;`,
+    reemplazo: '      cuando = ` del respaldo (${fecha})`;',
+  },
+  {
+    nombre: 'dejar que una fecha ilegible imprima "NaN días / Invalid Date"',
+    buscar: `    if (!isNaN(d)) {`,
+    reemplazo: '    if (true) {',
+  },
+  {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
     buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();`,
