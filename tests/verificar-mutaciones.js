@@ -105,6 +105,28 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a ofrecer primero la sesión vieja aunque no traiga las pendientes',
+    buscar: `  const pendientesFuera = !!activeStudy && srsCounts.due > 0 && dueEnSesion < srsCounts.due;`,
+    reemplazo: '  const pendientesFuera = false;',
+  },
+  {
+    nombre: 'contar pendientes en lo ya visto de la sesión',
+    buscar: `  return session.queue.slice(session.position || 0)`,
+    reemplazo: '  return session.queue',
+  },
+  {
+    nombre: 'que el botón "Repasar" retome la sesión vieja',
+    buscar: `onclick="startFcSession(false)">
+      Repasar `,
+    reemplazo: `onclick="startFcSession(true)">
+      Repasar `,
+  },
+  {
+    nombre: 'volver a mostrar solo la hora de la sesión guardada',
+    buscar: `  if (dia === hoy) return \`hoy a las \${hora}\`;`,
+    reemplazo: '',
+  },
+  {
     nombre: 'volver a sumar las difíciles al globito de Memory review',
     buscar: `      badge: dueCount || null,`,
     reemplazo: '      badge: dueCount + leechCount,',

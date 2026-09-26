@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26f -->
+<!-- DEVLEARN_BUILD: 2026-09-26g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4850,7 +4850,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26f';
+const APP_BUILD = '2026-09-26g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17440,6 +17440,31 @@ function renderFcUnitCard(u, lvl) {
   `;
 }
 
+/* Cuántas de las tarjetas que le faltan a una sesión guardada están pendientes
+ * hoy. La sesión guarda su lista al empezar, así que una sesión de toda la
+ * unidad empezada en la tarde no trae las palabras que quedaron en
+ * "aprendiendo" durante ella: eran de las ya vistas. `esPendiente` es
+ * SRS.isDue sobre la tarjeta de esa palabra. */
+function countDueInSession(session, vocab, esPendiente) {
+  if (!session || !Array.isArray(session.queue)) return 0;
+  return session.queue.slice(session.position || 0)
+    .filter(i => vocab[i] && esPendiente(vocab[i])).length;
+}
+
+/* "hoy a las 4:25 p. m.", "ayer a las …" o "el mié. 23 de sept. a las …".
+ * Antes solo decía la hora, y una sesión de hace días se veía igual que una
+ * de hace un rato. */
+function sessionStartedLabel(ts) {
+  const d = new Date(ts);
+  const hora = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const dia = dateLocal(d);
+  const hoy = todayLocal();
+  const ayerD = new Date(); ayerD.setDate(ayerD.getDate() - 1);
+  if (dia === hoy) return `hoy a las ${hora}`;
+  if (dia === dateLocal(ayerD)) return `ayer a las ${hora}`;
+  return `el ${d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })} a las ${hora}`;
+}
+
 function openFcStudy(lid, uid, newOnly = false) {
   const u     = getUnit(lid, uid);
   const vocab = getUnitVocab(u);
@@ -17544,6 +17569,16 @@ function openFcStudy(lid, uid, newOnly = false) {
   const activeStudy = activeQuiz ? null
     : StudySession.getActive(lid, uid, fc.mode || 'classic', vocab.length);
 
+  /* Venía de "Memory review 8" y el botón grande le ofrecía seguir una sesión de
+   * toda la unidad (307 por delante) que no traía esas 8. Si la sesión guardada
+   * deja pendientes fuera, lo primero es repasarlas; seguirla queda como
+   * segunda opción. Si las trae todas (por ejemplo, paró a mitad del repaso),
+   * seguirla sigue siendo lo principal. */
+  const dueEnSesion = activeStudy
+    ? countDueInSession(activeStudy, vocab, v => SRS.isDue(SRS.readCard(u.fcProgress, v.word, v.difficulty)))
+    : 0;
+  const pendientesFuera = !!activeStudy && srsCounts.due > 0 && dueEnSesion < srsCounts.due;
+
   const quizSessionBlock = activeQuiz ? `
     <div style="background:var(--surface-2);border:1px solid var(--accent);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;text-align:left;">
       <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:6px;">⚡ Quiz session in progress</div>
@@ -17556,11 +17591,23 @@ function openFcStudy(lid, uid, newOnly = false) {
     <button class="btn btn-ghost btn-sm" onclick="startFcSession(false)" style="margin-bottom:4px;">
       Start new session
     </button>
+  ` : activeStudy && pendientesFuera ? `
+    <button class="btn btn-primary btn-lg" style="background:var(--accent);min-width:200px;margin-bottom:14px;" onclick="startFcSession(false)">
+      Repasar ${srsCounts.due === 1 ? 'la pendiente' : `las ${srsCounts.due} pendientes`} →
+    </button>
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;margin-bottom:8px;text-align:left;">
+      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:6px;">🃏 También tienes una sesión sin terminar</div>
+      <div style="font-size:0.82rem;color:var(--text-2);margin-bottom:2px;">Vas en la ${activeStudy.position + 1} de ${activeStudy.queue.length} — te faltan ${StudySession.remaining(activeStudy)} · la empezaste ${sessionStartedLabel(activeStudy.startedAt)}</div>
+      <div style="font-size:0.72rem;color:var(--text-3);">${dueEnSesion === 0 ? 'Esa lista no trae tus pendientes' : `Esa lista solo trae ${dueEnSesion} de tus ${srsCounts.due} pendientes`}. Si repasas las pendientes, se cierra; lo que ya calificaste queda guardado.</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="startFcSession(true)" style="margin-bottom:4px;">
+      Seguir esa sesión (${StudySession.remaining(activeStudy)})
+    </button>
   ` : activeStudy ? `
     <div style="background:var(--surface-2);border:1px solid var(--green);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;text-align:left;">
       <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:6px;">🃏 Sesión sin terminar</div>
       <div style="font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:2px;">Vas en la ${activeStudy.position + 1} de ${activeStudy.queue.length} — te faltan ${StudySession.remaining(activeStudy)}</div>
-      <div style="font-size:0.72rem;color:var(--text-3);">Empezaste a las ${new Date(activeStudy.startedAt).toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'})}</div>
+      <div style="font-size:0.72rem;color:var(--text-3);">Empezaste ${sessionStartedLabel(activeStudy.startedAt)}</div>
     </div>
     <button class="btn btn-primary btn-lg" style="background:var(--green);min-width:200px;margin-bottom:8px;" onclick="startFcSession(true)">
       Seguir donde iba →
