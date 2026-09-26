@@ -78,6 +78,29 @@ test('sin clave principal recurre al respaldo diario', () => {
   assert.equal(m.ventana.__loadCorrupt, undefined);
 });
 
+test('al recuperar del respaldo captura su fecha, no la de hoy', () => {
+  // El aviso usa esta fecha para decir cuánto se pudo perder. Tiene que
+  // capturarse durante la carga: el primer guardado del día reescribe la fecha
+  // del respaldo con hoy (guardia 3), y entonces el aviso diría "de hoy".
+  const respaldo = { version: 4, units: { u9: {}, u10: {} } };
+  const m = montarLoadState({
+    [BACKUP_KEY]: JSON.stringify(respaldo),
+    [BACKUP_KEY + '_date']: '2026-09-21',
+  });
+
+  assert.equal(m.ventana.__loadedFromAutoBackup, true);
+  assert.equal(m.ventana.__autoBackupDate, '2026-09-21', 'la fecha del respaldo, tal cual');
+});
+
+test('un respaldo sin fecha no rompe la carga', () => {
+  // Un respaldo escrito por una versión vieja puede no tener su clave de fecha.
+  const respaldo = { version: 4, units: { u9: {} } };
+  const m = montarLoadState({ [BACKUP_KEY]: JSON.stringify(respaldo) });
+
+  assert.equal(m.ventana.__loadedFromAutoBackup, true, 'recupera igual');
+  assert.equal(m.ventana.__autoBackupDate, null, 'sin fecha, pero sin lanzar');
+});
+
 test('sin nada guardado devuelve un estado nuevo, sin bandera', () => {
   const m = montarLoadState({});
 

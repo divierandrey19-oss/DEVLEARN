@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26a -->
+<!-- DEVLEARN_BUILD: 2026-09-26b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4608,6 +4608,7 @@ const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
 const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();
 if (window.__loadCorrupt) showLoadCorruptBanner();
+if (window.__loadedFromAutoBackup) showAutoBackupBanner();
 
 /* A backup import used to write the photos into localStorage along with the
  * text, which is what filled the ~5MB cap. Stripping them happens on the next
@@ -4845,7 +4846,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26a';
+const APP_BUILD = '2026-09-26b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6057,6 +6058,10 @@ function loadState() {
       const st = migrateState(JSON.parse(raw));
       healUnitTitles(st.units);
       window.__loadedFromAutoBackup = true;
+      // La fecha se captura AQUÍ, no en el banner: el primer guardado del día
+      // reescribe `BACKUP_KEY + '_date'` con hoy (guardia 3), así que leerla
+      // más tarde diría "hoy" y ocultaría cuánto se pudo perder.
+      window.__autoBackupDate = localStorage.getItem(BACKUP_KEY + '_date');
       return st;
     }
   } catch (e) {
@@ -6797,6 +6802,60 @@ function downloadCorruptRaw() {
   a.href = URL.createObjectURL(new Blob([window.__loadCorruptRaw], { type: 'application/json' }));
   a.download = `devlearn_dañado_${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
+}
+
+/* El aviso del guardia 3. `loadState()` recurre al respaldo diario cuando la
+ * clave principal no está — lo que significa que la clave principal NO está, y
+ * que el respaldo se escribió una sola vez ese día: lo estudiado después de
+ * tomarlo no está en ninguna parte. Antes esto no se avisaba (la bandera
+ * `__loadedFromAutoBackup` se escribía y nadie la leía), así que una
+ * recuperación se veía igual que un arranque normal. Los otros dos casos de
+ * recuperación llevan banner persistente por esta misma razón.
+ *
+ * Ámbar, no rojo: aquí los datos sí se recuperaron. Y no escribe nada — el
+ * único botón que actúa descarga una copia. */
+function showAutoBackupBanner() {
+  if (document.getElementById('auto-backup-banner')) return;
+  const el = document.createElement('div');
+  el.id = 'auto-backup-banner';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:9995;background:var(--amber,#d29922);'
+    + 'color:#1a1a1a;padding:12px 16px;font-size:0.82rem;line-height:1.4;box-shadow:0 -2px 12px rgba(0,0,0,.4);'
+    + 'display:flex;flex-direction:column;gap:8px;';
+
+  const fecha = window.__autoBackupDate;
+  let cuando = '';
+  if (fecha) {
+    // Medianoche local, como el contador del examen y el streak: 'YYYY-MM-DD'
+    // con `new Date()` es UTC y en Bogotá se corre un día.
+    const d = new Date(fecha + 'T00:00:00');
+    // Una fecha que no se puede leer daría "hace NaN días (Invalid Date)". Vale
+    // más avisar sin el cuándo que soltar eso: el aviso es lo que importa.
+    if (!isNaN(d)) {
+      const dias = Math.round((new Date(todayLocal() + 'T00:00:00') - d) / 86400000);
+      const bonita = d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+      cuando = dias <= 0 ? ` del respaldo de hoy (${escapeHtml(bonita)})`
+             : dias === 1 ? ` del respaldo de ayer (${escapeHtml(bonita)})`
+             : ` del respaldo de hace ${dias} días (${escapeHtml(bonita)})`;
+    }
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;"><strong>⚠️ Recuperé tus datos${cuando}.</strong><br>
+      No encontré tu guardado principal, así que abrí el respaldo automático. Lo que hayas
+      estudiado después de esa fecha puede faltar. Descarga una copia: es lo único que ningún
+      error puede borrar.</div>
+      <button onclick="hideAutoBackupBanner()" title="Cerrar"
+        style="background:transparent;border:0;color:#1a1a1a;font-size:1.1rem;line-height:1;padding:2px 4px;flex-shrink:0;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="exportData()" style="flex:2;min-width:120px;padding:8px;border-radius:8px;border:0;font-weight:600;">↑ Descargar copia</button>
+      <button onclick="hideAutoBackupBanner()" style="flex:1;min-width:90px;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,.25);background:transparent;font-weight:600;">Entendido</button>
+    </div>`;
+  document.body.appendChild(el);
+}
+function hideAutoBackupBanner() {
+  document.getElementById('auto-backup-banner')?.remove();
 }
 
 /* Guard 2's banner. Shown when a save was blocked because it would have
