@@ -87,6 +87,11 @@ que no debe mostrarse como desactualizado ni ofrecer el botón.
   app lee ese comentario en tiempo de ejecución para decirle al usuario
   qué versión tiene abierta.
 - Verificar que las constantes del arranque sigan en orden.
+- **Abrir el pull request.** Siempre, en cuanto se suba un cambio — no hay
+  que pedirlo cada vez. Empujar la rama y quedarse callado no cuenta: el
+  cambio no está entregado hasta que hay un PR abierto para revisarlo.
+  Si la rama ya se mergeó, el trabajo nuevo arranca desde `main` en una
+  rama fresca y lleva su propio PR.
 
 ---
 
