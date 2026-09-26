@@ -105,6 +105,23 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    // La regla del CLAUDE.md que ya costó caro dos veces: agregar contenido sin
+    // subir SEED_VERSION deja fuera a quien ya abrió una versión anterior.
+    nombre: 'agregar textos sin subir SEED_VERSION',
+    buscar: `  const SEED_VERSION = 13;`,
+    reemplazo: '  const SEED_VERSION = 12;',
+  },
+  {
+    nombre: 'dejar una respuesta de examen sin repreguntas',
+    buscar: `          { q: 'What time do you start your day?', a: \`I get up early, because I have to study English every morning before work. Then I go to the shop, and I open at 9:00 am, so I start work early too.\` },`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'quitarle los conectores a una respuesta de examen',
+    buscar: `        body: \`First, I live in Bogotá, Colombia, and I work with my brother in our pet shop.`,
+    reemplazo: '        body: `First, I live in Bogotá. I work with my brother. We have a pet shop. I get up early. I study English. I go to the shop. I open at 9:00 am. Finally, I like my routine.` + `',
+  },
+  {
     nombre: 'volver a sembrar una fecha de examen ya pasada',
     buscar: `    merged.examDate = '2026-10-16';`,
     reemplazo: "    merged.examDate = '2026-07-31';",
