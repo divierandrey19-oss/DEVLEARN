@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26c -->
+<!-- DEVLEARN_BUILD: 2026-09-26e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -30,7 +30,7 @@
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-ios-exit: cubic-bezier(0.4, 0.0, 1, 1);
   --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
-  --t-fast: 0.18s; --t: 0.32s; --t-slow: 0.5s; --t-page: 0.45s;
+  --t-fast: 0.18s; --t: 0.32s; --t-slow: 0.5s; --t-page: 0.2s;
 
   /* Typography — Inter-first, cross-platform consistent
      No SF Pro dependency. Works identically on Chrome Windows/Android/iOS. */
@@ -644,17 +644,21 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Stagger children fade-in inside pages */
+/* Stagger children fade-in inside pages.
+ * Antes: 0,55 s por elemento y escalones de 0,04 s, así que el séptimo terminaba
+ * de aparecer a los 0,81 s de cada cambio de página. Él quería la app más ágil:
+ * ahora todo queda quieto a los ~0,24 s, y el escalonado se conserva — solo más
+ * apretado — para que la transición siga viéndose suave. */
 .page.active > * {
-  animation: pageChildIn 0.55s var(--ease-ios) backwards;
+  animation: pageChildIn 0.18s var(--ease-ios) backwards;
 }
-.page.active > *:nth-child(1) { animation-delay: 0.02s; }
-.page.active > *:nth-child(2) { animation-delay: 0.06s; }
-.page.active > *:nth-child(3) { animation-delay: 0.10s; }
-.page.active > *:nth-child(4) { animation-delay: 0.14s; }
-.page.active > *:nth-child(5) { animation-delay: 0.18s; }
-.page.active > *:nth-child(6) { animation-delay: 0.22s; }
-.page.active > *:nth-child(7) { animation-delay: 0.26s; }
+.page.active > *:nth-child(1) { animation-delay: 0s; }
+.page.active > *:nth-child(2) { animation-delay: 0.01s; }
+.page.active > *:nth-child(3) { animation-delay: 0.02s; }
+.page.active > *:nth-child(4) { animation-delay: 0.03s; }
+.page.active > *:nth-child(5) { animation-delay: 0.04s; }
+.page.active > *:nth-child(6) { animation-delay: 0.05s; }
+.page.active > *:nth-child(7) { animation-delay: 0.06s; }
 @keyframes pageChildIn {
   0% { opacity: 0; transform: translateY(14px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -4846,7 +4850,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26c';
+const APP_BUILD = '2026-09-26e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -19574,6 +19578,30 @@ async function initImageStorage() {
   }
 }
 
+/* La bienvenida animada dura 1,4 s más su desvanecido, y la app ya está lista
+ * antes de que termine: en un celular de gama media se puede tocar a los ~1,3 s
+ * sin ella y a los ~2,6 s con ella. Él pidió verla una sola vez al día — la
+ * primera apertura del día la reproduce entera; las demás entran directo.
+ *
+ * La fecha vive en su propia clave, fuera de `state`: no es un dato de estudio,
+ * y guardarla en el estado dispararía un guardado completo (y una
+ * sincronización) solo por abrir la app. La clave va escrita aquí adentro y no
+ * como constante de primer nivel, porque este archivo ya perdió datos por una
+ * constante usada antes de declararse.
+ *
+ * Si localStorage no responde (modo privado, almacenamiento lleno), se
+ * reproduce como antes: mejor una animación de más que un error. */
+function shouldPlaySplash() {
+  try {
+    const hoy = todayLocal();
+    if (localStorage.getItem('devlearn_splash_date') === hoy) return false;
+    localStorage.setItem('devlearn_splash_date', hoy);
+    return true;
+  } catch (e) {
+    return true;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   setTheme(state.theme || 'dark');
   setLang(state.lang || 'en');
@@ -19654,6 +19682,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Respect low-power devices / reduced motion — skip straight to done
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      splashEl.remove();
+      return;
+    }
+    // Una vez al día: si ya se vio hoy, se entra directo. Mismo salto que el de
+    // arriba — el final de la animación solo desvanece y quita el elemento.
+    if (!shouldPlaySplash()) {
       splashEl.remove();
       return;
     }

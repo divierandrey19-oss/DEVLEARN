@@ -105,6 +105,29 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a mostrar la bienvenida en cada apertura',
+    buscar: `    if (localStorage.getItem('devlearn_splash_date') === hoy) return false;`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'dejar de consultar si la bienvenida ya se vio hoy',
+    buscar: `    if (!shouldPlaySplash()) {
+      splashEl.remove();
+      return;
+    }`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'volver a la animación lenta de los elementos de la página',
+    buscar: `  animation: pageChildIn 0.18s var(--ease-ios) backwards;`,
+    reemplazo: '  animation: pageChildIn 0.55s var(--ease-ios) backwards;',
+  },
+  {
+    nombre: 'volver a la entrada lenta de la página',
+    buscar: `--t-page: 0.2s;`,
+    reemplazo: '--t-page: 0.45s;',
+  },
+  {
     nombre: 'volver a sembrar una fecha de examen ya pasada',
     buscar: `    merged.examDate = '2026-10-16';`,
     reemplazo: "    merged.examDate = '2026-07-31';",
