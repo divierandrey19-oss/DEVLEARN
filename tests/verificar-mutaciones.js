@@ -105,6 +105,16 @@ const MUTACIONES = [
     reemplazo: '    if (true) {',
   },
   {
+    nombre: 'volver a sembrar una fecha de examen ya pasada',
+    buscar: `    merged.examDate = '2026-10-16';`,
+    reemplazo: "    merged.examDate = '2026-07-31';",
+  },
+  {
+    nombre: 'pisar la fecha de examen que el usuario ya tiene',
+    buscar: `  if (merged.examDate === undefined) {`,
+    reemplazo: '  if (true) {',
+  },
+  {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
     buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();`,

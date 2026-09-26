@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26b -->
+<!-- DEVLEARN_BUILD: 2026-09-26c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4846,7 +4846,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26b';
+const APP_BUILD = '2026-09-26c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6286,9 +6286,15 @@ function migrateState(s) {
   merged.streak = computeStreak(merged.studyDates);
   // Seed the known exam once. `examDate === undefined` means the field has never
   // existed; null means the user cleared it on purpose — never re-seed that.
+  //
+  // La semilla apuntaba al Speaking Test del 31 de julio, que ya pasó: en un
+  // dispositivo nuevo el contador se ocultaba (`days < 0` desaparece en
+  // silencio) y no se veía ningún examen. Ahora apunta al examen final de
+  // nivel. Solo toca a un dispositivo donde el campo nunca existió — quien ya
+  // tiene una fecha guardada, la conserva.
   if (merged.examDate === undefined) {
-    merged.examDate = '2026-07-31';
-    merged.examLabel = 'Speaking Test · Units 5-6';
+    merged.examDate = '2026-10-16';
+    merged.examLabel = 'Examen final de nivel';
   }
   // Seed the 5 Unit 7 texts drafted together in chat, once — same rule as the
   // exam date above: only when this has never run before. The flag, not the
