@@ -75,13 +75,25 @@ test('My life está en el menú y abre su página', () => {
   assert.match(h.extraerFuncion('navigate'), /if \(page === 'life'\) renderLife\(\);/);
 });
 
-test('el menú marca My life en su posición real', () => {
-  // navigate() marca el botón activo por su posición en el menú.
+test('el menú marca cada página en su posición real', () => {
+  // navigate() marca el botón activo por su posición en el menú, así que
+  // mover un botón corre a todos los de abajo.
   const nav = fuente.slice(fuente.indexOf('<nav class="nav">'), fuente.indexOf('</nav>'));
   const botones = [...nav.matchAll(/class="nav-item[^"]*" onclick="([^"]+)"/g)].map(m => m[1]);
   const mapa = /const navMap = (\{[^}]+\});/.exec(h.extraerFuncion('navigate'))[1];
-  const indice = Number(/'life': (\d+)/.exec(mapa)[1]);
-  assert.equal(botones[indice], "navigate('life')");
+  const entradas = [...mapa.matchAll(/'([^']+)': (\d+)/g)];
+  assert.ok(entradas.length >= 10);
+  for (const [, pagina, i] of entradas) {
+    assert.equal(botones[Number(i)], `navigate('${pagina}')`, `${pagina} marca el botón ${i}`);
+  }
+});
+
+test('My life está arriba, junto a la academia', () => {
+  // Él pidió que se viera igual de importante que My Levels.
+  const nav = fuente.slice(fuente.indexOf('<nav class="nav">'), fuente.indexOf('</nav>'));
+  const botones = [...nav.matchAll(/onclick="([^"]+)"/g)].map(m => m[1]);
+  assert.equal(botones.indexOf("navigate('life')"), botones.indexOf("navigate('levels')") + 1);
+  assert.ok(nav.indexOf("navigate('life')") < nav.indexOf('>Practice<'), 'en la sección Learn, no en Practice');
 });
 
 test('cada globito cuenta lo suyo, sin repetir tarjetas', () => {
