@@ -59,6 +59,25 @@ test('la frase en presente no es la vieja en pasado', () => {
   assert.deepEqual(iguales, []);
 });
 
+test('las herramientas también traen su frase en pasado', () => {
+  // Son sustantivos: el pasado va en un verbo de la frase. Él lo pidió para
+  // practicar los dos tiempos en todas las tarjetas.
+  const herramientas = tarjetas.filter(t => !t.v[1]);
+  assert.ok(herramientas.length > 0);
+  for (const t of herramientas) {
+    const pasado = LIFE_NOW[t.k].past;
+    assert.ok(pasado && pasado.en && pasado.es, `${t.k} no tiene pasado`);
+    assert.match(pasado.en, /<b>[^<]+<\/b>/, `${t.k}: el verbo en pasado va resaltado`);
+    assert.notEqual(pasado.en, LIFE_NOW[t.k].en, `${t.k}: el pasado es la misma frase del presente`);
+  }
+});
+
+test('la tarjeta muestra el pasado de las herramientas', () => {
+  const tarjeta = h.extraerFuncion('renderLifeCard');
+  assert.match(tarjeta, /const antes = esNombre \? now\.past : \{ en: eg, es: egEs \};/);
+  assert.match(tarjeta, /\$\{antes && antes\.en \? `<div class="vb-sent">/);
+});
+
 // ---------------------------------------------------------------------------
 // El cableado.
 // ---------------------------------------------------------------------------

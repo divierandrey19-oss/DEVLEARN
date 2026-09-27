@@ -210,6 +210,11 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'My life: que las herramientas vuelvan a quedarse sin pasado',
+    buscar: `  const antes = esNombre ? now.past : { en: eg, es: egEs };`,
+    reemplazo: '  const antes = esNombre ? null : { en: eg, es: egEs };',
+  },
+  {
     nombre: 'My life: dos tarjetas con el mismo frente en español',
     buscar: `"es": "Limpio el local todas las mañanas."`,
     reemplazo: '"es": "Limpio el mostrador con un trapo."',
