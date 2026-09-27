@@ -45,6 +45,10 @@ vacío.
 `publish-checks.test.js` — Que los dos bloques `<script>` compilen, y que
 `DEVLEARN_BUILD` y `APP_BUILD` digan lo mismo y sigan donde la app los busca.
 
+`rec-challenge.test.js` — El reto de 20 días grabándose: que un día perdido
+corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
+dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
+
 ## verificar-mutaciones.js
 
 Una suite en verde no prueba nada por sí sola: puede estar pasando porque no
