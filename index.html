@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-27i -->
+<!-- DEVLEARN_BUILD: 2026-09-27j -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4866,7 +4866,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-27i';
+const APP_BUILD = '2026-09-27j';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11036,7 +11036,7 @@ function renderTextReader() {
         <button class="btn btn-ghost" style="padding:12px 12px;" onclick="restartText()" title="Back to start">⏮</button>
         <button class="btn btn-ghost" style="padding:12px 12px;" onclick="prevSentence()" title="Previous sentence">◀</button>
         <button class="btn btn-primary" id="tx-play" style="flex:1;padding:12px;" onclick="toggleShadow()">
-          ${st.playing ? '⏸ Pausa' : '▶ Escuchar'}
+          ${st.playing ? '⏸ Pause' : '▶ Listen'}
         </button>
         <button class="btn btn-ghost" style="padding:12px 12px;" onclick="repeatSentence()" title="Repeat this sentence">🔁</button>
         <button class="btn btn-ghost" style="padding:12px 10px;font-size:0.78rem;" onclick="cycleShadowRate()" title="Speed">${st.rate}×</button>
@@ -11054,7 +11054,7 @@ function renderTextReader() {
         </button>
         <button class="btn btn-sm" onclick="compareTake()" ${_rec.url ? '' : 'disabled'}
           style="flex:1;padding:10px;font-size:0.8rem;background:transparent;color:var(--accent);border:1px solid var(--accent);${_rec.url ? '' : 'opacity:.4;'}">
-          ⇄ Comparar
+          ⇄ Compare
         </button>
       </div>
       ${_rec.url && _rec.si >= 0 ? `<div style="font-size:0.66rem;color:var(--text-3);text-align:center;margin-top:6px;">Your recording is of sentence ${_rec.si + 1}</div>` : ''}
@@ -11075,7 +11075,7 @@ function renderTextReader() {
           <div style="display:flex;gap:6px;">
             <button onclick="playBorrador()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:transparent;color:var(--text-1);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">▶ Listen</button>
             <button onclick="guardarBorrador()" style="flex:1;padding:9px;border-radius:8px;border:0;background:var(--green,#22c55e);color:#fff;font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">💾 Save</button>
-            <button onclick="descartarYRefrescar()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:transparent;color:var(--text-3);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">🗑 Descartar</button>
+            <button onclick="descartarYRefrescar()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border-2);background:transparent;color:var(--text-3);font:inherit;font-size:0.78rem;font-weight:600;cursor:pointer;">🗑 Discard</button>
           </div>
         </div>` : ''}
       ${_long.takes.length ? `
@@ -11159,7 +11159,7 @@ Responde SOLO con este JSON:
     const data = AIService._parseClaudeJSON(out);
     if (!data) throw new Error('The answer was not JSON');
     const wh = (data.wh || []).filter(x => x && x.q && x.a);
-    if (!wh.length) throw new Error('sin preguntas');
+    if (!wh.length) throw new Error('no questions');
     t.wh = wh;
     save();
     _txState.whOpen = true;
@@ -11173,11 +11173,11 @@ Responde SOLO con este JSON:
     const bonito =
       msg === 'NO_KEY'       ? 'Set your key in Settings' :
       msg === 'INVALID_KEY'  ? 'Your key was rejected' :
-      msg === 'RATE_LIMIT'   ? 'Demasiadas peticiones, espera un momento' :
+      msg === 'RATE_LIMIT'   ? 'Too many requests, wait a moment' :
       msg === 'OVERLOADED'   ? 'The service is busy, try again' :
       msg === 'TIMEOUT'      ? 'It took too long, try again' :
       msg === 'NETWORK'      ? 'No connection' :
-      msg.startsWith('API_ERROR_') ? 'Error del servidor: ' + msg.slice(10, 60) :
+      msg.startsWith('API_ERROR_') ? 'Server error: ' + msg.slice(10, 60) :
       'Could not create them: ' + msg.slice(0, 60);
     toast(bonito);
     console.warn('generateWh falló:', e);
@@ -11425,7 +11425,7 @@ function compareTake() {
   if (!_txState || !_rec.url) return;
   const frase = _txState.sentences[_rec.si];
   if (!frase) return;
-  toast('🔊 Modelo…');
+  toast('🔊 Model…');
   speak(frase, _txState.rate);
   const esperar = setInterval(() => {
     if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) return;
@@ -11510,7 +11510,7 @@ function restartText() {
   st.current = -1;
   document.querySelectorAll('.tx-sent').forEach(el => { el.style.background = ''; });
   const b = document.getElementById('tx-play');
-  if (b) b.textContent = '▶ Escuchar';
+  if (b) b.textContent = '▶ Listen';
   if (wasPlaying) toggleShadow();
   else { highlightSentence(0); document.querySelector('#tx-body')?.scrollTo({ top: 0, behavior: 'smooth' }); }
 }
@@ -11538,13 +11538,13 @@ function toggleShadow() {
     window.speechSynthesis.cancel();
     st.playing = false;
     const b = document.getElementById('tx-play');
-    if (b) b.textContent = '▶ Escuchar';
+    if (b) b.textContent = '▶ Listen';
     return;
   }
 
   st.playing = true;
   const b = document.getElementById('tx-play');
-  if (b) b.textContent = '⏸ Pausa';
+  if (b) b.textContent = '⏸ Pause';
 
   const speakNext = () => {
     if (!_txState || !_txState.playing) return;
@@ -11553,7 +11553,7 @@ function toggleShadow() {
       _txState.current = -1;
       _txState.playing = false;
       const bb = document.getElementById('tx-play');
-      if (bb) bb.textContent = '▶ Escuchar';
+      if (bb) bb.textContent = '▶ Listen';
       document.querySelectorAll('.tx-sent').forEach(el => { el.style.background = ''; });
       recordStudyDate();
       save();
@@ -11918,7 +11918,7 @@ async function savePodcast() {
       words = wordList.map(w => ({ word: w, translation: '', emoji: '🎧' }));
       toast('⚠ The session was saved, but the words could not be completed');
     }
-    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
   }
 
   state.podcastLog = state.podcastLog || [];
@@ -12165,7 +12165,7 @@ function checkMyWordExists(value) {
     const hit = findExistingWord(value);
     if (!hit) {
       fb.textContent = '';
-      if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
+      if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
       return;
     }
     fb.style.color = 'var(--amber, #d29922)';
@@ -12252,7 +12252,7 @@ Respond ONLY with JSON:
       type: String(data.type || 'word').trim(),
     });
   } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
     if (fb) {
       fb.style.color = 'var(--amber, #d29922)';
       fb.textContent = '⚠ Could not complete it. Write the translation below and save.';
@@ -14471,7 +14471,7 @@ function grammarToolbar(unit) {
   if (!hechos && !sinDrills) return '';
   return `
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
-      <div style="font-size:0.74rem;color:var(--text-3);">${hechos ? `${hechos} respondido${hechos !== 1 ? 's' : ''}` : `${sinDrills} tema${sinDrills !== 1 ? 's' : ''} sin ejercicios`}</div>
+      <div style="font-size:0.74rem;color:var(--text-3);">${hechos ? `${hechos} answered` : `${sinDrills} topic${sinDrills !== 1 ? 's' : ''} without exercises`}</div>
       <div style="display:flex;gap:6px;">
         ${sinDrills ? `<button id="gen-drills-btn" class="btn btn-primary btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="generateDrillsForUnit()">✨ Create exercises (${sinDrills})</button>` : ''}
         ${hechos ? `<button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetGrammarDrills()">↺ Reset</button>` : ''}
@@ -15730,7 +15730,7 @@ Respond ONLY with a JSON array of exactly 10 strings.` }];
     speakingState.generating = false;
     c.innerHTML = `<div style="padding:24px;text-align:center;">
       <div style="color:var(--red);margin-bottom:12px;">❌ Error creating questions. Try again.</div>
-      <button class="btn btn-primary" onclick="startSpeakingTest()">Reintentar</button>
+      <button class="btn btn-primary" onclick="startSpeakingTest()">Retry</button>
     </div>`;
   } finally {
     speakingState.generating = false;
@@ -15982,7 +15982,7 @@ async function checkSpeakingAnswer() {
   // Disable input while checking
   answerEl.disabled = true;
   const btn = answerEl.closest('div').querySelector('button');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Evaluando…'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Checking…'; }
 
   const prompt = `You are an English teacher evaluating a Colombian A2-level student's spoken answer.
 Unit: "${u?.title}"
@@ -17067,7 +17067,7 @@ async function endRolePlay() {
     saveNow();
     renderRolePlayChat(u, unitKey, session);
   } catch (e) {
-    if (chips) chips.innerHTML = '<button class="chat-chip" onclick="endRolePlay()">🏁 Reintentar feedback</button>';
+    if (chips) chips.innerHTML = '<button class="chat-chip" onclick="endRolePlay()">🏁 Retry feedback</button>';
   }
 }
 
@@ -17361,7 +17361,7 @@ function addChatMsg(role, text, containerId, opts = {}) {
           btn.className = 'msg-say btn btn-ghost btn-sm';
           btn.style.cssText = 'padding:2px 8px;margin-top:6px;font-size:0.72rem;';
           btn.textContent = '🔊';
-          btn.title = 'Escuchar';
+          btn.title = 'Listen';
           btn.onclick = () => speak(text);
           bub.appendChild(btn);
         }
@@ -17378,7 +17378,7 @@ function addChatMsg(role, text, containerId, opts = {}) {
       btn.className = 'msg-say btn btn-ghost btn-sm';
       btn.style.cssText = 'padding:2px 8px;margin-top:6px;font-size:0.72rem;';
       btn.textContent = '🔊';
-      btn.title = 'Escuchar';
+      btn.title = 'Listen';
       btn.onclick = () => speak(text);
       bub.appendChild(btn);
     }
@@ -19677,12 +19677,12 @@ function importData(event) {
         btnRow.style.cssText = 'display:flex;gap:8px;';
         
         const btnOk = document.createElement('button');
-        btnOk.textContent = 'Importar';
+        btnOk.textContent = 'Import';
         btnOk.style.cssText = 'flex:1;padding:8px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;';
         btnOk.onclick = doImport;
         
         const btnCancel = document.createElement('button');
-        btnCancel.textContent = 'Cancelar';
+        btnCancel.textContent = 'Cancel';
         btnCancel.style.cssText = 'flex:1;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;';
         btnCancel.onclick = cancelImport;
         
