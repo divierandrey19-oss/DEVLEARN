@@ -206,7 +206,7 @@ const MUTACIONES = [
   },
   {
     nombre: 'My life: que a una tarjeta le falte su frase en presente',
-    buscar: `"tool:drain": {"en": "The water goes to the <b>drain</b>.", "es": "El agua va al desagüe."}, `,
+    buscar: `"tool:drain": {"en": "The water goes to the <b>drain</b>.", "es": "El agua va al desagüe.", "past": {"en": "The water <b>went</b> to the drain.", "es": "El agua se fue al desagüe."}}, `,
     reemplazo: '',
   },
   {
