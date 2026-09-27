@@ -68,7 +68,7 @@ el usuario suba después**. Al sembrar los phrasal verbs de la Unit 9, la
 página 104 entró con 4 palabras en vez de 27.
 
 El vocabulario que no es del libro va fuera de las unidades —
-`SHOP_FAMILIES` en la sección Verbos es el ejemplo.
+`SHOP_FAMILIES` en la pestaña My life es el ejemplo.
 
 ### Un lote sin fotos no se puede regenerar
 

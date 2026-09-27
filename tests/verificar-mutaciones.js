@@ -205,6 +205,30 @@ const MUTACIONES = [
     reemplazo: '    state.recDays = imported.recDays || [];',
   },
   {
+    nombre: 'My life: que a una tarjeta le falte su frase en presente',
+    buscar: `"tool:drain": {"en": "The water goes to the <b>drain</b>.", "es": "El agua va al desagüe."}, `,
+    reemplazo: '',
+  },
+  {
+    nombre: 'My life: dos tarjetas con el mismo frente en español',
+    buscar: `"es": "Limpio el local todas las mañanas."`,
+    reemplazo: '"es": "Limpio el mostrador con un trapo."',
+  },
+  {
+    nombre: 'My life: que el globito de Verbs vuelva a contar el local',
+    buscar: `  VERB_FAMILIES.forEach(f => f.verbs.forEach(v => {
+    if (SRS.isDue(vbCard(f, v))) n++;
+  }));`,
+    reemplazo: `  VERB_FAMILIES.concat(SHOP_FAMILIES).forEach(f => f.verbs.forEach(v => {
+    if (SRS.isDue(vbCard(f, v))) n++;
+  }));`,
+  },
+  {
+    nombre: 'My life: que el menú marque otro botón',
+    buscar: `'texts': 8, 'life': 9 };`,
+    reemplazo: "'texts': 8, 'life': 8 };",
+  },
+  {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
     buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();`,
