@@ -50,8 +50,9 @@ corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
 `my-life.test.js` — La pestaña My life: que cada tarjeta del local tenga su
-frase en presente, que no haya dos frentes iguales en español, que Verbs ya no
-lleve el local y que cada globito cuente lo suyo.
+frase en presente (el local, la casa y Going out), que no haya dos frentes
+iguales en español, que la casa no comparta tarjeta con el local, que Verbs ya
+no lleve el local y que cada globito cuente lo suyo.
 
 ## verificar-mutaciones.js
 

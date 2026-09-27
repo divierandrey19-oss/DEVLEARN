@@ -23,16 +23,17 @@ function constanteJSON(nombre) {
 }
 
 const SHOP_FAMILIES = constanteJSON('SHOP_FAMILIES');
+const HOME_FAMILIES = constanteJSON('HOME_FAMILIES');
 const LIFE_NOW = constanteJSON('LIFE_NOW');
 
 const clave = (f, v) => (f.keyPrefix ? f.keyPrefix + ':' : '') + v[0];
-const tarjetas = SHOP_FAMILIES.flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
+const tarjetas = SHOP_FAMILIES.concat(HOME_FAMILIES).flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
 
 // ---------------------------------------------------------------------------
 // El contenido.
 // ---------------------------------------------------------------------------
 
-test('cada tarjeta del local tiene su frase en presente', () => {
+test('cada tarjeta de My life tiene su frase en presente', () => {
   const faltan = tarjetas.filter(t => !LIFE_NOW[t.k]).map(t => t.k);
   assert.deepEqual(faltan, [], 'sin su frase, la tarjeta caería al ejemplo en pasado');
   assert.equal(Object.keys(LIFE_NOW).length, tarjetas.length, 'ni frases de sobra que no use nadie');
@@ -78,6 +79,27 @@ test('la tarjeta muestra el pasado de las herramientas', () => {
   assert.match(tarjeta, /\$\{antes && antes\.en \? `<div class="vb-sent">/);
 });
 
+test('la casa no comparte tarjeta con el local', () => {
+  // sweep, mop, take care of… existen en los dos con frases distintas. Sin el
+  // prefijo "home", calificar una movería el calendario de la otra.
+  assert.ok(HOME_FAMILIES.length > 0);
+  for (const f of HOME_FAMILIES) assert.equal(f.keyPrefix, 'home', `${f.id} sin prefijo`);
+  const claves = tarjetas.map(t => t.k);
+  assert.equal(new Set(claves).size, claves.length, 'dos tarjetas con la misma clave');
+});
+
+test('cada grupo de la casa sale en una sección de la pestaña', () => {
+  for (const f of HOME_FAMILIES) assert.ok(['home', 'out'].includes(f.section), `${f.id}: sección "${f.section}"`);
+  const pagina = h.extraerFuncion('renderLife');
+  assert.match(pagina, /HOME_FAMILIES\.filter\(f => f\.section === 'home'\)/);
+  assert.match(pagina, /HOME_FAMILIES\.filter\(f => f\.section === 'out'\)/);
+});
+
+test('el globito de My life cuenta también la casa', () => {
+  assert.match(h.extraerFuncion('lifeFamilies'), /SHOP_FAMILIES\.concat\(HOME_FAMILIES\)/);
+  assert.match(h.extraerFuncion('lifeDueCount'), /lifeFamilies\(\)\.forEach/);
+});
+
 // ---------------------------------------------------------------------------
 // El cableado.
 // ---------------------------------------------------------------------------
@@ -117,7 +139,7 @@ test('My life está arriba, junto a la academia', () => {
 
 test('cada globito cuenta lo suyo, sin repetir tarjetas', () => {
   assert.doesNotMatch(h.extraerFuncion('vbDueCount'), /SHOP_FAMILIES/);
-  assert.match(h.extraerFuncion('lifeDueCount'), /SHOP_FAMILIES\.forEach/);
+  assert.doesNotMatch(h.extraerFuncion('vbDueCount'), /HOME_FAMILIES/);
   assert.match(h.extraerFuncion('updateNavBadges'), /\['life-count', lifeDueCount\(\)\]/);
 });
 
