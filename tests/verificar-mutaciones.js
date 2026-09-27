@@ -185,6 +185,26 @@ const MUTACIONES = [
     reemplazo: '  if (true) {',
   },
   {
+    nombre: 'reto de 20 días: que hoy sin grabar corte la racha de ayer',
+    buscar: `  if (!set.has(today)) d.setDate(d.getDate() - 1);`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'reto de 20 días: contar el mismo día dos veces',
+    buscar: `  if (state.recDays.includes(hoy)) return false;`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'reto de 20 días: que cualquier grabación corta cuente',
+    buscar: `secs >= 30 && markRecDay()`,
+    reemplazo: 'secs >= 3 && markRecDay()',
+  },
+  {
+    nombre: 'reto de 20 días: que la nube pise los días de este celular',
+    buscar: `    state.recDays = [...new Set([...localRecDays, ...(imported.recDays || [])])].sort();`,
+    reemplazo: '    state.recDays = imported.recDays || [];',
+  },
+  {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
     buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();`,

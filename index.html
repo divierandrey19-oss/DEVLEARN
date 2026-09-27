@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-26k -->
+<!-- DEVLEARN_BUILD: 2026-09-27a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3958,6 +3958,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div id="study-timer"></div>
       <!-- Exam countdown — set the date in Settings -->
       <div id="exam-countdown"></div>
+      <!-- Reto de 20 días grabándose — renderRecChallenge() -->
+      <div id="rec-challenge"></div>
       <!-- Course syllabus tracker — remaining classes only -->
       <div id="course-tracker"></div>
       <!-- Smart hero — content injected by renderDashboard() -->
@@ -4719,6 +4721,7 @@ window._mergeCloudState = function(cloud) {
     const localTexts     = [...(state.texts || [])];
     const localStudyLog  = { ...(state.studyLog || {}) };
     const localClasses   = [...(state.classesDone || [])];
+    const localRecDays   = [...(state.recDays || [])];
     const localSchedule  = { ...(state.classSchedule || {}) };
     const localMistakes  = [...(state.mistakeLog || [])];
     const localExamDate  = state.examDate;
@@ -4820,6 +4823,7 @@ window._mergeCloudState = function(cloud) {
       state.studyLog = merged;
     }
     state.classesDone = [...new Set([...(localClasses), ...(imported.classesDone || [])])];
+    state.recDays = [...new Set([...localRecDays, ...(imported.recDays || [])])].sort();
     state.classSchedule = { ...localSchedule, ...(imported.classSchedule || {}) };
     state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
       m => `${m && m.source}|${(m && m.wrong || '').toLowerCase()}|${(m && m.right || '').toLowerCase()}`);
@@ -4851,7 +4855,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-26k';
+const APP_BUILD = '2026-09-27a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6143,6 +6147,7 @@ function migrateState(s) {
   merged.tutorMemory = merged.tutorMemory || {};
   merged.rolePlay = merged.rolePlay || {};
   merged.classesDone = [...new Set(merged.classesDone || [])];
+  merged.recDays = Array.isArray(merged.recDays) ? [...new Set(merged.recDays)] : [];
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
@@ -8562,9 +8567,85 @@ function renderExamCountdown() {
     </div>`;
 }
 
+/* ── RETO DE 20 DÍAS ───────────────────────────────────────────────
+ * De sus notas de un podcast: grabarse hablando en inglés 20 días seguidos.
+ * Un día cuenta solo si graba un texto completo de 30 segundos o más
+ * ("Record the whole text"), o si lo marca a mano porque grabó fuera de la
+ * app. Los días viven en state.recDays, una lista de fechas: se une entre
+ * dispositivos como classesDone, y un contador no se podría unir. */
+function recChallengeRun(days, today) {
+  const set = new Set(days || []);
+  const d = new Date(today + 'T00:00:00');
+  // Si hoy todavía no grabó, la racha sigue viva desde ayer.
+  if (!set.has(today)) d.setDate(d.getDate() - 1);
+  let run = 0;
+  while (set.has(dateLocal(d))) { run++; d.setDate(d.getDate() - 1); }
+  return run;
+}
+
+/* Devuelve true si el día es nuevo, para avisar solo la primera vez. */
+function markRecDay() {
+  if (!Array.isArray(state.recDays)) state.recDays = [];
+  const hoy = todayLocal();
+  if (state.recDays.includes(hoy)) return false;
+  state.recDays.push(hoy);
+  save();
+  return true;
+}
+
+function markRecDayByHand() {
+  if (markRecDay()) {
+    toast(`🎙️ Day ${recChallengeRun(state.recDays, todayLocal())} counted`);
+    Sound.tap();
+  }
+  renderRecChallenge();
+}
+
+function renderRecChallenge() {
+  const el = document.getElementById('rec-challenge');
+  if (!el) return;
+  const META = 20;
+  const hoy = todayLocal();
+  const days = state.recDays || [];
+  const run = recChallengeRun(days, hoy);
+  const hecho = days.includes(hoy);
+  const listo = run >= META;
+  // Tenía días, pero la racha se cortó: se lo decimos, sin regaños.
+  const cortada = !run && days.length > 0;
+
+  const puntos = Array.from({ length: META }, (_, i) =>
+    `<span style="width:10px;height:10px;border-radius:50%;background:${i < run ? 'var(--green)' : 'var(--surface-2)'};border:1px solid ${i < run ? 'var(--green)' : 'var(--border-2)'};"></span>`).join('');
+
+  const titulo = listo ? `🏆 ${run} days in a row — challenge complete!`
+    : run ? `Day ${run} of ${META}`
+    : 'Day 0 of 20';
+  const sub = hecho ? '✓ Today is done. Come back tomorrow.'
+    : cortada ? 'You missed a day, so the count starts again today.'
+    : run ? 'Record yourself today to keep going.'
+    : 'Record yourself speaking English 20 days in a row.';
+
+  el.innerHTML = `
+    <div style="border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:1.4rem;">🎙️</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.72rem;color:var(--text-3);">20-day challenge</div>
+          <div style="font-weight:800;font-size:1.05rem;color:${listo ? 'var(--green)' : 'var(--text)'};">${titulo}</div>
+          <div style="font-size:0.72rem;color:var(--text-3);">${sub}</div>
+        </div>
+        ${hecho ? '' : `<button class="btn btn-primary btn-sm" style="flex-shrink:0;" onclick="navigate('texts')">⏺ Record</button>`}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;">${puntos}</div>
+      ${hecho ? '' : `
+        <div style="font-size:0.7rem;color:var(--text-3);margin-top:8px;">Open a text and tap ⏺ Record the whole text (30 seconds or more).</div>
+        <button class="btn btn-ghost btn-sm" style="font-size:0.68rem;padding:4px 10px;margin-top:6px;" onclick="markRecDayByHand()">✓ I recorded outside the app</button>`}
+    </div>`;
+}
+
 function renderDashboard() {
   renderStudyTimer();
   renderExamCountdown();
+  renderRecChallenge();
   renderCourseTracker();
   const h = new Date().getHours();
   const now = Date.now();
@@ -10956,6 +11037,11 @@ async function toggleLongRecord() {
       } else {
         toast('Too short — discarded');
       }
+      /* El reto de 20 días cuenta el día con haber hablado, aunque no guarde
+       * la toma: guardar es para comparar semanas, no para el reto. */
+      if (_long.chunks.length && secs >= 30 && markRecDay()) {
+        toast(`🎙️ Day ${recChallengeRun(state.recDays, todayLocal())} of 20 — counted!`);
+      }
       renderTextReader();
     };
     mr.start();
@@ -10996,7 +11082,7 @@ async function guardarBorrador() {
     await AudioStore.save(_txState.id, _long.borrador.blob);
     descartarBorrador();
     await loadTakes();
-    toast(`💾 Guardada · ${secs}s`);
+    toast(`💾 Saved · ${secs}s`);
   } catch (e) {
     toast('Could not save');
   }
