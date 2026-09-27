@@ -215,6 +215,16 @@ const MUTACIONES = [
     reemplazo: '  const antes = esNombre ? null : { en: eg, es: egEs };',
   },
   {
+    nombre: 'My life: que la casa comparta tarjeta con el local (sin prefijo)',
+    buscar: `"id": "home_chores", "kind": "home", "section": "home", "sound": "🧺", "name": "Housework", "diff": "medium", "keyPrefix": "home",`,
+    reemplazo: '"id": "home_chores", "kind": "home", "section": "home", "sound": "🧺", "name": "Housework", "diff": "medium",',
+  },
+  {
+    nombre: 'My life: que Going out desaparezca de la pestaña',
+    buscar: `    { titulo: '🚲 Going out',  fams: HOME_FAMILIES.filter(f => f.section === 'out') },`,
+    reemplazo: '',
+  },
+  {
     nombre: 'My life: dos tarjetas con el mismo frente en español',
     buscar: `"es": "Limpio el local todas las mañanas."`,
     reemplazo: '"es": "Limpio el mostrador con un trapo."',
