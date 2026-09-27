@@ -244,6 +244,11 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Verbs: volver a partir un sonido en dos familias',
+    buscar: `{ id:"ied", kind:'reg'`,
+    reemplazo: `{ id:"d3", kind:'reg'`,
+  },
+  {
     nombre: 'Verbs: el mismo verbo en dos familias',
     buscar: `["hug", "hugged",`,
     reemplazo: '["cry", "hugged",',

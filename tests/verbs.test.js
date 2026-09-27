@@ -63,6 +63,18 @@ test('cada regular está en la familia de su sonido', () => {
   assert.deepEqual(mal, []);
 });
 
+test('una sola familia regular por sonido', () => {
+  // Él pidió juntar "Extra syllable" con su "· more": misma regla, mismo
+  // sonido. La de y → ied va aparte porque su regla es de ortografía.
+  const porSonido = {};
+  for (const f of VERB_FAMILIES.filter(f => f.kind === 'reg' && f.id !== 'ied')) {
+    (porSonido[f.sound] = porSonido[f.sound] || []).push(f.id);
+  }
+  for (const [sonido, ids] of Object.entries(porSonido)) {
+    assert.equal(ids.length, 1, `${sonido} está partido en ${ids.join(', ')}`);
+  }
+});
+
 test('cada familia explica su regla', () => {
   // La hoja "?" lee when, rule y demo.
   for (const f of VERB_FAMILIES) {
