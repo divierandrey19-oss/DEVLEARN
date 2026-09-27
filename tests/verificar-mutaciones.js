@@ -206,8 +206,13 @@ const MUTACIONES = [
   },
   {
     nombre: 'My life: que a una tarjeta le falte su frase en presente',
-    buscar: `"tool:drain": {"en": "The water goes to the <b>drain</b>.", "es": "El agua va al desagüe."}, `,
+    buscar: `"tool:drain": {"en": "The water goes to the <b>drain</b>.", "es": "El agua va al desagüe.", "past": {"en": "The water <b>went</b> to the drain.", "es": "El agua se fue al desagüe."}}, `,
     reemplazo: '',
+  },
+  {
+    nombre: 'My life: que las herramientas vuelvan a quedarse sin pasado',
+    buscar: `  const antes = esNombre ? now.past : { en: eg, es: egEs };`,
+    reemplazo: '  const antes = esNombre ? null : { en: eg, es: egEs };',
   },
   {
     nombre: 'My life: dos tarjetas con el mismo frente en español',
