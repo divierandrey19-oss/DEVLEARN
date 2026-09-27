@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-27f -->
+<!-- DEVLEARN_BUILD: 2026-09-27g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4866,7 +4866,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-27f';
+const APP_BUILD = '2026-09-27g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7136,6 +7136,112 @@ const VERB_FAMILIES = [
       ['use','used','/juːzd/','usar','I <b>used</b> my phone for the map.','Usé mi celular para el mapa.'],
       ['follow','followed','/ˈfɑːloʊd/','seguir','We <b>followed</b> the tour guide.','Seguimos al guía del tour.']
     ]},
+  { id:"id2", kind:'reg', sound:"/ɪd/", name:"Extra syllable · more", diff:"medium",
+    note:"Más verbos que terminan en sonido t o d: la -ed se oye aparte.",
+    when:"El verbo ya termina en sonido <b>t</b> o <b>d</b>.",
+    rule:"La misma regla de la primera familia: después de t o d, la -ed suma una sílaba. <b>chat</b> además dobla la t: chatted.",
+    demo:[["accept", "accepted", "termina en t"], ["attend", "attended", "termina en d"], ["chat", "chatted", "dobla la t"]],
+    verbs:[
+      ["accept", "accepted", "/əkˈseptɪd/", "aceptar", "We <b>accepted</b> card payments at the shop.", "Aceptamos pagos con tarjeta en el local."],
+      ["adopt", "adopted", "/əˈdɑːptɪd/", "adoptar", "A customer <b>adopted</b> a puppy.", "Una clienta adoptó un cachorro."],
+      ["attend", "attended", "/əˈtendɪd/", "asistir", "I <b>attended</b> class at the academy.", "Asistí a clase en la academia."],
+      ["celebrate", "celebrated", "/ˈseləbreɪtɪd/", "celebrar", "We <b>celebrated</b> my brother's birthday.", "Celebramos el cumpleaños de mi hermano."],
+      ["chat", "chatted", "/ˈtʃætɪd/", "charlar", "I <b>chatted</b> with a customer about her dog.", "Charlé con una clienta sobre su perro."],
+      ["collect", "collected", "/kəˈlektɪd/", "recoger", "I <b>collected</b> my package at the mall.", "Recogí mi paquete en el centro comercial."],
+      ["complete", "completed", "/kəmˈpliːtɪd/", "completar", "I <b>completed</b> Unit 8 last month.", "Completé la Unit 8 el mes pasado."],
+      ["correct", "corrected", "/kəˈrektɪd/", "corregir", "My teacher <b>corrected</b> my pronunciation.", "Mi profe me corrigió la pronunciación."],
+      ["create", "created", "/kriˈeɪtɪd/", "crear", "I <b>created</b> an app to study English.", "Creé una app para estudiar inglés."],
+      ["expect", "expected", "/ɪkˈspektɪd/", "esperar (que pase)", "I <b>expected</b> more customers on Saturday.", "Esperaba más clientes el sábado."],
+      ["graduate", "graduated", "/ˈɡrædʒueɪtɪd/", "graduarse", "I <b>graduated</b> from high school.", "Me gradué del colegio."],
+      ["lift", "lifted", "/ˈlɪftɪd/", "levantar (algo pesado)", "I <b>lifted</b> a heavy bag of dog food.", "Levanté un bulto pesado de comida para perro."],
+      ["print", "printed", "/ˈprɪntɪd/", "imprimir", "I <b>printed</b> the prices for the shelves.", "Imprimí los precios para los estantes."],
+      ["protect", "protected", "/prəˈtektɪd/", "proteger", "The gloves <b>protected</b> my hands.", "Los guantes me protegieron las manos."],
+      ["rent", "rented", "/ˈrentɪd/", "alquilar", "We <b>rented</b> bikes in the park.", "Alquilamos bicicletas en el parque."],
+      ["shout", "shouted", "/ˈʃaʊtɪd/", "gritar", "My brother <b>shouted</b> my name from the door.", "Mi hermano gritó mi nombre desde la puerta."],
+      ["suggest", "suggested", "/səˈdʒestɪd/", "sugerir", "My brother <b>suggested</b> a walk to Monserrate.", "Mi hermano sugirió una caminata a Monserrate."],
+      ["text", "texted", "/ˈtekstɪd/", "escribir por mensaje", "I <b>texted</b> my brother from the academy.", "Le escribí a mi hermano desde la academia."],
+      ["translate", "translated", "/trænsˈleɪtɪd/", "traducir", "I <b>translated</b> the text to Spanish.", "Traduje el texto al español."],
+      ["treat", "treated", "/ˈtriːtɪd/", "tratar, atender", "The vet <b>treated</b> my brother's pet.", "El veterinario atendió a la mascota de mi hermano."],
+    ]},
+  { id:"t2", kind:'reg', sound:"/t/", name:"Sharp ending (t) · more", diff:"medium",
+    note:"Más verbos que terminan en sonido sordo: la -ed suena como una t.",
+    when:"El verbo termina en sonido <b>sordo</b>: p, k, f, s, sh, ch, x.",
+    rule:"La misma regla de \"Sharp ending\": la garganta no vibra, así que la -ed sale como una t. <b>drop</b> y <b>shop</b> además doblan la p: dropped, shopped.",
+    demo:[["fix", "fixed", "termina en x"], ["wish", "wished", "termina en sh"], ["drop", "dropped", "dobla la p"]],
+    verbs:[
+      ["bake", "baked", "/beɪkt/", "hornear", "My mom <b>baked</b> a cake for my birthday.", "Mi mamá horneó una torta para mi cumpleaños."],
+      ["brush", "brushed", "/brʌʃt/", "cepillar", "I <b>brushed</b> a dog at the shop.", "Cepillé a un perro en el local."],
+      ["cross", "crossed", "/krɔːst/", "cruzar", "I <b>crossed</b> the street with my bike.", "Crucé la calle con mi bici."],
+      ["dress", "dressed", "/drest/", "vestirse", "I <b>dressed</b> warmly because it was cold.", "Me vestí abrigado porque hacía frío."],
+      ["drop", "dropped", "/drɑːpt/", "dejar caer", "I <b>dropped</b> my phone on the floor.", "Se me cayó el celular al piso."],
+      ["fix", "fixed", "/fɪkst/", "arreglar", "My brother <b>fixed</b> the shop door.", "Mi hermano arregló la puerta del local."],
+      ["guess", "guessed", "/ɡest/", "adivinar", "I <b>guessed</b> the answer on the quiz.", "Adiviné la respuesta en el quiz."],
+      ["hope", "hoped", "/hoʊpt/", "esperar (con ganas)", "I <b>hoped</b> for a good grade.", "Esperaba una buena nota."],
+      ["jump", "jumped", "/dʒʌmpt/", "saltar", "The puppy <b>jumped</b> on the counter.", "El cachorro saltó al mostrador."],
+      ["kiss", "kissed", "/kɪst/", "besar", "My mom <b>kissed</b> me goodbye.", "Mi mamá me dio un beso de despedida."],
+      ["knock", "knocked", "/nɑːkt/", "tocar (la puerta)", "A customer <b>knocked</b> on the door before we opened.", "Un cliente tocó la puerta antes de abrir."],
+      ["mix", "mixed", "/mɪkst/", "mezclar", "I <b>mixed</b> the soap with water.", "Mezclé el jabón con agua."],
+      ["pack", "packed", "/pækt/", "empacar", "I <b>packed</b> my suitcase for Melgar.", "Empaqué mi maleta para Melgar."],
+      ["park", "parked", "/pɑːrkt/", "parquear", "I <b>parked</b> my scooter outside the mall.", "Parqueé el scooter afuera del centro comercial."],
+      ["pick", "picked", "/pɪkt/", "escoger", "I <b>picked</b> a toy for my brother's pet.", "Escogí un juguete para la mascota de mi hermano."],
+      ["promise", "promised", "/ˈprɑːmɪst/", "prometer", "I <b>promised</b> to study every day.", "Prometí estudiar todos los días."],
+      ["push", "pushed", "/pʊʃt/", "empujar", "I <b>pushed</b> the cart in the supermarket.", "Empujé el carrito en el supermercado."],
+      ["reach", "reached", "/riːtʃt/", "llegar a, alcanzar", "We <b>reached</b> the top of Monserrate.", "Llegamos a la cima de Monserrate."],
+      ["search", "searched", "/sɜːrtʃt/", "buscar", "I <b>searched</b> for my keys everywhere.", "Busqué mis llaves por todas partes."],
+      ["shop", "shopped", "/ʃɑːpt/", "comprar, ir de compras", "I <b>shopped</b> for clothes at the mall.", "Compré ropa en el centro comercial."],
+      ["stretch", "stretched", "/stretʃt/", "estirar", "I <b>stretched</b> before volleyball.", "Estiré antes del voleibol."],
+      ["touch", "touched", "/tʌtʃt/", "tocar", "The child <b>touched</b> the puppy.", "El niño tocó al cachorro."],
+      ["type", "typed", "/taɪpt/", "escribir (en teclado)", "I <b>typed</b> my text on my phone.", "Escribí mi texto en el celular."],
+      ["wish", "wished", "/wɪʃt/", "desear", "I <b>wished</b> my brother a happy birthday.", "Le deseé feliz cumpleaños a mi hermano."],
+    ]},
+  { id:"d2", kind:'reg', sound:"/d/", name:"Soft ending (d) · more", diff:"medium",
+    note:"Más verbos que terminan en sonido sonoro: la -ed suena como una d.",
+    when:"El verbo termina en sonido <b>sonoro</b>: vocales, b, g, v, z, m, n, l, r.",
+    rule:"La misma regla de \"Soft ending\": la garganta vibra, así que la -ed sale como una d. Si el verbo ya termina en e, solo se pega la d: smile → smiled.",
+    demo:[["explain", "explained", "termina en n"], ["move", "moved", "termina en v, solo -d"], ["borrow", "borrowed", "termina en vocal"]],
+    verbs:[
+      ["agree", "agreed", "/əˈɡriːd/", "estar de acuerdo", "My brother <b>agreed</b> with me.", "Mi hermano estuvo de acuerdo conmigo."],
+      ["allow", "allowed", "/əˈlaʊd/", "permitir", "The mall <b>allowed</b> pets inside.", "El centro comercial permitió mascotas adentro."],
+      ["believe", "believed", "/bɪˈliːvd/", "creer", "I <b>believed</b> the customer's story.", "Le creí la historia al cliente."],
+      ["borrow", "borrowed", "/ˈbɑːroʊd/", "pedir prestado", "I <b>borrowed</b> my brother's scooter.", "Le pedí prestado el scooter a mi hermano."],
+      ["climb", "climbed", "/klaɪmd/", "subir", "We <b>climbed</b> the stairs to the second floor.", "Subimos las escaleras al segundo piso."],
+      ["complain", "complained", "/kəmˈpleɪnd/", "quejarse", "A customer <b>complained</b> about the price.", "Un cliente se quejó del precio."],
+      ["deliver", "delivered", "/dɪˈlɪvərd/", "entregar", "The supplier <b>delivered</b> the dog food.", "El proveedor entregó la comida para perro."],
+      ["describe", "described", "/dɪˈskraɪbd/", "describir", "I <b>described</b> my shop in the speaking test.", "Describí mi local en el speaking test."],
+      ["explain", "explained", "/ɪkˈspleɪnd/", "explicar", "The teacher <b>explained</b> the past simple.", "El profe explicó el pasado simple."],
+      ["fail", "failed", "/feɪld/", "fallar", "I <b>failed</b> one question on the quiz.", "Fallé una pregunta del quiz."],
+      ["fill", "filled", "/fɪld/", "llenar", "I <b>filled</b> the water bowls.", "Llené los platos de agua."],
+      ["imagine", "imagined", "/ɪˈmædʒɪnd/", "imaginar", "I <b>imagined</b> a bigger shop.", "Me imaginé un local más grande."],
+      ["improve", "improved", "/ɪmˈpruːvd/", "mejorar", "My English <b>improved</b> a lot this year.", "Mi inglés mejoró mucho este año."],
+      ["join", "joined", "/dʒɔɪnd/", "unirse", "My brother's girlfriend <b>joined</b> us at the museum.", "La novia de mi hermano nos acompañó en el museo."],
+      ["move", "moved", "/muːvd/", "mover, mudarse", "We <b>moved</b> the shelves to the back.", "Movimos los estantes al fondo."],
+      ["offer", "offered", "/ˈɔːfərd/", "ofrecer", "I <b>offered</b> a discount to the customer.", "Le ofrecí un descuento al cliente."],
+      ["prepare", "prepared", "/prɪˈperd/", "preparar(se)", "I <b>prepared</b> for the speaking test.", "Me preparé para el speaking test."],
+      ["return", "returned", "/rɪˈtɜːrnd/", "devolver, regresar", "A customer <b>returned</b> a bag of food.", "Un cliente devolvió un bulto de comida."],
+      ["save", "saved", "/seɪvd/", "ahorrar", "I <b>saved</b> money for a new bike.", "Ahorré plata para una bici nueva."],
+      ["smile", "smiled", "/smaɪld/", "sonreír", "The customer <b>smiled</b> when she saw the puppies.", "La clienta sonrió cuando vio los cachorros."],
+      ["turn", "turned", "/tɜːrnd/", "girar", "I <b>turned</b> left at the escalator.", "Giré a la izquierda en la escalera eléctrica."],
+    ]},
+  { id:"ied", kind:'reg', sound:"/d/", name:"y → ied, double letters", diff:"medium",
+    note:"Suenan /d/, pero se escriben distinto: la y cambia a i, o la última letra se dobla.",
+    when:"El verbo termina en <b>consonante + y</b>, o es corto y termina en <b>consonante-vocal-consonante</b>.",
+    rule:"Si termina en consonante + y, la y cambia a i: cry → cried. Si es corto y termina en consonante-vocal-consonante, la última letra se dobla para que la vocal siga corta: plan → planned. En los dos casos suena /d/. Si antes de la y hay vocal, no cambia: play → played.",
+    demo:[["cry", "cried", "consonante + y → ied"], ["plan", "planned", "se dobla la n"], ["prefer", "preferred", "se dobla la r"]],
+    verbs:[
+      ["cry", "cried", "/kraɪd/", "llorar", "The puppy <b>cried</b> all night.", "El cachorro lloró toda la noche."],
+      ["hurry", "hurried", "/ˈhɜːrid/", "apurarse", "I <b>hurried</b> to class.", "Me apuré para llegar a clase."],
+      ["worry", "worried", "/ˈwɜːrid/", "preocuparse", "I <b>worried</b> about the exam.", "Me preocupé por el examen."],
+      ["marry", "married", "/ˈmærid/", "casarse", "My parents <b>married</b> in Bogotá.", "Mis papás se casaron en Bogotá."],
+      ["apply", "applied", "/əˈplaɪd/", "inscribirse, aplicar", "I <b>applied</b> for the English course.", "Me inscribí al curso de inglés."],
+      ["reply", "replied", "/rɪˈplaɪd/", "responder", "I <b>replied</b> to my brother's message.", "Le respondí el mensaje a mi hermano."],
+      ["copy", "copied", "/ˈkɑːpid/", "copiar", "I <b>copied</b> the new words in my notebook.", "Copié las palabras nuevas en mi cuaderno."],
+      ["fry", "fried", "/fraɪd/", "freír", "I <b>fried</b> two eggs for breakfast.", "Freí dos huevos para el desayuno."],
+      ["plan", "planned", "/plænd/", "planear", "We <b>planned</b> a trip to Monserrate.", "Planeamos un paseo a Monserrate."],
+      ["prefer", "preferred", "/prɪˈfɜːrd/", "preferir", "I <b>preferred</b> the bike to the bus.", "Preferí la bici en vez del bus."],
+      ["jog", "jogged", "/dʒɑːɡd/", "trotar", "I <b>jogged</b> in the park on Sunday.", "Troté en el parque el domingo."],
+      ["hug", "hugged", "/hʌɡd/", "abrazar", "I <b>hugged</b> my mom at the door.", "Abracé a mi mamá en la puerta."],
+      ["grab", "grabbed", "/ɡræbd/", "agarrar", "I <b>grabbed</b> my keys and left.", "Agarré mis llaves y salí."],
+    ]},
   { id:'same', kind:'irr', sound:'=', name:'No change', diff:'easy',
     note:'Se escriben y suenan igual que el presente. El contexto dice si es pasado.',
     when:'Casi todos ya terminan en <b>t</b> o <b>d</b>.',
@@ -7197,7 +7303,8 @@ const VERB_FAMILIES = [
       ['ride','rode','/roʊd/','montar','We <b>rode</b> the slides all morning.','Nos lanzamos por los toboganes toda la mañana.'],
       ['write','wrote','/roʊt/','escribir','I <b>wrote</b> a text about my trip.','Escribí un texto sobre mi viaje.'],
       ['freeze','froze','/froʊz/','congelar','The water <b>froze</b> in the mountains.','El agua se congeló en la montaña.'],
-      ['rise','rose','/roʊz/','subir, salir (el sol)','The sun <b>rose</b> at six.','El sol salió a las seis.']
+      ['rise','rose','/roʊz/','subir, salir (el sol)','The sun <b>rose</b> at six.','El sol salió a las seis.'],
+      ["shine", "shone", "/ʃoʊn/", "brillar", "The sun <b>shone</b> on Monserrate.", "El sol brilló en Monserrate."]
     ]},
   { id:'ore', kind:'irr', sound:'/ɔːr/', name:'End in -ore', diff:'hard',
     note:'Cuatro verbos que riman entre sí. Suena como la o de "por", alargada.',
@@ -7259,7 +7366,10 @@ const VERB_FAMILIES = [
       ['deal','dealt','/delt/','tratar, lidiar','I <b>dealt</b> with the problem alone.','Manejé el problema solo.'],
       ['mean','meant','/ment/','significar','I didn\'t know what it <b>meant</b>.','No sabía qué significaba.'],
       ['feed','fed','/fed/','alimentar','I <b>fed</b> the dogs before the trip.','Alimenté a los perros antes del viaje.'],
-      ['lead','led','/led/','guiar','The guide <b>led</b> us to the museum.','El guía nos llevó al museo.']
+      ['lead','led','/led/','guiar','The guide <b>led</b> us to the museum.','El guía nos llevó al museo.'],
+      ["sweep", "swept", "/swept/", "barrer", "I <b>swept</b> the kitchen after dinner.", "Barrí la cocina después de comer."],
+      ["bleed", "bled", "/bled/", "sangrar", "My finger <b>bled</b> when I cut it.", "Me sangró el dedo cuando me corté."],
+      ["oversleep", "overslept", "/ˌoʊvərˈslept/", "dormirse (de más)", "I <b>overslept</b> and got to class late.", "Me quedé dormido y llegué tarde a clase."]
     ]},
   { id:'i', kind:'irr', sound:'/ɪ/', name:'i gets shorter', diff:'medium',
     note:'Cuatro verbos donde la i larga del presente se vuelve corta.',
@@ -7313,7 +7423,9 @@ const VERB_FAMILIES = [
       ['stand','stood','/stʊd/','pararse','We <b>stood</b> in line for the tour.','Hicimos fila para el tour.'],
       ['forget','forgot','/fərˈgɑːt/','olvidar','I <b>forgot</b> my sunglasses at the pool.','Olvidé mis gafas de sol en la piscina.'],
       ['forgive','forgave','/fərˈgeɪv/','perdonar','My brother <b>forgave</b> me quickly.','Mi hermano me perdonó rápido.'],
-      ['lie','lay','/leɪ/','acostarse','I <b>lay</b> in the sun too long.','Me acosté al sol demasiado tiempo.']
+      ['lie','lay','/leɪ/','acostarse','I <b>lay</b> in the sun too long.','Me acosté al sol demasiado tiempo.'],
+      ["shake", "shook", "/ʃʊk/", "sacudir, dar la mano", "I <b>shook</b> hands with my teacher.", "Le di la mano a mi profe."],
+      ["shoot", "shot", "/ʃɑːt/", "grabar, disparar", "I <b>shot</b> a video of the puppies.", "Grabé un video de los cachorros."]
     ]}
 ];
 
