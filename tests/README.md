@@ -49,6 +49,11 @@ vacío.
 corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
+`verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
+que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
+terminen en -ed y estén en la familia de su sonido, y que cada familia tenga
+su regla.
+
 `my-life.test.js` — La pestaña My life: que cada tarjeta del local tenga su
 frase en presente (el local, la casa y Going out), que no haya dos frentes
 iguales en español, que la casa no comparta tarjeta con el local, que Verbs ya

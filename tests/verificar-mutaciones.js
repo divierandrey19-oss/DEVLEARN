@@ -244,6 +244,16 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Verbs: el mismo verbo en dos familias',
+    buscar: `["hug", "hugged",`,
+    reemplazo: '["cry", "hugged",',
+  },
+  {
+    nombre: 'Verbs: un regular con el sonido de otra familia',
+    buscar: `["fix", "fixed", "/fɪkst/"`,
+    reemplazo: '["fix", "fixed", "/fɪksd/"',
+  },
+  {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
     buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
 let state = loadState();`,
