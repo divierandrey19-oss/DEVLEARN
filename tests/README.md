@@ -49,6 +49,10 @@ vacío.
 corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
+`my-life.test.js` — La pestaña My life: que cada tarjeta del local tenga su
+frase en presente, que no haya dos frentes iguales en español, que Verbs ya no
+lleve el local y que cada globito cuente lo suyo.
+
 ## verificar-mutaciones.js
 
 Una suite en verde no prueba nada por sí sola: puede estar pasando porque no
