@@ -225,8 +225,8 @@ const MUTACIONES = [
   },
   {
     nombre: 'My life: que el menú marque otro botón',
-    buscar: `'texts': 8, 'life': 9 };`,
-    reemplazo: "'texts': 8, 'life': 8 };",
+    buscar: `'levels': 1, 'life': 2, 'progress': 3,`,
+    reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',

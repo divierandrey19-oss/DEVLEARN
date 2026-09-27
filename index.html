@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-27b -->
+<!-- DEVLEARN_BUILD: 2026-09-27c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3906,6 +3906,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div class="nav-label">Learn</div>
       <button type="button" class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⊞</span> Dashboard</button>
       <button type="button" class="nav-item" onclick="navigate('levels')"><span class="nav-icon">📊</span> My Levels</button>
+      <button type="button" class="nav-item" onclick="navigate('life')"><span class="nav-icon">🏠</span> My life <span class="nav-badge" id="life-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('progress')"><span class="nav-icon">📈</span> Progress</button>
 
       <div class="nav-label">Practice</div>
@@ -3915,7 +3916,6 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <button type="button" class="nav-item" onclick="navigate('podcasts')"><span class="nav-icon">🎧</span> Podcasts</button>
       <button type="button" class="nav-item" onclick="navigate('verbs')"><span class="nav-icon">🔤</span> Verbs <span class="nav-badge" id="verbs-count">0</span></button>
       <button type="button" class="nav-item" onclick="navigate('texts')"><span class="nav-icon">📝</span> My texts</button>
-      <button type="button" class="nav-item" onclick="navigate('life')"><span class="nav-icon">🏠</span> My life <span class="nav-badge" id="life-count">0</span></button>
       <button type="button" class="nav-item" onclick="openFocusMode()"><span class="nav-icon">🎯</span> Focus Mode</button>
     </nav>
 
@@ -4866,7 +4866,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-27b';
+const APP_BUILD = '2026-09-27c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -7013,7 +7013,7 @@ function navigate(page) {
     'vocab-all': 'Vocabulary', 'tutor': 'AI Tutor', 'podcasts': 'Podcasts', 'verbs': 'Verbs', 'texts': 'My texts', 'life': 'My life',
   };
   document.getElementById('page-title').textContent = titles[page] || page;
-  const navMap = { 'dashboard': 0, 'levels': 1, 'progress': 2, 'flashcards-all': 3, 'vocab-all': 4, 'tutor': 5, 'podcasts': 6, 'verbs': 7, 'texts': 8, 'life': 9 };
+  const navMap = { 'dashboard': 0, 'levels': 1, 'life': 2, 'progress': 3, 'flashcards-all': 4, 'vocab-all': 5, 'tutor': 6, 'podcasts': 7, 'verbs': 8, 'texts': 9 };
   if (navMap[page] !== undefined) {
     document.querySelectorAll('.nav-item')[navMap[page]].classList.add('active');
   }
