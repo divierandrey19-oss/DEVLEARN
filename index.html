@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-28a -->
+<!-- DEVLEARN_BUILD: 2026-09-28b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -1735,6 +1735,14 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   color: var(--text-3);
   font-weight: var(--fw-semibold);
   margin-bottom: 8px;
+}
+/* Qué clase de palabra es: verbo, sustantivo, phrasal verb… Le dice cómo
+ * usarla en una frase antes de voltear. El color lo da --k. */
+.fc-kind {
+  display: inline-block; margin: 6px 0 2px; padding: 3px 10px; border-radius: 999px;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--k); border: 1px solid var(--k);
+  background: color-mix(in srgb, var(--k) 14%, transparent);
 }
 .fc-word {
   font-family: var(--font-sans);
@@ -4881,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-28a';
+const APP_BUILD = '2026-09-28b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6995,6 +7003,35 @@ function getUnit(lid, uid) {
 function getUnitVocab(u) {
   if (!u) return [];
   return (u.batches || []).flatMap(b => b.vocab || []);
+}
+/* Qué clase de palabra es, para la etiqueta de la tarjeta. El tipo lo pone la
+ * IA al analizar la página (noun, verb, adj, adv, phrase, pronoun,
+ * instruction), pero a un phrasal verb a veces lo llama "verb" o "phrase":
+ * por eso también se reconoce por su forma, un verbo más una partícula
+ * (give up, pick up, take out). Sin tipo conocido no hay etiqueta. */
+const PHRASAL_PARTICLES = new Set(['up', 'down', 'out', 'off', 'on', 'in', 'away', 'back', 'over',
+  'around', 'about', 'along', 'through', 'after', 'into', 'by', 'forward', 'together', 'apart']);
+function wordKind(v) {
+  const type = String(v?.type || '').toLowerCase().trim();
+  const partes = String(v?.word || '').toLowerCase().trim().split(/\s+/);
+  if (type.includes('phrasal')) return { label: 'Phrasal verb', color: 'var(--purple)' };
+  if ((type === 'verb' || type === 'phrase') && partes.length > 1 && partes.slice(1).some(p => PHRASAL_PARTICLES.has(p))) {
+    return { label: 'Phrasal verb', color: 'var(--purple)' };
+  }
+  const tipos = {
+    verb: ['Verb', 'var(--accent)'], noun: ['Noun', 'var(--green)'],
+    adj: ['Adjective', 'var(--amber)'], adjective: ['Adjective', 'var(--amber)'],
+    adv: ['Adverb', 'var(--teal)'], adverb: ['Adverb', 'var(--teal)'],
+    pronoun: ['Pronoun', 'var(--pink, var(--red))'],
+    phrase: ['Expression', 'var(--text-2)'], expression: ['Expression', 'var(--text-2)'],
+    instruction: ['Expression', 'var(--text-2)'],
+  };
+  const t = tipos[type];
+  return t ? { label: t[0], color: t[1] } : null;
+}
+function wordKindBadge(v) {
+  const k = wordKind(v);
+  return k ? `<span class="fc-kind" style="--k:${k.color};">${k.label}</span>` : '';
 }
 /* Repasar una sola página: él toca la foto (o la elige de la lista) y la
  * baraja trae solo las palabras de ese lote. El progreso sigue siendo el de
@@ -13066,6 +13103,7 @@ function renderFcStage() {
             <div class="fc-label">English</div>
             <div class="fc-word">${v.word}</div>
             <div class="fc-phonetic">${v.phonetic || ''}</div>
+            ${wordKindBadge(v)}
             <button class="audio-btn" style="margin-top:6px;" onclick="event.stopPropagation();speak('${escapeStr(v.word)}')">🔊</button>
             <div class="fc-tap-hint">Tap to reveal</div>
           </div>
@@ -13073,6 +13111,7 @@ function renderFcStage() {
             <div class="fc-image-area">${v.emoji || '📝'}</div>
             <div class="fc-label">Spanish</div>
             <div class="fc-translation">${v.translation || ''}</div>
+            ${wordKindBadge(v)}
             <div class="fc-example">"${v.example || ''}"</div>
             <div class="fc-example" style="margin-top:8px;font-size:0.75rem;opacity:0.7;">${v.exampleTranslation || ''}</div>
           </div>
@@ -13114,6 +13153,7 @@ function renderFcStage() {
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
           <div class="fc-label">${questionLbl}</div>
           <div class="fc-word" style="margin-bottom:6px;">${question}</div>
+          ${wordKindBadge(v)}
           <div class="fc-phonetic" style="margin-bottom:14px;">${enToEs ? (v.phonetic || '') : ''}</div>
           ${enToEs ? `<button class="audio-btn" style="margin-bottom:14px;" onclick="speak('${escapeStr(v.word)}')">🔊</button>` : ''}
           <div class="fc-quiz-options">
@@ -13139,6 +13179,7 @@ function renderFcStage() {
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
           <div class="fc-label">${prompt.label}</div>
           <div class="fc-word" style="margin-bottom:4px;">${prompt.clue}</div>
+          ${wordKindBadge(v)}
           ${!toSpanish ? `<button class="audio-btn" style="margin:8px auto 12px;display:block;" onclick="speak('${escapeStr(v.word)}')">🔊</button>` : '<div style="margin-bottom:14px;"></div>'}
           <input class="fc-write-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="fc-write"
             placeholder="${prompt.placeholder}"
@@ -13162,6 +13203,7 @@ function renderFcStage() {
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
           <div class="fc-label">Write a sentence using this word</div>
           <div class="fc-word" style="margin-bottom:4px;">${v.word}</div>
+          ${wordKindBadge(v)}
           <div class="fc-phonetic" style="margin-bottom:4px;">${v.phonetic || ''}</div>
           <div class="fc-example" style="margin-bottom:14px;font-size:0.76rem;">
             Hint: "${v.translation || ''}"

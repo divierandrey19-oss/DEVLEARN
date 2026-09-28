@@ -53,6 +53,10 @@ dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
 sesión guardada de una página no se retome en la unidad entera ni al revés.
 
+`word-kind.test.js` — La etiqueta de la flashcard (Verb, Noun, Phrasal verb…):
+que cada tipo de la IA tenga la suya, que un phrasal verb marcado como "verb"
+se reconozca igual, y que sin tipo conocido no salga una etiqueta equivocada.
+
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
 terminen en -ed y estén en la familia de su sonido, y que cada familia tenga
