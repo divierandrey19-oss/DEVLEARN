@@ -24,10 +24,11 @@ function constanteJSON(nombre) {
 
 const SHOP_FAMILIES = constanteJSON('SHOP_FAMILIES');
 const HOME_FAMILIES = constanteJSON('HOME_FAMILIES');
+const PHRASE_FAMILIES = constanteJSON('PHRASE_FAMILIES');
 const LIFE_NOW = constanteJSON('LIFE_NOW');
 
 const clave = (f, v) => (f.keyPrefix ? f.keyPrefix + ':' : '') + v[0];
-const tarjetas = SHOP_FAMILIES.concat(HOME_FAMILIES).flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
+const tarjetas = SHOP_FAMILIES.concat(HOME_FAMILIES, PHRASE_FAMILIES).flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
 
 // ---------------------------------------------------------------------------
 // El contenido.
@@ -63,7 +64,8 @@ test('la frase en presente no es la vieja en pasado', () => {
 test('las herramientas también traen su frase en pasado', () => {
   // Son sustantivos: el pasado va en un verbo de la frase. Él lo pidió para
   // practicar los dos tiempos en todas las tarjetas.
-  const herramientas = tarjetas.filter(t => !t.v[1]);
+  // Las frases de podcasts no: son bloques para usar enteros, sin pasado.
+  const herramientas = tarjetas.filter(t => !t.v[1] && t.f.kind !== 'phrase');
   assert.ok(herramientas.length > 0);
   for (const t of herramientas) {
     const pasado = LIFE_NOW[t.k].past;
@@ -96,8 +98,26 @@ test('cada grupo de la casa sale en una sección de la pestaña', () => {
 });
 
 test('el globito de My life cuenta también la casa', () => {
-  assert.match(h.extraerFuncion('lifeFamilies'), /SHOP_FAMILIES\.concat\(HOME_FAMILIES\)/);
+  assert.match(h.extraerFuncion('lifeFamilies'), /SHOP_FAMILIES\.concat\(HOME_FAMILIES\b/);
   assert.match(h.extraerFuncion('lifeDueCount'), /lifeFamilies\(\)\.forEach/);
+});
+
+test('la pista del frente no regala la respuesta en inglés', () => {
+  // El frente muestra la frase en español y una pista (🔑). Si la pista trae
+  // la palabra en inglés, ya no hay nada que recordar.
+  for (const t of tarjetas.filter(t => t.f.kind === 'phrase')) {
+    const clave = (LIFE_NOW[t.k].en.match(/<b>([^<]+)<\/b>/) || [])[1] || '';
+    const palabras = clave.toLowerCase().match(/[a-z']{3,}/g) || [];
+    const pista = t.v[3].toLowerCase();
+    for (const w of palabras) assert.ok(!new RegExp(`\\b${w}\\b`).test(pista), `${t.k}: la pista "${t.v[3]}" trae "${w}"`);
+  }
+});
+
+test('las frases de podcasts salen en su sección', () => {
+  assert.ok(PHRASE_FAMILIES.length > 0);
+  for (const f of PHRASE_FAMILIES) assert.equal(f.keyPrefix, 'phrase', `${f.id} sin prefijo`);
+  assert.match(h.extraerFuncion('renderLife'), /fams: PHRASE_FAMILIES/);
+  assert.match(h.extraerFuncion('lifeFamilies'), /PHRASE_FAMILIES/);
 });
 
 // ---------------------------------------------------------------------------

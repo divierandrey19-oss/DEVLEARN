@@ -244,6 +244,16 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Voz: volver a borrar el apóstrofo de las contracciones',
+    buscar: `    .replace(/(^|[^A-Za-z])['‘’]+|['‘’]+(?=[^A-Za-z]|$)/g, '$1')`,
+    reemplazo: "    .replace(/['‘’]/g, '')",
+  },
+  {
+    nombre: 'Frases: que la sección de frases desaparezca de My life',
+    buscar: `    { titulo: '💬 Phrases I heard', fams: PHRASE_FAMILIES },`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Etiqueta: dejar de reconocer phrasal verbs que la IA marcó como verb',
     buscar: `  if ((type === 'verb' || type === 'phrase') && partes.length > 1 && partes.slice(1).some(p => PHRASAL_PARTICLES.has(p))) {`,
     reemplazo: '  if (false) {',
