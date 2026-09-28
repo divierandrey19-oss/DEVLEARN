@@ -244,6 +244,11 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Flashcards: que Start vuelva a traer toda la unidad cuando la pantalla dijo "N new words"',
+    buscar: `  if (!dueOnly && unseen.length > 0) return shuffle(unseen);`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Voz: volver a borrar el apóstrofo de las contracciones',
     buscar: `    .replace(/(^|[^A-Za-z])['‘’]+|['‘’]+(?=[^A-Za-z]|$)/g, '$1')`,
     reemplazo: "    .replace(/['‘’]/g, '')",
