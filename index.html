@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-27j -->
+<!-- DEVLEARN_BUILD: 2026-09-28a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -1326,7 +1326,22 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   position: relative; border-radius: var(--r-sm);
   overflow: hidden; aspect-ratio: 4/3; background: var(--surface-3);
 }
-.img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+/* Cuántas palabras trae la página: le dice que tocar la foto abre su repaso. */
+.img-thumb-n {
+  position: absolute; left: 6px; bottom: 6px; pointer-events: none;
+  background: rgba(0,0,0,0.7); color: white; border-radius: 10px;
+  padding: 2px 8px; font-size: 11px; font-weight: 600;
+}
+.page-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 8px 10px; margin-bottom: 8px; color: var(--text); font: inherit; cursor: pointer;
+}
+.page-row img, .page-row .page-row-icon {
+  width: 52px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+  background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
 .img-thumb-rm {
   position: absolute; top: 6px; right: 6px;
   width: 22px; height: 22px; border-radius: 50%;
@@ -4862,11 +4877,11 @@ window._mergeCloudState = function(cloud) {
   } catch(e) { console.warn('Merge error:', e); }
 };
 let current = { lid: null, uid: null, tab: 'vocab' };
-let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null };
+let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, batchId: null };
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-27j';
+const APP_BUILD = '2026-09-28a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6980,6 +6995,28 @@ function getUnit(lid, uid) {
 function getUnitVocab(u) {
   if (!u) return [];
   return (u.batches || []).flatMap(b => b.vocab || []);
+}
+/* Repasar una sola página: él toca la foto (o la elige de la lista) y la
+ * baraja trae solo las palabras de ese lote. El progreso sigue siendo el de
+ * la unidad (u.fcProgress, por palabra), así que calificar aquí cuenta igual
+ * que en el repaso de toda la unidad. */
+function batchVocab(u, batchId) {
+  const b = (u?.batches || []).find(x => x.id === batchId);
+  return b ? (b.vocab || []) : [];
+}
+function fcDeckVocab(u) {
+  return fc.batchId ? batchVocab(u, fc.batchId) : getUnitVocab(u);
+}
+/* "Page 3" para las que tienen foto, en el orden en que las subió; las que no
+ * tienen (vocabulario escrito a mano) usan su propio título. */
+function batchLabel(u, batchId) {
+  const batches = u?.batches || [];
+  const b = batches.find(x => x.id === batchId);
+  if (!b) return '';
+  if ((b.images || []).length) {
+    return `Page ${batches.filter(x => (x.images || []).length).indexOf(b) + 1}`;
+  }
+  return b.title || 'Words';
 }
 function getUnitGrammar(u) {
   if (!u) return [];
@@ -9750,15 +9787,51 @@ function renderImagePreviews(images) {
     return;
   }
   grid.style.display = 'grid';
+  const u = current.lid && current.uid ? getUnit(current.lid, current.uid) : null;
   grid.innerHTML = images.map((imgObj, i) => {
     const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
+    const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
+    const n = batchId && u ? batchVocab(u, batchId).length : 0;
     return `
     <div class="img-thumb">
-      <img src="${src}" alt="page ${i + 1}"/>
+      <img src="${src}" alt="page ${i + 1}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
+      ${n ? `<span class="img-thumb-n">🃏 ${n}</span>` : ''}
       <button class="img-thumb-rm" onclick="removeUnitImage(${i})" title="Delete this image and its content">✕</button>
     </div>
   `;
   }).join('');
+}
+
+/* Él toca una foto y quiere repasar solo las palabras de esa página. La hoja
+ * muestra la página y el botón; las fotos de la misma página (104 y 105)
+ * abren el mismo lote. */
+function openPageSheet(batchId) {
+  const u = getUnit(current.lid, current.uid);
+  const b = (u?.batches || []).find(x => x.id === batchId);
+  if (!b) return;
+  const words = b.vocab || [];
+  document.getElementById('page-sheet')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'page-sheet';
+  ov.className = 'vb-ov';
+  ov.innerHTML = `
+    <div class="vb-sheet" role="dialog" aria-modal="true" aria-label="${escapeHtml(batchLabel(u, batchId))}">
+      <div class="vb-sheet-head">
+        <div>
+          <div class="vb-sheet-sound">${escapeHtml(batchLabel(u, batchId))}</div>
+          <div class="vb-sheet-name">${words.length} word${words.length !== 1 ? 's' : ''}${(b.topics || []).length ? ' · ' + escapeHtml(b.topics.slice(0, 2).join(', ')) : ''}</div>
+        </div>
+        <button class="vb-x" aria-label="Close" onclick="document.getElementById('page-sheet').remove()">✕</button>
+      </div>
+      ${(b.images || []).map(src => `<img src="${src}" alt="" style="width:100%;border-radius:var(--r-sm);margin-bottom:10px;">`).join('')}
+      ${words.length ? `
+        <div class="vb-sheet-txt" style="color:var(--text-2);">${escapeHtml(words.slice(0, 6).map(v => v.word).join(' · '))}${words.length > 6 ? ' …' : ''}</div>
+        <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('page-sheet').remove();openFcStudy(current.lid, current.uid, false, '${escapeStr(batchId)}')">🃏 Review these ${words.length} words</button>
+      ` : `<div class="vb-sheet-txt" style="color:var(--text-3);">This page has no words.</div>`}
+    </div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+  Sound.tap();
 }
 
 function removeUnitImage(i) {
@@ -9957,9 +10030,9 @@ async function regenerateBatchContent(lid, uid, batchId) {
 const QuizSession = {
 
   /** Build a new finite session (max 20 review + 5 new) */
-  build(lid, uid) {
+  build(lid, uid, batchId = null) {
     const u     = getUnit(lid, uid);
-    const vocab = getUnitVocab(u);
+    const vocab = batchId ? batchVocab(u, batchId) : getUnitVocab(u);
     const prog  = u.fcProgress || {};
     const today = todayLocal();
 
@@ -9997,6 +10070,7 @@ const QuizSession = {
 
     const session = {
       lid, uid,
+      batchId: batchId || null,   // una sola página, o null para la unidad
       queue,           // vocab indices
       position: 0,     // current position in queue
       results: {},     // { vocabIndex: 'correct'|'wrong' }
@@ -10029,10 +10103,13 @@ const QuizSession = {
   },
 
   /** Get the active session for a unit, or null if none/completed */
-  getActive(lid, uid) {
+  getActive(lid, uid, batchId = null) {
     const s = this.load();
     if (!s) return null;
     if (s.lid !== lid || s.uid !== uid) return null;
+    // Sus índices son de su propia baraja: la de una página no sirve para la
+    // unidad entera, ni al revés.
+    if ((s.batchId || null) !== (batchId || null)) return null;
     if (s.completedAt) return null; // completed sessions don't restore
     if (!s.queue || s.queue.length === 0) return null; // empty queue = invalid
     if (s.position >= s.queue.length) return null; // exhausted queue
@@ -10091,10 +10168,11 @@ const StudySession = {
   /* La cola guarda índices del vocabulario. Si subió páginas nuevas, esos
    * índices ya no apuntan a lo mismo, así que la sesión se descarta: mejor
    * empezar de nuevo que mostrarle la palabra equivocada. */
-  getActive(lid, uid, mode, vocabLen) {
+  getActive(lid, uid, mode, vocabLen, batchId = null) {
     const s = this.load();
     if (!s) return null;
     if (s.lid !== lid || s.uid !== uid) return null;
+    if ((s.batchId || null) !== (batchId || null)) return null;   // cada página tiene su fila
     if (s.mode !== mode) return null;              // cada modo tiene su fila
     if (s.completedAt) return null;
     if (!s.queue || !s.queue.length) return null;
@@ -10103,8 +10181,8 @@ const StudySession = {
     return s;
   },
 
-  start(lid, uid, mode, queue, vocabLen) {
-    const session = { lid, uid, mode, queue: [...queue], position: 0,
+  start(lid, uid, mode, queue, vocabLen, batchId = null) {
+    const session = { lid, uid, mode, queue: [...queue], position: 0, batchId: batchId || null,
                       vocabLen, startedAt: Date.now(), completedAt: null, version: 1 };
     this.save(session);
     return session;
@@ -12878,7 +12956,30 @@ function renderFlashcards(vocab) {
         🃏 Start flashcards
       </button>
     </div>
+    ${pageListHtml(lid, uid)}
   `;
+}
+
+/* La lista de páginas: sirve para las que tienen foto y para las que no
+ * (vocabulario escrito a mano, como los phrasal verbs), que no tienen foto
+ * que tocar. Cada fila abre la baraja de solo esa página. */
+function pageListHtml(lid, uid) {
+  const u = getUnit(lid, uid);
+  const pages = (u?.batches || []).filter(b => (b.vocab || []).length);
+  if (pages.length < 2) return '';
+  return `
+    <div style="padding:0 4px 24px;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);margin-bottom:8px;">📄 Review one page</div>
+      ${pages.map(b => `
+        <button class="page-row" onclick="openFcStudy('${lid}','${uid}', false, '${escapeStr(b.id)}')">
+          ${(b.images || []).length ? `<img src="${b.images[0]}" alt="">` : `<span class="page-row-icon">📝</span>`}
+          <span style="flex:1;min-width:0;">
+            <span style="display:block;font-weight:600;font-size:0.86rem;">${escapeHtml(batchLabel(u, b.id))}</span>
+            <span style="display:block;font-size:0.72rem;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml((b.vocab || []).slice(0, 4).map(v => v.word).join(' · '))}</span>
+          </span>
+          <span style="font-size:0.74rem;color:var(--text-3);flex-shrink:0;">${b.vocab.length} 🃏</span>
+        </button>`).join('')}
+    </div>`;
 }
 
 function setFcMode(mode) {
@@ -12893,7 +12994,7 @@ function setFcMode(mode) {
   if (mode === 'quiz' && fc.unitLid && fc.unitUid) {
     if (!fc.quizSession) {
       // Try to restore existing session first — only if it has remaining cards
-      const existing = QuizSession.getActive(fc.unitLid, fc.unitUid);
+      const existing = QuizSession.getActive(fc.unitLid, fc.unitUid, fc.batchId);
       if (existing && existing.queue.slice(existing.position).length > 0) {
         fc.quizSession = existing;
         // Restore queue from saved position
@@ -12902,7 +13003,7 @@ function setFcMode(mode) {
       } else {
         // Build a new session (clear any stale completed one)
         QuizSession.clear();
-        const session = QuizSession.build(fc.unitLid, fc.unitUid);
+        const session = QuizSession.build(fc.unitLid, fc.unitUid, fc.batchId);
         fc.quizSession = session;
         fc.queue = [...session.queue];
         if (fc.queue.length > 0) fc.idx = fc.queue[0];
@@ -13746,6 +13847,7 @@ function openDailyReview() {
   fc.mode        = 'classic';
   fc.unitLid     = null; // mixed units
   fc.unitUid     = null;
+  fc.batchId     = null;
   fc.sessionUnits = session.map(s => ({ lid: s.unit.lid, uid: s.unit.uid }));
   fc.sessionCorrect     = 0;
   fc.sessionSeen        = 0;
@@ -13911,7 +14013,7 @@ function rateFc(rating) {
 
     } else if (!wasLearning) {
       // ── Review/Mature card rated Good/Easy ────────────────
-      const allVocab    = getUnitVocab(u);
+      const allVocab    = fcDeckVocab(u);
       const nowStable   = allVocab.filter(w => {
         const p = u.fcProgress[w.word];
         return p && (p.state === 'mastered' || p.state === 'mature' || (p.state === 'review' && p.interval >= 1));
@@ -17858,13 +17960,15 @@ function sessionStartedLabel(ts) {
   return `on ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${hora}`;
 }
 
-function openFcStudy(lid, uid, newOnly = false) {
+function openFcStudy(lid, uid, newOnly = false, batchId = null) {
   const u     = getUnit(lid, uid);
-  const vocab = getUnitVocab(u);
-  if (!vocab.length) { toast('No vocabulary in this unit yet'); return; }
+  // Una sola página: él toca la foto y repasa solo esas palabras.
+  fc.batchId  = batchId && (u?.batches || []).some(b => b.id === batchId) ? batchId : null;
+  const vocab = fcDeckVocab(u);
+  if (!vocab.length) { toast(fc.batchId ? 'This page has no words yet' : 'No vocabulary in this unit yet'); return; }
 
   const lvl      = LEVELS.find(l => l.id === lid);
-  const name     = u.title || `Unit ${uid}`;
+  const name     = (u.title || `Unit ${uid}`) + (fc.batchId ? ` · ${batchLabel(u, fc.batchId)}` : '');
   const lvlColor = lvl ? lvl.color : 'var(--accent)';
   const progress  = u.fcProgress || {};
   const vocabSet  = new Set(vocab.map(v => v.word));
@@ -17882,11 +17986,15 @@ function openFcStudy(lid, uid, newOnly = false) {
   fc.sessionCorrect = 0;
   fc.sessionSeen    = 0;
 
-  // Clean orphan fcProgress entries (words removed/deduped from vocab)
-  Object.keys(u.fcProgress).forEach(word => {
-    if (!vocabSet.has(word)) delete u.fcProgress[word];
-  });
-  save(); // orphan cleanup — rateFc will saveNow shortly when session starts
+  // Clean orphan fcProgress entries (words removed/deduped from vocab).
+  // Solo con la unidad entera: con una sola página, "no está en esta baraja"
+  // no quiere decir huérfana, y borraría el progreso de todas las demás.
+  if (!fc.batchId) {
+    Object.keys(u.fcProgress).forEach(word => {
+      if (!vocabSet.has(word)) delete u.fcProgress[word];
+    });
+    save(); // orphan cleanup — rateFc will saveNow shortly when session starts
+  }
 
   // Update bar header
   document.getElementById('fc-study-title').textContent = name;
@@ -17899,7 +18007,7 @@ function openFcStudy(lid, uid, newOnly = false) {
   document.getElementById('fc-deck-progress').style.setProperty('--lvl-color', lvlColor);
 
   // ── Auto-restore Quiz session if one exists for this unit ────
-  const savedQuiz = QuizSession.getActive(lid, uid);
+  const savedQuiz = QuizSession.getActive(lid, uid, fc.batchId);
   if (savedQuiz && savedQuiz.queue.slice(savedQuiz.position).length > 0) {
     // Switch to quiz mode automatically so the Continue button appears
     fc.mode = 'quiz';
@@ -17937,7 +18045,7 @@ function openFcStudy(lid, uid, newOnly = false) {
   ];
 
   // ── Check for active Quiz session ────────────────────────────
-  const activeQuiz = QuizSession.getActive(lid, uid);
+  const activeQuiz = QuizSession.getActive(lid, uid, fc.batchId);
 
   // Store whether this session has due cards — used by startFcSession to filter queue
   fc.hasDue  = srsCounts.due > 0;
@@ -17960,7 +18068,7 @@ function openFcStudy(lid, uid, newOnly = false) {
 
   // Quiz session info block — shown when active session exists
   const activeStudy = activeQuiz ? null
-    : StudySession.getActive(lid, uid, fc.mode || 'classic', vocab.length);
+    : StudySession.getActive(lid, uid, fc.mode || 'classic', vocab.length, fc.batchId);
 
   /* Venía de "Memory review 8" y el botón grande le ofrecía seguir una sesión de
    * toda la unidad (307 por delante) que no traía esas 8. Si la sesión guardada
@@ -18081,12 +18189,12 @@ function startFcSession(continueExisting = false) {
 
   if (isQuizMode) {
     // ── Quiz mode: finite persistent session ──────────────────
-    let session = continueExisting ? QuizSession.getActive(fc.unitLid, fc.unitUid) : null;
+    let session = continueExisting ? QuizSession.getActive(fc.unitLid, fc.unitUid, fc.batchId) : null;
 
     // Build new session if needed
     if (!session) {
       QuizSession.clear();
-      session = QuizSession.build(fc.unitLid, fc.unitUid);
+      session = QuizSession.build(fc.unitLid, fc.unitUid, fc.batchId);
     }
 
     // Restore fc state from session
@@ -18110,7 +18218,7 @@ function startFcSession(continueExisting = false) {
     fc.quizSession = null;
     const vocabLen = (fc.vocab || []).length;
     const saved = continueExisting
-      ? StudySession.getActive(fc.unitLid, fc.unitUid, fc.mode, vocabLen)
+      ? StudySession.getActive(fc.unitLid, fc.unitUid, fc.mode, vocabLen, fc.batchId)
       : null;
     if (saved) {
       // Pick up exactly where he stopped, same order.
@@ -18125,7 +18233,7 @@ function startFcSession(continueExisting = false) {
       StudySession.clear();
       fc.queue = buildFcQueue(fc.unitLid, fc.unitUid, fc.hasDue === true, fc.newOnly === true);
       fc.idx   = fc.queue[0];
-      fc.studySession = StudySession.start(fc.unitLid, fc.unitUid, fc.mode, fc.queue, vocabLen);
+      fc.studySession = StudySession.start(fc.unitLid, fc.unitUid, fc.mode, fc.queue, vocabLen, fc.batchId);
       fc.sessionSeen  = 0;
     }
     fc.sessionCorrect    = 0;
@@ -18140,8 +18248,8 @@ function startFcSession(continueExisting = false) {
       QuizSession.clear();
       // Force reload vocab from unit before building
       const rebuildU = fc.unitLid && fc.unitUid ? getUnit(fc.unitLid, fc.unitUid) : null;
-      if (rebuildU) fc.vocab = getUnitVocab(rebuildU);
-      const freshSession = QuizSession.build(fc.unitLid, fc.unitUid);
+      if (rebuildU) fc.vocab = fcDeckVocab(rebuildU);
+      const freshSession = QuizSession.build(fc.unitLid, fc.unitUid, fc.batchId);
       fc.quizSession = freshSession;
       fc.queue = [...freshSession.queue];
       fc.idx = fc.queue[0] ?? 0;
@@ -18213,7 +18321,7 @@ function showFcResult() {
     const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = dateLocal(tomorrow);
     const u = getUnit(fc.unitLid, fc.unitUid);
-    const scheduled = u ? getUnitVocab(u).filter(v => {
+    const scheduled = u ? fcDeckVocab(u).filter(v => {
       const c = u.fcProgress[v.word];
       return c && c.dueDate === tomorrowStr;
     }).length : 0;
@@ -18256,7 +18364,7 @@ function showFcResult() {
   }
   const isDailyRev = fc.isDailyReview;
   const u = !isDailyRev ? getUnit(fc.unitLid, fc.unitUid) : null;
-  const vocab = u ? getUnitVocab(u) : fc.vocab;
+  const vocab = u ? fcDeckVocab(u) : fc.vocab;
   const progress = u ? (u.fcProgress || {}) : {};
   const lvl = LEVELS.find(l => l.id === fc.unitLid);
   const lvlColor = lvl ? lvl.color : 'var(--accent)';
@@ -18820,7 +18928,7 @@ function openFocusMode() {
   document.getElementById('focus-overlay').classList.add('open');
   Sound.focusStart();
   // Embed flashcards in focus
-  fc.vocab = vocab; fc.idx = 0; fc.flipped = false; fc.mode = 'classic';
+  fc.vocab = vocab; fc.idx = 0; fc.flipped = false; fc.mode = 'classic'; fc.batchId = null;
   const inner = document.getElementById('focus-content-inner');
   const lvl = LEVELS.find(l => l.id === u.lid);
   inner.innerHTML = `
