@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-28c -->
+<!-- DEVLEARN_BUILD: 2026-09-28d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-28c';
+const APP_BUILD = '2026-09-28d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -14143,6 +14143,13 @@ function buildFcQueue(lid, uid, dueOnly = false, newOnly = false) {
     // Si no hay ninguna due (caso raro), caer al queue completo
     if (dueQueue.length > 0) return dueQueue;
   }
+
+  /* Sin pendientes, la pantalla de antes le dice "38 new words to learn".
+   * La sesión traía toda la unidad (354: las nuevas más las ya vistas que no
+   * tocan hoy), y le tocaba hacerlas todas. Ahora trae lo que dijo: las
+   * nuevas. La unidad entera queda para cuando ya no hay nada nuevo ("All
+   * words stable — great for a refresh"). */
+  if (!dueOnly && unseen.length > 0) return shuffle(unseen);
 
   const queue = [
     ...overdue,

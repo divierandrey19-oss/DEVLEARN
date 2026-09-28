@@ -61,6 +61,10 @@ se reconozca igual, y que sin tipo conocido no salga una etiqueta equivocada.
 I'll) conserven su apóstrofo y que las comillas alrededor de una palabra se
 sigan quitando.
 
+`fc-queue.test.js` — Qué trae la sesión al tocar Start: las pendientes si hay,
+si no las nuevas (lo que dice la pantalla), y la unidad entera solo cuando ya
+no hay nada nuevo.
+
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
 terminen en -ed y estén en la familia de su sonido, y que cada familia tenga
