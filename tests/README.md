@@ -49,6 +49,10 @@ vacío.
 corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
+`page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
+palabras, que abrirla no borre el progreso del resto de la unidad, y que la
+sesión guardada de una página no se retome en la unidad entera ni al revés.
+
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
 terminen en -ed y estén en la familia de su sonido, y que cada familia tenga

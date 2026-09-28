@@ -244,6 +244,18 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Página: que abrir una página borre el progreso del resto de la unidad',
+    buscar: `  if (!fc.batchId) {
+    Object.keys(u.fcProgress).forEach(word => {`,
+    reemplazo: `  if (true) {
+    Object.keys(u.fcProgress).forEach(word => {`,
+  },
+  {
+    nombre: 'Página: retomar la sesión de una página en la unidad entera',
+    buscar: `    if ((s.batchId || null) !== (batchId || null)) return null;   // cada página tiene su fila`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Verbs: volver a partir un sonido en dos familias',
     buscar: `{ id:"ied", kind:'reg'`,
     reemplazo: `{ id:"d3", kind:'reg'`,
