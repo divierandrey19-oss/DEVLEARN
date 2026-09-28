@@ -57,6 +57,10 @@ sesión guardada de una página no se retome en la unidad entera ni al revés.
 que cada tipo de la IA tenga la suya, que un phrasal verb marcado como "verb"
 se reconozca igual, y que sin tipo conocido no salga una etiqueta equivocada.
 
+`speakable.test.js` — Lo que lee la voz: que las contracciones (I've, we're,
+I'll) conserven su apóstrofo y que las comillas alrededor de una palabra se
+sigan quitando.
+
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
 terminen en -ed y estén en la familia de su sonido, y que cada familia tenga
