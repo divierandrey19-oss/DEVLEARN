@@ -95,3 +95,11 @@ test('nada de lo que la IA escribe puede decir lo contrario del libro', () => {
   assert.match(analisis, /When you reuse a sentence from the page/);
   assert.match(analisis, /an\s+opinion that differs from one printed there is fine/);
 });
+
+test('la explicación y la trampa de la gramática van en español', () => {
+  // Con Opus, la p. 112 salió con ambas en inglés: el prompt nunca dijo el
+  // idioma. Su regla es que el contenido de estudio va en español.
+  assert.match(analisis, /"explanation": "Clear explanation IN SPANISH \(Colombian\)/);
+  assert.match(analisis, /"spanishTrap": "IN SPANISH: one real mistake/);
+  assert.match(analisis, /- LANGUAGE: the grammar "explanation" and "spanishTrap" are written in Spanish/);
+});

@@ -80,6 +80,8 @@ vocabulario si la página no las imprime. Y, por lo que salió en la gramática 
 pp. 109-111: la trampa del español solo si es real, la frase de contexto de un
 completar sigue la misma situación, como mucho dos temas "derived" en una página
 que no enseña gramática, y nada de lo que escribe puede contradecir el libro.
+La explicación y la trampa de la gramática van en español (con Opus, la p. 112
+salió con ambas en inglés porque el prompt no decía el idioma).
 
 `u10-p110-fix.test.js` — La corrección única de la p. 110 (Unit 10), hecha
 comparando su respaldo con la foto: ningún ejemplo al revés del libro,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29k -->
+<!-- DEVLEARN_BUILD: 2026-09-29l -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29k';
+const APP_BUILD = '2026-09-29l';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5281,10 +5281,10 @@ Among the words that ARE on the page, prefer these over incidental text.
       "title": "Grammar topic name — the structure this page teaches or prints",
       "source": "book | derived — see the TAUGHT vs USED rule. Be honest.",
       "level": "${level.toUpperCase()}",
-      "explanation": "Clear explanation written specifically for a Colombian Spanish speaker (2-3 sentences). Address differences with Spanish explicitly.",
+      "explanation": "Clear explanation IN SPANISH (Colombian), written for this A2 student, 2-3 sentences. When Spanish works differently, say so; when it works the same, say that. Plain text, no surrounding quotes.",
       "structure": "Subject + verb + ... pattern, as the page presents it",
       "rule": "The key rule in one sentence, as this page teaches it — not the rule in general. If the page teaches 'should' only for health advice, say so; do not broaden it",
-      "spanishTrap": "One specific mistake Colombian Spanish speakers make with this rule (e.g. confusing ser/estar with 'to be'), or empty string if no significant trap",
+      "spanishTrap": "IN SPANISH: one real mistake Colombian Spanish speakers make with this rule (e.g. confusing ser/estar with 'to be'), or empty string if there is no real trap. Plain text, no surrounding quotes.",
       "examples": [
         { "en": "Example sentence — copy one from the page if there is one", "es": "Spanish translation" },
         { "en": "Example sentence 2 — page words only", "es": "Spanish translation 2" }
@@ -5388,6 +5388,7 @@ RULES:
 - drillSentences types: "translation" = new Spanish → English; "fill_blank" = sentence with ___ gap; "error_correction" = sentence with one mistake to fix
 - For error_correction drills: the hint field should name the specific rule (e.g. "After modal verbs, use base form")
 - exercises: test the vocabulary and grammar of THESE pages, using only words printed on them. Same rule as drills — new sentences, book words.
+- LANGUAGE: the grammar "explanation" and "spanishTrap" are written in Spanish — the student reads them to understand, and at A2 an explanation in English is one more thing to decode. English sentences quoted inside them stay in English.
 - spanishTrap: a REAL mistake Colombian Spanish speakers make with THIS structure — false cognates, ser/estar confusion, missing articles, direct translation errors. If there is no real trap, return an empty string: that is a correct answer. Never state what Spanish does unless you are certain. "Spanish uses the subjunctive after 'si'" is false for "si trabajas duro" (present); a trap built on a wrong claim about Spanish teaches the student a mistake they never make, and hides the real one (here: "If you will work").
 - Grammar explanations: when Spanish really works differently, say so explicitly ("Unlike Spanish, English requires..."). When it works the same way, say that — it is useful to know. Never invent a difference to have one.
 - exercises: mix ALL types — variety matters. Make as many as the page's OWN content genuinely supports, and no more. Count the distinct sentences and target words the page actually prints, then make roughly that many items: a dense grammar page with a rule box and a practice section supports 10-14; a warm-up or a photo page with a handful of printed sentences supports 4-6, and padding it to 13 forces you into invented, low-quality items. Fewer good items beat more weak ones. NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
