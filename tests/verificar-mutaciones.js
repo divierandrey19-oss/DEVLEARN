@@ -249,6 +249,11 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Análisis: permitir que los ejemplos del libro se reescriban',
+    buscar: `never drop or add "not", "can't", "don't", "never", "no"`,
+    reemplazo: 'try to keep the meaning',
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

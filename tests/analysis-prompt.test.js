@@ -33,6 +33,29 @@ test('"phrasal verb" es un tipo válido en todo lo que clasifica palabras', () =
   assert.equal(otros, 2, 'completar palabras y "My words" también');
 });
 
+// Lo que salió mal en la página 110 (su respaldo del 29 de septiembre): un
+// ejemplo que decía lo contrario del libro ("you can't just keep doing" →
+// "you just have to keep doing"), "offense" sin "No", "keep your ideas" sin
+// "to yourself", "work hard" como phrasal verb y "succeeding" sin forma base.
+
+test('los ejemplos del libro se copian palabra por palabra, sin cambiar un "not"', () => {
+  assert.match(analisis, /━━ EXAMPLES ARE COPIED, NEVER REWRITTEN ━━/);
+  assert.match(analisis, /never drop or add "not", "can't", "don't", "never", "no"/);
+  assert.match(analisis, /copy that sentence WORD FOR WORD/);
+});
+
+test('las expresiones van completas, con su conector y hasta la última palabra', () => {
+  const s = analysisSeccion();
+  assert.match(s, /"No offense, but…", never just "offense"/);
+  assert.match(s, /"keep your ideas to yourself" \(guardarte tus ideas\), never "keep your\s+ideas"/);
+});
+
+test('verbo + adverbio no es phrasal verb, y los verbos van en forma base', () => {
+  const s = analysisSeccion();
+  assert.match(s, /A verb plus an\s+ordinary adverb or adjective is NOT a phrasal verb: "work hard"/);
+  assert.match(s, /printed\s+"succeeding" is the word "succeed"/);
+});
+
 function analysisSeccion() {
   const a = analisis.indexOf('━━ PHRASAL VERBS AND FIXED EXPRESSIONS');
   return analisis.slice(a, analisis.indexOf('━━ THE PAGE MARKS', a));
