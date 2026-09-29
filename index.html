@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29g -->
+<!-- DEVLEARN_BUILD: 2026-09-29h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4891,7 +4891,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29g';
+const APP_BUILD = '2026-09-29h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6647,6 +6647,9 @@ function migrateState(s) {
    * celular que aún no la tiene la corrija cuando le llegue. */
   if (!merged._u10P110FixV1 && fixU10P110(merged.units)) merged._u10P110FixV1 = true;
   if (!merged._u10P111FixV1 && fixU10P111(merged.units)) merged._u10P111FixV1 = true;
+  if (!merged._u10P109ContentV1 && fixU10P109Content(merged.units)) merged._u10P109ContentV1 = true;
+  if (!merged._u10P110ContentV1 && fixU10P110Content(merged.units)) merged._u10P110ContentV1 = true;
+  if (!merged._u10P111ContentV1 && fixU10P111Content(merged.units)) merged._u10P111ContentV1 = true;
   return merged;
 }
 
@@ -6771,6 +6774,94 @@ function fixU10P111(units) {
       phonetic: '/tɛl ju wʌt/', emoji: '💡',
       example: "Tell you what... Call me when you're done, and I'll come pick you up.",
       exampleTranslation: 'Te propongo algo... Llámame cuando termines y paso a recogerte.' } },
+  ] });
+}
+
+/* Corrige gramática, ejercicios y speaking de una página, contra su foto.
+ * `cambios` son pares [texto viejo, texto nuevo]: se reemplaza cualquier campo
+ * cuyo valor sea EXACTAMENTE el viejo (si él lo editó, ya no coincide y no se
+ * toca). Con nuevo = null, el texto se quita de su lista (una tarea de
+ * speaking que la página no pone). El vocabulario no se toca aquí.
+ * Devuelve true si la página está en el aparato. */
+function fixPageContent(units, fix) {
+  const u = units && units[fix.unit];
+  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(fix.page));
+  if (!b) return false;
+  const nuevo = new Map(fix.cambios);
+  const arreglar = x => {
+    if (typeof x === 'string') return nuevo.has(x) ? nuevo.get(x) : x;
+    if (Array.isArray(x)) return x.map(arreglar).filter(y => y !== null);
+    if (x && typeof x === 'object') {
+      Object.keys(x).forEach(k => { const y = arreglar(x[k]); if (y !== null) x[k] = y; });
+    }
+    return x;
+  };
+  ['grammar', 'exercises', 'speakingPrompts'].forEach(k => { if (b[k]) b[k] = arreglar(b[k]); });
+  return true;
+}
+
+/* p. 109: dos tareas de speaking eran los títulos de las lecciones 3 y 4 (la
+ * franja COMMUNICATION GOALS de abajo), y las traducciones de "What makes…"
+ * eran literales: "¿Qué hace una vida saludable?" pregunta otra cosa. */
+function fixU10P109Content(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 109, cambios: [
+    ['Discuss what makes a job attractive.', null],
+    ['Describe ways to make a dream come true.', null],
+    ["Spanish speakers might say 'What make' because in Spanish '¿Qué hacen?' uses plural, but in English 'what' always takes singular verb form.",
+     "En español decimos '¿Qué hace que un trabajo sea atractivo?', con 'que' y 'sea'. En inglés no van ninguno de los dos: What makes a job attractive? — makes + la cosa + el adjetivo."],
+    ['Hablar sobre qué hace un trabajo atractivo.', 'Hablar sobre qué hace que un trabajo sea atractivo.'],
+    ['¿Qué hace una meta de vida atractiva?', '¿Qué hace que una meta de vida sea atractiva?'],
+    ['¿Qué hace una vida saludable?', '¿Qué hace que una vida sea saludable?'],
+    ['What makes a healthy life?', 'What makes a life healthy?'],
+    ['Translate to English: ¿Qué hace un sueño atractivo?', 'Translate to English: ¿Qué hace que un sueño sea atractivo?'],
+    ["I ___ I'd like to live a long, healthy life. She told me yesterday that she wants kids.",
+     "Let me think... I ___ I'd like to live a long, healthy life."],
+  ] });
+}
+
+/* p. 110: la "trampa" del if decía que en español va subjuntivo después de
+ * "si" ("si trabajas duro" no lo lleva: el error real es poner will), un error
+ * común daba por correcta "Don't keep your ideas to yourself" cuando Sophie
+ * dice lo contrario, y dos ejercicios no tenían sentido. */
+function fixU10P110Content(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 110, cambios: [
+    ['In my opinion, anyone can be successful if you work hard.', 'In my opinion, anyone can be successful.'],
+    ['En mi opinión, cualquiera puede ser exitoso si trabajas duro.', 'En mi opinión, cualquiera puede ser exitoso.'],
+    ["Use 'if' + present tense to talk about general conditions or truths that lead to certain results.",
+     "Use 'if' + present to say the condition; the other part gives the result or the advice (present, should, or going to)."],
+    ["En inglés, usamos 'if' para expresar condiciones. Cuando hablamos de situaciones generales o verdades, usamos presente simple en ambas partes de la oración. A diferencia del español que usa subjuntivo después de 'si', en inglés siempre usamos indicativo (presente simple) después de 'if' en estos casos.",
+     "En inglés usamos 'if' + presente para decir la condición: If you work hard… La otra parte dice qué pasa o qué conviene hacer, en presente, con 'should', o con 'going to' para el resultado: If you work hard, you're going to be successful. Igual que en español ('si trabajas duro'), después de 'if' va el presente, no el futuro."],
+    ["Spanish uses subjunctive after 'si' in some contexts, but English NEVER uses subjunctive after 'if' in these general conditions - always use present simple.",
+     "El error típico no es el subjuntivo: en español también decimos 'si trabajas duro', en presente. El error es pensar en futuro y poner 'will' después de 'if': 'If you will work hard' ✗ → 'If you work hard' ✓. El 'will' o el 'going to' van en la otra parte."],
+    ['Si trabajas duro, de ninguna manera no vas a ser exitoso.', 'Si trabajas duro, no hay forma de que no tengas éxito.'],
+    ['Si necesitas ayuda, puedes creer en ti mismo.', 'Si crees en ti mismo, vas a tener éxito.'],
+    ['If you need help, you can believe in yourself.', "If you believe in yourself, you're going to be successful."],
+    ['If you ___ small steps, you feel ready to take the big ones. She does this every day.',
+     "If you ___ small steps, you're going to feel ready to take the big ones."],
+    ['If you will keep doing things the same way, you expect different results.',
+     "If you will keep doing things the same way, you can't expect different results."],
+    ['If you keep doing things the same way, you expect different results.',
+     "If you keep doing things the same way, you can't expect different results."],
+    ['You should takes help from friends.', 'You should believes in yourself.'],
+    ['You should take help from friends.', 'You should believe in yourself.'],
+    // Sophie: "It's best to keep your ideas to yourself" — el "correcto" decía lo contrario.
+    ["Don't to keep your ideas to yourself.", "Don't to let anyone tell you you can't succeed."],
+    ["Don't keep your ideas to yourself.", "Don't let anyone tell you you can't succeed."],
+    ["Don't to work hard alone, you should take help from friends.", "Don't to believe negative people."],
+    ["Don't work hard alone, you should take help from friends.", "Don't believe negative people."],
+  ] });
+}
+
+/* p. 111: traducciones rotas de los ejemplos, un ejemplo de "deserve" que no
+ * usaba deserve, y un ejercicio con contexto sin sentido. */
+function fixU10P111Content(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 111, cambios: [
+    ["Cuando 'grab a bite' en algún lugar, significa que comes allí.", "Cuando haces 'grab a bite' en algún lugar, significa que comes ahí."],
+    ["Cuando 'call it a day', significa que tu trabajo está terminando.", "Cuando dices 'call it a day', significa que terminas de trabajar por hoy."],
+    ["You're the hardest working person in that office.", 'She deserves to be the group manager.'],
+    ['Eres la persona que más trabaja en esa oficina.', 'Ella merece ser la gerente de grupo.'],
+    ["Call me when you're done, and I'll come ___ you up. We need to be home before the meeting.",
+     "Tell you what... Call me when you're done, and I'll come ___ you up."],
   ] });
 }
 
