@@ -244,6 +244,11 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Análisis: quitar la regla de phrasal verbs y expresiones',
+    buscar: `━━ PHRASAL VERBS AND FIXED EXPRESSIONS: KEEP THEM WHOLE ━━`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
