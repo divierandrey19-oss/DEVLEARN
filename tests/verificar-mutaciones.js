@@ -254,6 +254,21 @@ const MUTACIONES = [
     reemplazo: 'try to keep the meaning',
   },
   {
+    nombre: 'Análisis: quitar la revisión de que cada palabra esté impresa',
+    buscar: `cannot point to where it is printed on these photos, remove it.`,
+    reemplazo: 'use your judgement.',
+  },
+  {
+    nombre: 'p. 110: dejar el ejemplo de "keep doing" al revés del libro',
+    buscar: `{ word: 'keep doing', example: 'You just have to keep doing things the same way and expect different results.', set: GRACE },`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'p. 110: marcar la bandera aunque la página no esté en el aparato',
+    buscar: `if (!merged._u10P110FixV1 && fixU10P110(merged.units)) merged._u10P110FixV1 = true;`,
+    reemplazo: `if (!merged._u10P110FixV1) { fixU10P110(merged.units); merged._u10P110FixV1 = true; }`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

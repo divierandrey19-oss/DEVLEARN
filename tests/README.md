@@ -75,7 +75,14 @@ de solo lo impreso, y que "phrasal verb" sea un tipo válido. También que copie
 los ejemplos del libro palabra por palabra (en la p. 110 uno decía lo contrario),
 que las expresiones vayan completas ("No offense, but…", "keep your ideas to
 yourself"), que "work hard" no cuente como phrasal verb y que los verbos vayan en
-forma base.
+forma base, y que las frases citadas como ejemplo en la regla no se cuelen como
+vocabulario si la página no las imprime.
+
+`u10-p110-fix.test.js` — La corrección única de la p. 110 (Unit 10), hecha
+comparando su respaldo con la foto: ningún ejemplo al revés del libro,
+expresiones completas, "That's just the way it is" agregada una sola vez, todo
+ejemplo nuevo impreso en la página, y la bandera marcada solo si la página estaba
+en el aparato.
 
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
