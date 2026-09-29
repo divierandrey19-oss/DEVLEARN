@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29j -->
+<!-- DEVLEARN_BUILD: 2026-09-29k -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29j';
+const APP_BUILD = '2026-09-29k';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -20335,8 +20335,12 @@ async function checkDeployStatus() {
   const el = document.getElementById('deploy-info');
   const runEl = document.getElementById('running-build');
   if (runEl) runEl.textContent = 'build ' + APP_BUILD;
+  // La versión arriba del todo en Settings: es donde él la busca. Se quedaba
+  // en "—" porque nada la llenaba.
+  const topEl = document.getElementById('app-build');
+  if (topEl) topEl.textContent = APP_BUILD;
   if (!el) return;
-  el.innerHTML = 'Consultando GitHub…';
+  el.innerHTML = 'Checking GitHub…';
 
   try {
     // 1. When was index.html last pushed?
