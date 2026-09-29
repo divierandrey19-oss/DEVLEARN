@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29d -->
+<!-- DEVLEARN_BUILD: 2026-09-29e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29d';
+const APP_BUILD = '2026-09-29e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5182,6 +5182,10 @@ are not in bold or in a box.
   "succeeding" is the word "succeed".
 - The grounding rule still applies: only phrasal verbs and expressions that are
   printed on these pages. Never add one because it is common or related.
+- Every phrase quoted in this section is an illustration from OTHER pages, not a list
+  to look for. "to tell you the truth" was once added to a page that never printed it,
+  just because it appeared here. Before you return, check each vocabulary item: if you
+  cannot point to where it is printed on these photos, remove it.
 
 ━━ EXAMPLES ARE COPIED, NEVER REWRITTEN ━━
 
@@ -6615,7 +6619,72 @@ function migrateState(s) {
       delete u.ocrText;
     }
   });
+  /* La p. 110 (Unit 10) salió del análisis con un ejemplo al revés del libro y
+   * expresiones cortadas. Se corrige una vez; la bandera solo se marca cuando
+   * la página está en este aparato, para que un celular que aún no la tiene la
+   * corrija cuando le llegue. */
+  if (!merged._u10P110FixV1 && fixU10P110(merged.units)) merged._u10P110FixV1 = true;
   return merged;
+}
+
+/* Corrige el vocabulario de la p. 110 contra la foto, palabra por palabra.
+ * Solo toca las entradas que siguen como las dejó el análisis; devuelve true
+ * si encontró la página. Él aún no había estudiado esas tarjetas, así que
+ * cambiar el nombre de una no le quita progreso. */
+function fixU10P110(units) {
+  const u = units && units.a2_10;
+  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(110) &&
+    (x.vocab || []).some(v => v && (v.word === 'offense' || v.word === 'keep your ideas')));
+  if (!b) return false;
+
+  // Grace: "you can't just keep doing things the same way and expect different results".
+  const GRACE = { example: "You can't just keep doing things the same way and expect different results.",
+                  exampleTranslation: 'No puedes simplemente seguir haciendo las cosas de la misma manera y esperar resultados diferentes.' };
+  // Cada cambio lleva la palabra vieja y, si solo cambia el ejemplo, el ejemplo
+  // viejo: si ya no coincide, él lo editó y no se toca.
+  const cambios = [
+    // No está impreso en la página: la IA lo copió del ejemplo de la regla.
+    // Adam sí dice "I hate to say it, but…".
+    { word: 'to tell you the truth', set: { word: 'I hate to say it, but...', translation: 'odio decirlo, pero...',
+      phonetic: '/aɪ heɪt tə seɪ ɪt bʌt/', type: 'phrase', emoji: '😬',
+      example: 'I hate to say it, but you need help from friends or family.',
+      exampleTranslation: 'Odio decirlo, pero necesitas ayuda de amigos o familia.' } },
+    { word: 'successful', example: 'In my opinion, anyone can be successful if you work hard.',
+      set: { example: 'In my opinion, anyone can be successful.', exampleTranslation: 'En mi opinión, cualquiera puede ser exitoso.' } },
+    { word: 'work hard', set: { type: 'phrase', exampleTranslation: 'Si trabajas duro, no hay forma de que no tengas éxito.' } },
+    { word: 'no way', example: "No way you're not going to be successful.",
+      set: { exampleTranslation: 'No hay forma de que no tengas éxito.' } },
+    { word: 'succeeding', set: { word: 'succeed', translation: 'tener éxito', phonetic: '/səkˈsid/' } },
+    { word: 'offense', set: { word: 'No offense, but...', translation: 'no te ofendas, pero...',
+      phonetic: '/noʊ əˈfɛns bʌt/', type: 'phrase', emoji: '🙏',
+      example: "No offense, but you can't just keep doing things the same way and expect different results.",
+      exampleTranslation: 'No te ofendas, pero no puedes simplemente seguir haciendo las cosas de la misma manera y esperar resultados diferentes.' } },
+    { word: 'keep doing', example: 'You just have to keep doing things the same way and expect different results.', set: GRACE },
+    { word: 'expect', example: 'Keep doing things the same way and expect different results.', set: GRACE },
+    { word: 'different results', example: 'Expect different results.', set: GRACE },
+    { word: 'let anyone tell you', set: { word: "Don't let anyone tell you...", translation: 'no dejes que nadie te diga...',
+      phonetic: '/doʊnt lɛt ˈɛniˌwʌn tɛl ju/' } },
+    { word: 'keep your ideas', set: { word: 'keep your ideas to yourself', translation: 'guardarte tus ideas',
+      phonetic: '/kip jɔr aɪˈdiəz tə jɔrˈsɛlf/', exampleTranslation: 'Es mejor guardarte tus ideas.' } },
+    { word: 'life', example: 'No one does it alone in life.',
+      set: { example: "You're never going to be successful in life.", exampleTranslation: 'Nunca vas a tener éxito en la vida.' } },
+  ];
+  b.vocab = b.vocab.map(v => {
+    const c = v && cambios.find(x => x.word === v.word && (!x.example || x.example === v.example));
+    return c ? { ...v, ...c.set } : v;
+  });
+
+  // Katherine la dice y no salió.
+  const falta = { word: "That's just the way it is", translation: 'así son las cosas',
+    phonetic: '/ðæts dʒʌst ðə weɪ ɪt ɪz/', type: 'phrase', emoji: '🤷',
+    example: "People who don't have money are never successful. That's just the way it is.",
+    exampleTranslation: 'Las personas que no tienen dinero nunca son exitosas. Así son las cosas.',
+    difficulty: 'medium' };
+  if (!b.vocab.some(v => v && (v.word || '').toLowerCase() === falta.word.toLowerCase())) {
+    const i = b.vocab.findIndex(v => v && v.word === 'money');
+    b.vocab.splice(i >= 0 ? i + 1 : b.vocab.length, 0, falta);
+  }
+  return true;
 }
 
 // Debounced save

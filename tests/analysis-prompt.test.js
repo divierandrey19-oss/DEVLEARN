@@ -56,6 +56,12 @@ test('verbo + adverbio no es phrasal verb, y los verbos van en forma base', () =
   assert.match(s, /printed\s+"succeeding" is the word "succeed"/);
 });
 
+test('los ejemplos de la regla no se cuelan como vocabulario', () => {
+  // "to tell you the truth" salió en la p. 110 sin estar impreso: estaba en
+  // la lista de ejemplos de esta misma regla.
+  assert.match(analysisSeccion(), /if you\s+cannot point to where it is printed on these photos, remove it/);
+});
+
 function analysisSeccion() {
   const a = analisis.indexOf('━━ PHRASAL VERBS AND FIXED EXPRESSIONS');
   return analisis.slice(a, analisis.indexOf('━━ THE PAGE MARKS', a));
