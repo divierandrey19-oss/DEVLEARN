@@ -304,6 +304,26 @@ const MUTACIONES = [
     reemplazo: `    if (Array.isArray(x)) return x;`,
   },
   {
+    nombre: 'Sync: volver a tomar "ya no está en la nube" como borrado (se perdió la p. 111)',
+    buscar: `      cloudUnit.batches = [...cloudBatches, ...localById.values()];`,
+    reemplazo: `      cloudUnit.batches = [...cloudBatches, ...[...localById.values()].filter(b => !(state.syncedBatchIds || []).includes(b.id))];`,
+  },
+  {
+    nombre: 'Sync: subir sin traer antes la nube',
+    buscar: `    const actual = await window._fb.getDoc(ref);`,
+    reemplazo: `    const actual = { exists: () => false };`,
+  },
+  {
+    nombre: 'Sync: borrar una foto sin dejar el registro del borrado',
+    buscar: `        recordDeletedBatches([batch.id]);\n`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Sync: ignorar los borrados que llegan de la nube',
+    buscar: `const tumbas = new Set([...(state.deletedBatchIds || []), ...(imported.deletedBatchIds || [])]);`,
+    reemplazo: `const tumbas = new Set([...(state.deletedBatchIds || [])]);`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

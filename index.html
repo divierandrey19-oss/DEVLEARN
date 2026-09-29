@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29h -->
+<!-- DEVLEARN_BUILD: 2026-09-29i -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4518,6 +4518,15 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(event)"/>
       </div>
       <div style="margin-top:10px;">
+        <button class="btn btn-ghost" style="width:100%;font-size:0.82rem;" onclick="document.getElementById('restore-file-input').click()">
+          ↺ Restore missing pages from a backup
+        </button>
+        <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="restorePagesFromBackup(event)"/>
+        <div style="font-size:0.72rem;color:var(--text-3);margin-top:4px;line-height:1.5;">
+          Only adds back the pages this device lost. Everything else stays as it is.
+        </div>
+      </div>
+      <div style="margin-top:10px;">
         <button class="btn btn-ghost" style="width:100%;font-size:0.82rem;" onclick="QuizSession.clear();fc.quizSession=null;fc.queue=[];toast('✅ Quiz session reset — you can start fresh');closeSettings();">
           ⚡ Reset Quiz session
         </button>
@@ -4710,6 +4719,15 @@ function mergeFcProgress(localProg, cloudProg) {
  *    local images are re-attached to their own batch by id.
  *  - Per-word SRS progress keeps the most recently reviewed version.
  */
+/** Anota páginas que él borró a propósito, para que el borrado llegue a los
+ * otros aparatos. Es lo único que borra una página al sincronizar: que falte
+ * en la nube no basta (ver _mergeCloudState). */
+function recordDeletedBatches(ids) {
+  const set = new Set(state.deletedBatchIds || []);
+  (ids || []).forEach(id => { if (id) set.add(id); });
+  state.deletedBatchIds = [...set].slice(-500);
+}
+
 /** Every batch id currently in a state object. */
 function allBatchIds(st) {
   const ids = [];
@@ -4762,11 +4780,13 @@ window._mergeCloudState = function(cloud) {
     const localMistakes  = [...(state.mistakeLog || [])];
     const localExamDate  = state.examDate;
     const localExamLabel = state.examLabel;
-    // Batch ids the cloud is known to have held. If a batch is in here but is
-    // missing from the incoming snapshot, another device deleted it — so it
-    // must NOT be resurrected. If it isn't in here, the cloud simply hasn't
-    // seen it yet and it must be kept.
-    const knownToCloud = new Set(state.syncedBatchIds || []);
+    /* Pages he deleted on purpose, from either side. A page missing from the
+     * snapshot used to be read as "another device deleted it" — but a device
+     * whose copy was simply old (the computer, open since before he uploaded
+     * p. 111 on the phone) pushes a snapshot without it too, and the page was
+     * dropped here as if he had deleted it. Now only an explicit record of a
+     * deletion removes a page; being absent from the cloud never does. */
+    const tumbas = new Set([...(state.deletedBatchIds || []), ...(imported.deletedBatchIds || [])]);
     // Capture the cloud's batch ids BEFORE the merge below mutates `imported`
     // (cloudUnit is a live reference into it, so reading after would wrongly
     // include local-only batches the cloud has never received).
@@ -4791,10 +4811,9 @@ window._mergeCloudState = function(cloud) {
         }
         return cb;
       });
-      // Batches the cloud hasn't seen yet stay (with their photos); batches the
-      // cloud used to have but no longer does were deleted elsewhere — drop them.
-      const localOnly = [...localById.values()].filter(b => !knownToCloud.has(b.id));
-      cloudUnit.batches = [...cloudBatches, ...localOnly];
+      // Pages only this device has stay, with their photos — whether the cloud
+      // never got them or an old copy was pushed over them.
+      cloudUnit.batches = [...cloudBatches, ...localById.values()];
 
       // ── Progress ──────────────────────────────────────────
       cloudUnit.fcProgress = mergeFcProgress(localUnit.fcProgress, cloudUnit.fcProgress);
@@ -4828,9 +4847,15 @@ window._mergeCloudState = function(cloud) {
       mergedUnits[key] = cloudUnit;
     });
 
+    // Pages deleted on purpose, on either device, go — and only those.
+    Object.values(mergedUnits).forEach(u => {
+      if (u && Array.isArray(u.batches)) u.batches = u.batches.filter(b => !(b && tumbas.has(b.id)));
+    });
+
     // Apply cloud's top-level fields, then restore the merged units
     Object.keys(imported).forEach(function(k) { state[k] = imported[k]; });
     state.units = mergedUnits;
+    state.deletedBatchIds = [...tumbas].slice(-500);
 
     // Study dates are a set of days — union them, don't overwrite
     const allDates = new Set([...localStudyDates, ...(imported.studyDates || [])]);
@@ -4881,6 +4906,8 @@ window._mergeCloudState = function(cloud) {
         else if (pageId === 'page-flashcards-all' && typeof renderAllFlashcards === 'function') renderAllFlashcards();
         else if (pageId === 'page-vocab-all' && typeof renderAllVocab === 'function') renderAllVocab();
         else if (pageId === 'page-progress' && typeof renderProgressPage === 'function') renderProgressPage();
+        // Pages uploaded on the other device show up without reopening the unit.
+        else if (pageId === 'page-unit' && current.lid && current.uid && typeof loadUnitContent === 'function') loadUnitContent();
       }
     } catch(e) {}
     // Silent sync — no toast
@@ -4891,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29h';
+const APP_BUILD = '2026-09-29i';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6247,6 +6274,7 @@ function migrateState(s) {
   merged.rolePlay = merged.rolePlay || {};
   merged.classesDone = [...new Set(merged.classesDone || [])];
   merged.recDays = Array.isArray(merged.recDays) ? [...new Set(merged.recDays)] : [];
+  merged.deletedBatchIds = Array.isArray(merged.deletedBatchIds) ? [...new Set(merged.deletedBatchIds)] : [];
   merged.classSchedule = merged.classSchedule || {};
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
@@ -10233,6 +10261,7 @@ function removeUnitImage(i) {
       if (batch.images.length === 0) {
         const batchIdx = u.batches.indexOf(batch);
         if (batchIdx >= 0) u.batches.splice(batchIdx, 1);
+        recordDeletedBatches([batch.id]);
         ImageStore.delete(batch.id);
         toast('🗑 Image and its content removed');
       } else {
@@ -19914,6 +19943,7 @@ function doReset(sel) {
   // If both images AND content are being deleted, remove the whole batches
   if (sel.images && sel.vocab && sel.grammar && sel.exercises) {
     u.batches.forEach(b => ImageStore.delete(b.id));
+    recordDeletedBatches(u.batches.map(b => b.id));
     u.batches = [];
   } else {
     // Per-piece removal across all batches
@@ -19925,12 +19955,12 @@ function doReset(sel) {
       if (sel.exercises) b.exercises = [];
     });
     // Remove batches that are now completely empty
-    u.batches = u.batches.filter(b =>
-      (b.images && b.images.length) ||
+    const vacio = b => !((b.images && b.images.length) ||
       (b.vocab && b.vocab.length) ||
       (b.grammar && b.grammar.length) ||
-      (b.exercises && b.exercises.length)
-    );
+      (b.exercises && b.exercises.length));
+    recordDeletedBatches(u.batches.filter(vacio).map(b => b.id));
+    u.batches = u.batches.filter(b => !vacio(b));
   }
 
   if (sel.progress) {
@@ -20192,6 +20222,75 @@ function importData(event) {
   reader.readAsText(file);
 }
 
+
+/* Páginas de un respaldo que este aparato ya no tiene. Las que él borró a
+ * propósito (deletedBatchIds) no cuentan: no se le devuelve lo que quitó. */
+function missingBatchesFromBackup(cur, backup) {
+  const tengo = new Set(allBatchIds(cur));
+  const borradas = new Set(cur.deletedBatchIds || []);
+  const faltan = [];
+  Object.values((backup && backup.units) || {}).forEach(bu => {
+    ((bu && bu.batches) || []).forEach(b => {
+      if (b && b.id && !tengo.has(b.id) && !borradas.has(b.id)) faltan.push({ unit: bu, batch: b });
+    });
+  });
+  return faltan;
+}
+
+/* Corre todas las correcciones a mano de páginas. Cada una solo cambia textos
+ * que siguen exactamente como los dejó el análisis, así que es seguro correrlas
+ * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
+ * ya esté marcada. */
+function applyPageFixes(units) {
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content]
+    .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
+}
+
+/* Recuperar páginas perdidas desde un respaldo, sin tocar nada más. Importar
+ * reemplaza todo el estado y se llevaría lo que hizo después del respaldo;
+ * esto solo agrega las páginas que faltan, con su foto y su progreso. Nació
+ * cuando la sincronización se llevó la p. 111. */
+function restorePagesFromBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    event.target.value = '';
+    let backup;
+    try { backup = JSON.parse(e.target.result); } catch (err) { backup = null; }
+    if (!backup || !backup.units) { toast('Invalid backup file'); return; }
+    const faltan = missingBatchesFromBackup(state, backup);
+    if (!faltan.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
+    const nombre = f => `Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
+    confirmAction({
+      title: `Restore ${faltan.length} missing page${faltan.length !== 1 ? 's' : ''}?`,
+      message: `This backup has pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises. Nothing else changes.`,
+      confirmText: '↺ Restore',
+      onConfirm: () => {
+        faltan.forEach(({ unit: bu, batch }) => {
+          const u = getUnit(bu.lid, bu.uid);
+          const copia = JSON.parse(JSON.stringify(batch));
+          copia.images = copia.images || [];
+          u.batches.push(copia);
+          if (copia.images.length) ImageStore.put(copia.id, copia.images).catch(err => console.warn('Image save failed:', err));
+          // Su progreso con esas palabras, si el respaldo lo tiene y aquí no.
+          const prog = bu.fcProgress || {};
+          u.fcProgress = u.fcProgress || {};
+          (copia.vocab || []).forEach(v => { if (v && prog[v.word] && !u.fcProgress[v.word]) u.fcProgress[v.word] = prog[v.word]; });
+          if (!u.title && bu.title) u.title = bu.title;
+        });
+        applyPageFixes(state.units);
+        state.stats.wordsLearned = countTotalWords();
+        saveNow();
+        if (current.lid && current.uid && document.getElementById('page-unit')?.classList.contains('active')) loadUnitContent();
+        updateNavBadges();
+        if (window._syncToFirestore) window._syncToFirestore();
+        toast(`✅ Restored: ${faltan.map(nombre).join(', ')}`);
+      },
+    });
+  };
+  reader.readAsText(file);
+}
 
 const GH_REPO = 'divierandrey19-oss/DEVLEARN';
 
@@ -20940,9 +21039,21 @@ window._syncToFirestoreNow = async function() {
   _isSyncing = true;
   try {
     window._updateSyncStatus && window._updateSyncStatus('syncing');
+    const ref = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
+    /* Traer antes de subir. Subir reemplaza el documento entero, así que un
+     * aparato con una copia vieja borraba de la nube lo que el otro acababa de
+     * subir: el computador, abierto desde antes, se llevó la p. 111 que él
+     * había subido en el celular. Si alguien subió algo desde la última vez
+     * que esta copia se juntó con la nube, primero se juntan y se sube la
+     * unión. Si la nube no se puede leer, no se sube nada. */
+    const actual = await window._fb.getDoc(ref);
+    if (actual.exists() && cloudMillis(actual.data()) > (state.lastCloudSeen || 0)) {
+      const cloud = await _readCloudState(actual.data());
+      window._mergeCloudState && window._mergeCloudState(cloud);
+      window._setCloudSeen && window._setCloudSeen(cloudMillis(actual.data()));
+    }
     const s = getStateForSync();
     _selfPushTime = Date.now();
-    const ref = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
     const json = JSON.stringify(s);
     const payload = {
       // Server clock — comparing two devices' own clocks picked the wrong
@@ -20975,6 +21086,28 @@ window._syncToFirestoreNow = async function() {
 };
 
 let _unsubscribeListener = null;
+
+/* Al volver a una pestaña que quedó abierta (el computador), trae lo que el
+ * otro aparato subió mientras tanto, para que lo que él vea y estudie sea lo
+ * último y no una copia vieja. */
+let _pulling = false;
+window._pullIfNewer = async function() {
+  if (!window._fb._user || !window._fb.db || _isSyncing || _pulling || window.__loadCorrupt) return;
+  _pulling = true;
+  try {
+    const ref = window._fb.doc(window._fb.db, 'users', window._fb._user.uid);
+    const snap = await window._fb.getDoc(ref);
+    if (snap.exists() && cloudMillis(snap.data()) > (state.lastCloudSeen || 0)) {
+      const cloud = await _readCloudState(snap.data());
+      window._mergeCloudState && window._mergeCloudState(cloud);
+      window._setCloudSeen && window._setCloudSeen(cloudMillis(snap.data()));
+    }
+  } catch (e) { console.warn('Pull error:', e); }
+  finally { _pulling = false; }
+};
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') window._pullIfNewer();
+});
 
 /* Pushing on every page change meant serializing, gzipping and uploading the
  * whole state — over a megabyte — on each tap, which is what made navigation
