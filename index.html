@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29c -->
+<!-- DEVLEARN_BUILD: 2026-09-29d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29c';
+const APP_BUILD = '2026-09-29d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5162,14 +5162,35 @@ are not in bold or in a box.
 - A phrasal verb is a verb plus a particle that together have their own meaning:
   work out, give up, pick up, take care of, get along, find out. Extract it as ONE
   item, exactly as printed ("work out", never just "work"), with "type": "phrasal verb".
+- A particle is up, out, on, off, in, down, away, back, over, around, along, through,
+  or a preposition that belongs to the verb (agree with, look for). A verb plus an
+  ordinary adverb or adjective is NOT a phrasal verb: "work hard", "come true" and
+  "drive fast" are "phrase" (if you keep them as chunks), never "phrasal verb".
 - A fixed expression is a group of words used together as a unit: to tell you the
   truth, make a ton of money, a long, healthy life, have a good time. Extract it as
   ONE item with "type": "phrase".
+- Speakers' opinions and dialogues are full of the expressions this student most needs:
+  the ones that open, link or close what someone says. "No offense, but…", "I hate to
+  say it, but…", "That's just the way it is", "In my opinion". Extract them whole, with
+  the connecting word ("No offense, but…", never just "offense").
+- Take the WHOLE expression, up to its last word. "It's best to keep your ideas to
+  yourself" gives "keep your ideas to yourself" (guardarte tus ideas), never "keep your
+  ideas": cutting the end changes the meaning, and then the translation is wrong too.
 - If the page prints the phrasal verb in the past or with an object in the middle
   ("worked it out", "picked the dog up"), give its base form ("work out", "pick up")
-  and copy the printed sentence as the example.
+  and copy the printed sentence as the example. The same for any single verb: printed
+  "succeeding" is the word "succeed".
 - The grounding rule still applies: only phrasal verbs and expressions that are
   printed on these pages. Never add one because it is common or related.
+
+━━ EXAMPLES ARE COPIED, NEVER REWRITTEN ━━
+
+When the example comes from the page, copy the sentence WORD FOR WORD — the student
+memorizes it as the book's. Never shorten it into something that means something else,
+and never drop or add "not", "can't", "don't", "never", "no". The page prints "you
+can't just keep doing things the same way"; an example "you just have to keep doing
+things the same way" teaches the OPPOSITE of the book. If the sentence is too long,
+use a shorter sentence from the page, or copy only a part that keeps its meaning.
 
 ━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
 
@@ -5193,12 +5214,12 @@ Among the words that ARE on the page, prefer these over incidental text.
   "detectedTopics": ["topic1", "topic2", "topic3"],
   "vocabulary": [
     {
-      "word": "the English word or phrase exactly as printed on the page",
+      "word": "the English word or phrase exactly as printed on the page (verbs in their base form)",
       "translation": "Spanish (Colombia)",
       "phonetic": "/IPA/",
       "type": "noun|verb|phrasal verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
-      "example": "if a sentence on the page uses this word, copy that sentence. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
+      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
       "exampleTranslation": "Spanish translation of example",
       "difficulty": "easy|medium|hard"
     }

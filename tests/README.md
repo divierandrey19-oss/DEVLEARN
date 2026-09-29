@@ -71,7 +71,11 @@ pida y los guarde.
 
 `analysis-prompt.test.js` — Lo que se le pide a la IA al leer una página: que
 busque phrasal verbs y expresiones y los guarde enteros, sin saltarse la regla
-de solo lo impreso, y que "phrasal verb" sea un tipo válido.
+de solo lo impreso, y que "phrasal verb" sea un tipo válido. También que copie
+los ejemplos del libro palabra por palabra (en la p. 110 uno decía lo contrario),
+que las expresiones vayan completas ("No offense, but…", "keep your ideas to
+yourself"), que "work hard" no cuente como phrasal verb y que los verbos vayan en
+forma base.
 
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
