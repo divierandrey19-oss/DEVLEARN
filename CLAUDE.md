@@ -30,7 +30,7 @@ Quitar cualquiera de las tres borra datos reales de una persona.
 
 ### Las constantes van antes del arranque
 
-`let state = loadState()` corre cerca de la línea 99. Toda constante que
+`let state = loadState()` corre cerca de la línea 4650. Toda constante que
 use `loadState()`, `migrateState()` o `defaultState()` debe estar
 declarada **antes** de esa línea.
 
@@ -70,11 +70,66 @@ página 104 entró con 4 palabras en vez de 27.
 El vocabulario que no es del libro va fuera de las unidades —
 `SHOP_FAMILIES` en la pestaña My life es el ejemplo.
 
+### Que falte en la nube no es un borrado
+
+El 29 de septiembre se perdió la p. 111: él la subió en el celular con el
+computador abierto desde antes; el computador subió su copia vieja entera
+encima de la nube, y al abrir el celular la unión tomó la página por
+"borrada en otro aparato" y la quitó.
+
+Ahora una página solo se borra al sincronizar si está en `deletedBatchIds`
+(se anota cuando **él** borra algo, con `recordDeletedBatches`). Cada aparato
+trae la nube antes de subir. No vuelvas a deducir borrados de una ausencia.
+Si algo vuelve a perderse, Settings → "Restore missing pages from a backup"
+lo recupera de un respaldo sin tocar lo demás.
+
 ### Un lote sin fotos no se puede regenerar
 
 Regenerar reconstruye la gramática **desde las fotos de la página**. Un
 lote sin fotos (vocabulario escrito a mano) no puede regenerarse, así
 que no debe mostrarse como desactualizado ni ofrecer el botón.
+
+---
+
+## Revisar una página que él sube
+
+Él sube la foto del libro; `_analyzeReal` la manda a **Opus 5.5** (el resto de
+la app usa Sonnet 4.5) y guarda vocabulario, gramática, ejercicios y speaking
+en un lote (`units.a2_N.batches[]`, con `pages: [112]`). Luego exporta el
+respaldo desde Settings (`devlearn_backup_*.json`) y lo manda. El respaldo es
+el estado completo **con las fotos** en base64.
+
+**Revisar** (sacar la foto del lote a un archivo y mirarla):
+- Vocabulario: impreso en la página; ejemplo copiado palabra por palabra (sin
+  cambiar un *not* / *can't*); traducción natural colombiana; verbos en forma
+  base; expresiones completas ("No offense, but...", no "offense").
+- Gramática: `explanation` y `spanishTrap` en español; la trampa, real; "book"
+  solo si la página enseña la regla.
+- Ejercicios: respuesta correcta; la frase de contexto sigue la misma situación.
+- Speaking: solo tareas impresas. Ni títulos de lecciones (franja
+  COMMUNICATION GOALS) ni la misma conversación tres veces.
+- Repetidos con otras páginas de la unidad (`vocabKey`).
+
+Decirle qué salió bien y qué mal, **y preguntar** antes de corregir. Separar lo
+que es del modelo de lo que causa el prompt: si una regla del prompt provoca el
+error, se arregla también el prompt, o se repite en cada página.
+
+**Corregir a mano**, sin pagar otro análisis:
+- Vocabulario: `fixBookPage(units, { unit, page, marca, cambios, nuevas })`.
+- Gramática, ejercicios, speaking: `fixPageContent(units, { unit, page,
+  cambios: [[viejo, nuevo]], quitarGramatica, quitarPalabras })`. Solo
+  reemplaza campos cuyo valor es **exactamente** el viejo (si él lo editó, no
+  se toca); con `null` lo quita de su lista.
+- Una función por página (`fixU10P111`, `fixU10P112Content`…), llamada desde
+  `migrateState` con bandera nueva que se marca **solo si la página está en el
+  aparato**: `if (!merged._flag && fixX(merged.units)) merged._flag = true;`.
+- Agregarla a `applyPageFixes`, para que una página recuperada de un respaldo
+  también salga corregida.
+- Copiar los textos viejos **exactos** del respaldo y comprobar con un script,
+  contra el respaldo real, que cada uno se encuentra antes de publicar.
+- Todo ejemplo nuevo tiene que estar impreso en la página; la prueba lo
+  verifica. Prueba en `tests/u10-*.test.js` y una mutación.
+- El respaldo son datos suyos: no se sube al repositorio.
 
 ---
 
@@ -99,7 +154,7 @@ que no debe mostrarse como desactualizado ni ofrecer el botón.
 
 ## Contexto del usuario
 
-- Estudia A2, va por la Unit 9. Examen final de nivel: 16 de octubre.
+- Estudia A2, va por la Unit 10. Examen final de nivel: 16 de octubre.
 - Su punto más flojo en los speaking tests es la **coherencia** — por eso
   los textos llevan muchos conectores.
 - Tiene una tienda de mascotas con su hermano. Los ejemplos del
