@@ -90,5 +90,8 @@ test('como mucho dos temas "derived" si la página no enseña gramática', () =>
 
 test('nada de lo que la IA escribe puede decir lo contrario del libro', () => {
   assert.match(analisis, /6\. NEVER CONTRADICT THE PAGE\./);
-  assert.match(analisis, /Plant the\s+error in a sentence whose corrected meaning agrees with the page\./);
+  assert.match(analisis, /Plant the error in a sentence whose corrected meaning agrees with\s+the page\./);
+  // Solo lo que reutiliza del libro: sus propias frases pueden opinar distinto.
+  assert.match(analisis, /When you reuse a sentence from the page/);
+  assert.match(analisis, /an\s+opinion that differs from one printed there is fine/);
 });
