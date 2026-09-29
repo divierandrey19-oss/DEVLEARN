@@ -275,8 +275,23 @@ const MUTACIONES = [
   },
   {
     nombre: 'Fotos: volver a 800 px y calidad 0.6',
-    buscar: `function compressImage(dataUrl, maxSide = 1568, quality = 0.85) {`,
+    buscar: `function compressImage(dataUrl, maxSide = 2048, quality = 0.85) {`,
     reemplazo: `function compressImage(dataUrl, maxSide = 800, quality = 0.6) {`,
+  },
+  {
+    nombre: 'API: volver a leer solo el primer bloque de la respuesta',
+    buscar: `return (data.content || []).filter(b => b && b.type === 'text').map(b => b.text).join('');`,
+    reemplazo: `return data.content?.[0]?.text || '';`,
+  },
+  {
+    nombre: 'API: ignorar el stop_reason "refusal"',
+    buscar: `if (data.stop_reason === 'refusal') throw new Error('REFUSAL');`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Análisis: volver a Sonnet 4.5',
+    buscar: `      model: 'claude-opus-5-5',\n      effort: 'medium',`,
+    reemplazo: `      model: 'claude-sonnet-4-5',\n      effort: 'medium',`,
   },
   {
     nombre: 'Página del libro: que el número leído no se guarde',
