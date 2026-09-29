@@ -49,3 +49,10 @@ test('el análisis de la página pide el número y lo guarda', () => {
   assert.match(fuente, /"pageNumbers": "array of the page numbers PRINTED on the photos/);
   assert.match(fuente, /const paginas = sanitizePageNumbers\(parsed\.pageNumbers\);\s*if \(paginas\.length\) batch\.pages = paginas;/);
 });
+
+test('el panel "Unit content info" también usa el número del libro', () => {
+  // Salía "Batch 1" en vez de "p. 109" (su captura del 29 de septiembre).
+  const panel = h.extraerFuncion('renderDebugPanel');
+  assert.match(panel, /batchLabel\(u, b\.id\)/);
+  assert.doesNotMatch(panel, /'Regenerar'|'Actualizar'/, 'el botón en inglés, como el resto de la app');
+});
