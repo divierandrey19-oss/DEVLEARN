@@ -349,6 +349,26 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Progreso: al quitar una repetida, quedarse con el peor progreso',
+    buscar: `  if (!q || (p.interval || 0) > (q.interval || 0)) u.fcProgress[nueva] = p;`,
+    reemplazo: `  if (!q) u.fcProgress[nueva] = p;`,
+  },
+  {
+    nombre: 'Progreso: renombrar una tarjeta sin mover su progreso',
+    buscar: `    if (c.set.word && c.set.word !== v.word) moverProgreso(u, v.word, c.set.word);`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Unit 9: correr las correcciones sin poner antes los números de página',
+    buscar: `  if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;\n`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Análisis: quitar la regla de que las opciones no son hechos',
+    buscar: `━━ ANSWER OPTIONS ARE NOT FACTS ━━`,
+    reemplazo: `━━ OPTIONS ━━`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

@@ -14,6 +14,8 @@ const assert = require('node:assert/strict');
 const h = require('./harness.js');
 
 const f = h.ejecutar(`
+  ${h.extraerFuncion('loteDeLaCorreccion')}
+  ${h.extraerFuncion('moverProgreso')}
   ${h.extraerFuncion('fixPageContent')}
   ${h.extraerFuncion('fixU10P109Content')}
   ${h.extraerFuncion('fixU10P110Content')}

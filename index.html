@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29n -->
+<!-- DEVLEARN_BUILD: 2026-09-29o -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29n';
+const APP_BUILD = '2026-09-29o';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5190,6 +5190,19 @@ answered from the page. The student has no audio here.
   listen again and repeat" introduces a printed word list — that list is the lesson's
   core vocabulary and must be extracted in full. Only the un-answerable task is skipped,
   never the printed words around it.
+
+━━ ANSWER OPTIONS ARE NOT FACTS ━━
+
+In "circle the correct answer", "choose a or b", true/false and multiple-choice tasks, only
+ONE option is true; the others are printed on purpose to be wrong. A SCAN FOR FACTS item
+prints "Her work is to help a) patients with injuries b) set broken bones": the reading
+says a doctor sets the bone, so "Her work is to set broken bones" is FALSE.
+- Never turn an option into a vocabulary example, a grammar example or a statement unless
+  the page's own text (the reading, the dialogue) shows that it is the correct one.
+- If you make an exercise from such a task, its answer must be the one the text supports.
+  When the answer depends on a recording, skip the task (see the audio rule above).
+- Never build a sentence by joining two options: "I could have to invite him" comes from
+  "I (could / have to) invite him" and is not English.
 
 ━━ WHAT TO SKIP ━━
 
@@ -6699,7 +6712,33 @@ function migrateState(s) {
   if (!merged._u10P109DupesV1 && fixU10P109Dupes(merged.units)) merged._u10P109DupesV1 = true;
   if (!merged._u10P113ContentV1 && fixU10P113Content(merged.units)) merged._u10P113ContentV1 = true;
   if (!merged._u10P109KidsV1 && fixU10P109Kids(merged.units)) merged._u10P109KidsV1 = true;
+  // Unit 9 completa, revisada contra las fotos. Primero los números de página:
+  // las demás correcciones buscan la página por su número.
+  if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
+  [['_u9P97V1', fixU9P97], ['_u9P98V1', fixU9P98], ['_u9P99V1', fixU9P99], ['_u9P100V1', fixU9P100],
+   ['_u9P101V1', fixU9P101], ['_u9P102V1', fixU9P102], ['_u9P103V1', fixU9P103], ['_u9P104V1', fixU9P104],
+   ['_u9P105V1', fixU9P105], ['_u9P106V1', fixU9P106], ['_u9P107V1', fixU9P107], ['_u9PhrasalV1', fixU9Phrasal]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
+}
+
+/* El lote que corrige una corrección: por su id (las páginas de la Unit 9 se
+ * subieron antes de que se guardara el número del libro) o por el número. */
+function loteDeLaCorreccion(b, fix) {
+  return fix.id ? b.id === fix.id : (b.pages || []).includes(fix.page);
+}
+
+/* El progreso de una tarjeta pasa a otra: al cambiarle el nombre ("hates" ->
+ * "hate") o al quitar una repetida. Si las dos tienen progreso, queda el de
+ * intervalo más largo — el que ya se sabe mejor. Él ya había estudiado toda la
+ * Unit 9 cuando se corrigió; nada de eso puede perderse. */
+function moverProgreso(u, vieja, nueva) {
+  if (!u || !u.fcProgress || vieja === nueva) return;
+  const p = u.fcProgress[vieja];
+  if (!p) return;
+  const q = u.fcProgress[nueva];
+  if (!q || (p.interval || 0) > (q.interval || 0)) u.fcProgress[nueva] = p;
+  delete u.fcProgress[vieja];
 }
 
 /* Corrige el vocabulario de una página del libro contra su foto.
@@ -6713,12 +6752,15 @@ function migrateState(s) {
  * Devuelve true si encontró la página. */
 function fixBookPage(units, fix) {
   const u = units && units[fix.unit];
-  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(fix.page) &&
-    (x.vocab || []).some(v => v && fix.marca.includes(v.word)));
+  const b = u && (u.batches || []).find(x => x && loteDeLaCorreccion(x, fix) &&
+    (!fix.marca || (x.vocab || []).some(v => v && fix.marca.includes(v.word))));
   if (!b) return false;
   b.vocab = b.vocab.map(v => {
-    const c = v && fix.cambios.find(x => x.word === v.word && (!x.example || x.example === v.example));
-    return c ? { ...v, ...c.set } : v;
+    const c = v && (fix.cambios || []).find(x => x.word === v.word && (!x.example || x.example === v.example));
+    if (!c) return v;
+    // Si la tarjeta cambia de nombre, su progreso la sigue.
+    if (c.set.word && c.set.word !== v.word) moverProgreso(u, v.word, c.set.word);
+    return { ...v, ...c.set };
   });
   (fix.nuevas || []).forEach(({ despues, v: nueva }) => {
     if (b.vocab.some(v => v && (v.word || '').toLowerCase() === nueva.word.toLowerCase())) return;
@@ -6836,10 +6878,23 @@ function fixU10P111(units) {
  * Devuelve true si la página está en el aparato. */
 function fixPageContent(units, fix) {
   const u = units && units[fix.unit];
-  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(fix.page));
+  const b = u && (u.batches || []).find(x => x && loteDeLaCorreccion(x, fix));
   if (!b) return false;
   if (fix.quitarGramatica) b.grammar = (b.grammar || []).filter(g => !(g && fix.quitarGramatica.includes(g.title)));
   if (fix.quitarPalabras) b.vocab = (b.vocab || []).filter(v => !(v && fix.quitarPalabras.includes(v.word)));
+  // Tarjeta repetida: se quita de esta página y su progreso pasa a la que queda.
+  (fix.unir || []).forEach(([vieja, queda]) => {
+    if (!(b.vocab || []).some(v => v && v.word === vieja)) return;
+    b.vocab = b.vocab.filter(v => !(v && v.word === vieja));
+    moverProgreso(u, vieja, queda);
+  });
+  if (fix.quitarEjercicios) b.exercises = (b.exercises || []).filter(e => !(e && fix.quitarEjercicios.includes(e.question)));
+  // Un ejercicio puntual (su pregunta exacta): cambiar la respuesta sin tocar
+  // el mismo texto en otros ejercicios, donde puede ser una opción.
+  (fix.ejercicios || []).forEach(({ question, set }) => {
+    const e = (b.exercises || []).find(x => x && x.question === question);
+    if (e) Object.assign(e, set);
+  });
   const nuevo = new Map(fix.cambios || []);
   const arreglar = x => {
     if (typeof x === 'string') return nuevo.has(x) ? nuevo.get(x) : x;
@@ -6965,6 +7020,375 @@ function fixU10P109Kids(units) {
   const p113 = u && (u.batches || []).find(b => b && (b.pages || []).includes(113));
   if (!p113 || !(p113.vocab || []).some(v => v && v.word === 'have kids')) return false;
   return fixPageContent(units, { unit: 'a2_10', page: 109, quitarPalabras: ['to have kids'] });
+}
+
+/* ── Unit 9, revisada contra las fotos (su respaldo del 29 de septiembre) ──
+ * Él ya había estudiado sus 350 tarjetas, así que cada cambio de nombre o
+ * tarjeta repetida mueve su progreso (moverProgreso) en vez de perderlo.
+ * Las páginas se subieron antes de que se guardara el número del libro:
+ * fixU9Pages se los pone, y las demás correcciones los usan. */
+function fixU9Pages(units) {
+  const u = units && units.a2_9;
+  if (!u) return false;
+  const paginas = {
+    b_1789752213188_w42vl2: 97, b_1789753181438_si05mc: 98, b_1789949885424_ln9f4h: 99,
+    b_1789994027452_wlve6t: 100, b_1789994151359_nzqjkr: 101, b_1790167514992_95ntjo: 102,
+    b_1790167650343_miigs0: 103, b_1790366965203_dzdd4q: 104, b_1790341411034_qdzyub: 105,
+    b_1790341958741_q4v6xm: 106, b_1790367112077_49wdae: 107,
+  };
+  let alguna = false;
+  (u.batches || []).forEach(b => {
+    if (!b || !paginas[b.id]) return;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [paginas[b.id]];
+  });
+  return alguna;
+}
+
+/* p. 97, Warm-up. El tema "compound nouns" enseñaba ortografía falsa (marcaba
+ * "ice skating" y "water skiing" como error; son correctas) y una tarea de
+ * speaking era el globo de diálogo. */
+function fixU9P97(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 97, nuevas: [
+    { despues: 'team sports', v: { word: 'such as', translation: 'como, por ejemplo', phonetic: '/sʌtʃ æz/', emoji: '👉',
+      example: 'Cold-weather sports, such as ice-skating.', exampleTranslation: 'Deportes de clima frío, como el patinaje sobre hielo.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 97,
+    quitarGramatica: ['Compound nouns for sports and activities'],
+    unir: [['hiking', 'go hiking'], ['bowling', 'go bowling']],
+    cambios: [
+      ["En inglés, para decir 'el/la más' con adjetivos largos (de dos o más sílabas), usamos 'the most + adjetivo'. A diferencia del español donde agregamos '-ísimo' o usamos 'más', en inglés siempre se usa 'the most' antes del adjetivo largo.",
+       "En inglés, para decir 'el/la más' con adjetivos largos (de dos o más sílabas), usamos 'the most + adjetivo', como 'el más' en español. Ojo con 'fun': es corto, pero se dice 'the most fun' (no 'the funnest'), como en la pregunta de la página: Which kinds of activities are the most fun for you?"],
+      ['I prefer cold-weather sports. I like to be outdoors in the cold.', null],
+    ] });
+  return ok;
+}
+
+/* p. 98, Downtown Health Club. */
+function fixU9P98(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 98, cambios: [
+    { word: 'health club', set: { translation: 'gimnasio (club deportivo)', exampleTranslation: 'Mira el folleto de un gimnasio popular.' } },
+    { word: 'fitness center', set: { translation: 'gimnasio, centro de acondicionamiento físico',
+      exampleTranslation: 'Dile a tu compañero qué actividad o actividades te gustaría hacer en el gimnasio Downtown.' } },
+    { word: 'work out', set: { type: 'phrasal verb' } },
+  ], nuevas: [
+    { despues: 'location', v: { word: 'check out', translation: 'conocer, ir a ver', phonetic: '/tʃɛk aʊt/', type: 'phrasal verb', emoji: '👀',
+      example: 'Check out one of our centers in your location.', exampleTranslation: 'Conoce uno de nuestros centros cerca de ti.' } },
+  ] });
+  return ok;
+}
+
+/* p. 99, Omar y Martina. Dos errores comunes marcaban como error frases
+ * correctas ("That doesn't work for me", "Water aerobics is good for me") y
+ * el tema de "that" enseñaba que "It won't work" está mal. Tarjetas repetidas
+ * sacadas del cuadro de speaking. */
+function fixU9P99(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 99, cambios: [
+    { word: 'spin class', example: "I'd like to take the spin class tomorrow.",
+      set: { example: "I'd like to take the 6 P.M. spin class.", exampleTranslation: 'Me gustaría tomar la clase de spinning de las 6 p. m.' } },
+    { word: 'yoga class', example: "There's a really nice yoga class at 6:00.",
+      set: { example: "Well, there's a really nice yoga class.", exampleTranslation: 'Bueno, hay una clase de yoga muy buena.' } },
+    { word: 'afraid', set: { word: "I'm afraid...", translation: 'me temo que..., lamentablemente...', type: 'phrase', phonetic: '/aɪm əˈfreɪd/' } },
+    { word: 'convenient', set: { translation: 'que me queda bien, práctico', exampleTranslation: 'Y el horario me queda bien.' } },
+    { word: "that won't work", set: { translation: 'eso no me sirve', exampleTranslation: 'No, eso no me sirve.' } },
+  ], nuevas: [
+    { despues: 'option', v: { word: 'Like what?', translation: '¿Como qué?', phonetic: '/laɪk wʌt/', emoji: '🤔',
+      example: 'Like what?', exampleTranslation: '¿Como qué?' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 99,
+    quitarGramatica: ["Using 'that' to refer to previously mentioned things or ideas"],
+    unir: [['are a good fit for me', 'a good fit for me'], ['not really a good fit for me', 'a good fit for me'],
+           ['are a good way to unwind', 'a good way to unwind'], ['are a good workout', 'workout'],
+           ["don't appeal to me", "doesn't appeal to me"], ['relaxing activities', 'relaxing']],
+    cambios: [
+      ["Los colombianos pueden decir 'good for me' pensando en 'bueno para mí', pero la expresión correcta es 'a good fit for me'. No uses 'good for' cuando hablas de si una actividad es adecuada para ti.",
+       "'Good for me' y 'a good fit for me' no son lo mismo. 'Good for me' es que te hace bien (a la salud): Water aerobics is good for me. 'A good fit for me' es que va contigo, que es lo tuyo: Yoga's not really a good fit for me. Y se dice 'a good fit FOR me', no 'to me'."],
+      ['Water aerobics is good for me.', 'Water aerobics is a good fit to me.'],
+      ["Use the complete expression 'a good fit for me' to say an activity suits you", "Se dice 'a good fit FOR me', con for."],
+      ["That doesn't work for me.", 'That no will work.'],
+      ["Use the future form 'won't work' for a suggestion about a future time or plan", "La negación de will es won't (will not): That won't work."],
+      ['Translate: Los aeróbicos acuáticos son una buena manera de relajarse.', 'Translate: El yoga es una buena manera de relajarse.'],
+      ['Water aerobics are a good way to unwind.', "Yoga's a good way to unwind."],
+    ] });
+  return ok;
+}
+
+/* p. 100, have to / has to. Letra mal leída: "Jen" (Teri), "get to the bank"
+ * (go), "I didn't have to" (We), "aerobics class" (water aerobics class). La
+ * trampa decía que en español "tener que" no cambia con la persona y que en
+ * "tengo que trabajar" el verbo va conjugado; ninguna de las dos es cierta. */
+function fixU9P100(units) {
+  const TERI = { example: 'Teri has to teach a Pilates class now. Can she call you back later?',
+                 exampleTranslation: 'Teri tiene que dar una clase de Pilates ahora. ¿Te puede devolver la llamada más tarde?' };
+  const JUEGO = { example: "We didn't have to get to the game so early. It started late.",
+                  exampleTranslation: 'No teníamos que llegar al partido tan temprano. Empezó tarde.' };
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 100, cambios: [
+    { word: 'teach', example: 'Jen has to teach a Pilates class now.', set: TERI },
+    { word: 'Pilates class', example: 'Jen has to teach a Pilates class now.', set: TERI },
+    { word: 'bank', example: 'I have to get to the bank.',
+      set: { example: "I'm so sorry I'm late. I had to go to the bank.", exampleTranslation: 'Qué pena llegar tarde. Tuve que ir al banco.' } },
+    { word: 'game', set: { translation: 'partido, juego', ...JUEGO } },
+    { word: 'get to', example: "I didn't have to get to the game so early.", set: JUEGO },
+    { word: 'early', example: "I didn't have to get to the game so early.", set: JUEGO },
+    { word: 'started', set: { word: 'start', translation: 'empezar, comenzar', ...JUEGO } },
+    { word: 'sign up for', example: 'You have to sign up for the aerobics class.',
+      set: { example: 'You have to sign up for the water aerobics class.', exampleTranslation: 'Tienes que inscribirte en la clase de aeróbicos acuáticos.' } },
+    { word: 'golf course', set: { example: 'I go to the golf course once a week.', exampleTranslation: 'Voy al campo de golf una vez a la semana.' } },
+    { word: 'tennis court', set: { example: 'I go to the tennis court once a week, usually on the weekend.',
+      exampleTranslation: 'Voy a la cancha de tenis una vez a la semana, casi siempre el fin de semana.' } },
+    { word: 'running shoes', set: { translation: 'tenis, zapatos para correr' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 100,
+    unir: [['aerobics class', 'water aerobics']],
+    cambios: [
+      ["En inglés, 'have to' y 'has to' expresan obligaciones en el presente. A diferencia del español donde 'tener que' es igual para todas las personas, en inglés 'has to' se usa solamente con he, she, it. Después de 'have to' o 'has to', el verbo principal siempre va en forma base (sin 'to').",
+       "En inglés, 'have to' y 'has to' expresan obligaciones en el presente, como 'tengo que' y 'tiene que': 'has to' va con he, she, it y 'have to' con los demás. Después de 'have to' o 'has to', el verbo principal va en forma base: I have to work."],
+      ["Los colombianos tienden a conjugar el verbo después de 'have to' (ejemplo: decir 'I have to works' en vez de 'I have to work') porque en español sí se conjuga: 'tengo que trabajar' tiene 'trabajar' conjugado.",
+       "Ojo: 'don't have to' significa que no es necesario, no que esté prohibido. 'I don't have to work late today' = no tengo que trabajar tarde (así que puedo salir). Para prohibir se usa 'can't': You can't just walk in."],
+      ['Jen has to teach a Pilates class now.', 'Teri has to teach a Pilates class now. Can she call you back later?'],
+      ['Jen tiene que enseñar una clase de Pilates ahora.', 'Teri tiene que dar una clase de Pilates ahora. ¿Te puede devolver la llamada más tarde?'],
+      ["You have to sign up for the aerobics class. You can't just walk in.", "You have to sign up for the water aerobics class. You can't just walk in."],
+      ['Tienes que inscribirte en la clase de aeróbicos. No puedes simplemente entrar.', 'Tienes que inscribirte en la clase de aeróbicos acuáticos. No puedes simplemente llegar.'],
+      ["I'm so sorry I'm late. I had to get to the bank.", "I'm so sorry I'm late. I had to go to the bank."],
+      ['Lo siento mucho por llegar tarde. Tuve que llegar al banco.', 'Qué pena llegar tarde. Tuve que ir al banco.'],
+      ["I didn't have to get to the game so early. It started late.", "We didn't have to get to the game so early. It started late."],
+      ['No tuve que llegar al juego tan temprano. Comenzó tarde.', 'No teníamos que llegar al partido tan temprano. Empezó tarde.'],
+      ["Information questions: Use 'Do' or 'Does' to form yes/no questions with 'have to'.", "Use Do, Does or Did + subject + have to + base verb for yes / no questions."],
+      ['Translate: Tuve que llegar al banco temprano.', 'Translate: Tuve que ir al banco temprano.'],
+      ['I had to get to the bank early.', 'I had to go to the bank early.'],
+      ["Does he have to go right home after class tonight? (Yes, he does. / No, he doesn't.)", null],
+      ["Do they have to wear running shoes at the gym? (Yes, they do. / No, they don't.)", null],
+      ["Did she have to work late yesterday? (Yes, she did. / No, she didn't.)", null],
+    ] });
+  return ok;
+}
+
+/* p. 101, make a date. La misma trampa falsa sobre "tener que"; y "Blake's
+ * driving them tomorrow", cuando en el libro Blake los lleva hoy y ella mañana. */
+function fixU9P101(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 101, cambios: [
+    { word: 'tomorrow', example: "Blake's driving them tomorrow.",
+      set: { example: "No. Blake's driving them today. I'm driving them tomorrow.", exampleTranslation: 'No. Blake los lleva hoy. Yo los llevo mañana.' } },
+  ], nuevas: [
+    { despues: 'Friday', v: { word: "When's good for you?", translation: '¿Cuándo te queda bien?', phonetic: '/wɛnz ɡʊd fɔr ju/', emoji: '📅',
+      example: "I'd love to. When's good for you?", exampleTranslation: 'Me encantaría. ¿Cuándo te queda bien?' } },
+    { despues: "When's good for you?", v: { word: 'See you there!', translation: '¡Nos vemos allá!', phonetic: '/si ju ðɛr/', emoji: '👋',
+      example: 'Perfect. See you there!', exampleTranslation: 'Perfecto. ¡Nos vemos allá!' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 101,
+    unir: [['check', 'Let me check.'], ['swimming', 'go swimming'], ['running', 'go running']],
+    cambios: [
+      ["Usamos 'have to' (tengo que) y 'has to' (tiene que) para expresar obligación o necesidad. A diferencia del español donde 'tener que' es igual para todas las personas, en inglés usamos 'have to' con I/you/we/they y 'has to' con he/she/it. El verbo que sigue siempre va en infinitivo sin 'to'.",
+       "Usamos 'have to' (tengo que) y 'has to' (tiene que) para expresar obligación o necesidad. Igual que 'tengo' y 'tiene' en español, cambia con la persona: 'have to' con I/you/we/they y 'has to' con he/she/it. El verbo que sigue va en forma base: She has to stay home."],
+      ["En español 'tener que' no cambia con he/she/it, pero en inglés debes usar 'has to' (no 'have to') con la tercera persona singular.",
+       "El error típico es olvidar la -s: 'She have to stay home' ✗ → 'She has to stay home' ✓. En español lo haces sin pensar (ella tiene), en inglés también hay que cambiarlo."],
+      ["Use 'Why don't we' + base verb or 'How about' + noun/-ing form to suggest activities.",
+       "Use 'Why don't we' + base verb, 'How about we' + verb, or 'How about' + noun/-ing form to suggest activities."],
+      ["Para hacer sugerencias, usamos 'Why don't we' + verbo base o 'How about' + sustantivo/gerundio (-ing). En español usamos '¿Por qué no...?' y '¿Qué tal...?'. Nota que después de 'Why don't we' usamos infinitivo sin 'to', pero después de 'How about' usamos -ing o un sustantivo.",
+       "Para hacer sugerencias, usamos 'Why don't we' + verbo base (Why don't we go swimming sometime?), 'How about we' + verbo (How about we meet at the pool?) o 'How about' + sustantivo o -ing (How about Friday? / How about going running?). En español usamos '¿Por qué no...?' y '¿Qué tal...?'."],
+    ] });
+  return ok;
+}
+
+/* p. 102, should / could. Dos ejemplos mezclaban las dos opciones del ejercicio
+ * del libro ("I could have to invite him", "Could he does he have to do
+ * that…"). La trampa decía que después de "debería" el verbo va conjugado. */
+function fixU9P102(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 102, cambios: [
+    { word: 'invite', example: 'I could have to invite him.', set: { example: 'I could invite him.', exampleTranslation: 'Podría invitarlo.' } },
+    { word: 'after work', example: 'Could he does he have to do that after work or on the weekend?',
+      set: { example: 'Well, could he do that after work or on the weekend?', exampleTranslation: 'Bueno, ¿podría hacer eso después del trabajo o el fin de semana?' } },
+    { word: 'help', example: 'Well, exercise can help.', set: { example: 'Well, exercise can help him unwind.', exampleTranslation: 'Bueno, el ejercicio le puede ayudar a relajarse.' } },
+    { word: 'hates', set: { word: 'hate', translation: 'odiar' } },
+  ], nuevas: [
+    { despues: 'movies', v: { word: 'What do you think?', translation: '¿Qué opinas?, ¿Qué te parece?', phonetic: '/wʌt də ju θɪŋk/', emoji: '💭',
+      example: 'Well, we could go to the movies. What do you think?', exampleTranslation: 'Bueno, podríamos ir a cine. ¿Qué te parece?' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 102,
+    unir: [['shape', 'get in shape'], ['bike riding', 'go bike riding']],
+    cambios: [
+      ["Los colombianos pueden querer conjugar el verbo después de should ('should goes' en lugar de 'should go'), porque en español el verbo se conjuga después de 'debería'. En inglés, siempre usamos la forma base.",
+       "En español decimos 'deberías ir', dos verbos seguidos sin nada en medio, y en inglés es igual: 'You should go'. El error típico es meter 'to' ('You should to go') porque se parece a 'have to' y 'want to'."],
+      ['Should I go to the movies?', 'Should I get tickets for all of us? (Yes, you should.)'],
+      ['¿Debería ir al cine?', '¿Debería comprar boletas para todos? (Sí, deberías.)'],
+      ['Yes, you could.', "I couldn't go running yesterday."],
+      ['Sí, pudiste.', 'No pude ir a correr ayer.'],
+      ['Complete the conversation. Circle the correct words.', null],
+      ['Listen and repeat the grammar examples.', null],
+    ] });
+  return ok;
+}
+
+/* p. 103, get in shape. "He doesn't have to wear his old ones" contradice el
+ * libro (no puede: le quedan apretadas), y un ejercicio decía que no tienen
+ * bicicleta extra (sí la tienen). */
+function fixU9P103(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 103, cambios: [
+    { word: 'kind', set: { word: "That's so kind of you.", translation: 'Qué amable de tu parte.', type: 'phrase', phonetic: '/ðæts soʊ kaɪnd əv ju/',
+      exampleTranslation: '¡Qué amable de tu parte!' } },
+    { word: 'bicycle', example: 'Does he have a bicycle?',
+      set: { example: 'What about a bicycle? Does he have one?', exampleTranslation: '¿Y una bicicleta? ¿Tiene una?' } },
+  ], nuevas: [
+    { despues: 'get in shape', v: { word: 'Any suggestions?', translation: '¿Alguna sugerencia?, ¿Qué me recomiendas?', phonetic: '/ˈɛni səɡˈdʒɛstʃənz/', emoji: '💡',
+      example: 'I really have to get in shape! Any suggestions?', exampleTranslation: '¡De verdad tengo que ponerme en forma! ¿Qué me recomiendas?' } },
+    { despues: 'basketball', v: { word: 'pretty', translation: 'bastante (antes de un adjetivo)', phonetic: '/ˈprɪti/', type: 'adv', emoji: '📈',
+      example: 'You could play tennis or basketball. Those are pretty strenuous.', exampleTranslation: 'Podrías jugar tenis o baloncesto. Esos son bastante exigentes.' } },
+    { despues: 'thanks a million', v: { word: "Why didn't I think of that?", translation: '¿Por qué no se me ocurrió?', phonetic: '/waɪ ˈdɪdənt aɪ θɪŋk əv ðæt/', emoji: '🤦',
+      example: "And they're a great workout! Why didn't I think of that?", exampleTranslation: '¡Y son un gran ejercicio! ¿Por qué no se me ocurrió?' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 103,
+    unir: [['appeal', 'appeal to']],
+    cambios: [
+      ["He doesn't have to wear his old ones.", "He doesn't have to buy one. We have an extra one."],
+      ['No tiene que usar sus viejos.', 'No tiene que comprar una. Tenemos una extra.'],
+      ['I really have to get in shape! Any suggestions?', null],
+    ],
+    ejercicios: [
+      { question: "He ___ wear his old hiking boots. They're too tight.",
+        set: { question: "He ___ wear his old ones. They're too tight. (can't / doesn't have to)", answer: "can't" } },
+      { question: 'Translate to English: Desafortunadamente, no tenemos una bicicleta extra.',
+        set: { question: 'Translate to English: Desafortunadamente, él no tiene bicicleta.', answer: "Unfortunately, he doesn't have a bicycle." } },
+    ] });
+  return ok;
+}
+
+/* p. 104, actividades y el podcast de Clemson. Un ejercicio adivinaba la idea
+ * principal de un audio que la IA nunca oyó; la trampa del comparativo decía
+ * que en español "más" va después del adjetivo. */
+function fixU9P104(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 104, cambios: [
+    { word: 'go paddleboarding', set: { example: 'I never go paddleboarding.', exampleTranslation: 'Nunca voy a hacer paddle.' } },
+    { word: 'go mountain biking', set: { translation: 'ir a montar en bicicleta de montaña', exampleTranslation: 'Voy a montar en bicicleta de montaña en el parque nacional.' } },
+    { word: 'paddleboard', set: { exampleTranslation: 'Si tienes un poco de plata para gastar en ejercicio, es mejor gastarla en un gimnasio que comprar una tabla de paddle o una bicicleta de montaña.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 104,
+    quitarGramatica: ["Modal verb 'can' for ability and possibility"],
+    quitarEjercicios: ["According to the page, which is Clemson's main idea?"],
+    unir: [['kayaking', 'go kayaking'], ['paddleboarding', 'go paddleboarding'], ['walking', 'go walking'],
+           ['camping', 'go camping'], ['sailing', 'go sailing'], ['fishing', 'go fishing']],
+    cambios: [
+      ["Para comparar dos cosas en inglés, usamos 'more' + adjetivo + 'than' con adjetivos de dos o más sílabas. En español usamos 'más' + adjetivo + 'que', pero en inglés la palabra 'more' va ANTES del adjetivo, no después. Por ejemplo: 'more appealing' (más atractivo), 'more expensive' (más costoso).",
+       "Para comparar dos cosas con adjetivos de dos o más sílabas usamos 'more' + adjetivo + 'than', en el mismo orden que 'más' + adjetivo + 'que' en español: 'more appealing than' (más atractivo que), 'more expensive than' (más caro que)."],
+      ["Los hablantes de español pueden decir 'appealing more than' porque en español 'más' va después del adjetivo ('atractivo más que'). En inglés, 'more' siempre va ANTES del adjetivo.",
+       "El error típico está en el 'que': se dice 'than', no 'that' ni 'of': 'more expensive than camping' ✓, 'more expensive that camping' ✗."],
+    ] });
+  return ok;
+}
+
+/* p. 105, recreation equipment. */
+function fixU9P105(units) {
+  const MONTANA = 'Si vas a montar en bicicleta de montaña, tienes que tener una bicicleta de montaña.';
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 105, cambios: [
+    { word: 'kayak', example: 'You could use these kayak and paddle.', set: { example: 'You could use a kayak and a paddle.', exampleTranslation: 'Podrías usar un kayak y un remo.' } },
+    { word: 'paddle', example: 'You could use these kayak and paddle.', set: { example: 'You could use a kayak and a paddle.', exampleTranslation: 'Podrías usar un kayak y un remo.' } },
+    { word: 'go hiking', set: { translation: 'ir a caminar, hacer senderismo' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 105,
+    unir: [['mountain biking', 'go mountain biking']],
+    cambios: [
+      ["Los verbos modales 'could', 'should' y 'have to' expresan diferentes niveles de necesidad. 'Could' indica posibilidad (es posible pero no obligatorio), 'should' da consejo o recomendación, y 'have to' expresa obligación o necesidad fuerte. A diferencia del español donde usas 'poder', 'deber' y 'tener que', en inglés estos verbos modales no cambian de forma con diferentes personas.",
+       "'Could', 'should' y 'have to' expresan diferentes niveles de necesidad. 'Could' indica posibilidad (se puede, pero no es obligatorio), 'should' da un consejo y 'have to' expresa obligación. 'Could' y 'should' no cambian con la persona; 'have to' sí: 'has to' con he, she, it."],
+      ['Si vas a ciclismo de montaña, tienes que tener una bicicleta de montaña.', MONTANA],
+    ],
+    ejercicios: [
+      { question: 'You ___ use this tennis racket for outdoor activities.',
+        set: { question: 'A tennis racket? For tennis, you ___ use this! (could / have to)', answer: 'have to' } },
+      { question: 'Translate: Tienes que usar un casco si vas a ciclismo de montaña.',
+        set: { question: 'Translate: Tienes que usar casco si vas a montar en bicicleta de montaña.' } },
+    ] });
+  return ok;
+}
+
+/* p. 106, cuerpo, accidentes y la fisioterapeuta. Varios ejemplos no eran de
+ * su palabra ("head" → "He burned his finger"), y había una tarjeta para el
+ * verbo y otra para su pasado. */
+function fixU9P106(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 106, cambios: [
+    { word: 'head', example: 'He burned his finger.', set: { example: 'My head hurts.', exampleTranslation: 'Me duele la cabeza.' } },
+    { word: 'neck', example: 'She hurt her back.', set: { example: 'My neck hurts.', exampleTranslation: 'Me duele el cuello.' } },
+    { word: 'leg', example: 'Your broken bone can heal.', set: { example: 'You fall and break a bone in your leg.', exampleTranslation: 'Te caes y te rompes un hueso de la pierna.' } },
+    { word: 'knee', example: 'He fell down.', set: { example: 'My knee hurts.', exampleTranslation: 'Me duele la rodilla.' } },
+    { word: 'injury', example: 'I work with seven or eight patients in my center.',
+      set: { example: 'I specialize in exercise therapy for sports injuries.', exampleTranslation: 'Me especializo en terapia con ejercicio para lesiones deportivas.' } },
+    { word: 'burn', set: { translation: 'quemar(se) — pasado: burned' } },
+    { word: 'hurt', set: { translation: 'lastimar(se), doler — pasado: hurt' } },
+    { word: 'cut', set: { translation: 'cortar(se) — pasado: cut' } },
+    { word: 'break', set: { translation: 'romper(se) — pasado: broke' } },
+    { word: 'fall', set: { translation: 'caer(se) — pasado: fell' } },
+    { word: 'correctly', example: 'I advise them to practice the exercises correctly.',
+      set: { example: 'I make sure my patients do the exercises correctly and without pain.', exampleTranslation: 'Me aseguro de que mis pacientes hagan los ejercicios bien y sin dolor.' } },
+    { word: 'crutches', set: { exampleTranslation: 'Te dan muletas para que no tengas que caminar con esa pierna.' } },
+    { word: 'get moving', set: { exampleTranslation: 'Tus músculos necesitan despertar y ponerse en movimiento.' } },
+  ], nuevas: [
+    { despues: 'rock climbing', v: { word: "let's say", translation: 'supongamos que, digamos que', phonetic: '/lɛts seɪ/', emoji: '💬',
+      example: "Well, let's say you go rock climbing in the rain and you fall and break a bone in your leg.",
+      exampleTranslation: 'Bueno, supongamos que vas a escalar bajo la lluvia, te caes y te rompes un hueso de la pierna.' } },
+    { despues: 'correctly', v: { word: 'make sure', translation: 'asegurarse de', phonetic: '/meɪk ʃʊr/', emoji: '✅',
+      example: 'I make sure my patients do the exercises correctly and without pain.', exampleTranslation: 'Me aseguro de que mis pacientes hagan los ejercicios bien y sin dolor.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 106,
+    quitarGramatica: ["Modal 'can' for ability and recovery"],
+    unir: [['burned', 'burn'], ['broke', 'break'], ['fell', 'fall'], ['moving', 'get moving'], ['rock climbing', 'go rock climbing']],
+    cambios: [
+      ["En inglés, muchos verbos de accidentes tienen formas irregulares en pasado simple. A diferencia del español donde solo cambias la terminación, en inglés estos verbos cambian completamente: burn → burned, hurt → hurt, cut → cut, break → broke, fall → fell. Nota que 'hurt' y 'cut' no cambian en pasado.",
+       "Para contar un accidente usamos el pasado simple. De los verbos de la página, 'burn' es regular (burned); 'hurt' y 'cut' se quedan igual en pasado (hurt, cut); y 'break' y 'fall' cambian por completo (broke, fell)."],
+      ['He ___ his finger when he was in the hospital. It was very painful.', 'He ___ his finger when he was cooking. It was very painful.'],
+    ] });
+  return ok;
+}
+
+/* p. 107, Scan for facts. La IA tomó como ciertas las dos opciones de cada
+ * pregunta del libro: tarjetas con afirmaciones falsas según la lectura, dos
+ * ejercicios con la respuesta mal, y "coat" donde el libro dice "cast". */
+function fixU9P107(units) {
+  const ok = fixBookPage(units, { unit: 'a2_9', page: 107, cambios: [
+    { word: 'set broken bones', example: 'Her work is to set broken bones.',
+      set: { example: 'A doctor sets the broken bone and puts your leg in a cast.', exampleTranslation: 'Un médico acomoda el hueso roto y te pone la pierna en yeso.' } },
+    { word: 'sports', set: { example: 'I specialize in exercise therapy for sports injuries.', exampleTranslation: 'Me especializo en terapia con ejercicio para lesiones deportivas.' } },
+    { word: 'painful', example: "If you don't use your muscles, they can get painful.",
+      set: { example: 'My broken foot was very painful.', exampleTranslation: 'Mi pie roto me dolía mucho.' } },
+    { word: 'needed', set: { word: 'need', translation: 'necesitar' } },
+    { word: 'gave', set: { word: 'give', translation: 'dar — pasado: gave', example: 'They gave me a cast.', exampleTranslation: 'Me pusieron un yeso.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_9', page: 107,
+    quitarGramatica: ["Modal verb 'can' with 'get + adjective' for results", "Negative statements with 'don't' + base verb",
+                      "Conditional structure with 'If + present simple, can + base verb'"],
+    quitarPalabras: ["don't rest", 'continue therapy'],
+    unir: [['coat', 'cast'], ['casts and crutches', 'crutches'], ['patients', 'patient'], ['injuries', 'injury'],
+           ['exercises', 'exercise'], ['accidents', 'accident'], ['fell down', 'fall down']],
+    cambios: [
+      ["Colombian speakers often say 'I broke me the foot' (literal translation of 'me rompí el pie'). English does NOT use reflexive pronouns for injuries — say 'I broke my foot'.",
+       "Por traducir 'me rompí el pie' palabra por palabra, se dice 'I broke me the foot'. En inglés no va 'me' y la parte del cuerpo lleva 'my': 'I broke my foot'."],
+      ["Colombian speakers may say 'the last night' or 'the past summer'. English uses 'last night', 'last summer' WITHOUT 'the' or 'past'.",
+       "Por 'el verano pasado' se dice 'the last summer' o 'the past summer'. En inglés va solo 'last', sin 'the': 'last night', 'last summer'."],
+      ["Last summer I had a mountain biking accident. I was on vacation in Europe. I broke my foot. Did you have to go back home?", null],
+      ["I was in a lot of pain. I had to go to the hospital. They gave me a cast. I had to use crutches. I needed physical therapy. I'm OK now.", null],
+    ],
+    ejercicios: [
+      { question: 'Where does Martha Roberts work?', set: { answer: 'in a physical therapy center' } },
+      { question: 'What does Ms. Roberts use in her physical therapy?', set: { answer: 'special tables and equipment' } },
+      { question: "Find and correct the mistake: If you don't move your muscles, they can gets painful.",
+        set: { question: "Find and correct the mistake: If you don't use your muscles, they can gets weak.",
+               answer: "If you don't use your muscles, they can get weak." } },
+    ] });
+  return ok;
+}
+
+/* El lote de phrasal verbs de la Unit 9, sembrado a mano con ejemplos de su
+ * vida. Casi todo estaba marcado "phrasal verb" sin serlo (go bowling, Would
+ * you like to...?), y cuatro tarjetas repetían las del libro. */
+function fixU9Phrasal(units) {
+  const u = units && units.a2_9;
+  const b = u && (u.batches || []).find(x => x && x.id === 'pv_a2_9');
+  if (!b) return false;
+  const siLoSon = ['fall down'];
+  b.vocab = (b.vocab || []).map(v => (v && v.type === 'phrasal verb' && !siLoSon.includes(v.word)) ? { ...v, type: 'phrase' } : v);
+  if (b.title === 'Phrasal verbs — Unit 9') b.title = 'Phrasal verbs & expressions — Unit 9';
+  // Estas cuatro también están en su página del libro, con el mismo nombre:
+  // ya comparten el progreso, así que basta con quitar la copia de aquí.
+  fixPageContent(units, { unit: 'a2_9', id: 'pv_a2_9',
+    quitarPalabras: ['go out', 'work out', 'get in shape', 'make that class'] });
+  return true;
 }
 
 // Debounced save
@@ -7395,12 +7819,14 @@ function getUnitVocab(u) {
 /* Clave para saber si dos tarjetas son la misma palabra. Comparar el texto tal
  * cual dejaba pasar "to have kids" (p. 109) y "have kids" (p. 113) como dos
  * tarjetas, con progreso separado. Se ignoran mayúsculas, el "to" del
- * infinitivo al principio y la puntuación del final. */
+ * infinitivo al principio y la puntuación del final. "go kayaking" y
+ * "kayaking" también son la misma tarjeta (Unit 9 tenía trece así). */
 function vocabKey(word) {
   return String(word || '').toLowerCase().trim()
     .replace(/^to\s+/, '')
     .replace(/[\s.!?…]+$/, '')
-    .replace(/\s+/g, ' ');
+    .replace(/\s+/g, ' ')
+    .replace(/^go (?=[a-z -]*ing$)/, '');
 }
 /* Qué clase de palabra es, para la etiqueta de la tarjeta. El tipo lo pone la
  * IA al analizar la página (noun, verb, adj, adv, phrase, pronoun,
@@ -20326,7 +20752,9 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids]
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids,
+   fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
+   fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
