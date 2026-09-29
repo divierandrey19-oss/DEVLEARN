@@ -90,6 +90,12 @@ Opus empieza pensando y leer solo el primer bloque daba vacío; un rechazo del
 filtro de seguridad es el error `REFUSAL`, y `effort` / `fallbacks` solo van en
 la llamada que los pide.
 
+`u10-content-fix.test.js` — La gramática, los ejercicios y el speaking de las
+pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que
+eran títulos de lecciones, la "trampa" falsa del if, el error común que decía lo
+contrario de Sophie, traducciones literales. Solo reemplaza textos que siguen
+exactamente como los dejó el análisis, y no toca el vocabulario.
+
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la
 página no imprime, formas base y las expresiones del diálogo que faltaban. Y que

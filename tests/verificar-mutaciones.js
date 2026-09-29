@@ -294,6 +294,16 @@ const MUTACIONES = [
     reemplazo: `      model: 'claude-sonnet-4-5',\n      effort: 'medium',`,
   },
   {
+    nombre: 'p. 109: dejar la tarea de speaking que era título de lección',
+    buscar: `    ['Discuss what makes a job attractive.', null],`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Contenido de página: que el reemplazo no llegue dentro de las listas',
+    buscar: `    if (Array.isArray(x)) return x.map(arreglar).filter(y => y !== null);`,
+    reemplazo: `    if (Array.isArray(x)) return x;`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
