@@ -117,9 +117,19 @@ error, se arregla también el prompt, o se repite en cada página.
 **Corregir a mano**, sin pagar otro análisis:
 - Vocabulario: `fixBookPage(units, { unit, page, marca, cambios, nuevas })`.
 - Gramática, ejercicios, speaking: `fixPageContent(units, { unit, page,
-  cambios: [[viejo, nuevo]], quitarGramatica, quitarPalabras })`. Solo
-  reemplaza campos cuyo valor es **exactamente** el viejo (si él lo editó, no
-  se toca); con `null` lo quita de su lista.
+  cambios: [[viejo, nuevo]], quitarGramatica, quitarPalabras, unir,
+  quitarEjercicios, ejercicios })`. `cambios` solo reemplaza campos cuyo valor
+  es **exactamente** el viejo (si él lo editó, no se toca); con `null` lo quita
+  de su lista. Para cambiar la respuesta de un ejercicio usa `ejercicios`
+  (por su pregunta exacta): con `cambios` el mismo texto cambiaría también
+  donde es opción de otro ejercicio.
+- Lotes sin número de página (los de antes de guardar `pages`): `id` en vez
+  de `page`, o ponerles el número primero, como `fixU9Pages`.
+- **Él estudia las tarjetas.** Renombrar una (`set.word`) mueve su progreso;
+  una repetida se quita con `unir: [[vieja, queda]]`, que le pasa el progreso
+  a la que queda (si ambas tenían, gana la de intervalo más largo). Nunca
+  quitar tarjetas estudiadas con `quitarPalabras` salvo que estén mal (una
+  afirmación falsa).
 - Una función por página (`fixU10P111`, `fixU10P112Content`…), llamada desde
   `migrateState` con bandera nueva que se marca **solo si la página está en el
   aparato**: `if (!merged._flag && fixX(merged.units)) merged._flag = true;`.

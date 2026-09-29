@@ -14,6 +14,8 @@ const assert = require('node:assert/strict');
 const h = require('./harness.js');
 
 const { fixU10P111 } = h.ejecutar(`
+  ${h.extraerFuncion('loteDeLaCorreccion')}
+  ${h.extraerFuncion('moverProgreso')}
   ${h.extraerFuncion('fixBookPage')}
   ${h.extraerFuncion('fixU10P111')}
   return { fixU10P111 };

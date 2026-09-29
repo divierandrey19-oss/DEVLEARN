@@ -103,3 +103,11 @@ test('la explicación y la trampa de la gramática van en español', () => {
   assert.match(analisis, /"spanishTrap": "IN SPANISH: one real mistake/);
   assert.match(analisis, /- LANGUAGE: the grammar "explanation" and "spanishTrap" are written in Spanish/);
 });
+
+test('las opciones de un ejercicio de selección no son hechos', () => {
+  // En la p. 107 la IA tomó como ciertas las dos opciones de cada pregunta de
+  // "Scan for facts", y en la p. 102 juntó dos opciones en una frase.
+  assert.match(analisis, /━━ ANSWER OPTIONS ARE NOT FACTS ━━/);
+  assert.match(analisis, /Never turn an option into a vocabulary example, a grammar example or a statement/);
+  assert.match(analisis, /Never build a sentence by joining two options/);
+});

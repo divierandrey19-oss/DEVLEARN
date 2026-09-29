@@ -112,6 +112,13 @@ p. 112 está en el aparato. Y la p. 113: una sola tarea de speaking para la
 conversación, y "to have kids" de la p. 109 fuera porque la p. 113 tiene "have
 kids" — con `vocabKey()`, que ahora reconoce esas repetidas al analizar.
 
+`u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
+id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de
+"Scan for facts" tomadas como hechos, el ejercicio que adivinaba el audio, y
+tarjetas repetidas ("go kayaking" / "kayaking", "burned" / "burn"). Él ya había
+estudiado toda la unidad: `moverProgreso` pasa el progreso de una tarjeta
+renombrada o repetida a la que queda, y si las dos tenían, queda el mejor.
+
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la
 página no imprime, formas base y las expresiones del diálogo que faltaban. Y que
