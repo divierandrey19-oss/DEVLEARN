@@ -269,6 +269,16 @@ const MUTACIONES = [
     reemplazo: `if (!merged._u10P110FixV1) { fixU10P110(merged.units); merged._u10P110FixV1 = true; }`,
   },
   {
+    nombre: 'p. 111: dejar "meet tomorrow… Ring Street" en grab a bite',
+    buscar: `    { word: 'grab a bite', example: VIEJO_KING, set: KING },`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Fotos: volver a 800 px y calidad 0.6',
+    buscar: `function compressImage(dataUrl, maxSide = 1568, quality = 0.85) {`,
+    reemplazo: `function compressImage(dataUrl, maxSide = 800, quality = 0.6) {`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

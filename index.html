@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29e -->
+<!-- DEVLEARN_BUILD: 2026-09-29f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29e';
+const APP_BUILD = '2026-09-29f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6619,30 +6619,49 @@ function migrateState(s) {
       delete u.ocrText;
     }
   });
-  /* La p. 110 (Unit 10) salió del análisis con un ejemplo al revés del libro y
-   * expresiones cortadas. Se corrige una vez; la bandera solo se marca cuando
-   * la página está en este aparato, para que un celular que aún no la tiene la
-   * corrija cuando le llegue. */
+  /* Páginas que el análisis dejó con ejemplos mal copiados o expresiones
+   * cortadas, corregidas a mano contra la foto. Cada una corre una vez; la
+   * bandera solo se marca cuando la página está en este aparato, para que un
+   * celular que aún no la tiene la corrija cuando le llegue. */
   if (!merged._u10P110FixV1 && fixU10P110(merged.units)) merged._u10P110FixV1 = true;
+  if (!merged._u10P111FixV1 && fixU10P111(merged.units)) merged._u10P111FixV1 = true;
   return merged;
 }
 
-/* Corrige el vocabulario de la p. 110 contra la foto, palabra por palabra.
- * Solo toca las entradas que siguen como las dejó el análisis; devuelve true
- * si encontró la página. Él aún no había estudiado esas tarjetas, así que
- * cambiar el nombre de una no le quita progreso. */
-function fixU10P110(units) {
-  const u = units && units.a2_10;
-  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(110) &&
-    (x.vocab || []).some(v => v && (v.word === 'offense' || v.word === 'keep your ideas')));
+/* Corrige el vocabulario de una página del libro contra su foto.
+ *   marca   — palabras que solo tiene la versión que salió del análisis: así
+ *             se reconoce la página sin depender del id del lote.
+ *   cambios — { word, example?, set }: la palabra vieja y, si solo cambia el
+ *             ejemplo, el ejemplo viejo. Si ya no coincide, él lo editó y no
+ *             se toca.
+ *   nuevas  — { despues, v }: lo que la página imprime y no salió; entra una
+ *             sola vez, después de la palabra `despues`.
+ * Devuelve true si encontró la página. */
+function fixBookPage(units, fix) {
+  const u = units && units[fix.unit];
+  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(fix.page) &&
+    (x.vocab || []).some(v => v && fix.marca.includes(v.word)));
   if (!b) return false;
+  b.vocab = b.vocab.map(v => {
+    const c = v && fix.cambios.find(x => x.word === v.word && (!x.example || x.example === v.example));
+    return c ? { ...v, ...c.set } : v;
+  });
+  (fix.nuevas || []).forEach(({ despues, v: nueva }) => {
+    if (b.vocab.some(v => v && (v.word || '').toLowerCase() === nueva.word.toLowerCase())) return;
+    const i = b.vocab.findIndex(v => v && v.word === despues);
+    b.vocab.splice(i >= 0 ? i + 1 : b.vocab.length, 0, { difficulty: 'medium', type: 'phrase', ...nueva });
+  });
+  return true;
+}
 
+/* p. 110: un ejemplo al revés del libro y expresiones cortadas. Él aún no
+ * había estudiado esas tarjetas, así que cambiar el nombre de una no le quita
+ * progreso. */
+function fixU10P110(units) {
   // Grace: "you can't just keep doing things the same way and expect different results".
   const GRACE = { example: "You can't just keep doing things the same way and expect different results.",
                   exampleTranslation: 'No puedes simplemente seguir haciendo las cosas de la misma manera y esperar resultados diferentes.' };
-  // Cada cambio lleva la palabra vieja y, si solo cambia el ejemplo, el ejemplo
-  // viejo: si ya no coincide, él lo editó y no se toca.
-  const cambios = [
+  return fixBookPage(units, { unit: 'a2_10', page: 110, marca: ['offense', 'keep your ideas'], cambios: [
     // No está impreso en la página: la IA lo copió del ejemplo de la regla.
     // Adam sí dice "I hate to say it, but…".
     { word: 'to tell you the truth', set: { word: 'I hate to say it, but...', translation: 'odio decirlo, pero...',
@@ -6668,23 +6687,69 @@ function fixU10P110(units) {
       phonetic: '/kip jɔr aɪˈdiəz tə jɔrˈsɛlf/', exampleTranslation: 'Es mejor guardarte tus ideas.' } },
     { word: 'life', example: 'No one does it alone in life.',
       set: { example: "You're never going to be successful in life.", exampleTranslation: 'Nunca vas a tener éxito en la vida.' } },
-  ];
-  b.vocab = b.vocab.map(v => {
-    const c = v && cambios.find(x => x.word === v.word && (!x.example || x.example === v.example));
-    return c ? { ...v, ...c.set } : v;
-  });
+  ], nuevas: [
+    // Katherine la dice y no salió.
+    { despues: 'money', v: { word: "That's just the way it is", translation: 'así son las cosas',
+      phonetic: '/ðæts dʒʌst ðə weɪ ɪt ɪz/', emoji: '🤷',
+      example: "People who don't have money are never successful. That's just the way it is.",
+      exampleTranslation: 'Las personas que no tienen dinero nunca son exitosas. Así son las cosas.' } },
+  ] });
+}
 
-  // Katherine la dice y no salió.
-  const falta = { word: "That's just the way it is", translation: 'así son las cosas',
-    phonetic: '/ðæts dʒʌst ðə weɪ ɪt ɪz/', type: 'phrase', emoji: '🤷',
-    example: "People who don't have money are never successful. That's just the way it is.",
-    exampleTranslation: 'Las personas que no tienen dinero nunca son exitosas. Así son las cosas.',
-    difficulty: 'medium' };
-  if (!b.vocab.some(v => v && (v.word || '').toLowerCase() === falta.word.toLowerCase())) {
-    const i = b.vocab.findIndex(v => v && v.word === 'money');
-    b.vocab.splice(i >= 0 ? i + 1 : b.vocab.length, 0, falta);
-  }
-  return true;
+/* p. 111: el diálogo de Jake y Nicole salió mal leído — "meet tomorrow… on
+ * Ring Street", "how much time they promoted you", "the deadline has a lot on
+ * his plate" (deadline no está en la página) — y faltaban expresiones que el
+ * diálogo sí dice. */
+function fixU10P111(units) {
+  const KING = { example: 'How about we meet in twenty minutes and grab a bite at that new restaurant on King Street?',
+                 exampleTranslation: '¿Qué tal si nos vemos en veinte minutos y comemos algo en ese restaurante nuevo de King Street?' };
+  const VIEJO_KING = 'How about we meet tomorrow and grab a bite at that new restaurant on Ring Street?';
+  const MEETING = { example: 'But remember that meeting I told you about?',
+                    exampleTranslation: '¿Pero te acuerdas de esa reunión de la que te hablé?' };
+  const TIME = { example: "It's about time they promoted you to group manager!",
+                 exampleTranslation: '¡Ya era hora de que te ascendieran a gerente de grupo!' };
+  const VIEJO_TIME = 'I hope they know how lucky they are to have you, how much time they promoted you to group manager!';
+  return fixBookPage(units, { unit: 'a2_10', page: 111, marca: ['has a lot on his plate', 'deadline'], cambios: [
+    { word: 'grab a bite', example: VIEJO_KING, set: KING },
+    { word: 'meet', example: VIEJO_KING, set: KING },
+    { word: 'restaurant', example: VIEJO_KING, set: KING },
+    { word: 'call it a day', example: 'When you call it a day, it means your work is ending.',
+      set: { example: "Believe me, I'd love to call it a day.", exampleTranslation: 'Créeme, me encantaría terminar por hoy.' } },
+    { word: 'has a lot on his plate', set: { word: 'have a lot on your plate', translation: 'tener mucho trabajo, muchas responsabilidades',
+      phonetic: '/hæv ə lɑt ɑn jɔr pleɪt/',
+      example: 'He has a lot on his plate, too.', exampleTranslation: 'Él también tiene mucho trabajo.' } },
+    // No está impreso en la página. Nicole sí dice "I still have tons to do".
+    { word: 'deadline', set: { word: 'have tons to do', translation: 'tener un montón de cosas que hacer',
+      phonetic: '/hæv tʌnz tə du/', type: 'phrase', emoji: '📚',
+      example: "It's next week, and I still have tons to do.",
+      exampleTranslation: 'Es la próxima semana, y todavía tengo un montón de cosas que hacer.' } },
+    { word: 'believe', set: { word: 'Believe me', translation: 'créeme', phonetic: '/bɪˈliv mi/', type: 'phrase',
+      example: "Sorry, I can't. Believe me, I'd love to call it a day.",
+      exampleTranslation: 'Lo siento, no puedo. Créeme, me encantaría terminar por hoy.' } },
+    { word: 'remember', set: MEETING },
+    { word: 'meeting', set: MEETING },
+    { word: 'promoted', set: { word: 'promote', translation: 'ascender', phonetic: '/prəˈmoʊt/', ...TIME } },
+    { word: 'group manager', example: VIEJO_TIME, set: TIME },
+    { word: 'get something from the machine', example: "Listen, I'm just going to get something from the machine and keep working.",
+      set: { example: "I'm just going to get something from the machine and keep working.",
+             exampleTranslation: 'Solo voy a sacar algo de la máquina y seguir trabajando.' } },
+    { word: 'pick you up', set: { word: 'pick up', translation: 'recoger (a alguien)', phonetic: '/pɪk ʌp/',
+      example: "Call me when you're done, and I'll come pick you up.",
+      exampleTranslation: 'Llámame cuando termines y paso a recogerte.' } },
+    { word: 'career', example: 'Write a tip about how to be successful in career.',
+      set: { example: 'Write a tip about how to be successful in your career.',
+             exampleTranslation: 'Escribe un consejo sobre cómo tener éxito en tu carrera profesional.' } },
+  ], nuevas: [
+    { despues: 'promote', v: { word: "It's about time...", translation: 'ya era hora de que...',
+      phonetic: '/ɪts əˈbaʊt taɪm/', emoji: '⏰', ...TIME } },
+    { despues: 'get something from the machine', v: { word: 'go ahead and...', translation: 'adelante, hazlo (sin esperarme)',
+      phonetic: '/ɡoʊ əˈhɛd ənd/', emoji: '👉',
+      example: 'Listen, go ahead and eat.', exampleTranslation: 'Oye, come tú tranquilo.' } },
+    { despues: 'pick up', v: { word: 'Tell you what...', translation: 'te propongo algo...',
+      phonetic: '/tɛl ju wʌt/', emoji: '💡',
+      example: "Tell you what... Call me when you're done, and I'll come pick you up.",
+      exampleTranslation: 'Te propongo algo... Llámame cuando termines y paso a recogerte.' } },
+  ] });
 }
 
 // Debounced save
@@ -9855,14 +9920,20 @@ function loadUnitContent() {
    IMAGE UPLOAD & AI ANALYSIS
    ============================================================ */
 /**
- * Compress image to reduce localStorage usage
- * Resizes large images to max 800px width, jpeg quality 0.6
+ * Reduce la foto antes de guardarla y mandarla a la IA.
+ *
+ * Antes quedaba en 800 px de ancho y calidad 0.6, pensado para cuando las
+ * fotos vivían en localStorage. Con eso la IA leyó mal la letra pequeña del
+ * diálogo de la p. 111 ("Ring Street" por "King Street", "tomorrow" por "in
+ * twenty minutes"). Las fotos ya van a IndexedDB, así que caben más grandes:
+ * 1568 px en el lado largo es lo máximo que aprovecha el modelo del análisis
+ * (más grande, la API la reduce igual), y cuesta unos centavos más por página.
  */
-function compressImage(dataUrl, maxWidth = 800, quality = 0.6) {
+function compressImage(dataUrl, maxSide = 1568, quality = 0.85) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, maxWidth / img.width);
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
       const w = Math.round(img.width * scale);
       const h = Math.round(img.height * scale);
       const canvas = document.createElement('canvas');
