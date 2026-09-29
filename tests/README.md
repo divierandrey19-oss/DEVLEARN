@@ -106,7 +106,9 @@ pages" agrega desde un respaldo solo las páginas que faltan, con sus correccion
 pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que
 eran títulos de lecciones, la "trampa" falsa del if, el error común que decía lo
 contrario de Sophie, traducciones literales. Solo reemplaza textos que siguen
-exactamente como los dejó el análisis, y no toca el vocabulario.
+exactamente como los dejó el análisis. También la p. 112 (explicación y trampa
+al español) y los repetidos de la p. 109 que la p. 112 ya enseña, solo si la
+p. 112 está en el aparato.
 
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la

@@ -339,6 +339,11 @@ const MUTACIONES = [
     reemplazo: `"explanation": "Clear explanation, written for this A2 student`,
   },
   {
+    nombre: 'p. 109: quitar los repetidos aunque la p. 112 no esté',
+    buscar: `  if (!u || !(u.batches || []).some(b => b && (b.pages || []).includes(112))) return false;`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
