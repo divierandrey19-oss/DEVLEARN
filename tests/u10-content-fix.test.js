@@ -20,7 +20,11 @@ const f = h.ejecutar(`
   ${h.extraerFuncion('fixU10P111Content')}
   ${h.extraerFuncion('fixU10P112Content')}
   ${h.extraerFuncion('fixU10P109Dupes')}
-  return { fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes };
+  ${h.extraerFuncion('fixU10P113Content')}
+  ${h.extraerFuncion('fixU10P109Kids')}
+  ${h.extraerFuncion('vocabKey')}
+  return { fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes,
+           fixU10P113Content, fixU10P109Kids, vocabKey };
 `, {});
 
 // Lo que dejó el análisis, copiado de su respaldo.
@@ -132,4 +136,42 @@ test('sin la p. 112 en el aparato, la p. 109 queda como está', () => {
   const m = h.extraerFuncion('migrateState');
   assert.match(m, /if \(!merged\._u10P109DupesV1 && fixU10P109Dupes\(merged\.units\)\) merged\._u10P109DupesV1 = true;/);
   assert.match(m, /if \(!merged\._u10P112ContentV1 && fixU10P112Content\(merged\.units\)\) merged\._u10P112ContentV1 = true;/);
+});
+
+// p. 113: tres tareas de speaking para la misma conversación, y "have kids"
+// repetía "to have kids" de la p. 109 porque solo se comparaba el texto exacto.
+
+test('p. 113: queda una sola tarea de la conversación, más KEEP TALKING', () => {
+  const u = { a2_10: { batches: [{ pages: [113], vocab: [], grammar: [], exercises: [], speakingPrompts: [
+    'Listen again and repeat. Then practice the Conversation Model with a partner.',
+    'CONVERSATION PAIR WORK: Personalize the conversation. Then change roles.',
+    'CHANGE PARTNERS: Personalize the conversation again.',
+    'KEEP TALKING! Ask questions with would like.'] }] } };
+  assert.equal(f.fixU10P113Content(u), true);
+  assert.deepEqual(u.a2_10.batches[0].speakingPrompts, [
+    'CONVERSATION PAIR WORK: Personalize the conversation. Then change roles.',
+    'KEEP TALKING! Ask questions with would like.']);
+});
+
+test('"to have kids" de la p. 109 se va si la p. 113 tiene "have kids"', () => {
+  const u = () => ({ a2_10: { batches: [
+    { pages: [109], vocab: [{ word: 'to have kids' }, { word: 'appealing' }] },
+    { pages: [113], vocab: [{ word: 'have kids' }] } ] } });
+  const con = u();
+  assert.equal(f.fixU10P109Kids(con), true);
+  assert.deepEqual(con.a2_10.batches[0].vocab.map(v => v.word), ['appealing']);
+  const sin = u(); sin.a2_10.batches.pop();
+  assert.equal(f.fixU10P109Kids(sin), false, 'sin la p. 113 no se quita nada');
+  assert.equal(sin.a2_10.batches[0].vocab.length, 2);
+});
+
+test('la app reconoce como repetidas las palabras que solo cambian en "to" o puntuación', () => {
+  assert.equal(f.vocabKey('to have kids'), f.vocabKey('have kids'));
+  assert.equal(f.vocabKey('Congratulations!'), f.vocabKey('congratulations'));
+  assert.equal(f.vocabKey('No offense, but...'), 'no offense, but');
+  assert.notEqual(f.vocabKey('together'), f.vocabKey('gether'), 'solo "to " como palabra aparte');
+  // Y la usa al descartar las palabras que otra página de la unidad ya tiene.
+  const src = h.fuente();
+  assert.match(src, /\.map\(v => vocabKey\(v\.word\)\)\s*\.filter\(Boolean\)\s*\);\s*\/\/ Remove duplicates from this new batch/);
+  assert.match(src, /const key = vocabKey\(v\.word\);\s*return key && !existingWords\.has\(key\);/);
 });
