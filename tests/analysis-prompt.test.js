@@ -66,3 +66,29 @@ function analysisSeccion() {
   const a = analisis.indexOf('━━ PHRASAL VERBS AND FIXED EXPRESSIONS');
   return analisis.slice(a, analisis.indexOf('━━ THE PAGE MARKS', a));
 }
+
+// Lo que salió mal en la gramática y los ejercicios de las pp. 109-111 y venía
+// del prompt mismo: pedía siempre una diferencia con el español (se inventó que
+// "si" lleva subjuntivo), pedía "una segunda frase" sin decir cuál (salió "She
+// told me yesterday…"), no limitaba la gramática "derived" (tres temas extra
+// en una página de expresiones) y no impedía contradecir el libro.
+
+test('la trampa del español solo si es real; si no, vacía', () => {
+  assert.match(analisis, /If there is no real trap, return an empty string: that is a correct answer\./);
+  assert.match(analisis, /Never invent a difference to have one\./);
+  assert.doesNotMatch(analisis, /Grammar explanations must address Spanish interference explicitly/);
+});
+
+test('la frase de contexto sigue la misma situación', () => {
+  assert.match(analisis, /The added sentence must continue the SAME situation, with the same people, and point to the answer\./);
+  assert.match(analisis, /it must continue the same situation and point to the answer\."/);
+});
+
+test('como mucho dos temas "derived" si la página no enseña gramática', () => {
+  assert.match(analisis, /return AT MOST TWO derived\s+points/);
+});
+
+test('nada de lo que la IA escribe puede decir lo contrario del libro', () => {
+  assert.match(analisis, /6\. NEVER CONTRADICT THE PAGE\./);
+  assert.match(analisis, /Plant the\s+error in a sentence whose corrected meaning agrees with the page\./);
+});
