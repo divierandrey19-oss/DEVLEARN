@@ -45,6 +45,8 @@ function montar({ batchId = null, almacen = h.almacenFalso() } = {}) {
     ${h.extraerFuncion('getUnitVocab')}
     ${h.extraerFuncion('batchVocab')}
     ${h.extraerFuncion('fcDeckVocab')}
+    ${h.extraerFuncion('sanitizePageNumbers')}
+    ${h.extraerFuncion('bookPageLabel')}
     ${h.extraerFuncion('batchLabel')}
     ${h.extraerFuncion('todayLocal')}
     ${h.extraerFuncion('dateLocal')}

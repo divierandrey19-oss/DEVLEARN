@@ -244,6 +244,16 @@ const MUTACIONES = [
     reemplazo: "'levels': 1, 'life': 9, 'progress': 3,",
   },
   {
+    nombre: 'Página del libro: que el número leído no se guarde',
+    buscar: `    if (paginas.length) batch.pages = paginas;`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Página del libro: dejar entrar números imposibles',
+    buscar: `                  .filter(n => Number.isInteger(n) && n >= 1 && n <= 999);`,
+    reemplazo: '                  .filter(n => !Number.isNaN(n));',
+  },
+  {
     nombre: 'Flashcards: que Start vuelva a traer toda la unidad cuando la pantalla dijo "N new words"',
     buscar: `  if (!dueOnly && unseen.length > 0) return shuffle(unseen);`,
     reemplazo: '',

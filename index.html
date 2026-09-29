@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-28d -->
+<!-- DEVLEARN_BUILD: 2026-09-29a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-28d';
+const APP_BUILD = '2026-09-29a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5172,6 +5172,7 @@ Among the words that ARE on the page, prefer these over incidental text.
 {
   "unitTitle": "descriptive title based on main topic (max 6 words)",
   "unitDescription": "one sentence summarizing the lesson content",
+  "pageNumbers": "array of the page numbers PRINTED on the photos (usually in a bottom corner, e.g. 109), in the order of the photos; [] if none is readable. Never guess one.",
   "detectedTopics": ["topic1", "topic2", "topic3"],
   "vocabulary": [
     {
@@ -7044,12 +7045,34 @@ function batchVocab(u, batchId) {
 function fcDeckVocab(u) {
   return fc.batchId ? batchVocab(u, fc.batchId) : getUnitVocab(u);
 }
-/* "Page 3" para las que tienen foto, en el orden en que las subió; las que no
- * tienen (vocabulario escrito a mano) usan su propio título. */
+/* El número de página impreso en el libro, tal como lo leyó la IA. Solo pasan
+ * enteros razonables, sin repetir y en orden: un número inventado o basura
+ * sería peor que no tener ninguno. */
+function sanitizePageNumbers(raw) {
+  if (!Array.isArray(raw)) raw = raw == null ? [] : [raw];
+  // "109" o "p. 109" sí; "-3", "abc" o "109a" no.
+  const nums = raw.map(n => typeof n === 'number' ? n
+                   : parseInt((String(n).trim().match(/^(?:p{1,2}\.?\s*)?(\d{1,3})$/i) || [])[1], 10))
+                  .filter(n => Number.isInteger(n) && n >= 1 && n <= 999);
+  return [...new Set(nums)].sort((a, b) => a - b).slice(0, 4);
+}
+/* "p. 109", "pp. 104–105" si son seguidas, "pp. 104, 106" si no. Vacío si la
+ * página no trae número (las que subió antes, o si no se leía). */
+function bookPageLabel(b) {
+  const p = sanitizePageNumbers(b && b.pages);
+  if (!p.length) return '';
+  if (p.length === 1) return `p. ${p[0]}`;
+  const seguidas = p.every((n, i) => i === 0 || n === p[i - 1] + 1);
+  return seguidas ? `pp. ${p[0]}–${p[p.length - 1]}` : `pp. ${p.join(', ')}`;
+}
+/* El número del libro si lo tiene ("p. 109"); si no, "Page 3" en el orden en
+ * que las subió; las que no tienen foto (vocabulario escrito a mano) usan su
+ * propio título. */
 function batchLabel(u, batchId) {
   const batches = u?.batches || [];
   const b = batches.find(x => x.id === batchId);
   if (!b) return '';
+  if (bookPageLabel(b)) return bookPageLabel(b);
   if ((b.images || []).length) {
     return `Page ${batches.filter(x => (x.images || []).length).indexOf(b) + 1}`;
   }
@@ -9834,10 +9857,11 @@ function renderImagePreviews(images) {
     const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
     const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
+    const libro = batchId && u ? bookPageLabel((u.batches || []).find(b => b.id === batchId)) : '';
     return `
     <div class="img-thumb">
-      <img src="${src}" alt="page ${i + 1}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
-      ${n ? `<span class="img-thumb-n">🃏 ${n}</span>` : ''}
+      <img src="${src}" alt="${libro || `page ${i + 1}`}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
+      ${n || libro ? `<span class="img-thumb-n">${libro}${libro && n ? ' · ' : ''}${n ? `🃏 ${n}` : ''}</span>` : ''}
       <button class="img-thumb-rm" onclick="removeUnitImage(${i})" title="Delete this image and its content">✕</button>
     </div>
   `;
@@ -10382,6 +10406,10 @@ async function analyzeWithAI(images, unit, batch) {
     // Persist all generated content INTO THE BATCH (linked to its images)
     batch.title       = parsed.unitTitle || '';
     batch.description = parsed.unitDescription || '';
+    // El número impreso en la página (109), para llamarla como en su libro.
+    // Al regenerar se llena también en las páginas que subió antes.
+    const paginas = sanitizePageNumbers(parsed.pageNumbers);
+    if (paginas.length) batch.pages = paginas;
     batch.topics      = parsed.detectedTopics || [];
     // If batch already has vocab (regeneration mode), keep it — only update grammar/exercises
     const isRegen = batch.vocab && batch.vocab.length > 0;
@@ -12810,7 +12838,7 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
     : 'Unknown';
 
   const thumb = firstImg
-    ? `<div class="batch-section-thumb"><img src="${firstImg}" alt="Page ${pageNum}"/></div>`
+    ? `<div class="batch-section-thumb"><img src="${firstImg}" alt="${bookPageLabel(batch) || `Page ${pageNum}`}"/></div>`
     : `<div class="batch-section-thumb">📄</div>`;
 
   /* The version number describes which prompt generated the grammar. A batch
@@ -12837,7 +12865,7 @@ function batchSectionHeader(batch, batchIndex, allBatches) {
         ${thumb}
         <div>
           <div class="batch-section-label">
-            Page ${pageNum} of ${totalPages} · ${genDate}${versionBadge}
+            ${bookPageLabel(batch) ? `${bookPageLabel(batch)} · ` : ''}Page ${pageNum} of ${totalPages} · ${genDate}${versionBadge}
           </div>
           <div class="batch-section-title">${title}</div>
         </div>
@@ -15604,8 +15632,8 @@ function initSpeakingTest() {
     const hasContent = (b.vocab && b.vocab.length > 0) || (b.grammar && b.grammar.length > 0) || (b.images && b.images.length > 0);
     const prompts = '';
     const statusDot = hasContent
-      ? `<span style="font-size:0.7rem;color:var(--green);font-weight:600;">✅ Lista</span>`
-      : `<span style="font-size:0.7rem;color:#f59e0b;font-weight:600;">⚠️ Regenerar</span>`;
+      ? `<span style="font-size:0.7rem;color:var(--green);font-weight:600;">✅ Ready</span>`
+      : `<span style="font-size:0.7rem;color:#f59e0b;font-weight:600;">⚠️ Regenerate</span>`;
     return `
     <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:8px;">
       <label class="batch-option" style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--surface);border-radius:10px;cursor:pointer;border:1.5px solid ${hasContent ? 'transparent' : '#f59e0b33'};transition:border-color 0.2s;flex:1;"
@@ -15613,7 +15641,7 @@ function initSpeakingTest() {
         <input type="checkbox" value="${i}" class="batch-checkbox" style="margin-top:3px;accent-color:var(--accent);">
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-            <span style="font-weight:600;font-size:0.88rem;">Page ${i + 1} — ${b.title || ''}</span>
+            <span style="font-weight:600;font-size:0.88rem;">${bookPageLabel(b) || `Page ${i + 1}`} — ${b.title || ''}</span>
             ${statusDot}
           </div>
           <div style="font-size:0.75rem;color:var(--text-3);margin-top:2px;">${(b.grammar || []).map(g => g.title).filter(Boolean).slice(0, 3).join(' · ')}</div>
@@ -15729,7 +15757,7 @@ async function startSpeakingTest() {
 
   c.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-3);">
     <div style="font-size:2rem;margin-bottom:12px;">⏳</div>
-    <div>Generando preguntas del examen...</div>
+    <div>Creating the test questions…</div>
   </div>`;
 
   // Collect images from selected batches
@@ -15738,7 +15766,7 @@ async function startSpeakingTest() {
 
   const titles = selectedBatches.map(b => b.title).filter(Boolean);
   const unitTitle = titles.join(' + ') || u.title || 'this unit';
-  const pageLabel = (useAll ? 'The whole unit' : checkedBoxes.map(i => `Page ${i+1}`).join(' + ')) + ': ' + unitTitle;
+  const pageLabel = (useAll ? 'The whole unit' : checkedBoxes.map(i => bookPageLabel(u.batches[i]) || `Page ${i+1}`).join(' + ')) + ': ' + unitTitle;
   speakingState.pageLabel = pageLabel;
 
   /* The real exam card always shows a picture and asks the student to name what
