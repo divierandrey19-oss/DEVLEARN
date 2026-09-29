@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29b -->
+<!-- DEVLEARN_BUILD: 2026-09-29c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29b';
+const APP_BUILD = '2026-09-29c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -16930,11 +16930,11 @@ function renderDebugPanel(u) {
             style="font-size:0.62rem;padding:3px 8px;${isOld ? 'color:var(--amber);border-color:var(--amber);' : ''}"
             onclick="regenerateBatchContent('${current.lid}','${current.uid}','${escapeStr(b.id)}')"
             title="${isOld ? 'Made with an old prompt — regenerate for better content' : 'Regenerate grammar and exercises (keeps vocabulary and progress)'}">
-            ↺ ${isOld ? 'Actualizar' : 'Regenerar'}
+            ↺ ${isOld ? 'Update' : 'Regenerate'}
           </button>` : '';
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">
           <div>
-            <span style="color:var(--text-2);">Batch ${i+1}</span>
+            <span style="color:var(--text-2);">${escapeHtml(batchLabel(u, b.id) || `Batch ${i+1}`)}</span>
             <span style="margin-left:8px;">${b.images?.length||0} img · ${b.vocab?.length||0} words · ${b.grammar?.length||0} grammar</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
