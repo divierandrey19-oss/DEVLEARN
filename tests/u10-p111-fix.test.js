@@ -132,6 +132,6 @@ test('no toca la p. 110, ni un ejemplo que él haya cambiado, ni un aparato sin 
 test('la foto se guarda y se manda con resolución para leer la letra pequeña', () => {
   // A 800 px de ancho y calidad 0.6 leyó "Ring Street" por "King Street".
   const f = h.extraerFuncion('compressImage');
-  assert.match(f, /function compressImage\(dataUrl, maxSide = 1568, quality = 0\.85\)/);
+  assert.match(f, /function compressImage\(dataUrl, maxSide = 2048, quality = 0\.85\)/);
   assert.match(f, /maxSide \/ Math\.max\(img\.width, img\.height\)/, 'por el lado largo: las páginas son verticales');
 });

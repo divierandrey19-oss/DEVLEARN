@@ -84,10 +84,16 @@ expresiones completas, "That's just the way it is" agregada una sola vez, todo
 ejemplo nuevo impreso en la página, y la bandera marcada solo si la página estaba
 en el aparato. Usa `fixBookPage()`, el mismo mecanismo que las páginas siguientes.
 
+`analysis-model.test.js` — Leer las páginas usa Opus 5.5 (lo eligió él; el resto
+de la app sigue en Sonnet 4.5). La respuesta se lee por tipo de bloque, porque
+Opus empieza pensando y leer solo el primer bloque daba vacío; un rechazo del
+filtro de seguridad es el error `REFUSAL`, y `effort` / `fallbacks` solo van en
+la llamada que los pide.
+
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la
 página no imprime, formas base y las expresiones del diálogo que faltaban. Y que
-la foto se guarde y se mande a 1568 px por el lado largo, calidad 0.85 (a 800 px
+la foto se guarde y se mande a 2048 px por el lado largo, calidad 0.85 (a 800 px
 de ancho la IA leyó mal la letra pequeña).
 
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
