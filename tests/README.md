@@ -90,6 +90,13 @@ Opus empieza pensando y leer solo el primer bloque daba vacío; un rechazo del
 filtro de seguridad es el error `REFUSAL`, y `effort` / `fallbacks` solo van en
 la llamada que los pide.
 
+`sync-merge.test.js` — Celular y computador sin perder páginas. El 29 de
+septiembre el computador, abierto desde antes, subió su copia vieja y la unión
+tomó la p. 111 del celular por borrada. Ahora solo borra una página el registro
+explícito de que él la borró (`deletedBatchIds`, unido entre aparatos); cada
+aparato trae la nube antes de subir y al volver a la pestaña; y "Restore missing
+pages" agrega desde un respaldo solo las páginas que faltan, con sus correcciones.
+
 `u10-content-fix.test.js` — La gramática, los ejercicios y el speaking de las
 pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que
 eran títulos de lecciones, la "trampa" falsa del if, el error común que decía lo
