@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29m -->
+<!-- DEVLEARN_BUILD: 2026-09-29n -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29m';
+const APP_BUILD = '2026-09-29n';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6697,6 +6697,8 @@ function migrateState(s) {
   if (!merged._u10P111ContentV1 && fixU10P111Content(merged.units)) merged._u10P111ContentV1 = true;
   if (!merged._u10P112ContentV1 && fixU10P112Content(merged.units)) merged._u10P112ContentV1 = true;
   if (!merged._u10P109DupesV1 && fixU10P109Dupes(merged.units)) merged._u10P109DupesV1 = true;
+  if (!merged._u10P113ContentV1 && fixU10P113Content(merged.units)) merged._u10P113ContentV1 = true;
+  if (!merged._u10P109KidsV1 && fixU10P109Kids(merged.units)) merged._u10P109KidsV1 = true;
   return merged;
 }
 
@@ -6943,6 +6945,26 @@ function fixU10P109Dupes(units) {
   return fixPageContent(units, { unit: 'a2_10', page: 109,
     quitarGramatica: ['would like to + infinitive (expressing wishes)'],
     quitarPalabras: ['to live a long, healthy life'] });
+}
+
+/* p. 113: tres de sus cuatro tareas de speaking eran la misma conversación
+ * (practicarla, personalizarla y repetirla con otro compañero). Él practica
+ * solo, así que queda una, más KEEP TALKING. */
+function fixU10P113Content(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 113, cambios: [
+    ['Listen again and repeat. Then practice the Conversation Model with a partner.', null],
+    ['CHANGE PARTNERS: Personalize the conversation again.', null],
+  ] });
+}
+
+/* "to have kids" (p. 109) y "have kids" (p. 113) eran dos tarjetas de la misma
+ * palabra. Queda la de la p. 113, con mejor ejemplo ("Would you like to have
+ * kids?"). Solo si la p. 113 está en el aparato y la tiene. */
+function fixU10P109Kids(units) {
+  const u = units && units.a2_10;
+  const p113 = u && (u.batches || []).find(b => b && (b.pages || []).includes(113));
+  if (!p113 || !(p113.vocab || []).some(v => v && v.word === 'have kids')) return false;
+  return fixPageContent(units, { unit: 'a2_10', page: 109, quitarPalabras: ['to have kids'] });
 }
 
 // Debounced save
@@ -7369,6 +7391,16 @@ function getUnit(lid, uid) {
 function getUnitVocab(u) {
   if (!u) return [];
   return (u.batches || []).flatMap(b => b.vocab || []);
+}
+/* Clave para saber si dos tarjetas son la misma palabra. Comparar el texto tal
+ * cual dejaba pasar "to have kids" (p. 109) y "have kids" (p. 113) como dos
+ * tarjetas, con progreso separado. Se ignoran mayúsculas, el "to" del
+ * infinitivo al principio y la puntuación del final. */
+function vocabKey(word) {
+  return String(word || '').toLowerCase().trim()
+    .replace(/^to\s+/, '')
+    .replace(/[\s.!?…]+$/, '')
+    .replace(/\s+/g, ' ');
 }
 /* Qué clase de palabra es, para la etiqueta de la tarjeta. El tipo lo pone la
  * IA al analizar la página (noun, verb, adj, adv, phrase, pronoun,
@@ -10740,7 +10772,7 @@ async function analyzeWithAI(images, unit, batch) {
       unit.batches
         .filter(b => b !== batch)                     // other batches only
         .flatMap(b => (b.vocab || []))
-        .map(v => (v.word || '').toLowerCase().trim())
+        .map(v => vocabKey(v.word))
         .filter(Boolean)
     );
 
@@ -10748,7 +10780,7 @@ async function analyzeWithAI(images, unit, batch) {
     if (parsed.vocabulary && existingWords.size > 0) {
       const before = parsed.vocabulary.length;
       parsed.vocabulary = parsed.vocabulary.filter(v => {
-        const key = (v.word || '').toLowerCase().trim();
+        const key = vocabKey(v.word);
         return key && !existingWords.has(key);
       });
       const removed = before - parsed.vocabulary.length;
@@ -20294,7 +20326,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes]
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 

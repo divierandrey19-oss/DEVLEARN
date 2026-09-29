@@ -344,6 +344,11 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Repetidas: volver a comparar el texto exacto ("to have kids" ≠ "have kids")',
+    buscar: `    .replace(/^to\\s+/, '')`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
