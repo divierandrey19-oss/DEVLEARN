@@ -334,6 +334,16 @@ const MUTACIONES = [
     reemplazo: `6. BE CREATIVE.`,
   },
   {
+    nombre: 'Análisis: dejar la explicación de gramática sin idioma',
+    buscar: `"explanation": "Clear explanation IN SPANISH (Colombian), written for this A2 student`,
+    reemplazo: `"explanation": "Clear explanation, written for this A2 student`,
+  },
+  {
+    nombre: 'p. 109: quitar los repetidos aunque la p. 112 no esté',
+    buscar: `  if (!u || !(u.batches || []).some(b => b && (b.pages || []).includes(112))) return false;`,
+    reemplazo: '',
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

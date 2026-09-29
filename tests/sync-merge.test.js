@@ -117,6 +117,6 @@ test('la página recuperada recibe también sus correcciones a mano', () => {
   const restaurar = h.extraerFuncion('restorePagesFromBackup');
   assert.match(restaurar, /applyPageFixes\(state\.units\);/);
   assert.match(h.extraerFuncion('applyPageFixes'),
-    /\[fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content\]/);
+    /\[fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes\]/);
   assert.match(fuente, /onchange="restorePagesFromBackup\(event\)"/);
 });

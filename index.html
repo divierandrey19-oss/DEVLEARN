@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29k -->
+<!-- DEVLEARN_BUILD: 2026-09-29m -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29k';
+const APP_BUILD = '2026-09-29m';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5281,10 +5281,10 @@ Among the words that ARE on the page, prefer these over incidental text.
       "title": "Grammar topic name — the structure this page teaches or prints",
       "source": "book | derived — see the TAUGHT vs USED rule. Be honest.",
       "level": "${level.toUpperCase()}",
-      "explanation": "Clear explanation written specifically for a Colombian Spanish speaker (2-3 sentences). Address differences with Spanish explicitly.",
+      "explanation": "Clear explanation IN SPANISH (Colombian), written for this A2 student, 2-3 sentences. When Spanish works differently, say so; when it works the same, say that.",
       "structure": "Subject + verb + ... pattern, as the page presents it",
       "rule": "The key rule in one sentence, as this page teaches it — not the rule in general. If the page teaches 'should' only for health advice, say so; do not broaden it",
-      "spanishTrap": "One specific mistake Colombian Spanish speakers make with this rule (e.g. confusing ser/estar with 'to be'), or empty string if no significant trap",
+      "spanishTrap": "IN SPANISH: one real mistake Colombian Spanish speakers make with this rule (e.g. confusing ser/estar with 'to be'), or empty string if there is no real trap.",
       "examples": [
         { "en": "Example sentence — copy one from the page if there is one", "es": "Spanish translation" },
         { "en": "Example sentence 2 — page words only", "es": "Spanish translation 2" }
@@ -5388,6 +5388,7 @@ RULES:
 - drillSentences types: "translation" = new Spanish → English; "fill_blank" = sentence with ___ gap; "error_correction" = sentence with one mistake to fix
 - For error_correction drills: the hint field should name the specific rule (e.g. "After modal verbs, use base form")
 - exercises: test the vocabulary and grammar of THESE pages, using only words printed on them. Same rule as drills — new sentences, book words.
+- LANGUAGE: the grammar "explanation" and "spanishTrap" are written in Spanish — the student reads them to understand, and at A2 an explanation in English is one more thing to decode. English sentences quoted inside them stay in English.
 - spanishTrap: a REAL mistake Colombian Spanish speakers make with THIS structure — false cognates, ser/estar confusion, missing articles, direct translation errors. If there is no real trap, return an empty string: that is a correct answer. Never state what Spanish does unless you are certain. "Spanish uses the subjunctive after 'si'" is false for "si trabajas duro" (present); a trap built on a wrong claim about Spanish teaches the student a mistake they never make, and hides the real one (here: "If you will work").
 - Grammar explanations: when Spanish really works differently, say so explicitly ("Unlike Spanish, English requires..."). When it works the same way, say that — it is useful to know. Never invent a difference to have one.
 - exercises: mix ALL types — variety matters. Make as many as the page's OWN content genuinely supports, and no more. Count the distinct sentences and target words the page actually prints, then make roughly that many items: a dense grammar page with a rule box and a practice section supports 10-14; a warm-up or a photo page with a handful of printed sentences supports 4-6, and padding it to 13 forces you into invented, low-quality items. Fewer good items beat more weak ones. NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
@@ -6694,6 +6695,8 @@ function migrateState(s) {
   if (!merged._u10P109ContentV1 && fixU10P109Content(merged.units)) merged._u10P109ContentV1 = true;
   if (!merged._u10P110ContentV1 && fixU10P110Content(merged.units)) merged._u10P110ContentV1 = true;
   if (!merged._u10P111ContentV1 && fixU10P111Content(merged.units)) merged._u10P111ContentV1 = true;
+  if (!merged._u10P112ContentV1 && fixU10P112Content(merged.units)) merged._u10P112ContentV1 = true;
+  if (!merged._u10P109DupesV1 && fixU10P109Dupes(merged.units)) merged._u10P109DupesV1 = true;
   return merged;
 }
 
@@ -6825,13 +6828,17 @@ function fixU10P111(units) {
  * `cambios` son pares [texto viejo, texto nuevo]: se reemplaza cualquier campo
  * cuyo valor sea EXACTAMENTE el viejo (si él lo editó, ya no coincide y no se
  * toca). Con nuevo = null, el texto se quita de su lista (una tarea de
- * speaking que la página no pone). El vocabulario no se toca aquí.
+ * speaking que la página no pone). El vocabulario no se toca con `cambios`.
+ * `quitarGramatica` (títulos) y `quitarPalabras` quitan lo que otra página
+ * de la unidad ya enseña mejor.
  * Devuelve true si la página está en el aparato. */
 function fixPageContent(units, fix) {
   const u = units && units[fix.unit];
   const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(fix.page));
   if (!b) return false;
-  const nuevo = new Map(fix.cambios);
+  if (fix.quitarGramatica) b.grammar = (b.grammar || []).filter(g => !(g && fix.quitarGramatica.includes(g.title)));
+  if (fix.quitarPalabras) b.vocab = (b.vocab || []).filter(v => !(v && fix.quitarPalabras.includes(v.word)));
+  const nuevo = new Map(fix.cambios || []);
   const arreglar = x => {
     if (typeof x === 'string') return nuevo.has(x) ? nuevo.get(x) : x;
     if (Array.isArray(x)) return x.map(arreglar).filter(y => y !== null);
@@ -6907,6 +6914,35 @@ function fixU10P111Content(units) {
     ["Call me when you're done, and I'll come ___ you up. We need to be home before the meeting.",
      "Tell you what... Call me when you're done, and I'll come ___ you up."],
   ] });
+}
+
+/* p. 112, la primera que leyó Opus: salió muy bien, pero la explicación y la
+ * trampa de la gramática quedaron en inglés (el prompt no decía el idioma).
+ * Él quiere el contenido de estudio en español. */
+function fixU10P112Content(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 112, cambios: [
+    ["Use would like + to + base verb to express wishes for the future. It is like 'me gustaría' in Spanish, but in English the person is the subject: 'I'd like', not 'to me would like'. The negative is wouldn't like, and the contractions are 'd like and wouldn't like.",
+     "Usamos would like + to + verbo en forma base para expresar deseos para el futuro. Es como 'me gustaría', pero en inglés la persona es el sujeto: 'I'd like', no 'to me would like'. La forma negativa es wouldn't like, y las contracciones son 'd like y wouldn't like."],
+    ["Spanish 'me gustaría mudarme' has no 'to', so students say 'I'd like move' and forget the 'to'.",
+     "En español decimos 'me gustaría mudarme', sin nada entre los dos verbos, y por eso se olvida el 'to': 'I'd like move' ✗ → 'I'd like to move' ✓."],
+    ["In questions, put would before the subject: 'Would you like to retire?' Short answers use would: 'Yes, I would. / No, I wouldn't.' In information questions the question word comes first, but when Who is the subject there is no change in word order. Spanish only uses intonation, so the inversion is new.",
+     "En las preguntas, would va antes del sujeto: 'Would you like to retire?' Las respuestas cortas usan would: 'Yes, I would. / No, I wouldn't.' En las preguntas de información la palabra de pregunta va primero; pero cuando Who es el sujeto, el orden no cambia. En español la pregunta se marca solo con la entonación, así que este cambio de orden es nuevo."],
+    ["Answering 'Yes, I like' or 'Yes, I would like' instead of the short answer 'Yes, I would.'",
+     "Responder 'Yes, I like' o 'Yes, I would like', como en español ('sí, me gustaría'). La respuesta corta es 'Yes, I would.'"],
+  ] });
+}
+
+/* p. 109: lo que la p. 112 ya enseña mejor. El tema "would like to" era
+ * "derived" (escrito por la IA) y la p. 112 lo trae del recuadro GRAMMAR del
+ * libro; "to live a long, healthy life" repetía la tarjeta "live a long,
+ * healthy life" de la p. 112. Solo si la p. 112 está en el aparato: sin ella,
+ * quitarlo dejaría la unidad sin ese tema. */
+function fixU10P109Dupes(units) {
+  const u = units && units.a2_10;
+  if (!u || !(u.batches || []).some(b => b && (b.pages || []).includes(112))) return false;
+  return fixPageContent(units, { unit: 'a2_10', page: 109,
+    quitarGramatica: ['would like to + infinitive (expressing wishes)'],
+    quitarPalabras: ['to live a long, healthy life'] });
 }
 
 // Debounced save
@@ -20258,7 +20294,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content]
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
