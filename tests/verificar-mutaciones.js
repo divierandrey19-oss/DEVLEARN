@@ -324,6 +324,16 @@ const MUTACIONES = [
     reemplazo: `const tumbas = new Set([...(state.deletedBatchIds || [])]);`,
   },
   {
+    nombre: 'Análisis: volver a exigir siempre una diferencia con el español',
+    buscar: `If there is no real trap, return an empty string: that is a correct answer.`,
+    reemplazo: `Always name a trap.`,
+  },
+  {
+    nombre: 'Análisis: quitar la regla de no contradecir el libro',
+    buscar: `6. NEVER CONTRADICT THE PAGE.`,
+    reemplazo: `6. BE CREATIVE.`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',

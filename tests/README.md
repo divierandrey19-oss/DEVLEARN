@@ -76,7 +76,10 @@ los ejemplos del libro palabra por palabra (en la p. 110 uno decía lo contrario
 que las expresiones vayan completas ("No offense, but…", "keep your ideas to
 yourself"), que "work hard" no cuente como phrasal verb y que los verbos vayan en
 forma base, y que las frases citadas como ejemplo en la regla no se cuelen como
-vocabulario si la página no las imprime.
+vocabulario si la página no las imprime. Y, por lo que salió en la gramática de las
+pp. 109-111: la trampa del español solo si es real, la frase de contexto de un
+completar sigue la misma situación, como mucho dos temas "derived" en una página
+que no enseña gramática, y nada de lo que escribe puede contradecir el libro.
 
 `u10-p110-fix.test.js` — La corrección única de la p. 110 (Unit 10), hecha
 comparando su respaldo con la foto: ningún ejemplo al revés del libro,

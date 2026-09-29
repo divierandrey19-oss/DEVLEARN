@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29i -->
+<!-- DEVLEARN_BUILD: 2026-09-29j -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29i';
+const APP_BUILD = '2026-09-29j';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5170,6 +5170,14 @@ NO point about comparatives, because no comparative is printed.
 If a page teaches no grammar and prints no structure worth explaining, return an empty
 grammar list. That is a correct answer, not a failure.
 
+HOW MANY "derived" POINTS. Every point is study time for a student with an exam in weeks,
+and derived points compete with what the page actually teaches. When the page teaches no
+grammar — a vocabulary, expressions, dialogue or reading page — return AT MOST TWO derived
+points: the structures its sentences lean on most. When the page does teach grammar, add a
+derived point only if its structure is central to the page. A page that teaches idioms
+("grab a bite", "call it a day") is about the idioms; four derived points on should, have to
+and deserve bury them.
+
 ━━ TASKS THAT NEED THE AUDIO ARE NOT EXERCISES ━━
 
 Sections marked LISTEN, LISTEN TO INFER, LISTEN FOR DETAILS, LISTEN TO ACTIVATE
@@ -5294,7 +5302,7 @@ Among the words that ARE on the page, prefer these over incidental text.
         },
         {
           "type": "fill_blank",
-          "prompt": "An English sentence with ___ testing the same rule, built only from words on these pages, in a sentence the page does not contain. Include enough context so only ONE answer is correct — add a second sentence or context clue if needed.",
+          "prompt": "An English sentence with ___ testing the same rule, built only from words on these pages, in a sentence the page does not contain. Include enough context so only ONE answer is correct — add a second sentence or context clue if needed; it must continue the same situation and point to the answer.",
           "answer": "just the missing word",
           "hint": ""
         },
@@ -5355,6 +5363,14 @@ output — a description of a mistake is not a sentence to write.
 5. OPTIONS IN THE RIGHT LANGUAGE. If you ask which ENGLISH word means something, every
    option must be an English word. Never offer Spanish words as answers to an English
    question.
+6. NEVER CONTRADICT THE PAGE. When you reuse a sentence from the page — in a "correct"
+   version, an answer, a drill or an example — keep what it says; never flip its meaning.
+   The page prints "It's best to keep your ideas to yourself"; a commonError whose correct
+   form is "Don't keep your ideas to yourself" is good grammar and teaches the student the
+   reverse of the book. Plant the error in a sentence whose corrected meaning agrees with
+   the page. New sentences of your own may say other things — on a page of opinions, an
+   opinion that differs from one printed there is fine; the student is asked to agree or
+   disagree.
 
 RULES:
 - vocabulary: ONLY words and phrases printed on these pages. No proper names, no duplicates. However many the page has — do not pad, do not round up to a nicer number.
@@ -5372,11 +5388,11 @@ RULES:
 - drillSentences types: "translation" = new Spanish → English; "fill_blank" = sentence with ___ gap; "error_correction" = sentence with one mistake to fix
 - For error_correction drills: the hint field should name the specific rule (e.g. "After modal verbs, use base form")
 - exercises: test the vocabulary and grammar of THESE pages, using only words printed on them. Same rule as drills — new sentences, book words.
-- spanishTrap: identify false cognates, ser/estar confusion, missing articles, direct translation errors — traps specific to Colombian Spanish speakers
-- Grammar explanations must address Spanish interference explicitly (e.g. "Unlike Spanish, English requires...")
+- spanishTrap: a REAL mistake Colombian Spanish speakers make with THIS structure — false cognates, ser/estar confusion, missing articles, direct translation errors. If there is no real trap, return an empty string: that is a correct answer. Never state what Spanish does unless you are certain. "Spanish uses the subjunctive after 'si'" is false for "si trabajas duro" (present); a trap built on a wrong claim about Spanish teaches the student a mistake they never make, and hides the real one (here: "If you will work").
+- Grammar explanations: when Spanish really works differently, say so explicitly ("Unlike Spanish, English requires..."). When it works the same way, say that — it is useful to know. Never invent a difference to have one.
 - exercises: mix ALL types — variety matters. Make as many as the page's OWN content genuinely supports, and no more. Count the distinct sentences and target words the page actually prints, then make roughly that many items: a dense grammar page with a rule box and a practice section supports 10-14; a warm-up or a photo page with a handful of printed sentences supports 4-6, and padding it to 13 forces you into invented, low-quality items. Fewer good items beat more weak ones. NEVER invent content to reach a number: recombining the page's words into new sentences is right, adding words the page doesn't have is not.
   • multiple_choice: 4 options, one correct. Vary: sometimes ask "which is INCORRECT?", use "all of the above" occasionally. answer = exact option text
-  • fill_blank: full sentence with __, answer = just the missing word. CRITICAL: the sentence must include enough context so that ONLY ONE answer is correct. Add a second sentence or a context clue if needed. BAD: "My ___ computer is very fast." (brother's, teacher's, mom's all work). GOOD: "My ___ computer is very fast. She uses it to prepare her classes every day." (only teacher's fits). EXTRA CRITICAL for family vocabulary: be mathematically precise. If the sentence says "two girls and one boy", the answer must be "nieces and a nephew" NOT "nieces and nephews". Count carefully and use exact singular/plural forms.
+  • fill_blank: full sentence with __, answer = just the missing word. CRITICAL: the sentence must include enough context so that ONLY ONE answer is correct. Add a second sentence or a context clue if needed. BAD: "My ___ computer is very fast." (brother's, teacher's, mom's all work). GOOD: "My ___ computer is very fast. She uses it to prepare her classes every day." (only teacher's fits). The added sentence must continue the SAME situation, with the same people, and point to the answer. A sentence about someone else or something else only adds noise: "I ___ I'd like to live a long, healthy life. She told me yesterday that she wants kids." has a second sentence that says nothing about the gap. EXTRA CRITICAL for family vocabulary: be mathematically precise. If the sentence says "two girls and one boy", the answer must be "nieces and a nephew" NOT "nieces and nephews". Count carefully and use exact singular/plural forms.
   • translation: Spanish sentence → English. answer = natural English translation (accept minor variations)
   • error_correction: show a sentence with ONE grammar error. question = "Find and correct the mistake: [wrong sentence]". answer = the corrected sentence. explanation = what the rule is
   • sentence_builder: provide 5-6 scrambled words. question = "Build a sentence with these words:". words = ["array","of","scrambled","words"]. answer = the correct sentence
