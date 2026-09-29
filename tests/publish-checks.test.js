@@ -67,3 +67,14 @@ test('el formato del sello permite compararlo como texto', () => {
     `"${m[1]}" no cumple YYYY-MM-DD + letra, así que la comparación de texto ` +
     'dejaría de ser cronológica');
 });
+
+test('Settings muestra la versión arriba, no "—"', () => {
+  // Se quedaba en "DEV LEARN · —": nada llenaba #app-build, y es justo donde él
+  // mira qué versión tiene abierta.
+  const src = h.fuente();
+  const ini = src.indexOf('async function checkDeployStatus(');
+  const f = src.slice(ini, src.indexOf('\n}\n', ini));
+  assert.ok(ini > 0, 'no se encontró checkDeployStatus');
+  assert.match(f, /document\.getElementById\('app-build'\);\s*if \(topEl\) topEl\.textContent = APP_BUILD;/);
+  assert.doesNotMatch(f, /Consultando GitHub/, 'la interfaz va en inglés');
+});
