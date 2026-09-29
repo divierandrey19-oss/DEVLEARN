@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29a -->
+<!-- DEVLEARN_BUILD: 2026-09-29b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4889,7 +4889,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29a';
+const APP_BUILD = '2026-09-29b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5154,6 +5154,23 @@ it looks like a proper noun. If a menu lists "Russian salad" and the speaking ta
 "order from this menu", then "Russian salad" is language the student must produce — it is
 lesson content, not a stray name. The test is the task, not the capital letter.
 
+━━ PHRASAL VERBS AND FIXED EXPRESSIONS: KEEP THEM WHOLE ━━
+
+This student is learning to speak, and phrasal verbs and fixed expressions are the
+chunks that make speech fluent. Actively look for them on the page, even when they
+are not in bold or in a box.
+- A phrasal verb is a verb plus a particle that together have their own meaning:
+  work out, give up, pick up, take care of, get along, find out. Extract it as ONE
+  item, exactly as printed ("work out", never just "work"), with "type": "phrasal verb".
+- A fixed expression is a group of words used together as a unit: to tell you the
+  truth, make a ton of money, a long, healthy life, have a good time. Extract it as
+  ONE item with "type": "phrase".
+- If the page prints the phrasal verb in the past or with an object in the middle
+  ("worked it out", "picked the dog up"), give its base form ("work out", "pick up")
+  and copy the printed sentence as the example.
+- The grounding rule still applies: only phrasal verbs and expressions that are
+  printed on these pages. Never add one because it is common or related.
+
 ━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
 
 Textbooks flag what they are teaching. Treat every marked item as target language and
@@ -5179,7 +5196,7 @@ Among the words that ARE on the page, prefer these over incidental text.
       "word": "the English word or phrase exactly as printed on the page",
       "translation": "Spanish (Colombia)",
       "phonetic": "/IPA/",
-      "type": "noun|verb|adj|adv|phrase|pronoun|instruction",
+      "type": "noun|verb|phrasal verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
       "example": "if a sentence on the page uses this word, copy that sentence. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
       "exampleTranslation": "Spanish translation of example",
@@ -12015,7 +12032,7 @@ For EACH word give:
 - exampleTranslation: that sentence in Spanish
 
 Respond ONLY with a JSON array, one object per word, in the same order:
-[{"word":"...","translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}]` }],
+[{"word":"...","translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|phrasal verb|adjective|phrase"}]` }],
     maxTokens: 180 * words.length + 200,
     isJSON: true,
     timeoutMs: 45000,
@@ -12383,7 +12400,7 @@ Give:
 - exampleTranslation: that sentence in Spanish
 
 Respond ONLY with JSON:
-{"translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|adjective|phrase"}` }],
+{"translation":"...","phonetic":"/.../","emoji":"X","example":"...","exampleTranslation":"...","type":"noun|verb|phrasal verb|adjective|phrase"}` }],
       maxTokens: 200,
       isJSON: true,
       timeoutMs: 30000,
