@@ -65,6 +65,10 @@ sigan quitando.
 si no las nuevas (lo que dice la pantalla), y la unidad entera solo cuando ya
 no hay nada nuevo.
 
+`book-pages.test.js` — Las páginas se llaman como en su libro ("p. 109"): que
+solo entren números razonables, que el nombre salga bien y que el análisis los
+pida y los guarde.
+
 `verbs.test.js` — El contenido de Verbs: que ningún verbo esté en dos familias,
 que el ejemplo resalte el pasado que pide la tarjeta, que los regulares
 terminen en -ed y estén en la familia de su sonido, y que cada familia tenga
