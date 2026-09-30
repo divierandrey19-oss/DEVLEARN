@@ -483,6 +483,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `        }</span><button class="tx-flip" onclick="flipSentence(\${si})"`,
   },
   {
+    nombre: 'volver a guardar abierta la lista del curso',
+    buscar: `  const expanded = window.__courseOpen === true;`,
+    reemplazo: `  const expanded = state.courseTrackerOpen === true;`,
+  },
+  {
+    nombre: 'volver a pintar los niveles en el Dashboard',
+    buscar: `  renderCalendar();\n  updateNavBadges();`,
+    reemplazo: `  renderCalendar();\n  document.getElementById('dash-levels').innerHTML = '';\n  updateNavBadges();`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

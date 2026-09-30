@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-30c -->
+<!-- DEVLEARN_BUILD: 2026-09-30d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -761,6 +761,10 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   margin-bottom: 22px;
 }
 @media (max-width: 920px) { .dash-grid { grid-template-columns: 1fr; } }
+.section-title.dash-section { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin: 24px 0 10px; }
+.section-title.dash-section:first-child { margin-top: 2px; }
+.quick-row.dash-shortcuts { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 600px) { .quick-row.dash-shortcuts { grid-template-columns: 1fr; } }
 
 .continue-card {
   background: var(--surface);
@@ -3984,47 +3988,45 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 
     <!-- ===== DASHBOARD ===== -->
     <div class="page active" id="page-dashboard">
-      <!-- Study stopwatch + daily total -->
-      <div id="study-timer"></div>
-      <!-- Exam countdown — set the date in Settings -->
-      <div id="exam-countdown"></div>
-      <!-- Reto de 20 días grabándose — renderRecChallenge() -->
-      <div id="rec-challenge"></div>
+      <!-- Ordenado con él: arriba lo que toca hoy, luego el curso, luego el
+           progreso. Se quitaron los niveles (están en Levels), la tarjeta que
+           repetía "continuar Unit 10" y el quiz y Focus de los accesos. -->
+
+      <div class="section-title dash-section">Today</div>
       <!-- Repaso espaciado de los textos aprendidos — renderTextReview() -->
       <div id="text-review"></div>
+      <!-- Reto de 20 días grabándose — renderRecChallenge() -->
+      <div id="rec-challenge"></div>
+      <div class="continue-card" id="continue-card" style="margin-bottom:14px;">
+        <div class="cc-label" id="cc-label">Continue where you left off</div>
+        <div class="cc-title" id="cc-title">Start your first lesson</div>
+        <div class="cc-sub" id="cc-sub">Choose a level and upload book pages to begin.</div>
+        <div class="cc-progress"><div class="cc-progress-bar" id="cc-progress" style="width:0%"></div></div>
+        <div class="cc-meta">
+          <span id="cc-meta-progress">0% complete</span>
+          <span id="cc-meta-time">0 min studied</span>
+        </div>
+        <!-- Smart action buttons — injected by JS -->
+        <div id="cc-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
+      </div>
+
+      <div class="section-title dash-section">My course</div>
+      <!-- Exam countdown — set the date in Settings -->
+      <div id="exam-countdown"></div>
       <!-- Course syllabus tracker — remaining classes only -->
       <div id="course-tracker"></div>
-      <!-- Smart hero — content injected by renderDashboard() -->
-      <div class="hero" id="dash-hero">
-        <div class="hero-content" id="dash-hero-content">
-          <!-- populated by JS -->
+
+      <div class="section-title dash-section">Progress</div>
+      <!-- Study stopwatch + daily total -->
+      <div id="study-timer"></div>
+      <div class="streak-board" style="margin-bottom:14px;">
+        <div class="streak-board-header">
+          <div class="streak-board-title">Streak</div>
+          <div class="streak-board-flame" id="dash-streak">0 🔥</div>
         </div>
+        <div class="streak-board-sub" id="streak-sub">This week</div>
+        <div id="calendar"></div>
       </div>
-
-      <div class="dash-grid">
-        <div class="continue-card" id="continue-card">
-          <div class="cc-label" id="cc-label">Continue where you left off</div>
-          <div class="cc-title" id="cc-title">Start your first lesson</div>
-          <div class="cc-sub" id="cc-sub">Choose a level and upload book pages to begin.</div>
-          <div class="cc-progress"><div class="cc-progress-bar" id="cc-progress" style="width:0%"></div></div>
-          <div class="cc-meta">
-            <span id="cc-meta-progress">0% complete</span>
-            <span id="cc-meta-time">0 min studied</span>
-          </div>
-          <!-- Smart action buttons — injected by JS -->
-          <div id="cc-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
-        </div>
-
-        <div class="streak-board">
-          <div class="streak-board-header">
-            <div class="streak-board-title">Streak</div>
-            <div class="streak-board-flame" id="dash-streak">0 🔥</div>
-          </div>
-          <div class="streak-board-sub" id="streak-sub">This week</div>
-          <div id="calendar"></div>
-        </div>
-      </div>
-
       <div class="stats-row">
         <div class="stat-tile">
           <div class="stat-tile-icon">📚</div>
@@ -4048,8 +4050,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         </div>
       </div>
 
-      <div class="section-title">Quick access</div>
-      <div class="quick-row">
+      <div class="section-title dash-section">Shortcuts</div>
+      <div class="quick-row dash-shortcuts">
         <button class="quick-card" onclick="openDailyReview()">
           <div class="quick-card-icon" style="background:var(--accent-glow);color:var(--accent);">🧠</div>
           <div class="quick-card-text">
@@ -4066,14 +4068,6 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
           </div>
           <div class="quick-card-arrow">→</div>
         </button>
-        <button class="quick-card" onclick="quickQuiz()">
-          <div class="quick-card-icon" style="background:var(--purple-bg);color:var(--purple);">⚡</div>
-          <div class="quick-card-text">
-            <div class="quick-card-title">Quick quiz</div>
-            <div class="quick-card-sub">5-minute test</div>
-          </div>
-          <div class="quick-card-arrow">→</div>
-        </button>
         <button class="quick-card" onclick="navigate('tutor')">
           <div class="quick-card-icon" style="background:var(--green-bg);color:var(--green);">🎙️</div>
           <div class="quick-card-text">
@@ -4082,19 +4076,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
           </div>
           <div class="quick-card-arrow">→</div>
         </button>
-        <button class="quick-card" onclick="openFocusMode()">
-          <div class="quick-card-icon" style="background:var(--amber-bg);color:var(--amber);">🎯</div>
-          <div class="quick-card-text">
-            <div class="quick-card-title">Focus mode</div>
-            <div class="quick-card-sub">Distraction-free</div>
-          </div>
-          <div class="quick-card-arrow">→</div>
-        </button>
       </div>
-
-      <div class="section-title">Your levels</div>
-      <div class="section-sub">Each level contains 10 units. Tap to explore.</div>
-      <div class="levels-grid" id="dash-levels"></div>
     </div>
 
     <!-- ===== LEVELS PAGE ===== -->
@@ -4920,7 +4902,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-30c';
+const APP_BUILD = '2026-09-30d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -8905,7 +8887,11 @@ function renderCourseTracker() {
       return !u || !(u.batches || []).length;
     });
 
-  const expanded = state.courseTrackerOpen === true;
+  /* Abierta solo mientras la mira: al volver al Dashboard arranca con las
+   * próximas 3. Guardada abierta, la lista entera (con las ya vistas) medía
+   * tres pantallas y él sentía el Dashboard desordenado. */
+  const expanded = window.__courseOpen === true;
+  const doneOpen = expanded && window.__courseDoneOpen === true;
   // Expanded means "show me the whole course": capping at 12 silently hid the
   // rest with nothing on screen to suggest more existed.
   const visible = expanded ? remaining : remaining.slice(0, 3);
@@ -8926,13 +8912,12 @@ function renderCourseTracker() {
   el.innerHTML = `
     <div style="border:1px solid var(--border);background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
-        <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 MY COURSE · ${remaining.length} classes left</div>
+        <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;letter-spacing:.04em;">📅 ${remaining.length} classes left</div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openBulkSchedule()" title="Schedule all">📆 All</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openBulkTime()" title="Change the time without changing the days">🕕</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="copyScheduleText()" title="Copy the schedule">📋</button>
           <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="openClearDates()" title="Delete dates">🗑</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseTrackerOpen=${expanded ? 'false' : 'true'};save();renderCourseTracker();">${expanded ? '▲' : '▼'}</button>
         </div>
       </div>
       ${(() => {
@@ -8968,16 +8953,20 @@ function renderCourseTracker() {
               onclick="scheduleClass(${c.id})" title="Set date and time">📆</button>
           </div>
         </div>`).join('')}
+      ${remaining.length > 3 ? `
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;font-size:0.74rem;" onclick="window.__courseOpen=${expanded ? 'false' : 'true'};renderCourseTracker();">
+          ${expanded ? '▲ Show less' : `▼ See all ${remaining.length} classes`}
+        </button>` : ''}
       ${missingPages.length ? `
         <div style="font-size:0.72rem;color:var(--amber, #d29922);margin-top:8px;">
           📷 You went to ${missingPages.map(c => escapeHtml(c.pages)).join(', ')} but those pages are not in the app — upload them to practice them.
         </div>` : ''}
-      ${doneList.length ? `
+      ${expanded && doneList.length ? `
         <div style="margin-top:10px;">
-          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="state.courseDoneOpen=${state.courseDoneOpen ? 'false' : 'true'};save();renderCourseTracker();">
-            ✓ ${doneList.length} vista${doneList.length !== 1 ? 's' : ''} ${state.courseDoneOpen ? '▲' : '▼'}
+          <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;" onclick="window.__courseDoneOpen=${doneOpen ? 'false' : 'true'};renderCourseTracker();">
+            ✓ ${doneList.length} done ${doneOpen ? '▲' : '▼'}
           </button>
-          ${state.courseDoneOpen ? doneList.map(c => `
+          ${doneOpen ? doneList.map(c => `
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);opacity:0.7;">
               <span style="color:var(--green);flex-shrink:0;">✓</span>
               <div style="flex:1;min-width:0;font-size:0.78rem;text-decoration:line-through;">
@@ -9840,7 +9829,6 @@ function renderDashboard() {
   renderRecChallenge();
   renderTextReview();
   renderCourseTracker();
-  const h = new Date().getHours();
   const now = Date.now();
   const todayStr = todayLocal();
 
@@ -9856,7 +9844,6 @@ function renderDashboard() {
   const lastLvl      = lastU ? LEVELS.find(l => l.id === lastU.lid) : null;
   const lastPct      = lastU ? calcUnitProgress(lastU) : 0;
   const lastScores   = lastU ? (lastU.examScores || []) : [];
-  const lastMastered = lastU ? Object.values(lastU.fcProgress || {}).filter(p => p.score === 2).length : 0;
   const hasContent   = lastVocab.length > 0;
   const isFirstTime  = !lastU && totalWords === 0;
 
@@ -9864,75 +9851,6 @@ function renderDashboard() {
   const topWeakArea  = Object.entries(state.weakAreas || {})
     .filter(([,v]) => v > 1)
     .sort((a, b) => b[1] - a[1])[0];
-
-  // ── Smart greeting ────────────────────────────────────────────
-  let greeting, heroTitle, heroSub, heroCTA;
-
-  if (isFirstTime) {
-    // Brand new user
-    greeting  = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-    heroTitle = 'Your AI English<br>classroom starts here';
-    heroSub   = 'Take a photo of any page from your American Schoolway book and our AI builds your complete lesson — vocabulary, grammar, exercises, and flashcards.';
-    heroCTA   = `<button class="btn btn-primary btn-lg" onclick="navigate('levels')">Get started →</button>`;
-
-  } else if (!studiedToday) {
-    // Has data, hasn't studied today
-    const daysSinceLast = state.studyDates.length > 0
-      ? Math.floor((now - new Date(state.studyDates[state.studyDates.length - 1])) / 86400000)
-      : null;
-
-    greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-
-    if (daysSinceLast === 1) {
-      heroTitle = `Ready to continue?`;
-      heroSub   = hasContent
-        ? `${lastLvl ? lastLvl.name + ' · Unit ' + lastU.uid : 'Your last unit'} is waiting — ${lastVocab.length} words, ${lastExercises.length} exercises.`
-        : `Pick up where you left off.`;
-    } else if (daysSinceLast > 1) {
-      heroTitle = `Welcome back`;
-      heroSub   = `You've been away ${daysSinceLast} days. ${hasContent ? `Your ${lastVocab.length} words are still here — let's review them.` : 'Pick a unit and keep going.'}`;
-    } else {
-      heroTitle = `Continue your<br>English journey`;
-      heroSub   = hasContent
-        ? `${lastVocab.length} words extracted from your book. Review them, practice exercises, and test yourself.`
-        : 'Upload your American Schoolway book pages to start your personalized learning experience.';
-    }
-
-    heroCTA = hasContent
-      ? `<button class="btn btn-primary btn-lg" onclick="continueLastUnit()">▶ Continue — ${lastLvl ? lastLvl.name + ' U' + lastU.uid : 'last unit'}</button>
-         <button class="btn btn-ghost btn-lg" onclick="navigate('levels')">Browse levels</button>`
-      : `<button class="btn btn-primary btn-lg" onclick="navigate('levels')">Start studying →</button>`;
-
-  } else {
-    // Already studied today
-    greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-
-    if (streak >= 7) {
-      heroTitle = `${streak} days strong 🔥`;
-      heroSub   = `Incredible discipline. You've built a real streak — keep going and this becomes permanent.`;
-    } else if (lastMastered > 0 && hasContent) {
-      heroTitle = `${lastMastered} word${lastMastered !== 1 ? 's' : ''} mastered today`;
-      heroSub   = `${lastVocab.length - lastMastered} more to go in this unit. ${topWeakArea ? `Focus on "${topWeakArea[0]}" — you've missed it ${topWeakArea[1]} times.` : 'Keep studying to complete the unit.'}`;
-    } else {
-      heroTitle = `Good session today`;
-      heroSub   = hasContent
-        ? `${lastVocab.length} words in ${lastLvl ? lastLvl.name + ' Unit ' + lastU.uid : 'your unit'}. Try the exercises or test yourself with an exam.`
-        : 'Keep going — consistency is everything.';
-    }
-
-    heroCTA = hasContent
-      ? `<button class="btn btn-primary btn-lg" onclick="continueLastUnit()">▶ Keep studying</button>
-         ${lastExercises.length > 0 ? `<button class="btn btn-ghost btn-lg" onclick="continueLastUnit();setTimeout(()=>showUnitTab('exam'),300)">Take exam →</button>` : ''}`
-      : `<button class="btn btn-primary btn-lg" onclick="navigate('levels')">Explore levels →</button>`;
-  }
-
-  // ── Render hero ───────────────────────────────────────────────
-  document.getElementById('dash-hero-content').innerHTML = `
-    <div class="hero-greeting">${greeting}</div>
-    <div class="hero-title" style="margin-bottom:12px;">${heroTitle}</div>
-    <div class="hero-sub">${heroSub}</div>
-    <div class="hero-cta">${heroCTA}</div>
-  `;
 
   // ── Stats ─────────────────────────────────────────────────────
   animateCounter(document.getElementById('st-words'), totalWords);
@@ -9982,6 +9900,9 @@ function renderDashboard() {
     document.getElementById('cc-meta-progress').textContent = '';
     document.getElementById('cc-meta-time').textContent = formatMinutes(totalStudyMinutes()) + ' total';
     document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Browse levels →</button>`;
+  } else {
+    // Primera vez: el saludo grande ya no está, así que el botón para empezar va aquí.
+    document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Get started →</button>`;
   }
 
   // ── Smart quick cards ─────────────────────────────────────────
@@ -10023,9 +9944,9 @@ function renderDashboard() {
     document.getElementById('qc-tutor-sub').textContent = `Practice "${topWeakArea[0]}"`;
   }
 
-  // ── Calendar & levels ─────────────────────────────────────────
+  // ── Calendar ──────────────────────────────────────────────────
+  // Los niveles ya no van aquí: están en Levels (+ Study).
   renderCalendar();
-  renderLevelsGrid('dash-levels');
   updateNavBadges();
 }
 
