@@ -473,6 +473,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  return (ub - ua) || (pa - pb) || (ta - tb);`,
   },
   {
+    nombre: 'que Listen de una frase lea el texto entero',
+    buscar: `  speak(st.sentences[si], st.rate);\n}`,
+    reemplazo: `  speak(st.sentences.join(' '), st.rate);\n}`,
+  },
+  {
+    nombre: 'no abrir el menú de la frase',
+    buscar: `        }</span><button class="tx-flip" onclick="sentenceMenu(\${si}, this)"`,
+    reemplazo: `        }</span><button class="tx-flip" onclick="flipSentence(\${si})"`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-30b -->
+<!-- DEVLEARN_BUILD: 2026-09-30c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4920,7 +4920,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-30b';
+const APP_BUILD = '2026-09-30c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12065,6 +12065,54 @@ function flipSentence(si) {
   renderTextReader();
 }
 
+/* El botón de cada frase abre un menú: escucharla o voltearla. Él quería oír
+ * una frase sola, y la única forma era Listen, que lee el texto entero. */
+function sentenceMenu(si, btn) {
+  const st = _txState;
+  const ov = document.getElementById('text-overlay');
+  if (!st || !ov) return;
+  closeSentenceMenu();
+  const t = readerItem();
+  const tieneES = !!(t && (t.translation || [])[si]);
+  const volteada = st.flippedES && st.flippedES.has(si);
+  const r = btn.getBoundingClientRect();
+  const ancho = 200;
+  const left = Math.max(8, Math.min(r.right - ancho, window.innerWidth - ancho - 8));
+  const abajo = r.bottom + 120 < window.innerHeight;
+  const menu = document.createElement('div');
+  menu.id = 'tx-sent-menu';
+  menu.style.cssText = 'position:fixed;inset:0;z-index:950;';
+  menu.onclick = (e) => { if (e.target === menu) closeSentenceMenu(); };
+  menu.innerHTML = `
+    <div style="position:fixed;left:${left}px;${abajo ? `top:${r.bottom + 4}px` : `bottom:${window.innerHeight - r.top + 4}px`};width:${ancho}px;
+                background:var(--bg-2);background-image:linear-gradient(var(--surface),var(--surface));border:1px solid var(--border-2);border-radius:12px;padding:6px;box-shadow:0 8px 24px #0008;display:flex;flex-direction:column;gap:4px;">
+      <button class="btn btn-primary btn-sm" style="width:100%;padding:10px;" onclick="listenSentence(${si})">🔊 Listen</button>
+      ${tieneES ? `<button class="btn btn-ghost btn-sm" style="width:100%;padding:10px;" onclick="closeSentenceMenu();flipSentence(${si})">🔄 ${volteada ? 'Back to English' : 'Flip to Spanish'}</button>` : ''}
+    </div>`;
+  ov.appendChild(menu);
+}
+
+function closeSentenceMenu() {
+  document.getElementById('tx-sent-menu')?.remove();
+}
+
+/* Lee solo esa frase, en inglés aunque esté volteada, y deja el cursor ahí:
+ * ◀ y 🔁 siguen desde esa frase. Si el texto entero estaba sonando, lo para. */
+function listenSentence(si) {
+  const st = _txState;
+  closeSentenceMenu();
+  if (!st || !st.sentences[si]) return;
+  if (st.playing) {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    st.playing = false;
+    const b = document.getElementById('tx-play');
+    if (b) b.textContent = '▶ Listen';
+  }
+  st.current = si;
+  highlightSentence(si);
+  speak(st.sentences[si], st.rate);
+}
+
 function renderTextReader() {
   const st = _txState;
   if (!st) return;
@@ -12083,7 +12131,7 @@ function renderTextReader() {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
-        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${(t.translation || []).length ? ' · 🔄 flips the sentence' : ''}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${(t.translation || []).length ? ' · 🔄 listen to or flip a sentence' : ' · 🔊 listen to a sentence'}</div>
       </div>
       <button class="btn btn-sm" id="tx-speak-toggle" onclick="toggleSpeakMode()"
         title="Count this time as speaking practice"
@@ -12107,7 +12155,7 @@ function renderTextReader() {
          * is precisely the crutch he is trying to drop — the eye goes to the
          * Spanish and the effort stops. */
         if (flipped && es) {
-          return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;color:var(--text-3);font-style:italic;">${escapeHtml(es)}</span><button class="tx-flip" onclick="flipSentence(${si})" style="background:transparent;border:0;color:var(--accent);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button> `;
+          return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;color:var(--text-3);font-style:italic;">${escapeHtml(es)}</span><button class="tx-flip" onclick="sentenceMenu(${si}, this)" title="Listen or flip" style="background:transparent;border:0;color:var(--accent);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button> `;
         }
         return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
           sent.split(/(\s+)/).map(tok => {
@@ -12121,7 +12169,7 @@ function renderTextReader() {
             }
             return `<span onclick="lookupWord(this,this.dataset.w)" data-w="${escapeStr(clean)}" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
           }).join('')
-        }</span>${es ? `<button class="tx-flip" onclick="flipSentence(${si})" title="See translation" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button>` : ''} `;
+        }</span><button class="tx-flip" onclick="sentenceMenu(${si}, this)" title="Listen or flip" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">${es ? '🔄' : '🔊'}</button> `;
       }).join('')}
     </div>
 

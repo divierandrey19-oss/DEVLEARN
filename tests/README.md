@@ -117,6 +117,11 @@ con traducción, máximo 150 palabras (lo pidió), con lo que él contó de su v
 (no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
 `SEED_VERSION`.
 
+`sentence-menu.test.js` — Escuchar una sola frase del texto: el botón 🔄 de
+cada frase abre un menú con 🔊 Listen (solo esa frase, y el cursor queda ahí
+para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había que
+escuchar el texto entero.
+
 `text-review.test.js` — El repaso espaciado de los textos aprendidos, para que
 no se le olviden los de la unidad anterior: al marcar ✅ vuelve mañana; si se lo
 sabe, cada vez más espaciado (3, 7, 14, 30, 60 días); si se le olvidaron partes,
