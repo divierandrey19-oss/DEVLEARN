@@ -5,8 +5,9 @@
  * siguiente, se le olvidaban los de la anterior ("tengo que buscar un plan para
  * que no se me olviden los textos de la Unit 9"). Ahora cada texto marcado ✅
  * vuelve cada vez más espaciado: si se lo sabe, tarda más en volver; si se le
- * olvidaron partes, vuelve mañana. Los que ya tenía aprendidos se reparten uno
- * por día, empezando por la unidad más reciente, para no caerle todos de golpe.
+ * olvidaron partes, vuelve mañana. Solo las Units 9 y 10, las que más le sirven
+ * para el speaking (lo pidió él). Los que ya tenía aprendidos se reparten uno
+ * por día, de la última página hacia atrás, para no caerle todos de golpe.
  */
 'use strict';
 
@@ -23,6 +24,8 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('textReviewIntervals')}
     ${h.extraerFuncion('addDaysLocal')}
     ${h.extraerFuncion('startTextReview')}
+    ${h.extraerFuncion('textInReview')}
+    ${h.extraerFuncion('textReviewDue')}
     ${h.extraerFuncion('scheduleTextReview')}
     ${h.extraerFuncion('textReviewOrder')}
     ${h.extraerFuncion('seedTextReviews')}
@@ -73,6 +76,13 @@ test('si se le olvidaron partes, vuelve mañana y empieza de nuevo', () => {
   assert.deepEqual(state.texts[0].review, { step: 0, due: '2026-10-01', last: HOY });
 });
 
+test('un texto de otra unidad se marca ✅ pero no entra al repaso', () => {
+  const { state, toggleTextMastered } = montar({ texts: [texto('a', 'U7 · pág 73', { mastered: false })] });
+  toggleTextMastered('a');
+  assert.equal(state.texts[0].mastered, true);
+  assert.equal(state.texts[0].review, undefined);
+});
+
 test('un texto pendiente no se puede marcar como repasado', () => {
   const { state, markTextReview } = montar({ texts: [texto('a', 'U9 · pág 97', { mastered: false })] });
   markTextReview('a', true);
@@ -93,26 +103,31 @@ function suBiblioteca() {
   return [
     texto('daily', 'Daily speaking training'),
     texto('u5', 'U5 · pág 49'),
-    texto('u8b', 'U8 · pág 86 - 87'),
-    texto('u8a', 'U8 · pág 85'),
+    texto('u8', 'U8 · pág 85'),
     texto('u9c', 'U9 · pág 100 - 101'),
     texto('u9a', 'U9 · pág 97'),
     texto('u9b', 'U9 · pág 98 - 99'),
     texto('u9x', 'U9 · pág 106 - 107', { mastered: false }),
+    texto('u10a', 'U10 · pág 109'),
   ];
 }
 
-test('se reparten uno por día: la Unit 9 primero, en el orden del libro', () => {
+test('se reparten uno por día, de la última página hacia atrás', () => {
   const { state, seedTextReviews } = montar({ texts: suBiblioteca() });
-  assert.equal(seedTextReviews(state.texts, HOY), 7);
+  assert.equal(seedTextReviews(state.texts, HOY), 4);
   const fecha = id => state.texts.find(t => t.id === id).review.due;
-  assert.equal(fecha('u9a'), '2026-09-30', 'la p. 97 hoy');
-  assert.equal(fecha('u9b'), '2026-10-01');
-  assert.equal(fecha('u9c'), '2026-10-02');
-  assert.equal(fecha('u8a'), '2026-10-03', 'luego la Unit 8');
-  assert.equal(fecha('u8b'), '2026-10-04');
-  assert.equal(fecha('u5'), '2026-10-05');
-  assert.equal(fecha('daily'), '2026-10-06', 'lo que no es de una unidad, al final');
+  assert.equal(fecha('u10a'), '2026-09-30', 'la Unit 10 hoy');
+  assert.equal(fecha('u9c'), '2026-10-01', 'luego la Unit 9 desde su última página');
+  assert.equal(fecha('u9b'), '2026-10-02');
+  assert.equal(fecha('u9a'), '2026-10-03', 'la p. 97 al final');
+});
+
+test('solo entran las Units 9 y 10: las demás no se repasan', () => {
+  const { state, seedTextReviews } = montar({ texts: suBiblioteca() });
+  seedTextReviews(state.texts, HOY);
+  for (const id of ['daily', 'u5', 'u8']) {
+    assert.equal(state.texts.find(t => t.id === id).review, undefined, `${id} no debía entrar`);
+  }
 });
 
 test('los pendientes no entran al repaso', () => {
@@ -140,7 +155,8 @@ test('lo que toca hoy: lo atrasado primero, sin lo futuro ni lo pendiente', () =
   const { textReviewsDue } = montar();
   const lista = [
     texto('hoy', 'U9 · pág 98 - 99', { review: { step: 0, due: HOY } }),
-    texto('atrasado', 'U8 · pág 85', { review: { step: 1, due: '2026-09-28' } }),
+    texto('atrasado', 'U10 · pág 109', { review: { step: 1, due: '2026-09-28' } }),
+    texto('otraUnidad', 'U8 · pág 85', { review: { step: 0, due: HOY } }),
     texto('manana', 'U9 · pág 97', { review: { step: 0, due: '2026-10-01' } }),
     texto('pendiente', 'U9 · pág 100 - 101', { mastered: false, review: { step: 0, due: HOY } }),
   ];

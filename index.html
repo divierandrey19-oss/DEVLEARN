@@ -11612,7 +11612,7 @@ function renderTexts() {
                 <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
                   ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} words · ${splitSentences(t.body).length} sentences
                 </div>
-                ${t.mastered && t.review && t.review.due ? (t.review.due <= hoy
+                ${textReviewDue(t) ? (t.review.due <= hoy
                   ? `<div style="font-size:0.72rem;font-weight:700;color:var(--amber, #d29922);margin-top:4px;">📅 Review today</div>`
                   : `<div style="font-size:0.7rem;color:var(--text-3);margin-top:4px;">📅 Next review ${textReviewWhen(t.review.due, hoy)}</div>`) : ''}
               </div>
@@ -11625,7 +11625,7 @@ function renderTexts() {
             <button class="btn ${t.mastered ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
               ▶ Practice
             </button>
-            ${t.mastered && t.review && t.review.due && t.review.due <= hoy ? `
+            ${textReviewDue(t) && t.review.due <= hoy ? `
               <div style="display:flex;gap:8px;margin-top:8px;">
                 <button class="btn btn-primary btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', true)">✅ I remembered it</button>
                 <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', false)">🔁 I forgot parts</button>
@@ -11678,13 +11678,15 @@ function toggleTextMastered(id) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!t) return;
   t.mastered = !t.mastered;
-  // Aprendido no es para siempre: desde hoy entra al repaso espaciado.
-  if (t.mastered) startTextReview(t, todayLocal());
+  // Aprendido no es para siempre: desde hoy entra al repaso espaciado
+  // (solo las unidades que repasa, ver textInReview).
+  const repasa = t.mastered && textInReview(t);
+  if (repasa) startTextReview(t, todayLocal());
   else delete t.review;
   save();
   renderTexts();
   renderTextReview();
-  toast(t.mastered ? '✅ You know it · first review tomorrow' : '○ Back to pending');
+  toast(repasa ? '✅ You know it · first review tomorrow' : t.mastered ? '✅ You know it' : '○ Back to pending');
 }
 
 /* Repaso espaciado de los textos aprendidos. Él se aprendía los textos de una
@@ -11714,9 +11716,21 @@ function scheduleTextReview(t, recordado, hoy) {
   return pasos[step];
 }
 
-// Unidad más reciente primero (la que más fácil se olvida al pasar a la
-// siguiente) y, dentro de la unidad, en el orden del libro. Lo que no es de
-// una unidad ("Daily speaking training") va al final.
+/* Solo repasa las Units 9 y 10: son las que más le sirven para el speaking
+ * del examen. Lo decidió él; los textos de las demás siguen marcándose ✅ sin
+ * entrar al repaso. La unidad sale del título ("U9 · pág 97"). */
+function textInReview(t) {
+  const u = ((t && t.title) || '').match(/^\s*U(\d+)\b/i);
+  return !!u && [9, 10].includes(Number(u[1]));
+}
+
+// La fecha de su próximo repaso, o null si no está en el repaso.
+function textReviewDue(t) {
+  return t && t.mastered && textInReview(t) && t.review && t.review.due ? t.review.due : null;
+}
+
+// Él lo pidió así: de la última página hacia atrás. Unidad más reciente
+// primero y, dentro de la unidad, la página más alta primero.
 function textReviewOrder(a, b) {
   const clave = t => {
     const title = t.title || '';
@@ -11725,17 +11739,17 @@ function textReviewOrder(a, b) {
     return [u ? Number(u[1]) : -1, p ? Number(p[1]) : 0, t.ts || 0];
   };
   const [ua, pa, ta] = clave(a), [ub, pb, tb] = clave(b);
-  return (ub - ua) || (pa - pb) || (ta - tb);
+  return (ub - ua) || (pb - pa) || (tb - ta);
 }
 
 /* Los que ya estaban aprendidos antes de que existiera el repaso no tienen
- * fecha. Todos para hoy serían 19 textos de golpe: se reparten uno por día,
- * empezando por la unidad más reciente. Solo toca los que no tienen fecha,
+ * fecha. Todos para hoy serían varios de golpe: se reparten uno por día,
+ * empezando por la última página. Solo toca los que no tienen fecha,
  * así que correrlo en cada arranque no cambia nada ya programado, y un texto
  * marcado en un aparato con una versión vieja también recibe la suya. */
 function seedTextReviews(texts, hoy) {
   const sinFecha = (texts || [])
-    .filter(t => t && t.mastered && !(t.review && t.review.due))
+    .filter(t => t && t.mastered && textInReview(t) && !(t.review && t.review.due))
     .sort(textReviewOrder);
   sinFecha.forEach((t, i) => {
     t.review = { step: 0, due: addDaysLocal(hoy, i), last: null };
@@ -11745,7 +11759,7 @@ function seedTextReviews(texts, hoy) {
 
 function textReviewsDue(texts, hoy) {
   return (texts || [])
-    .filter(t => t && t.mastered && t.review && t.review.due && t.review.due <= hoy)
+    .filter(t => textReviewDue(t) && textReviewDue(t) <= hoy)
     .sort((a, b) => (a.review.due < b.review.due ? -1 : a.review.due > b.review.due ? 1 : textReviewOrder(a, b)));
 }
 
@@ -11759,7 +11773,7 @@ function textReviewWhen(due, hoy) {
 
 function markTextReview(id, recordado) {
   const t = (state.texts || []).find(x => x.id === id);
-  if (!t || !t.mastered) return;
+  if (!textReviewDue(t)) return;
   const dias = scheduleTextReview(t, recordado, todayLocal());
   save();
   renderTexts();
@@ -11773,7 +11787,7 @@ function renderTextReview() {
   const el = document.getElementById('text-review');
   if (!el) return;
   const hoy = todayLocal();
-  const conFecha = (state.texts || []).filter(t => t && t.mastered && t.review && t.review.due);
+  const conFecha = (state.texts || []).filter(textReviewDue);
   if (!conFecha.length) { el.innerHTML = ''; return; }
   const due = textReviewsDue(state.texts, hoy);
   const caja = 'border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 16px;margin-bottom:14px;';

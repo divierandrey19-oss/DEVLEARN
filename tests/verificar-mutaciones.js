@@ -459,8 +459,18 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'olvidar programar el repaso al marcar un texto ✅',
-    buscar: `  if (t.mastered) startTextReview(t, todayLocal());`,
+    buscar: `  if (repasa) startTextReview(t, todayLocal());`,
     reemplazo: ``,
+  },
+  {
+    nombre: 'repasar los textos de todas las unidades',
+    buscar: `  return !!u && [9, 10].includes(Number(u[1]));`,
+    reemplazo: `  return true;`,
+  },
+  {
+    nombre: 'repasar desde la primera página y no desde la última',
+    buscar: `  return (ub - ua) || (pb - pa) || (tb - ta);`,
+    reemplazo: `  return (ub - ua) || (pa - pb) || (ta - tb);`,
   },
   {
     nombre: 'no repartir los textos aprendidos al arrancar',
