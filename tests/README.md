@@ -117,6 +117,13 @@ con traducción, máximo 150 palabras (lo pidió), con lo que él contó de su v
 (no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
 `SEED_VERSION`.
 
+`text-review.test.js` — El repaso espaciado de los textos aprendidos, para que
+no se le olviden los de la unidad anterior: al marcar ✅ vuelve mañana; si se lo
+sabe, cada vez más espaciado (3, 7, 14, 30, 60 días); si se le olvidaron partes,
+mañana otra vez. Solo las Units 9 y 10, las que más le sirven para el speaking
+(lo pidió él). Los que ya tenía aprendidos se reparten uno por día, de la última
+página hacia atrás, sin mover nada ya programado.
+
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de
 "Scan for facts" tomadas como hechos, el ejercicio que adivinaba el audio, y

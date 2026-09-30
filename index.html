@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-30a -->
+<!-- DEVLEARN_BUILD: 2026-09-30b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3990,6 +3990,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div id="exam-countdown"></div>
       <!-- Reto de 20 días grabándose — renderRecChallenge() -->
       <div id="rec-challenge"></div>
+      <!-- Repaso espaciado de los textos aprendidos — renderTextReview() -->
+      <div id="text-review"></div>
       <!-- Course syllabus tracker — remaining classes only -->
       <div id="course-tracker"></div>
       <!-- Smart hero — content injected by renderDashboard() -->
@@ -4918,7 +4920,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-30a';
+const APP_BUILD = '2026-09-30b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6674,6 +6676,9 @@ function migrateState(s) {
       t.trans = `Primero, me encantan las actividades al aire libre, y mi favorita es caminar, porque es fácil y puedo hacerlo cerca de mi casa. Por ejemplo, salgo a caminar casi todos los fines de semana en un parque cerca de mi casa, y no necesito equipo especial, así que no me cuesta dinero. Luego, también voy de camping a veces con mi hermano y unos amigos, y es muy divertido. Si vas de camping, tienes que tener una carpa, y también deberías llevar ropa abrigada, porque en Colombia las montañas son frías en la noche. Por último, tengo bicicleta, así que salgo a montar por mi barrio, pero a decir verdad, no uso casco. Sé que debería usar uno, porque es más seguro, y es el equipo correcto para esa actividad. Pero algunas actividades no me llaman la atención. La escalada en roca me da un poco de miedo, así que no quiero intentarla, y tampoco tengo el equipo para eso. Pero hay una actividad de agua que me gustaría probar, y es navegar a vela, porque se ve relajante. Si vas a navegar, tienes que usar un chaleco salvavidas, y también deberías ir con alguien que sepa navegar, ya que puede ser peligroso. Por último, nunca lo hice, pero me gustaría probarlo algún día, y creo que las actividades de agua, como navegar a vela, son más relajantes que las actividades de tierra exigentes, como la escalada en roca.`;
     }
   }
+  // Repaso espaciado: los textos aprendidos sin fecha reciben una, repartidos
+  // uno por día. Sin bandera a propósito: solo toca los que no tienen fecha.
+  seedTextReviews(merged.texts, todayLocal());
   merged.standaloneTutorMemory = merged.standaloneTutorMemory || [];
   merged.settings = merged.settings || base.settings;
   merged.version = 4;
@@ -9833,6 +9838,7 @@ function renderDashboard() {
   renderStudyTimer();
   renderExamCountdown();
   renderRecChallenge();
+  renderTextReview();
   renderCourseTracker();
   const h = new Date().getHours();
   const now = Date.now();
@@ -11539,6 +11545,8 @@ function renderTexts() {
   if (!c) return;
   const list = (state.texts || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const sabidos = list.filter(t => t.mastered).length;
+  const hoy = todayLocal();
+  const porRepasar = textReviewsDue(list, hoy).length;
 
   /* Group by whatever comes before the "·" in the title — "U6 · pág 70-71"
    * groups under "U6", "Daily speaking training" groups with its siblings.
@@ -11564,7 +11572,7 @@ function renderTexts() {
       and pronunciation, or tap ▶ to practice shadowing.
     </div>
     ${list.length ? `<div style="font-size:0.74rem;color:${sabidos === list.length ? 'var(--green)' : 'var(--text-3)'};margin-bottom:10px;">
-      ✅ ${sabidos} of ${list.length} learned
+      ✅ ${sabidos} of ${list.length} learned${porRepasar ? ` · <span style="color:var(--amber, #d29922);font-weight:700;">📅 ${porRepasar} to review today</span>` : ''}
     </div>` : ''}
     <button class="btn btn-primary" style="width:100%;padding:12px;margin-bottom:18px;" onclick="openAddText()">
       ➕ Paste a text
@@ -11578,6 +11586,7 @@ function renderTexts() {
       const open = state.textGroupsOpen[g.key] === true;
       const gDone = g.items.filter(t => t.mastered).length;
       const allDone = gDone === g.items.length;
+      const gDue = textReviewsDue(g.items, hoy).length;
       return `
       <div style="margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -11587,6 +11596,7 @@ function renderTexts() {
                    background:${allDone ? 'var(--green-glow, #2ea04322)' : 'var(--card)'};color:var(--text-1);text-align:left;">
             <span style="font-size:0.9rem;">${open ? '▾' : '▸'}</span>
             <span style="flex:1;font-weight:700;font-size:0.92rem;${allDone ? 'color:var(--green);' : ''}">${escapeHtml(g.key)}</span>
+            ${gDue ? `<span style="font-size:0.72rem;font-weight:700;color:var(--amber, #d29922);">📅 ${gDue}</span>` : ''}
             <span style="font-size:0.72rem;color:${allDone ? 'var(--green)' : 'var(--text-3)'};">${gDone}/${g.items.length} ${allDone ? '✅' : ''}</span>
           </button>
           <button onclick="copyTextGroup('${escapeStr(g.key)}')" title="Copy the ${g.items.length} texts from ${escapeStr(g.key)}"
@@ -11602,6 +11612,9 @@ function renderTexts() {
                 <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">
                   ${escapeHtml(t.date || '')} · ${(t.body || '').trim().split(/\s+/).filter(Boolean).length} words · ${splitSentences(t.body).length} sentences
                 </div>
+                ${textReviewDue(t) ? (t.review.due <= hoy
+                  ? `<div style="font-size:0.72rem;font-weight:700;color:var(--amber, #d29922);margin-top:4px;">📅 Review today</div>`
+                  : `<div style="font-size:0.7rem;color:var(--text-3);margin-top:4px;">📅 Next review ${textReviewWhen(t.review.due, hoy)}</div>`) : ''}
               </div>
               <div style="display:flex;gap:6px;flex-shrink:0;">
                 <button class="btn btn-ghost btn-sm" style="font-size:0.66rem;padding:2px 8px;${t.mastered ? 'color:var(--green);' : ''}" onclick="toggleTextMastered('${t.id}')" title="${t.mastered ? 'Mark as pending' : 'I know it'}">${t.mastered ? '✅' : '○'}</button>
@@ -11612,6 +11625,11 @@ function renderTexts() {
             <button class="btn ${t.mastered ? 'btn-ghost' : 'btn-primary'}" style="width:100%;padding:10px;margin-top:10px;" onclick="openText('${t.id}')">
               ▶ Practice
             </button>
+            ${textReviewDue(t) && t.review.due <= hoy ? `
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', true)">✅ I remembered it</button>
+                <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', false)">🔁 I forgot parts</button>
+              </div>` : ''}
           </div>`).join('') : ''}
       </div>`;
     }).join('')}
@@ -11660,9 +11678,153 @@ function toggleTextMastered(id) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!t) return;
   t.mastered = !t.mastered;
+  // Aprendido no es para siempre: desde hoy entra al repaso espaciado
+  // (solo las unidades que repasa, ver textInReview).
+  const repasa = t.mastered && textInReview(t);
+  if (repasa) startTextReview(t, todayLocal());
+  else delete t.review;
   save();
   renderTexts();
-  toast(t.mastered ? '✅ You know it' : '○ Back to pending');
+  renderTextReview();
+  toast(repasa ? '✅ You know it · first review tomorrow' : t.mastered ? '✅ You know it' : '○ Back to pending');
+}
+
+/* Repaso espaciado de los textos aprendidos. Él se aprendía los textos de una
+ * unidad para la clase y, al pasar a la siguiente, se le olvidaban los de la
+ * anterior. Cada texto marcado ✅ vuelve cada vez más espaciado: si se lo
+ * sabe, el siguiente repaso tarda más; si se le olvidaron partes, vuelve
+ * mañana. t.review = { step, due: 'YYYY-MM-DD', last }. Va dentro del texto,
+ * así que viaja con él entre el celular y el computador. */
+function textReviewIntervals() {
+  return [1, 3, 7, 14, 30, 60];
+}
+
+function addDaysLocal(fecha, n) {
+  const [y, m, d] = String(fecha).split('-').map(Number);
+  return dateLocal(new Date(y, m - 1, d + n));
+}
+
+function startTextReview(t, hoy) {
+  t.review = { step: 0, due: addDaysLocal(hoy, textReviewIntervals()[0]), last: hoy };
+}
+
+function scheduleTextReview(t, recordado, hoy) {
+  const pasos = textReviewIntervals();
+  const antes = t.review && Number.isInteger(t.review.step) ? t.review.step : 0;
+  const step = recordado ? Math.min(antes + 1, pasos.length - 1) : 0;
+  t.review = { step, due: addDaysLocal(hoy, pasos[step]), last: hoy };
+  return pasos[step];
+}
+
+/* Solo repasa las Units 9 y 10: son las que más le sirven para el speaking
+ * del examen. Lo decidió él; los textos de las demás siguen marcándose ✅ sin
+ * entrar al repaso. La unidad sale del título ("U9 · pág 97"). */
+function textInReview(t) {
+  const u = ((t && t.title) || '').match(/^\s*U(\d+)\b/i);
+  return !!u && [9, 10].includes(Number(u[1]));
+}
+
+// La fecha de su próximo repaso, o null si no está en el repaso.
+function textReviewDue(t) {
+  return t && t.mastered && textInReview(t) && t.review && t.review.due ? t.review.due : null;
+}
+
+// Él lo pidió así: de la última página hacia atrás. Unidad más reciente
+// primero y, dentro de la unidad, la página más alta primero.
+function textReviewOrder(a, b) {
+  const clave = t => {
+    const title = t.title || '';
+    const u = title.match(/^\s*U(\d+)\b/i);
+    const p = title.match(/p[áa]g\.?\s*(\d+)/i);
+    return [u ? Number(u[1]) : -1, p ? Number(p[1]) : 0, t.ts || 0];
+  };
+  const [ua, pa, ta] = clave(a), [ub, pb, tb] = clave(b);
+  return (ub - ua) || (pb - pa) || (tb - ta);
+}
+
+/* Los que ya estaban aprendidos antes de que existiera el repaso no tienen
+ * fecha. Todos para hoy serían varios de golpe: se reparten uno por día,
+ * empezando por la última página. Solo toca los que no tienen fecha,
+ * así que correrlo en cada arranque no cambia nada ya programado, y un texto
+ * marcado en un aparato con una versión vieja también recibe la suya. */
+function seedTextReviews(texts, hoy) {
+  const sinFecha = (texts || [])
+    .filter(t => t && t.mastered && textInReview(t) && !(t.review && t.review.due))
+    .sort(textReviewOrder);
+  sinFecha.forEach((t, i) => {
+    t.review = { step: 0, due: addDaysLocal(hoy, i), last: null };
+  });
+  return sinFecha.length;
+}
+
+function textReviewsDue(texts, hoy) {
+  return (texts || [])
+    .filter(t => textReviewDue(t) && textReviewDue(t) <= hoy)
+    .sort((a, b) => (a.review.due < b.review.due ? -1 : a.review.due > b.review.due ? 1 : textReviewOrder(a, b)));
+}
+
+function textReviewWhen(due, hoy) {
+  if (!due || due <= hoy) return 'today';
+  const [y1, m1, d1] = hoy.split('-').map(Number);
+  const [y2, m2, d2] = due.split('-').map(Number);
+  const n = Math.round((new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1)) / 86400000);
+  return n === 1 ? 'tomorrow' : `in ${n} days`;
+}
+
+function markTextReview(id, recordado) {
+  const t = (state.texts || []).find(x => x.id === id);
+  if (!textReviewDue(t)) return;
+  const dias = scheduleTextReview(t, recordado, todayLocal());
+  save();
+  renderTexts();
+  renderTextReview();
+  toast(recordado
+    ? `✅ Great! Next review in ${dias} day${dias === 1 ? '' : 's'}`
+    : '🔁 No problem — it comes back tomorrow');
+}
+
+function renderTextReview() {
+  const el = document.getElementById('text-review');
+  if (!el) return;
+  const hoy = todayLocal();
+  const conFecha = (state.texts || []).filter(textReviewDue);
+  if (!conFecha.length) { el.innerHTML = ''; return; }
+  const due = textReviewsDue(state.texts, hoy);
+  const caja = 'border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 16px;margin-bottom:14px;';
+
+  if (!due.length) {
+    const next = conFecha.slice().sort((a, b) => (a.review.due < b.review.due ? -1 : 1))[0];
+    el.innerHTML = `
+      <div style="${caja}display:flex;align-items:center;gap:12px;">
+        <div style="font-size:1.4rem;">📚</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.72rem;color:var(--text-3);">Text review</div>
+          <div style="font-weight:700;font-size:0.9rem;color:var(--green);">✓ Nothing to review today</div>
+          <div style="font-size:0.72rem;color:var(--text-3);">Next: ${escapeHtml(next.title || 'Text')} · ${textReviewWhen(next.review.due, hoy)}</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const t = due[0];
+  const resto = due.length - 1;
+  el.innerHTML = `
+    <div style="${caja}border-color:var(--amber, #d29922);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-size:1.4rem;">📚</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.72rem;color:var(--text-3);">Text review · ${due.length} due today</div>
+          <div style="font-weight:800;font-size:1.05rem;">${escapeHtml(t.title || 'Text')}</div>
+          <div style="font-size:0.72rem;color:var(--text-3);">Say it from memory first. Then open it and check.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="openText('${t.id}')">▶ Open</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', true)">✅ I remembered it</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', false)">🔁 I forgot parts</button>
+      </div>
+      ${resto ? `<div style="font-size:0.7rem;color:var(--text-3);margin-top:8px;">+${resto} more due today</div>` : ''}
+    </div>`;
 }
 
 function openAddText(id) {

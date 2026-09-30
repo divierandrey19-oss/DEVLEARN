@@ -447,6 +447,36 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `function writeState() {`,
     reemplazo: `function writeState() { if (`,
   },
+  {
+    nombre: 'que un texto recordado vuelva siempre al día siguiente',
+    buscar: `  const step = recordado ? Math.min(antes + 1, pasos.length - 1) : 0;`,
+    reemplazo: `  const step = recordado ? Math.min(antes, pasos.length - 1) : 0;`,
+  },
+  {
+    nombre: 'repartir todos los textos aprendidos para hoy',
+    buscar: `    t.review = { step: 0, due: addDaysLocal(hoy, i), last: null };`,
+    reemplazo: `    t.review = { step: 0, due: addDaysLocal(hoy, 0), last: null };`,
+  },
+  {
+    nombre: 'olvidar programar el repaso al marcar un texto ✅',
+    buscar: `  if (repasa) startTextReview(t, todayLocal());`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'repasar los textos de todas las unidades',
+    buscar: `  return !!u && [9, 10].includes(Number(u[1]));`,
+    reemplazo: `  return true;`,
+  },
+  {
+    nombre: 'repasar desde la primera página y no desde la última',
+    buscar: `  return (ub - ua) || (pb - pa) || (tb - ta);`,
+    reemplazo: `  return (ub - ua) || (pa - pb) || (ta - tb);`,
+  },
+  {
+    nombre: 'no repartir los textos aprendidos al arrancar',
+    buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
+    reemplazo: ``,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
