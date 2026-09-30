@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-09-29o -->
+<!-- DEVLEARN_BUILD: 2026-09-30a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4918,7 +4918,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-09-29o';
+const APP_BUILD = '2026-09-30a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6488,7 +6488,10 @@ function migrateState(s) {
    * questions, and there will be more later. A plain flag freezes whoever ran
    * an earlier build out of everything added afterwards — which is exactly
    * what happened with the questions. The number says how much has landed. */
-  const SEED_VERSION = 12;
+  // 13: textos de la Unit 10 (pp. 109 y 110-111), escritos con él a partir
+  // de sus respuestas: máximo 150 palabras, su vida real. Se entregan de a
+  // poco, según las páginas que ve en la clase siguiente.
+  const SEED_VERSION = 13;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6626,6 +6629,14 @@ function migrateState(s) {
         wh: [],
         body: "First, I have to say that I had some small accidents, but nothing very serious, and I'm OK now. For example, two years ago I hurt my back at my shop, because I lifted a very heavy bag of dog food. Then I was in a lot of pain for one week, and I couldn't work well, so my brother told me, \"You should go to the doctor.\" But I didn't go, and I only rested for a few days, because the accident wasn't so serious. After that, another time I cut my finger with the scissors, when I helped my brother with the grooming, but it wasn't serious either. So I didn't have to go to the hospital, and I didn't have to take medicine for many days. Then last year I fell down from my bike near my house, and I hurt my knee and my hand, so I couldn't ride my bike for two weeks. I also burned my hand one time in the kitchen, because I was cooking, but it was only a small burn. Finally, luckily I never broke a bone, and I never needed physical therapy, so I'm OK now and I can do all my normal activities.",
         trans: "Primero, tengo que decir que tuve algunos accidentes pequeños, pero nada muy grave, y ahora estoy bien. Por ejemplo, hace dos años me lastimé la espalda en mi tienda, porque levanté un bulto de comida para perro muy pesado. Entonces estuve con mucho dolor por una semana, y no podía trabajar bien, así que mi hermano me dijo: \"Deberías ir al médico.\" Pero no fui, y solo descansé unos días, porque el accidente no fue tan grave. Después de eso, otra vez me corté el dedo con las tijeras, cuando le ayudé a mi hermano con el grooming, pero tampoco fue grave. Así que no tuve que ir al hospital, y no tuve que tomar medicina por muchos días. Luego, el año pasado me caí de la bicicleta cerca de mi casa, y me lastimé la rodilla y la mano, así que no pude montar bicicleta por dos semanas. También me quemé la mano una vez en la cocina, porque estaba cocinando, pero fue solo una quemadura pequeña. Por último, por suerte nunca me he roto un hueso, y nunca necesité terapia física, así que ahora estoy bien y puedo hacer todas mis actividades normales." },
+      { id: 'txt_u10_p109', title: 'U10 · pág 109',
+        wh: [],
+        body: "Let me think... For me, the most appealing life goal is to make a ton of money, because I can help my family. Also, with money I can do things that make me happy, and I can help animals that live on the street. The second goal is to live a long, healthy life, because I don't want to be sick. I want to have a lot of energy, so I can grow as a person. That's why I'd like to exercise and have good habits, because I want to be disciplined. Finally, the third goal is to have kids, but I don't know yet. Maybe in the future, because right now I want to focus on my studies and grow professionally. So, I guess I'd like to make a ton of money first, and then I'd like to live a long, healthy life.",
+        trans: "Déjame pensar... Para mí, la meta de vida más atractiva es hacer mucho dinero, porque puedo ayudar a mi familia. Además, con dinero puedo hacer cosas que me hacen feliz, y puedo ayudar a los animales que viven en la calle. La segunda meta es vivir una vida larga y saludable, porque no quiero vivir enfermo. Quiero tener mucha energía para crecer como persona. Por eso me gustaría hacer ejercicio y tener buenos hábitos, porque quiero ser disciplinado. Por último, la tercera meta es tener hijos, pero todavía no sé. Tal vez en el futuro, porque ahora quiero enfocarme en mis estudios y crecer profesionalmente. Así que supongo que primero me gustaría hacer mucho dinero, y después vivir una vida larga y saludable." },
+      { id: 'txt_u10_p110111', title: 'U10 · pág 110 - 111',
+        wh: [],
+        body: "In my opinion, anyone can be successful if you work hard, so I agree with Kevin. I also agree with Adam, because no one does it alone. For example, my brother and I have a pet shop together, and when I have a lot on my plate, he gives me a hand. I hate to say it, but I don't agree with Katherine, because you don't need a lot of money to start. You need to believe in yourself and take small steps, like Casey says. Sometimes the shop is super busy, and we have tons to do, but we don't call it a day until everything is ready. Then we grab a bite together. I think our customers deserve that, so we always go the extra mile. So my tip for a successful career is simple: work hard, be disciplined, and help your family.",
+        trans: "En mi opinión, cualquiera puede tener éxito si trabaja duro, así que estoy de acuerdo con Kevin. También estoy de acuerdo con Adam, porque nadie lo logra solo. Por ejemplo, mi hermano y yo tenemos una tienda de mascotas juntos, y cuando tengo mucho trabajo, él me ayuda. Odio decirlo, pero no estoy de acuerdo con Katherine, porque no necesitas mucho dinero para empezar. Necesitas creer en ti mismo y dar pasos pequeños, como dice Casey. A veces la tienda está súper ocupada y tenemos un montón de cosas que hacer, pero no terminamos hasta que todo está listo. Después comemos algo juntos. Creo que nuestros clientes se lo merecen, así que siempre hacemos un esfuerzo extra. Así que mi consejo para una carrera exitosa es simple: trabaja duro, sé disciplinado y ayuda a tu familia." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);

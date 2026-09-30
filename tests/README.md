@@ -112,6 +112,11 @@ p. 112 está en el aparato. Y la p. 113: una sola tarea de speaking para la
 conversación, y "to have kids" de la p. 109 fuera porque la p. 113 tiene "have
 kids" — con `vocabKey()`, que ahora reconoce esas repetidas al analizar.
 
+`texts-u10.test.js` — Los textos de la Unit 10 que él memoriza: en la semilla,
+con traducción, máximo 150 palabras (lo pidió), con lo que él contó de su vida
+(no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
+`SEED_VERSION`.
+
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de
 "Scan for facts" tomadas como hechos, el ejercicio que adivinaba el audio, y
