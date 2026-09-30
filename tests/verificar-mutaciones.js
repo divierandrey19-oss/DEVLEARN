@@ -447,6 +447,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `function writeState() {`,
     reemplazo: `function writeState() { if (`,
   },
+  {
+    nombre: 'que un texto recordado vuelva siempre al día siguiente',
+    buscar: `  const step = recordado ? Math.min(antes + 1, pasos.length - 1) : 0;`,
+    reemplazo: `  const step = recordado ? Math.min(antes, pasos.length - 1) : 0;`,
+  },
+  {
+    nombre: 'repartir todos los textos aprendidos para hoy',
+    buscar: `    t.review = { step: 0, due: addDaysLocal(hoy, i), last: null };`,
+    reemplazo: `    t.review = { step: 0, due: addDaysLocal(hoy, 0), last: null };`,
+  },
+  {
+    nombre: 'olvidar programar el repaso al marcar un texto ✅',
+    buscar: `  if (t.mastered) startTextReview(t, todayLocal());`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'no repartir los textos aprendidos al arrancar',
+    buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
+    reemplazo: ``,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
