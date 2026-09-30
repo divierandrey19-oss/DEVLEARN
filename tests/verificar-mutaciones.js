@@ -369,6 +369,11 @@ const MUTACIONES = [
     reemplazo: `━━ OPTIONS ━━`,
   },
   {
+    nombre: 'Textos U10: no subir SEED_VERSION (nunca le llegarían)',
+    buscar: `  const SEED_VERSION = 13;`,
+    reemplazo: `  const SEED_VERSION = 12;`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
