@@ -117,6 +117,11 @@ con traducción, máximo 150 palabras (lo pidió), con lo que él contó de su v
 (no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
 `SEED_VERSION`.
 
+`dashboard-layout.test.js` — El Dashboard en el orden que él eligió (hoy, el
+curso, el progreso, los accesos), sin lo que se quitó por repetido, sin que
+`renderDashboard` busque un elemento que ya no existe (rompería la pantalla), y
+con la lista del curso arrancando en las próximas 3 clases.
+
 `sentence-menu.test.js` — Escuchar una sola frase del texto: el botón 🔄 de
 cada frase abre un menú con 🔊 Listen (solo esa frase, y el cursor queda ahí
 para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había que
