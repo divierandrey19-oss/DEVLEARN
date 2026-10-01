@@ -493,6 +493,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  renderCalendar();\n  document.getElementById('dash-levels').innerHTML = '';\n  updateNavBadges();`,
   },
   {
+    nombre: 'volver a sembrar las frases de podcast cada vez que abre',
+    buscar: `  if (!merged._podPhrases20261001) {\n    merged._podPhrases20261001 = true;`,
+    reemplazo: `  if (true) {\n    merged._podPhrases20261001 = true;`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

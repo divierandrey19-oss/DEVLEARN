@@ -122,6 +122,11 @@ curso, el progreso, los accesos), sin lo que se quitó por repetido, sin que
 `renderDashboard` busque un elemento que ya no existe (rompería la pantalla), y
 con la lista del curso arrancando en las próximas 3 clases.
 
+`podcast-phrases.test.js` — Las frases de podcast que él mandó por el chat:
+una sesión de Podcasts ya completa (traducción, pronunciación y un ejemplo que
+la usa), fuera de las unidades, sin la que no se entendió bien, y una sola vez:
+si la borra, no vuelve.
+
 `sentence-menu.test.js` — Escuchar una sola frase del texto: el botón 🔄 de
 cada frase abre un menú con 🔊 Listen (solo esa frase, y el cursor queda ahí
 para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había que
