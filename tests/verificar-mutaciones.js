@@ -534,7 +534,7 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'pisar las preguntas que él ya tenía en la página',
-    buscar: `  if ((b.questions || []).length) return true;\n`,
+    buscar: `  if ((b.questions || []).length) return true;   // las que ya tenga no se pisan\n`,
     reemplazo: ``,
   },
   {
