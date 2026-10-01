@@ -508,6 +508,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que la tarjeta de la unidad vuelva a ignorar las palabras vistas',
+    buscar: `[[learned, 'mature'], [byState.review, 'seen'], [byState.learning, 'learning'], [byState.new, 'new']]`,
+    reemplazo: `[[learned, 'mature'], [byState.learning, 'learning'], [byState.new, 'new']]`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

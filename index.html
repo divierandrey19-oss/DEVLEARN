@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01b -->
+<!-- DEVLEARN_BUILD: 2026-10-01c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4903,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01b';
+const APP_BUILD = '2026-10-01c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -18961,11 +18961,15 @@ function renderFcUnitCard(u, lvl) {
     return `<div class="word-dot" title="${tip}" style="background:${col};--lvl-color:${col};${card.state==='new'?'opacity:0.25;':''}${isLeech?'box-shadow:0 0 5px var(--red);animation:dotPulse 1.5s ease-in-out infinite;':card.state==='mastered'?'box-shadow:0 0 6px '+col+';':''}" ></div>`;
   }).join('');
 
+  /* Las vistas que todavía no están firmes (estado "review", puntos azules) no
+   * entraban en la cuenta: la Unit 1 decía "291 words to start" con varias ya
+   * estudiadas. Ahora se cuentan todas y se omiten las que van en cero. */
+  const partes = [[learned, 'mature'], [byState.review, 'seen'], [byState.learning, 'learning'], [byState.new, 'new']]
+    .filter(([n]) => n > 0).map(([n, l]) => `${n} ${l}`).join(' · ');
   const masteryMsg = count === 0 ? '' :
-    learned === count ? `✦ All ${count} words mature` :
-    learned > 0       ? `${learned} mature · ${byState.learning} learning · ${byState.new} new` :
-    byState.learning  ? `${byState.learning} in learning · ${byState.new} new` :
-    `${count} words to start`;
+    learned === count      ? `✦ All ${count} words mature` :
+    byState.new === count  ? `${count} words to start` :
+    partes;
 
   // Badge row — due + leech indicators
   const badges = [
@@ -18988,7 +18992,7 @@ function renderFcUnitCard(u, lvl) {
       </div>
 
       <!-- SRS constellation — colors show memory state -->
-      <div class="word-constellation" style="--lvl-color:${lvl.color}" title="Colors: grey=new · amber=learning · blue=review · green=mature · purple=mastered">
+      <div class="word-constellation" style="--lvl-color:${lvl.color}" title="Colors: grey=new · amber=learning · blue=seen · green=mature · purple=mastered">
         ${dots || `<span style="font-size:0.75rem;color:var(--text-3);">No words yet</span>`}
       </div>
 
@@ -19000,9 +19004,10 @@ function renderFcUnitCard(u, lvl) {
 
       <!-- Legend -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-        ${[['var(--amber)','Learning'],['var(--green)','Mature'],['var(--purple)','Mastered']].map(([c,l]) =>
+        ${/* Los mismos colores que los puntos: faltaban el gris (nueva) y el azul (vista). */ ''}
+        ${[['#555','New',0.4],['var(--amber)','Learning',1],[lvl.color,'Seen',1],['var(--green)','Mature',1],['var(--purple)','Mastered',1]].map(([c,l,o]) =>
           `<span style="font-size:0.6rem;display:flex;align-items:center;gap:4px;color:var(--text-3);">
-            <span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block;"></span>${l}
+            <span style="width:7px;height:7px;border-radius:50%;background:${c};opacity:${o};display:inline-block;"></span>${l}
           </span>`
         ).join('')}
       </div>
