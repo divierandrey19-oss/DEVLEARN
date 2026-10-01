@@ -513,6 +513,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `[[learned, 'mature'], [byState.learning, 'learning'], [byState.new, 'new']]`,
   },
   {
+    nombre: 'que en la Unit 8 "Children\'s" vuelva al primer piso',
+    buscar: `{ word: "Children's", set: { example: "Children's is on the second floor.",`,
+    reemplazo: `{ word: "Children's", set: { example: "Children's is on the ground floor.",`,
+  },
+  {
+    nombre: 'un ejemplo de la Unit 8 que no está impreso en la página',
+    buscar: `{ word: 'take the stairs', set: { example: 'Should I take the STAIRS?',`,
+    reemplazo: `{ word: 'take the stairs', set: { example: 'Take the stairs to the second floor.',`,
+  },
+  {
+    nombre: 'unir una repetida aunque la que queda no esté en el aparato',
+    buscar: `  return fixPageContent(units, { ...fix, unir: pares.filter(([, queda]) => hay(queda)) });`,
+    reemplazo: `  return fixPageContent(units, { ...fix, unir: pares });`,
+  },
+  {
+    nombre: 'olvidar una página de la Unit 8 en el arranque',
+    buscar: `   ['_u8P93V1', fixU8P93], `,
+    reemplazo: `   `,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

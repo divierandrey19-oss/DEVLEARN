@@ -147,6 +147,13 @@ tarjetas repetidas ("go kayaking" / "kayaking", "burned" / "burn"). Él ya habí
 estudiado toda la unidad: `moverProgreso` pasa el progreso de una tarjeta
 renombrada o repetida a la que queda, y si las dos tenían, queda el mejor.
 
+`u8-fix.test.js` — La Unit 8 revisada contra las fotos, igual que la 9: ejemplos
+sacados de ejercicios con el pronombre borrado ("I need in size 40"), opciones de
+un ejercicio o de un audio tomadas como hechos, un dato del plano al revés
+(Children's), sweatshirt = buzo y ground floor = primer piso. Todo ejemplo nuevo
+está en la transcripción de su página; las repetidas se unen pasando el progreso,
+y solo si la que queda está en el aparato.
+
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la
 página no imprime, formas base y las expresiones del diálogo que faltaban. Y que

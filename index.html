@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01c -->
+<!-- DEVLEARN_BUILD: 2026-10-01d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4903,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01c';
+const APP_BUILD = '2026-10-01d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6718,6 +6718,13 @@ function migrateState(s) {
    ['_u9P101V1', fixU9P101], ['_u9P102V1', fixU9P102], ['_u9P103V1', fixU9P103], ['_u9P104V1', fixU9P104],
    ['_u9P105V1', fixU9P105], ['_u9P106V1', fixU9P106], ['_u9P107V1', fixU9P107], ['_u9PhrasalV1', fixU9Phrasal]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Unit 8, igual: primero los números de página, al final el lote de phrasal
+  // verbs (quita su copia de "try on" cuando la p. 87 ya la tiene).
+  if (!merged._u8PagesV1 && fixU8Pages(merged.units)) merged._u8PagesV1 = true;
+  [['_u8P85V1', fixU8P85], ['_u8P86V1', fixU8P86], ['_u8P87V1', fixU8P87], ['_u8P88V1', fixU8P88],
+   ['_u8P89V1', fixU8P89], ['_u8P90V1', fixU8P90], ['_u8P91V1', fixU8P91], ['_u8P92V1', fixU8P92],
+   ['_u8P93V1', fixU8P93], ['_u8P94V1', fixU8P94], ['_u8P95V1', fixU8P95], ['_u8PhrasalV1', fixU8Phrasal]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
 
@@ -7387,6 +7394,522 @@ function fixU9Phrasal(units) {
   // ya comparten el progreso, así que basta con quitar la copia de aquí.
   fixPageContent(units, { unit: 'a2_9', id: 'pv_a2_9',
     quitarPalabras: ['go out', 'work out', 'get in shape', 'make that class'] });
+  return true;
+}
+
+/* ── Unit 8, revisada contra las fotos (su respaldo del 29 de septiembre) ──
+ * Igual que la Unit 9: él ya había estudiado casi todas sus tarjetas, así que
+ * renombrar o unir repetidas mueve el progreso. Lo que más tenía: ejemplos
+ * sacados de los ejercicios con el pronombre borrado ("I need in size 40"),
+ * opciones de un "circle the correct answer" o de un audio tomadas como
+ * hechos, ejemplos al azar en las prendas de la p. 88, trampas del español
+ * escritas en inglés, y traducciones que en Colombia no se usan así
+ * (sweatshirt es buzo; ground floor es el primer piso). */
+function fixU8Pages(units) {
+  const u = units && units.a2_8;
+  if (!u) return false;
+  const paginas = {
+    b_1788803892009_h0jubf: 85, b_1788803972020_a605bf: 86, b_1788804083068_3npuf6: 87,
+    b_1788919622620_mo7rb1: 88, b_1788919778780_vepyxt: 89, b_1788957336715_6c0dah: 90,
+    b_1788957479858_jpdhpz: 91, b_1789005314056_2rd9xo: 92, b_1789005411193_nsmbrx: 93,
+    b_1789062264930_45w0kr: 94, b_1789062402130_55jc7v: 95,
+  };
+  let alguna = false;
+  (u.batches || []).forEach(b => {
+    if (!b || !paginas[b.id]) return;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [paginas[b.id]];
+  });
+  return alguna;
+}
+
+/* Une una tarjeta repetida con la de otra página de la unidad, solo si esa
+ * otra está en el aparato: si no, se quitaría sin dejar dónde quede. */
+function unirEnLaUnidad(units, fix, pares) {
+  const u = units && units[fix.unit];
+  const hay = w => !!u && (u.batches || []).some(b => b && (b.vocab || []).some(v => v && v.word === w));
+  return fixPageContent(units, { ...fix, unir: pares.filter(([, queda]) => hay(queda)) });
+}
+
+/* p. 85, Warm-Up. La trampa de "too" decía que en español va después
+ * ("caro demasiado"); y dos tareas de speaking eran la franja de lecciones. */
+function fixU8P85(units) {
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 85, cambios: [
+    { word: 'department store', set: { translation: 'tienda por departamentos', exampleTranslation: '¿En una tienda por departamentos?' } },
+    { word: 'directions', set: { translation: 'indicaciones (para llegar a un lugar)' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_8', page: 85, cambios: [
+    ['Ask for a recommendation for a place to shop.', null],
+    ['Describe local clothing customs.', null],
+    ["Los hispanohablantes pueden colocar 'too' después del adjetivo como en español ('caro demasiado'), pero en inglés siempre va antes.",
+     "En Colombia 'demasiado' también se usa para algo bueno: 'está demasiado bonito'. En inglés 'too' siempre es un exceso, algo malo: 'too expensive' (más caro de lo que quiero pagar). Para algo bueno se dice 'very' o 'really': It's really nice, no It's too nice."],
+  ] });
+  return ok;
+}
+
+/* p. 86, Topic Warm-Up. En Colombia el sweatshirt es un buzo y la sudadera
+ * es el pantalón (sweatpants). "I like to wear… to keep you warm" mezclaba I
+ * y you. El tema de 'or' daba por error "a shirt and a sweater and a coat", y
+ * el de at/on/for daba por error "wear a nice suit to a party", que está bien. */
+function fixU8P86(units) {
+  const BUZO = 'Me gusta ponerme un buzo viejo y una sudadera en la casa.';
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 86, cambios: [
+    { word: 'a sweatshirt', set: { translation: 'un buzo (de algodón)', exampleTranslation: BUZO } },
+    { word: 'an old sweatshirt', set: { translation: 'un buzo viejo', exampleTranslation: BUZO } },
+    { word: 'sweatpants', set: { translation: 'una sudadera (el pantalón)',
+      example: 'I like to wear a T-shirt and sweatpants at home, but not at a party.',
+      exampleTranslation: 'Me gusta ponerme una camiseta y una sudadera en la casa, pero no en una fiesta.' } },
+    { word: 'to keep you warm', set: { example: 'To keep you warm on a cool day', exampleTranslation: 'Para mantenerte abrigado en un día fresco' } },
+    { word: 'to keep you cool', set: { example: 'To keep you cool on a hot day', exampleTranslation: 'Para mantenerte fresco en un día caluroso' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_8', page: 86,
+    quitarGramatica: ["Using 'or' to present alternatives"],
+    cambios: [
+      ["Los hispanohablantes tienden a usar 'in' para todas las situaciones porque en español 'en' funciona para todo. En inglés debes distinguir: 'at home' (no 'in home'), 'on a hot day' (no 'in a hot day'), 'for a party' (no 'to a party' cuando hablas de ropa).",
+       "En español todo va con 'en': en casa, en un día caluroso, en una fiesta. En inglés cambia: 'at home' (no 'in home'), 'on a hot day' (no 'in a hot day'), y para decir para qué ocasión es la ropa, 'for a party'. Ojo: 'I wear a suit to a party' también está bien; ahí 'to' es el lugar al que vas."],
+      ["I like to wear a nice suit to a party at a friend's home.", "I like to wear a nice suit in a party at a friend's home."],
+      ['I like to wear a sweater over a shirt to keep you ___ on a cool day.', 'I like to wear a sweater over a shirt to keep ___ on a cool day.'],
+      ['I like to wear a pair of shorts and a tank top to keep you ___ on a hot day.', 'I like to wear a pair of shorts and a tank top to keep ___ on a hot day.'],
+      ["Ask your partner: 'I like to wear a T-shirt and sweatpants at home, but not at a party. What about you?'", null],
+    ] });
+  return ok;
+}
+
+/* p. 87, Maya y Emily compran zapatos. Ejemplos armados con pedazos de dos
+ * frases, "cheapest" (la página dice "cheap"), "I'll take these" (dice
+ * "them"), una tarjeta que afirmaba que "What a bargain!" es por un precio
+ * alto, y "del pueblo" por "in town". */
+function fixU8P87(units) {
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 87, cambios: [
+    { word: 'on sale', set: { example: "Everything's on sale this week.", exampleTranslation: 'Todo está en oferta esta semana.' } },
+    { word: 'running shoes', set: { translation: 'tenis (para correr)', example: 'And look how cheap those running shoes are!',
+      exampleTranslation: '¡Y mira lo baratos que están esos tenis!' } },
+    { word: 'no wonder', set: { example: "Well, no wonder! According to the sign in the window, they've got the lowest prices, too.",
+      exampleTranslation: '¡Pues con razón! Según el aviso de la vitrina, también tienen los precios más bajos.' } },
+    { word: 'lowest', set: { example: "According to the sign in the window, they've got the lowest prices, too.",
+      exampleTranslation: 'Según el aviso de la vitrina, también tienen los precios más bajos.' } },
+    { word: 'better', set: { example: "Much better. I'll take them.", exampleTranslation: 'Mucho mejor. Me los llevo.' } },
+    { word: 'a high price', set: { example: 'a high price', exampleTranslation: 'un precio alto' } },
+    { word: 'hold', set: { translation: 'apartar, guardar (para alguien)', exampleTranslation: 'Se los puedo apartar aquí.' } },
+    { word: 'salesperson', set: { example: 'Salesperson: My pleasure.', exampleTranslation: 'Vendedor: Con mucho gusto.' } },
+    { word: 'selection', set: { exampleTranslation: 'Dicen que este lugar tiene la mayor variedad de marcas de la ciudad.' } },
+    { word: 'service', set: { exampleTranslation: 'Tienen el mejor servicio de la ciudad.' } },
+    { word: 'biggest', set: { exampleTranslation: 'Este lugar tiene la mayor variedad de marcas de la ciudad.' } },
+    { word: 'best', set: { exampleTranslation: 'Bueno, también tienen el mejor servicio de la ciudad.' } },
+  ], nuevas: [
+    { despues: 'attractive', v: { word: 'half price', translation: 'a mitad de precio', phonetic: '/hæf praɪs/', emoji: '🏷️',
+      example: "Wow, those are really attractive. And they're half price.", exampleTranslation: 'Uy, esos están muy bonitos. Y están a mitad de precio.' } },
+    { despues: 'bargain', v: { word: 'try on', type: 'phrasal verb', translation: 'probarse (ropa o zapatos)', phonetic: '/traɪ ɑn/', emoji: '👟',
+      example: 'I think you should try them on.', exampleTranslation: 'Creo que te los deberías probar.' } },
+    { despues: "I'll take them", v: { word: 'My pleasure.', translation: 'Con mucho gusto. (al responder un "gracias")', phonetic: '/maɪ ˈplɛʒər/', emoji: '😊',
+      example: 'My pleasure.', exampleTranslation: 'Con mucho gusto.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 87 },
+    [['sale', 'on sale'], ["I'll take these", "I'll take them"], ['cheapest', 'cheap'], ['brands', 'brand']]);
+  fixPageContent(units, { unit: 'a2_8', page: 87, cambios: [
+    ["En inglés usamos 'will' + verbo base para decisiones tomadas en el momento de hablar. Es como el futuro simple español 'voy a' o 'haré'. Nota que después de 'will' el verbo SIEMPRE va en forma base (sin 'to', sin -s, sin -ing).",
+     "En inglés usamos 'will' + verbo base para una decisión que tomas en el momento de hablar, como Maya cuando se prueba los zapatos: 'I'll take them.' En español esa decisión se dice en presente: 'me los llevo'. Después de 'will' el verbo va siempre en forma base (sin 'to', sin -s, sin -ing)."],
+    ["Los hispanohablantes añaden '-s' después de 'will' con 'he/she/it' (I'll takes) porque en español el verbo cambia. Pero después de 'will', el verbo NUNCA cambia: I'll take, he'll take, we'll take.",
+     "Como en español decimos 'me los llevo', en presente, sale 'I take them' ✗. Para decidir en el momento se usa will: 'I'll take them' ✓."],
+    ["I'll take these!", "I'll take them."],
+    ['¡Me llevo estos!', 'Me los llevo.'],
+    ['What a best service in town!', 'What a attractive shoes!'],
+    ['What best service in town!', 'What attractive shoes!'],
+    ["When using adjective + noun, drop 'a' if it sounds unnatural (though 'What the best service!' is also wrong - better: 'They have the best service!')",
+     "With plural nouns, don't use 'a': What attractive shoes!"],
+    ["The salesperson can ___ the shoes here for you. She says she'll keep shopping if the selection is better.",
+     "If you'd like to keep shopping, the salesperson can ___ the shoes here for you."],
+    ["Price is very important to me. I don't want to spend a lot of money. So those shoes are much ___.",
+     "So are those any better? — Much ___. I'll take them."],
+    ["Translate to English: 'Tienen el mejor servicio del pueblo.'", "Translate to English: 'Tienen el mejor servicio de la ciudad.'"],
+    ['Tienen los precios más bajos del pueblo.', 'Tienen los precios más bajos de la ciudad.'],
+    ['Este lugar tiene la selección más grande de marcas del pueblo.', 'Este lugar tiene la mayor variedad de marcas de la ciudad.'],
+  ] });
+  return ok;
+}
+
+/* p. 88, Lesson 1. Cada prenda tenía de ejemplo una frase al azar del cuadro
+ * de gramática ("a long-sleeve shirt" → "I want the belt."). La página no
+ * trae frases con ellas: el ejemplo es la prenda tal como está impresa. */
+function fixU8P88(units) {
+  const PRENDAS = {
+    'a long-sleeve shirt': 'una camisa de manga larga', 'a short-sleeve shirt': 'una camisa de manga corta',
+    'a polo shirt': 'una camiseta tipo polo', 'a sleeveless blouse': 'una blusa sin mangas',
+    'a V-neck': 'un saco de cuello en V', 'a crewneck': 'un saco de cuello redondo', 'a turtleneck': 'un saco de cuello tortuga',
+    'a cardigan': 'un cárdigan (saco abierto, con botones)', 'pajamas': 'una pijama', 'a nightgown': 'una pijama de bata (camisón)',
+    'high heels': 'tacones', 'flats': 'baletas (zapatos planos)', 'loafers': 'mocasines', 'a purse': 'un bolso (de mujer)',
+    'gloves': 'guantes', 'a hat': 'un sombrero', 'a cap': 'una gorra', 'shoes': 'zapatos',
+  };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 88, cambios: [
+    ...Object.entries(PRENDAS).map(([word, es]) => ({ word, set: { translation: es, example: word, exampleTranslation: es } })),
+    { word: 'me', set: { example: 'I → me', exampleTranslation: 'yo → me, mí' } },
+    { word: 'you', set: { example: 'you → you', exampleTranslation: 'tú → te, ti' } },
+    { word: 'us', set: { example: 'we → us', exampleTranslation: 'nosotros → nos' } },
+    { word: 'for him', set: { example: "I'm buying a blue blazer for him.", exampleTranslation: 'Estoy comprando un blazer azul para él.' } },
+  ], nuevas: [
+    { despues: 'shoes', v: { word: 'a pair of', translation: 'un par de', phonetic: '/ə pɛr əv/', emoji: '👟',
+      example: 'Note: You can use "a pair of" with: shoes, high heels, flats, loafers, running shoes, sandals, gloves, pants, shorts, jeans, pajamas.',
+      exampleTranslation: 'Nota: "a pair of" (un par de) se usa con zapatos, tacones, baletas, mocasines, tenis, sandalias, guantes, pantalones, shorts, jeans y pijama.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 88 },
+    [['the belt', 'a belt'], ['those sandals', 'sandals'], ['the scarf', 'a scarf']]);
+  fixPageContent(units, { unit: 'a2_8', page: 88, cambios: [
+    ["Los colombianos pueden usar pronombres de sujeto después de preposiciones ('for she' en lugar de 'for her'), porque en español las formas pueden parecer similares.",
+     "En español, después de 'para' o 'a' usamos 'él' y 'ella', los mismos pronombres del sujeto: 'para él', 'a ella'. Por eso sale 'for he' o 'to she' ✗. En inglés va el pronombre de objeto: 'for him', 'to her'."],
+  ] });
+  return ok;
+}
+
+/* p. 89. Los ejemplos salieron de los ejercicios de completar sin el
+ * pronombre que faltaba: inglés incorrecto ("I need in size 40", "I'll take
+ * in black", "Can you help?"). Se completan con la respuesta. "Blouses" era
+ * "purses" mal leído. */
+function fixU8P89(units) {
+  const TALLA = { example: 'I want these sandals, but I need them in size 40.', exampleTranslation: 'Quiero estas sandalias, pero las necesito en talla 40.' };
+  const CONSIGO = { example: 'No problem. I can get them for you.', exampleTranslation: 'No hay problema. Se las puedo conseguir.' };
+  const NEGRO = { example: "Yes, please. I'll take it in black.", exampleTranslation: 'Sí, por favor. Me lo llevo en negro.' };
+  const BOLSOS = { example: 'By the way, how much are those small purses over there?', exampleTranslation: 'Por cierto, ¿cuánto valen esos bolsos pequeños de allá?' };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 89, cambios: [
+    { word: 'size', set: TALLA }, { word: 'want', set: TALLA }, { word: 'need', set: TALLA },
+    { word: 'get', set: CONSIGO }, { word: 'no problem', set: CONSIGO },
+    { word: 'keep', set: { translation: 'seguir (keep + -ing); quedarse con', exampleTranslation: 'Quisiera estos cinco artículos, pero quiero seguir comprando.' } },
+    { word: 'help', set: { example: 'Can you help me?', exampleTranslation: '¿Me puede ayudar?' } },
+    { word: 'take', set: { translation: 'llevarse (comprar)', ...NEGRO } },
+    { word: 'black', set: NEGRO },
+    { word: 'sister-in-law', set: { example: 'I bought them for my sister-in-law.', exampleTranslation: 'Las compré para mi cuñada.' } },
+    { word: 'ready', set: { example: "Just tell me when you're ready to pay.", exampleTranslation: 'Solo dígame cuando esté listo para pagar.' } },
+    { word: 'definitely', set: { example: 'You should definitely buy it.', exampleTranslation: 'Definitivamente deberías comprarla.' } },
+    { word: 'actually', set: { translation: 'la verdad, en realidad', example: "Actually, you shouldn't buy those for her.", exampleTranslation: 'La verdad, no deberías comprarle esas.' } },
+    { word: 'certainly', set: { example: 'Certainly. Is black OK?', exampleTranslation: 'Claro. ¿El negro está bien?' } },
+    { word: 'by the way', set: BOLSOS },
+  ], nuevas: [
+    { despues: 'by the way', v: { word: 'How much are...?', translation: '¿Cuánto valen...?', phonetic: '/haʊ mʌtʃ ɑr/', emoji: '💲', ...BOLSOS } },
+    { despues: 'black', v: { word: 'the black one', translation: 'el negro / la negra (one = uno)', phonetic: '/ðə blæk wʌn/', emoji: '⚫',
+      example: "That's great. I'll take the black one.", exampleTranslation: 'Qué bien. Me llevo el negro.' } },
+    { despues: 'of course', v: { word: 'Thanks for your help!', translation: '¡Gracias por su ayuda!', phonetic: '/θæŋks fɔr jɔr hɛlp/', emoji: '🙏',
+      example: 'Credit, please. Thanks for your help!', exampleTranslation: 'Con tarjeta, por favor. ¡Gracias por su ayuda!' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 89 },
+    [['short-sleeve shirt', 'a short-sleeve shirt'], ['dress shirt', 'a dress shirt'], ['blouses', 'a blouse']]);
+  fixPageContent(units, { unit: 'a2_8', page: 89,
+    // "Ahora" con ejemplos que son planes; y "Can you" con un ejemplo sin pronombre.
+    quitarGramatica: ['Present continuous for actions happening now', "Polite requests with 'Can you...?'"],
+    cambios: [
+      ["Can you help? I'd like these five items, but I want to keep shopping.", "Can you help me? I'd like these five items, but I want to keep shopping."],
+      ['¿Puedes ayudar? Me gustan estos cinco artículos, pero quiero seguir comprando.', '¿Me puede ayudar? Quisiera estos cinco artículos, pero quiero seguir comprando.'],
+      ['I can hold for you.', 'Certainly. I can hold them for you.'],
+      ['Puedo guardártelo.', 'Claro. Se los puedo apartar.'],
+      ['You should definitely buy.', 'You should definitely buy it.'],
+      ['Definitivamente deberías comprar.', 'Definitivamente deberías comprarla.'],
+      ['It is for my sister-in-law.', 'I bought them for my sister-in-law.'],
+      ['Es para mi cuñada.', 'Las compré para mi cuñada.'],
+      ["I'm buying a gift for she.", "It's she birthday."],
+      ["I'm buying a gift for her.", "It's her birthday."],
+      ["After prepositions like 'for', use object pronouns (her), not subject pronouns (she)", "'Her' is the possessive (su, de ella); 'she' is the subject."],
+      ["Complete with the correct form: 'Actually, you ___ buy those pajamas. They're not on sale and they're not nice.'",
+       "Complete with the correct form: 'Actually, you ___ buy those for her. She doesn't like green.'"],
+    ] });
+  return ok;
+}
+
+/* p. 90, superlativos. Ejemplos inventados para cada forma ("This is the
+ * hottest restaurant" = "el más popular"): quedan las filas del cuadro. La
+ * regla decía que los de dos sílabas llevan -est (solo si terminan en -y). */
+function fixU8P90(units) {
+  const fila = (a, b) => ({ example: `${a} → the ${b}` });
+  const FACIL = { example: "It's not the cheapest blender, but it's the easiest to use.", exampleTranslation: 'No es la licuadora más barata, pero es la más fácil de usar.' };
+  const ANTOJO = { example: "I'm in the mood for Japanese food!", exampleTranslation: '¡Tengo antojo de comida japonesa!' };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 90, cambios: [
+    { word: 'nicest', set: { ...fila('nice', 'nicest'), exampleTranslation: 'agradable → el más agradable' } },
+    { word: 'greatest', set: { ...fila('great', 'greatest'), exampleTranslation: 'genial → el más genial' } },
+    { word: 'cute', set: { ...fila('cute', 'cutest'), exampleTranslation: 'lindo → el más lindo' } },
+    { word: 'cutest', set: { ...fila('cute', 'cutest'), exampleTranslation: 'lindo → el más lindo' } },
+    { word: 'easy', set: FACIL }, { word: 'easiest', set: FACIL },
+    { word: 'pretty', set: { ...fila('pretty', 'prettiest'), exampleTranslation: 'bonito → el más bonito' } },
+    { word: 'prettiest', set: { ...fila('pretty', 'prettiest'), exampleTranslation: 'bonito → el más bonito' } },
+    { word: 'big', set: { ...fila('big', 'biggest'), exampleTranslation: 'grande → el más grande' } },
+    { word: 'hot', set: { ...fila('hot', 'hottest'), exampleTranslation: 'caliente → el más caliente' } },
+    { word: 'hottest', set: { translation: 'el más caliente', ...fila('hot', 'hottest'), exampleTranslation: 'caliente → el más caliente' } },
+    { word: 'train station', set: { exampleTranslation: '¿Cuál es la tienda por departamentos más cercana a la estación de tren?' } },
+    { word: 'Japanese food', set: ANTOJO },
+    { word: 'in the mood for', set: { translation: 'tener ganas de, antojarse de', ...ANTOJO } },
+    { word: 'neighborhood', set: { translation: 'barrio', exampleTranslation: "Sid's Sushi es el mejor restaurante japonés de ese barrio." } },
+  ], nuevas: [
+    { despues: 'popular', v: { word: 'the least', translation: 'el menos, la menos', phonetic: '/ðə list/', emoji: '⬇️',
+      example: 'This sweater is the least expensive.', exampleTranslation: 'Este suéter es el menos caro.' } },
+    { despues: 'the least', v: { word: 'the worst', translation: 'el peor, la peor', phonetic: '/ðə wɝst/', emoji: '👎',
+      example: 'bad → the worst', exampleTranslation: 'malo → el peor' } },
+    { despues: 'recommend', v: { word: 'Try...', translation: 'Ve a..., prueba... (al recomendar un lugar)', phonetic: '/traɪ/', emoji: '👉',
+      example: "Try the Park Plaza. It's the newest mall in town.", exampleTranslation: 'Ve al Park Plaza. Es el centro comercial más nuevo de la ciudad.' } },
+    { despues: 'Try...', v: { word: 'Absolutely!', translation: '¡Claro que sí! ¡Totalmente!', phonetic: '/ˌæbsəˈlutli/', emoji: '💯',
+      example: "Absolutely! They're the most comfortable jeans we sell.", exampleTranslation: '¡Claro que sí! Son los jeans más cómodos que vendemos.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 90 }, [['coat', 'a coat'], ['sweater', 'a sweater']]);
+  fixPageContent(units, { unit: 'a2_8', page: 90,
+    ejercicios: [{ question: 'Find and correct the mistake: That neighborhood has restaurants Japanese the most comfortable.',
+      set: { question: "Find and correct the mistake: They're the jeans most comfortable we sell.", answer: "They're the most comfortable jeans we sell." } }],
+    cambios: [
+      ["Long adjectives (3+ syllables) use 'the most' not '-est'", "Adjectives with two or more syllables (that don't end in -y) use 'the most', not '-est'."],
+      ["Para adjetivos cortos (1-2 sílabas), formamos el superlativo agregando '-est': cheap → the cheapest, great → the greatest, nice → the nicest, cute → the cutest. Para adjetivos que terminan en consonante + vocal + consonante, duplicamos la última consonante: big → the biggest, hot → the hottest.",
+       "Para adjetivos de una sílaba agregamos '-est': cheap → the cheapest, great → the greatest. Si terminan en -e, solo '-st': nice → the nicest, cute → the cutest. Si terminan en -y, la y cambia a '-iest': easy → the easiest, pretty → the prettiest (por eso estos, aunque tengan dos sílabas, no llevan 'most'). Y si terminan en consonante + vocal + consonante, se duplica la última: big → the biggest, hot → the hottest."],
+      ['Those shoes are the most comfortable.', 'These shoes are the most comfortable.'],
+      ['Esos zapatos son los más cómodos.', 'Estos zapatos son los más cómodos.'],
+      ["Jake's Shoes tiene los mejores precios del pueblo.", "Jake's Shoes tiene los mejores precios de la ciudad."],
+      ['Prueba el Park Plaza. Es el centro comercial más nuevo del pueblo.', 'Ve al Park Plaza. Es el centro comercial más nuevo de la ciudad.'],
+      ["En inglés ponemos el adjetivo antes del sustantivo: 'the best Japanese restaurant' NO 'the Japanese restaurant best' como a veces estructuramos en español.",
+       "En español el superlativo va después de la cosa: 'los jeans más cómodos'. En inglés va antes: 'the most comfortable jeans', no 'the jeans most comfortable'."],
+      ['Complete conversations about recommendations, using the superlative form of the adjectives.', null],
+    ] });
+  return ok;
+}
+
+/* p. 91, "That depends". Las trampas del español estaban en inglés; los
+ * ejemplos de las Ideas eran inventados ("men's tops" = "blusas de hombres"). */
+function fixU8P91(units) {
+  const IDEAS = {
+    sleepwear: 'ropa de dormir', "men's / women's tops": 'camisas de hombre / blusas de mujer',
+    "men's / women's accessories": 'accesorios de hombre / de mujer', 'warm-weather clothing': 'ropa para clima caliente',
+    'casual clothing': 'ropa informal',
+  };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 91, cambios: [
+    ...Object.entries(IDEAS).map(([word, es]) => ({ word, set: { translation: es, example: word, exampleTranslation: es } })),
+    { word: 'comparing', set: { word: 'compare', translation: 'comparar', phonetic: '/kəmˈpɛr/', type: 'verb' } },
+    { word: 'Do you prefer', set: { word: 'Do you prefer...?' } },
+  ], nuevas: [
+    { despues: 'That depends', v: { word: 'they say', translation: 'dicen que', phonetic: '/ðeɪ seɪ/', emoji: '🗣️',
+      example: "Well, they say Tom's Outdoor Store has the largest selection and the best bargains.",
+      exampleTranslation: "Bueno, dicen que Tom's Outdoor Store tiene la mayor variedad y las mejores ofertas." } },
+    { despues: 'location', v: { word: 'What about...?', translation: '¿Y qué tal...?', phonetic: '/wʌt əˈbaʊt/', emoji: '🤔',
+      example: "What about location? I'd like something near public transportation.",
+      exampleTranslation: '¿Y la ubicación? Me gustaría algo cerca del transporte público.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 91 }, [['bargains', 'bargain'], ['sweaters', 'a sweater']]);
+  fixPageContent(units, { unit: 'a2_8', page: 91,
+    ejercicios: [{ question: 'Translate to English: La estación de metro es la más conveniente para comprar suéteres.',
+      set: { question: "Translate to English: Tom's está cerca de la estación de metro. Probablemente es la más conveniente.",
+             answer: "Tom's is near the subway station. It's probably the most convenient." } }],
+    cambios: [
+      ["Colombian speakers often say just 'Depends' (translating 'Depende' directly), but in English you must say 'That depends' or 'It depends' — the subject is required",
+       "En español decimos solo 'Depende'. En inglés va con sujeto: 'That depends' o 'It depends'."],
+      ["Spanish uses 'el más' for all adjectives, but English uses 'the most' only for long adjectives. Short adjectives use 'the -est' instead",
+       "En español siempre es 'el más': el más grande, el más conveniente. En inglés 'the most' es solo para los adjetivos largos (the most convenient); los cortos llevan '-est': the largest, no 'the most large'."],
+      ["Long adjectives (3+ syllables) use 'the most', not -est", "Adjectives with two or more syllables (that don't end in -y) use 'the most', not -est."],
+      ["Esta estructura se usa para pedir recomendaciones sobre lugares. En inglés, a diferencia del español, usamos 'where is' (no 'where are') porque 'place' es singular, aunque estés preguntando sobre varios lugares posibles. La respuesta típicamente usa superlativos.",
+       "Esta estructura se usa para pedir recomendaciones sobre lugares: Where's the best place + (in town) + to + verbo? Como en español ('¿Dónde está el mejor lugar...?'), 'place' es singular, así que va 'is'. La respuesta suele llevar superlativos."],
+      ["In Spanish you might say '¿Dónde hay...?' or '¿Dónde están...?' but in English use 'Where is' (singular) because you're asking about 'the place' (one recommendation)",
+       "En español decimos 'el mejor lugar para comprar', y ese 'para' lleva a poner 'for': 'the best place for buy' ✗. Con un verbo va 'to': 'the best place to buy' ✓."],
+      ["Don't confuse 'I'd like' with 'I like'. 'I'd like' = me gustaría (want), 'I like' = me gusta (enjoy). After 'I'd like', if you use a verb, you need 'to'",
+       "No confundas 'I'd like' (me gustaría, lo quiero) con 'I like' (me gusta). Y si después va un verbo, lleva 'to': I'd like to buy."],
+    ] });
+  return ok;
+}
+
+/* p. 92, pisos y direcciones. El ejercicio B es de escucha: la IA adivinó
+ * dónde quedaba cada departamento y lo puso de ejemplo como un hecho. Y en
+ * Colombia el "ground floor" es el primer piso, no la "planta baja". */
+function fixU8P92(units) {
+  const OPC = (sujeto, es) => ({ example: `${sujeto} (on this floor / upstairs / downstairs).`, exampleTranslation: `${es} (en este piso / arriba / abajo).` });
+  const ATRAS = { example: "The men's department is on the third floor, in the back, on the right.",
+                  exampleTranslation: 'El departamento de hombres está en el tercer piso, al fondo, a la derecha.' };
+  const ADELANTE = { example: "No. It's in the FRONT of the store.", exampleTranslation: 'No. Está en la parte de adelante de la tienda.' };
+  const PRIMERO = { example: 'on the first floor (OR on the ground floor)', exampleTranslation: 'en el primer piso (el del nivel de la calle)' };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 92, cambios: [
+    { word: 'on the top floor', set: { example: 'on the top floor', exampleTranslation: 'en el último piso' } },
+    { word: 'on the second floor', set: { example: 'on the second floor', exampleTranslation: 'en el segundo piso' } },
+    { word: 'on the first floor', set: PRIMERO },
+    { word: 'on the ground floor', set: { translation: 'en el primer piso (el del nivel de la calle)', ...PRIMERO } },
+    { word: 'in the basement', set: { example: 'in the basement', exampleTranslation: 'en el sótano' } },
+    { word: 'in the back', set: { translation: 'al fondo, en la parte de atrás', ...ATRAS } },
+    { word: 'in the front', set: ADELANTE }, { word: 'in', set: ADELANTE },
+    { word: 'on the right', set: ATRAS },
+    { word: 'take the stairs', set: { example: 'Should I take the STAIRS?', exampleTranslation: '¿Debería tomar las escaleras?' } },
+    { word: 'take the elevator', set: { example: 'Take the elevator.', exampleTranslation: 'Tome el ascensor.' } },
+    { word: 'elevator', set: { example: 'Take the elevator.', exampleTranslation: 'Tome el ascensor.' } },
+    { word: 'escalator', set: { translation: 'escalera eléctrica', example: 'Go up (or down) the escalator.', exampleTranslation: 'Suba (o baje) por la escalera eléctrica.' } },
+    { word: 'go up', set: { example: 'Go up (or down) the escalator.', exampleTranslation: 'Suba (o baje) por la escalera eléctrica.' } },
+    { word: 'stairs', set: { example: 'Go up (or down) the stairs.', exampleTranslation: 'Suba (o baje) por las escaleras.' } },
+    { word: 'go down', set: { example: 'Go up (or down) the stairs.', exampleTranslation: 'Suba (o baje) por las escaleras.' } },
+    { word: 'upstairs', set: OPC('The electronics department is', 'El departamento de electrónica está') },
+    { word: 'downstairs', set: OPC('The electronics department is', 'El departamento de electrónica está') },
+    { word: 'electronics department', set: OPC('The electronics department is', 'El departamento de electrónica está') },
+    { word: "men's bathroom", set: OPC("The men's bathroom is", 'El baño de hombres está') },
+    { word: 'coffee shop', set: OPC('The coffee shop is', 'La cafetería está') },
+    { word: 'luggage department', set: { translation: 'sección de maletas', ...OPC('The luggage department is', 'La sección de maletas está') } },
+    // "Women's department" no está impreso; sí "Women's sweaters".
+    { word: "women's department", set: { word: "women's sweaters", translation: 'suéteres de mujer',
+      example: "Women's sweaters are (on this floor / upstairs / downstairs).", exampleTranslation: 'Los suéteres de mujer están (en este piso / arriba / abajo).' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_8', page: 92,
+    ejercicios: [{ question: "The luggage department is ___ the ground floor. It's a large department on the first level of the store.",
+      set: { question: "The men's department is ___ the third floor, in the back, on the right.", answer: 'on' } }],
+    cambios: [
+      ["Spanish speakers say 'en el primer piso' for everything, but English requires 'on the first floor' (not 'in the first floor') for numbered floors.",
+       "En español todo es 'en': en el primer piso, en el sótano, en la parte de atrás. En inglés los pisos van con 'on' (on the first floor, no 'in the first floor') y las zonas con 'in' (in the basement, in the back)."],
+      ["Spanish speakers may add 'you' because Spanish uses 'usted tome', but English imperative has no subject pronoun: 'Take the stairs' (not 'You take the stairs').",
+       "En español la orden cambia con tú o usted (toma / tome). En inglés es una sola forma y sin sujeto: 'Take the stairs', no 'You take the stairs'."],
+      ["Spanish speakers may translate literally 'subir' as 'up' only, but in English you need the verb 'go' before 'up' or 'down'.",
+       "Para 'subir' no basta 'up': se dice 'go up' (y 'go down' para bajar). Y con el ascensor no se dice 'go up the elevator': el libro dice 'Take the elevator'."],
+      ['Go up to downstairs.', 'Go up the elevator.'],
+      ['Go down to the first floor.', 'Take the elevator.'],
+      ["'Go up' and 'downstairs' contradict each other; use 'go down' for moving to a lower floor.",
+       "The book says DON'T SAY 'go up (or down) the elevator'. With the elevator, use 'take'."],
+      ['Now practice these conversations with a partner. Give directions to different departments in a store using the vocabulary from this page.',
+       'Now practice these conversations with a partner.'],
+      ["Practice asking for and giving directions to locations on different floors. Use 'Take the escalator', 'Take the stairs', and 'Take the elevator' in your answers.", null],
+      ["Look at the building diagrams and describe where each department is located. Use 'on the first floor', 'in the back', 'in the front', and other location phrases.", null],
+    ] });
+  return ok;
+}
+
+/* p. 93, el plano de la tienda. "Children's" está en el segundo piso, no en
+ * el primero. Un error común daba por correcto "at the ground floor". */
+function fixU8P93(units) {
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 93, cambios: [
+    { word: "Children's", set: { example: "Children's is on the second floor.", exampleTranslation: 'Niños está en el segundo piso.' } },
+    { word: 'ground floor', set: { translation: 'primer piso (el del nivel de la calle)' } },
+    { word: 'basement', set: { example: 'Oh, those are in Sports and Fitness in the basement.', exampleTranslation: 'Ah, esos están en Deportes y Fitness, en el sótano.' } },
+    { word: 'Can I get', set: { word: 'Can I get [this] in...?', translation: '¿Me lo tiene en...? (otra talla o color)',
+      example: 'Can I get [this] in ___ ?', exampleTranslation: '¿Me lo tiene en ___?' } },
+  ] });
+  if (ok) {
+    const b = units.a2_8.batches.find(x => x && (x.pages || []).includes(93));
+    (b.vocab || []).forEach(v => {
+      if (v && typeof v.exampleTranslation === 'string') v.exampleTranslation = v.exampleTranslation.replace('en la planta baja', 'en el primer piso');
+    });
+  }
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 93 }, [['is this', 'the heaviest'], ["I'll take", "I'll take them"]]);
+  fixPageContent(units, { unit: 'a2_8', page: 93,
+    // Repetido de la p. 92, y 'can' ya lo sabe: cuatro temas que no enseña la página.
+    quitarGramatica: ['Imperative for giving directions: Take the escalator', "Modal verb 'can' for ability and possibility"],
+    ejercicios: [{ question: 'Which sentence is INCORRECT?', set: { answer: "Children's is in the second floor.",
+      options: ["Men's is on the second floor.", 'Luggage is in the basement.', "Children's is in the second floor.", 'Electronics is in the basement.'],
+      explanation: "It should be 'on the second floor': we use 'on' with floors." } }],
+    cambios: [
+      ['The Information desk is at the ground floor.', 'The Information desk is on the ground floor.'],
+      ["Use 'at' for specific points like desks, or 'on the ground floor' for the floor itself", "Use 'on' with floors. ('At' is for a point: Meet me at the information desk.)"],
+    ] });
+  return ok;
+}
+
+/* p. 94, "Going Abroad on Business?". Ejemplos cortados o cambiados ("the
+ * destination of your business trip" — es "the success"), y los conectores
+ * del texto, que le sirven para la coherencia del speaking. */
+function fixU8P94(units) {
+  const SIN_SACO = { example: 'Dressing casually—for example, not wearing a tie or a suit jacket—may actually seem impolite.',
+                     exampleTranslation: 'Vestirse informal —por ejemplo, sin corbata o sin saco— puede incluso parecer descortés.' };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 94, cambios: [
+    { word: 'appropriate', set: { example: "Shorts and tank tops may be fine on the street, but they're never appropriate in an office.",
+      exampleTranslation: 'Los shorts y las camisetas sin mangas pueden estar bien en la calle, pero nunca son apropiados en una oficina.' } },
+    { word: 'liberal', set: { example: 'In some countries, clothing customs are pretty liberal, and in other ones, "anything goes"—there are almost no rules at all.',
+      exampleTranslation: 'En algunos países las costumbres de vestir son bastante liberales, y en otros "todo vale": casi no hay reglas.' } },
+    { word: 'casual', set: { example: 'In some countries, office dress codes are pretty casual.',
+      exampleTranslation: 'En algunos países, la forma de vestir en la oficina es bastante informal.' } },
+    { word: 'business trip', set: { example: 'The most important thing is the success of your business trip.',
+      exampleTranslation: 'Lo más importante es el éxito de tu viaje de negocios.' } },
+    { word: 'jacket', set: { translation: 'chaqueta; saco (de traje)', ...SIN_SACO } },
+    { word: 'impolite', set: SIN_SACO },
+    { word: 'dressing casually', set: { translation: 'vestirse informal', ...SIN_SACO } },
+    { word: 'relax', set: { example: 'So if that describes your destination, you can just relax and pack whatever you want.',
+      exampleTranslation: 'Así que si así es tu destino, puedes relajarte y empacar lo que quieras.' } },
+  ], nuevas: [
+    { despues: 'business trip', v: { word: 'abroad', translation: 'al exterior, en el extranjero', phonetic: '/əˈbrɔd/', emoji: '✈️',
+      example: 'Going abroad on business?', exampleTranslation: '¿Vas a viajar al exterior por negocios?' } },
+    { despues: 'business casual', v: { word: 'instead of', translation: 'en vez de', phonetic: '/ɪnˈstɛd əv/', emoji: '🔄',
+      example: 'Instead of wearing suits and ties to work, most men simply wear a nice pair of slacks—such as khakis—and a dress shirt.',
+      exampleTranslation: 'En vez de ir al trabajo de traje y corbata, la mayoría de los hombres simplemente usa un buen pantalón —como unos caqui— y una camisa de vestir.' } },
+    { despues: 'instead of', v: { word: 'Nevertheless', translation: 'sin embargo, aun así', phonetic: '/ˌnɛvərðəˈlɛs/', emoji: '⚖️',
+      example: 'Nevertheless, even in countries with generally liberal dress codes, some items are not "business casual."',
+      exampleTranslation: 'Sin embargo, incluso en países con códigos de vestimenta generalmente liberales, algunas prendas no son "casual de negocios".' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 94 }, [['blouse', 'a blouse']]);
+  fixPageContent(units, { unit: 'a2_8', page: 94, cambios: [
+    // "More strict" también se dice; el error de verdad es juntar more y -er.
+    ['The dress code in this office is more strict than in liberal offices.', 'The rules are more stricter in conservative cultures.'],
+    ['The dress code in this office is stricter than in liberal offices.', 'The rules are stricter in conservative cultures.'],
+    ["Short adjectives like 'strict' use -er, not 'more'.", "Don't use 'more' with -er: 'stricter' already means 'más estricto'."],
+    ['Conservative means with more rules for appropriate dress.', 'In countries with more liberal "dress codes," such as the U.S., the clothing style in some offices is "business casual."'],
+    ['Conservador significa con más reglas para vestirse apropiadamente.', 'En países con "códigos de vestimenta" más liberales, como Estados Unidos, la ropa en algunas oficinas es "casual de negocios".'],
+    ["In countries with conservative business dress codes, men and women typically wear ___ suits. These are required for special events when casual clothes aren't OK.",
+     'In countries with conservative business dress codes, men and women typically wear ___ suits in an office, even on the hottest days of the year.'],
+  ] });
+  return ok;
+}
+
+/* p. 95. Las opciones del ejercicio D quedaron como hechos: "pack or
+ * travel", "clothing mistakes", "business casual = more formal",
+ * "extremely liberal = very strict". El ejemplo ahora muestra las dos
+ * opciones, como el libro. */
+function fixU8P95(units) {
+  const ETIQUETAS = { 'on the street': 'en la calle', 'in a formal restaurant': 'en un restaurante elegante',
+    'in a casual social setting': 'en un plan social informal', 'at a movie theater': 'en un cine' };
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 95, cambios: [
+    { word: 'travel', set: { example: 'Another way to say "put clothes in your luggage" is (pack / travel).',
+      exampleTranslation: 'Otra forma de decir "poner ropa en tu equipaje" es (pack / travel).' } },
+    { word: 'more formal', set: { example: 'When people dress in a business casual style, they wear (more formal / less formal) clothing in an office.',
+      exampleTranslation: 'Cuando la gente se viste con estilo casual de negocios, usa ropa (más formal / menos formal) en una oficina.' } },
+    { word: 'very strict', set: { example: 'Another way to describe an extremely liberal attitude about clothing is ("anything goes" / "very strict").',
+      exampleTranslation: 'Otra forma de describir una actitud muy liberal sobre la ropa es ("anything goes" / "very strict").' } },
+    { word: "do's and don'ts", set: { translation: 'lo que se debe y no se debe hacer',
+      exampleTranslation: 'Las reglas sobre qué ponerse a veces se llaman "do\'s and don\'ts" (lo que se debe y no se debe hacer).' } },
+    { word: 'casual settings', set: { example: 'a country where "anything goes" in casual settings',
+      exampleTranslation: 'un país donde "todo vale" en los ambientes informales' } },
+    { word: 'generally', set: { example: 'a country where people generally wear "business casual" in offices',
+      exampleTranslation: 'un país donde la gente generalmente usa "casual de negocios" en las oficinas' } },
+    ...Object.entries(ETIQUETAS).map(([word, es]) => ({ word, set: { example: word, exampleTranslation: es } })),
+  ], nuevas: [
+    { despues: 'keep in mind', v: { word: 'However', translation: 'sin embargo', phonetic: '/haʊˈɛvər/', emoji: '↔️',
+      example: 'In this country, dress codes are pretty liberal. However, there are a few rules you should keep in mind.',
+      exampleTranslation: 'En este país, los códigos de vestimenta son bastante liberales. Sin embargo, hay algunas reglas que deberías tener en cuenta.' } },
+    { despues: 'However', v: { word: 'First of all', translation: 'primero que todo, para empezar', phonetic: '/fɝst əv ɔl/', emoji: '1️⃣',
+      example: 'However, there are a few rules you should keep in mind. First of all, . . .',
+      exampleTranslation: 'Sin embargo, hay algunas reglas que deberías tener en cuenta. Primero que todo, ...' } },
+    { despues: 'pretty liberal', v: { word: 'tend to', translation: 'tender a, soler', phonetic: '/tɛnd tu/', emoji: '↗️',
+      example: 'I tend to be conservative.', exampleTranslation: 'Tiendo a ser conservador.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_8', page: 95 }, [['mistakes', 'mistake'], ['offices', 'office']]);
+  fixPageContent(units, { unit: 'a2_8', page: 95,
+    ejercicios: [
+      { question: 'When people dress in a business casual style, they wear ___ formal clothing than very casual clothes. This is common in many offices.',
+        set: { question: 'When people dress in a business casual style, they wear ___ formal clothing in an office.', answer: 'less',
+               explanation: 'The book: in a business casual style, people wear less formal clothing in an office.' } },
+      { question: 'What kind of clothing do people wear in a business casual style?',
+        set: { answer: 'less formal clothing', options: ['less formal clothing', 'only very formal clothing', 'only casual clothing', 'sleeveless clothing'],
+               explanation: 'The book: in a business casual style, people wear less formal clothing in an office.' } },
+    ],
+    cambios: [
+      ["Colombian speakers often translate word-by-word 'Otra manera de decir' but forget the article 'Another' or use 'Other' instead. Always use 'Another way', not 'Other way'.",
+       "En español decimos 'otra forma', sin artículo, y sale 'Other way' ✗. En inglés es 'Another way' (an + other), en una sola palabra."],
+      ['Other way to say pack is travel.', 'Other way to say "put clothes in your luggage" is pack.'],
+      ['Another way to say pack is travel.', 'Another way to say "put clothes in your luggage" is pack.'],
+      ['When people dress in a business casual style, they wear more formal clothing in an office.', 'A suit is more formal than business casual.'],
+      ['Cuando la gente se viste en un estilo casual de negocios, usa ropa más formal en una oficina.', 'Un traje es más formal que el estilo casual de negocios.'],
+      ["Colombian speakers might say 'more formal clothing' correctly, but sometimes add unnecessary articles like 'the more formal' when describing general categories.",
+       "'Más formal' y 'menos formal' funcionan igual que en español: more formal, less formal. El error típico es el 'que' de la comparación: es 'than', no 'that': less formal than, no 'less formal that'."],
+      ['Business casual is less formal that casual clothes.', 'Business casual is more formal that casual clothes.'],
+      ['Business casual is less formal than casual clothes.', 'Business casual is more formal than casual clothes.'],
+      ["Colombian speakers often forget 'to' before the verb because Spanish uses the infinitive directly: 'Es importante usar' becomes 'It's important to wear', not 'It's important wear'.",
+       "En español el infinitivo va directo: 'Es importante usar'. En inglés lleva 'to': 'It's important to wear', no 'It's important wear'."],
+      ["Colombian speakers might confuse 'tend to be' with 'intend to' (tener la intención de). 'Tend to' means 'soler' or 'tender a', not 'intentar'.",
+       "No confundas 'tend to' (tender a, soler) con 'intend to' (tener la intención de)."],
+    ] });
+  return ok;
+}
+
+/* El lote de phrasal verbs de la Unit 8 (escrito a mano, sin foto). Como en la
+ * Unit 9: solo los que lo son quedan como phrasal verb, y se quita la copia de
+ * los que ya están en su página del libro con el mismo nombre (comparten el
+ * progreso). "Try on" pasó a la p. 87, con la frase del libro. */
+function fixU8Phrasal(units) {
+  const u = units && units.a2_8;
+  const b = u && (u.batches || []).find(x => x && x.id === 'pv_a2_8');
+  if (!b) return false;
+  const siLoSon = ['try on', 'look for', 'go up', 'go down', 'put on'];
+  b.vocab = (b.vocab || []).map(v => (v && v.type === 'phrasal verb' && !siLoSon.includes(v.word)) ? { ...v, type: 'phrase' } : v);
+  if (b.title === 'Phrasal verbs — Unit 8') b.title = 'Phrasal verbs & expressions — Unit 8';
+  const enSuPagina = w => (u.batches || []).some(x => x && x !== b && (x.vocab || []).some(v => v && v.word === w));
+  fixPageContent(units, { unit: 'a2_8', id: 'pv_a2_8', quitarPalabras: ['try on', 'keep shopping', 'no wonder', 'go up', 'go down',
+    'take the escalator', 'pack', "do's and don'ts", 'anything goes'].filter(enSuPagina) });
+  unirEnLaUnidad(units, { unit: 'a2_8', id: 'pv_a2_8' }, [['That depends.', 'That depends'], ['be on sale', 'on sale']]);
   return true;
 }
 
@@ -20930,7 +21453,9 @@ function missingBatchesFromBackup(cur, backup) {
 function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
-   fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal]
+   fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
+   fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
+   fixU8P93, fixU8P94, fixU8P95, fixU8Phrasal]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
