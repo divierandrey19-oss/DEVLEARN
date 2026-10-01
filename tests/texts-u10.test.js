@@ -3,8 +3,9 @@
  *
  * Se escriben de a poco, solo los de las páginas de la clase siguiente, a
  * partir de sus respuestas: su vida real, no una inventada. Pidió máximo 150
- * palabras. Y se entregan subiendo SEED_VERSION: sin eso, quien ya abrió una
- * versión anterior nunca los recibe (pasó dos veces, ver CLAUDE.md).
+ * palabras; el 1 de octubre lo subió a 170. Y se entregan subiendo
+ * SEED_VERSION: sin eso, quien ya abrió una versión anterior nunca los
+ * recibe (pasó dos veces, ver CLAUDE.md).
  */
 'use strict';
 
@@ -28,9 +29,9 @@ test('los textos de la Unit 10 están en la semilla, con traducción', () => {
   }
 });
 
-test('máximo 150 palabras, como él pidió', () => {
+test('máximo 170 palabras, como él pidió', () => {
   for (const id of ['txt_u10_p109', 'txt_u10_p110111']) {
-    assert.ok(palabras(texto(id).body) <= 150, `${id} tiene ${palabras(texto(id).body)} palabras`);
+    assert.ok(palabras(texto(id).body) <= 170, `${id} tiene ${palabras(texto(id).body)} palabras`);
   }
 });
 
