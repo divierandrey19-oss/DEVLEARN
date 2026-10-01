@@ -167,7 +167,7 @@ error, se arregla también el prompt, o se repite en cada página.
 Se escriben de a poco, solo los de las páginas de la clase siguiente, y se
 entregan subiendo `SEED_VERSION`.
 
-- Máximo 150 palabras.
+- Máximo 170 palabras (antes eran 150; él lo subió el 1 de octubre).
 - **Preguntarle antes** lo de su vida que el texto va a contar. No suponer
   nada ("nunca nos quedamos hasta tarde" salió de una suposición).
 - **Su opinión, con sus palabras.** Puede decir con quién del libro está de
