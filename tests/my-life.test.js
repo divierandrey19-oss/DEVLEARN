@@ -186,3 +186,14 @@ test('el frente de My life está en español y no suena con la voz en inglés', 
   const voltear = h.extraerFuncion('vbFlip');
   assert.match(voltear, /if \(vbSes\.where === 'life'\) \{\s*\/\/[^\n]*\n\s*if \(vbSes\.shown\) speak\(/);
 });
+
+test('el concentrado se echa en la bolsa, no se "sirve"', () => {
+  // "I serve the kibble" sonaba a servirle la comida a un perro; en la tienda
+  // él lo echa en la bolsa para venderlo a granel (se lo corrigió otra IA y
+  // tenía razón). Y "the dustpan for the kibble" no decía para qué.
+  const frases = Object.values(LIFE_NOW).flatMap(n => [n.en, n.past && n.past.en]).filter(Boolean)
+    .concat(tarjetas.map(t => t.v[4]));
+  assert.ok(!frases.some(f => /\bserve\b.*kibble/i.test(f)), 'ninguna frase "sirve" el concentrado');
+  assert.equal(LIFE_NOW['tool:scoop'].en, 'I fill the bag with kibble using a <b>scoop</b>.');
+  assert.equal(LIFE_NOW['tool:dustpan'].en, 'I pick up spilled kibble with the <b>dustpan</b>.');
+});
