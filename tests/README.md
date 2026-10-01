@@ -51,7 +51,7 @@ dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
 `page-questions.test.js` — Preguntas para el roleplay por página (él es flojo
 para preguntar): en su propio mazo, aparte del vocabulario; del tema del libro,
-casi todas abiertas; sin pisar las que ya tenga. Por ahora solo la p. 109.
+casi todas abiertas; sin pisar las que ya tenga. Por ahora las pp. 109, 110 y 111.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la

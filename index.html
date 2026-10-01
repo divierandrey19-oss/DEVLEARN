@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01e -->
+<!-- DEVLEARN_BUILD: 2026-10-01f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4903,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01e';
+const APP_BUILD = '2026-10-01f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6712,6 +6712,8 @@ function migrateState(s) {
   if (!merged._u10P113ContentV1 && fixU10P113Content(merged.units)) merged._u10P113ContentV1 = true;
   if (!merged._u10P109KidsV1 && fixU10P109Kids(merged.units)) merged._u10P109KidsV1 = true;
   if (!merged._u10P109QuestionsV1 && addU10P109Questions(merged.units)) merged._u10P109QuestionsV1 = true;
+  if (!merged._u10P110QuestionsV1 && addU10P110Questions(merged.units)) merged._u10P110QuestionsV1 = true;
+  if (!merged._u10P111QuestionsV1 && addU10P111Questions(merged.units)) merged._u10P111QuestionsV1 = true;
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
   // las demás correcciones buscan la página por su número.
   if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
@@ -7035,12 +7037,17 @@ function fixU10P109Kids(units) {
  * tema del libro, no de sus textos; abiertas, más las de sí o no que el
  * roleplay usa. Tarjeta: la pregunta en inglés → qué significa y una
  * respuesta de ejemplo. Primero la p. 109, para que él vea cómo queda. */
-function addU10P109Questions(units) {
-  const u = units && units.a2_10;
-  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(109));
+function addPageQuestions(units, unit, page, preguntas) {
+  const u = units && units[unit];
+  const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(page));
   if (!b) return false;
-  if ((b.questions || []).length) return true;
-  b.questions = [
+  if ((b.questions || []).length) return true;   // las que ya tenga no se pisan
+  b.questions = preguntas;
+  return true;
+}
+
+function addU10P109Questions(units) {
+  return addPageQuestions(units, 'a2_10', 109, [
     { q: 'Which of the three life goals do you find the most appealing? Why?',
       es: '¿Cuál de las tres metas de vida te parece la más atractiva? ¿Por qué?',
       a: "Let me think... I guess I'd like to live a long, healthy life." },
@@ -7062,8 +7069,72 @@ function addU10P109Questions(units) {
     { q: 'What do you do to live a long, healthy life?',
       es: '¿Qué haces para tener una vida larga y saludable?',
       a: 'I exercise and I try to eat well.' },
-  ];
-  return true;
+  ]);
+}
+
+/* p. 110: qué hace exitosa a la gente (Adam, Katherine, Kevin, Grace, Casey,
+ * Sophie). Las respuestas de ejemplo son sus opiniones, tal como las dicen. */
+function addU10P110Questions(units) {
+  return addPageQuestions(units, 'a2_10', 110, [
+    { q: 'What makes people successful?',
+      es: '¿Qué hace que las personas tengan éxito?',
+      a: "I think it's important to take small steps until you feel ready to take the big ones." },
+    { q: 'Which opinion do you agree with? Why?',
+      es: '¿Con qué opinión estás de acuerdo? ¿Por qué?',
+      a: 'I agree with ___, because...' },
+    { q: "Which opinion don't you agree with? Why not?",
+      es: '¿Con qué opinión no estás de acuerdo? ¿Por qué no?',
+      a: "No offense, but I don't agree with ___, because..." },
+    { q: "Do you think it's necessary to have lots of money to be successful?",
+      es: '¿Crees que es necesario tener mucho dinero para tener éxito?',
+      a: "Yes, I do. That's just the way it is. / No, I don't." },
+    { q: 'How can anyone be successful?',
+      es: '¿Cómo puede cualquiera tener éxito?',
+      a: "If you work hard, no way you're not going to be successful." },
+    { q: 'Do you need help from friends or family to be successful?',
+      es: '¿Necesitas ayuda de amigos o familia para tener éxito?',
+      a: "I hate to say it, but you need help from friends or family. No one does it alone." },
+    { q: "What should you do if you're not succeeding?",
+      es: '¿Qué deberías hacer si no te está yendo bien?',
+      a: "If you're not succeeding, you should change the way you usually do things." },
+    { q: "What do you do when someone tells you you can't succeed?",
+      es: '¿Qué haces cuando alguien te dice que no puedes tener éxito?',
+      a: "Don't let anyone tell you you can't succeed. Believe in yourself." },
+  ]);
+}
+
+/* p. 111: Jake y Nicole (grab a bite, call it a day, a lot on my plate, go
+ * the extra mile, deserve) y el speaking: un consejo para tener éxito. */
+function addU10P111Questions(units) {
+  return addPageQuestions(units, 'a2_10', 111, [
+    { q: 'How about we grab a bite?',
+      es: '¿Qué tal si comemos algo?',
+      a: "Sorry, I can't. Believe me, I'd love to call it a day." },
+    { q: 'How late are you going to stay?',
+      es: '¿Hasta qué hora te vas a quedar?',
+      a: "I think I should keep working for another hour or two." },
+    { q: "Can't someone give you a hand?",
+      es: '¿Nadie te puede echar una mano?',
+      a: 'You mean like Tom? He has a lot on his plate, too.' },
+    { q: 'When do you usually call it a day?',
+      es: '¿A qué hora sueles terminar de trabajar?',
+      a: 'I usually call it a day at ___.' },
+    { q: 'Where do you like to grab a bite after work?',
+      es: '¿Dónde te gusta comer algo después del trabajo?',
+      a: 'I like to grab a bite at ___.' },
+    { q: 'What do you do when you have a lot on your plate?',
+      es: '¿Qué haces cuando tienes mucho trabajo?',
+      a: 'When I have a lot on my plate, I...' },
+    { q: 'How do you go the extra mile at work?',
+      es: '¿Cómo haces un esfuerzo extra en el trabajo?',
+      a: 'I go the extra mile when I...' },
+    { q: 'How can you be successful in love?',
+      es: '¿Cómo puedes tener éxito en el amor?',
+      a: 'If you want to be successful in love, you have to be able to understand the needs of another person.' },
+    { q: "What's your tip for a successful career?",
+      es: '¿Cuál es tu consejo para tener éxito en tu carrera?',
+      a: 'If you want to be successful in your career, you have to...' },
+  ]);
 }
 
 /* ── Unit 9, revisada contra las fotos (su respaldo del 29 de septiembre) ──
@@ -21540,7 +21611,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
