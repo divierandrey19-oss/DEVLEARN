@@ -6720,6 +6720,8 @@ function migrateState(s) {
   if (!merged._u10P109QuestionsV1 && addU10P109Questions(merged.units)) merged._u10P109QuestionsV1 = true;
   if (!merged._u10P110QuestionsV1 && addU10P110Questions(merged.units)) merged._u10P110QuestionsV1 = true;
   if (!merged._u10P111QuestionsV1 && addU10P111Questions(merged.units)) merged._u10P111QuestionsV1 = true;
+  if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
+  if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
   // las demás correcciones buscan la página por su número.
   if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
@@ -7140,6 +7142,69 @@ function addU10P111Questions(units) {
     { q: "What's your tip for a successful career?",
       es: '¿Cuál es tu consejo para tener éxito en tu carrera?',
       a: 'If you want to be successful in your career, you have to...' },
+  ]);
+}
+
+/* p. 112: would like + infinitivo (deseos para el futuro). Las preguntas del
+ * cuadro de gramática, con el vocabulario de la página; incluida la de Who
+ * como sujeto, que no lleva el orden de pregunta. */
+function addU10P112Questions(units) {
+  return addPageQuestions(units, 'a2_10', 112, [
+    { q: 'What would you like to do in the future?',
+      es: '¿Qué te gustaría hacer en el futuro?',
+      a: "I'd like to..." },
+    { q: 'When would you like to graduate?',
+      es: '¿Cuándo te gustaría graduarte?',
+      a: "I'd like to graduate next year." },
+    { q: 'Why would you like to work abroad?',
+      es: '¿Por qué te gustaría trabajar en el exterior?',
+      a: "Because I'd like to..." },
+    { q: 'Would you like to live abroad?',
+      es: '¿Te gustaría vivir en el exterior?',
+      a: "Yes, I would. / No, I wouldn't." },
+    { q: 'Would you like to retire next year?',
+      es: '¿Te gustaría retirarte el próximo año?',
+      a: "Yes, I would. / No, I wouldn't." },
+    { q: 'Would you like to get a promotion?',
+      es: '¿Te gustaría que te ascendieran?',
+      a: "Yes, I would. / No, I wouldn't." },
+    { q: "What wouldn't you like to do in the future?",
+      es: '¿Qué no te gustaría hacer en el futuro?',
+      a: "I wouldn't like to..." },
+    { q: 'Who would like to get rich?',
+      es: '¿Quién quisiera hacerse rico? (Who es el sujeto: sin "you")',
+      a: 'I would! / My brother would.' },
+  ]);
+}
+
+/* p. 113: el Conversation Model (con "What do you mean?" para pedir que le
+ * aclaren) y KEEP TALKING: When / Who / Why would you like to...? */
+function addU10P113Questions(units) {
+  return addPageQuestions(units, 'a2_10', 113, [
+    { q: 'So, what would you like to do in the next few years?',
+      es: 'Entonces, ¿qué te gustaría hacer en los próximos años?',
+      a: 'What do you mean?' },
+    { q: 'What do you mean?',
+      es: '¿Qué quieres decir? (para pedir que te aclaren)',
+      a: 'Well, would you like to get married? Or change careers?' },
+    { q: 'Would you like to get married? Or change careers?',
+      es: '¿Te gustaría casarte? ¿O cambiar de carrera?',
+      a: "Actually, I'd really like to get married. What about you?" },
+    { q: 'What about you?',
+      es: '¿Y tú?',
+      a: "Me? I'd love to study art." },
+    { q: 'When would you like to buy a house?',
+      es: '¿Cuándo te gustaría comprar una casa?',
+      a: "I'd like to buy a house in a few years." },
+    { q: 'Who would you like to travel with?',
+      es: '¿Con quién te gustaría viajar?',
+      a: "I'd like to travel with..." },
+    { q: 'Why would you like to move to a new city?',
+      es: '¿Por qué te gustaría mudarte a una ciudad nueva?',
+      a: "Because I'd like to..." },
+    { q: 'Would you like to buy a virtual assistant?',
+      es: '¿Te gustaría comprar un asistente virtual?',
+      a: "Yes, I would. / No, I wouldn't." },
   ]);
 }
 
@@ -21617,7 +21682,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
