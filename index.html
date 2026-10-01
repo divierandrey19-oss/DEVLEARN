@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01g -->
+<!-- DEVLEARN_BUILD: 2026-10-01h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4903,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01g';
+const APP_BUILD = '2026-10-01h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6476,7 +6476,9 @@ function migrateState(s) {
   // 13: textos de la Unit 10 (pp. 109 y 110-111), escritos con él a partir
   // de sus respuestas: máximo 150 palabras, su vida real. Se entregan de a
   // poco, según las páginas que ve en la clase siguiente.
-  const SEED_VERSION = 13;
+  // 14: el de las pp. 112-113 (deseos para el futuro, would like). Ya con
+  // máximo 170 palabras; lo que él no contó lo completé y él lo aprobó.
+  const SEED_VERSION = 14;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6622,6 +6624,10 @@ function migrateState(s) {
         wh: [],
         body: "In my opinion, anyone can be successful if you work hard, so I agree with Kevin. I also agree with Adam, because no one does it alone. For example, my brother and I have a pet shop together, and when I have a lot on my plate, he gives me a hand. I hate to say it, but I don't agree with Katherine, because you don't need a lot of money to start. You need to believe in yourself and take small steps, like Casey says. Sometimes the shop is super busy, and we have tons to do, but we don't call it a day until everything is ready. Then we grab a bite together. I think our customers deserve that, so we always go the extra mile. So my tip for a successful career is simple: work hard, be disciplined, and help your family.",
         trans: "En mi opinión, cualquiera puede tener éxito si trabaja duro, así que estoy de acuerdo con Kevin. También estoy de acuerdo con Adam, porque nadie lo logra solo. Por ejemplo, mi hermano y yo tenemos una tienda de mascotas juntos, y cuando tengo mucho trabajo, él me ayuda. Odio decirlo, pero no estoy de acuerdo con Katherine, porque no necesitas mucho dinero para empezar. Necesitas creer en ti mismo y dar pasos pequeños, como dice Casey. A veces la tienda está súper ocupada y tenemos un montón de cosas que hacer, pero no terminamos hasta que todo está listo. Después comemos algo juntos. Creo que nuestros clientes se lo merecen, así que siempre hacemos un esfuerzo extra. Así que mi consejo para una carrera exitosa es simple: trabaja duro, sé disciplinado y ayuda a tu familia." },
+      { id: 'txt_u10_p112113', title: 'U10 · pág 112 - 113',
+        wh: [],
+        body: "Let me tell you about my wishes for the future. First, I'd really like to graduate from my English course with a C1 level next year. That's very important for me, because I'd like to work abroad in a few years, and I need good English to do it. In my opinion, working in another country is a great way to grow professionally. Second, I'd love to get rich. But the money isn't only for me: with a lot of money, I can help my family and the animals that live on the street. On the other hand, I wouldn't like to get married. Right now, I want to focus on my studies and my career, and I'm happy with my life the way it is. So, to sum up, I'd like to graduate, work abroad and get rich, but I wouldn't like to get married. What about you? What would you like to do in the next few years?",
+        trans: "Déjame contarte mis deseos para el futuro. Primero, me gustaría mucho graduarme de mi curso de inglés con nivel C1 el próximo año. Eso es muy importante para mí, porque me gustaría trabajar en el exterior en unos años, y necesito buen inglés para hacerlo. En mi opinión, trabajar en otro país es una gran forma de crecer profesionalmente. Segundo, me encantaría hacerme rico. Pero la plata no es solo para mí: con mucha plata puedo ayudar a mi familia y a los animales que viven en la calle. Por otro lado, no me gustaría casarme. Ahora mismo quiero enfocarme en mis estudios y mi carrera, y estoy feliz con mi vida como está. Así que, en resumen, me gustaría graduarme, trabajar en el exterior y hacerme rico, pero no me gustaría casarme. ¿Y tú? ¿Qué te gustaría hacer en los próximos años?" },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
