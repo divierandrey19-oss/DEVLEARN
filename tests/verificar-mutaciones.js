@@ -493,9 +493,9 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  renderCalendar();\n  document.getElementById('dash-levels').innerHTML = '';\n  updateNavBadges();`,
   },
   {
-    nombre: 'volver a sembrar las frases de podcast cada vez que abre',
-    buscar: `  if (!merged._podPhrases20261001) {\n    merged._podPhrases20261001 = true;`,
-    reemplazo: `  if (true) {\n    merged._podPhrases20261001 = true;`,
+    nombre: 'que una frase de podcast regale la respuesta en la pista',
+    buscar: `["Here you go.", "", "", "al pasarle algo",`,
+    reemplazo: `["Here you go.", "", "", "here you go: al pasarle algo",`,
   },
   {
     nombre: 'no repartir los textos aprendidos al arrancar',

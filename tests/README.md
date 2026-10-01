@@ -122,11 +122,6 @@ curso, el progreso, los accesos), sin lo que se quitó por repetido, sin que
 `renderDashboard` busque un elemento que ya no existe (rompería la pantalla), y
 con la lista del curso arrancando en las próximas 3 clases.
 
-`podcast-phrases.test.js` — Las frases de podcast que él mandó por el chat:
-una sesión de Podcasts ya completa (traducción, pronunciación y un ejemplo que
-la usa), fuera de las unidades, sin la que no se entendió bien, y una sola vez:
-si la borra, no vuelve.
-
 `sentence-menu.test.js` — Escuchar una sola frase del texto: el botón 🔄 de
 cada frase abre un menú con 🔊 Listen (solo esa frase, y el cursor queda ahí
 para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había que
@@ -160,7 +155,9 @@ su regla.
 `my-life.test.js` — La pestaña My life: que cada tarjeta del local tenga su
 frase en presente (el local, la casa y Going out), que no haya dos frentes
 iguales en español, que la casa no comparta tarjeta con el local, que Verbs ya
-no lleve el local y que cada globito cuente lo suyo.
+no lleve el local y que cada globito cuente lo suyo. Las frases que él manda de
+podcasts van ahí, en "Phrases I heard", una familia por lote (las del 1 de
+octubre son "From a podcast · 2"), y la pista del frente no regala la respuesta.
 
 ## verificar-mutaciones.js
 
