@@ -533,6 +533,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `   `,
   },
   {
+    nombre: 'pisar las preguntas que él ya tenía en la página',
+    buscar: `  if ((b.questions || []).length) return true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'quitar el botón de preguntas de la hoja de la página',
+    buscar: `onclick="document.getElementById('page-sheet').remove();practicePageQuestions('\${escapeStr(batchId)}')"`,
+    reemplazo: `onclick="document.getElementById('page-sheet').remove()"`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,
