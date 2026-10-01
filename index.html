@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01a -->
+<!-- DEVLEARN_BUILD: 2026-10-01b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4852,7 +4852,8 @@ window._mergeCloudState = function(cloud) {
 
     // Same rescue for the other collections the loop just overwrote.
     state.podcastLog = unionBy(localPodcast, imported.podcastLog, e => e && e.id);
-    state.texts = unionBy(localTexts, imported.texts, e => e && e.id);
+    // El ✅ y el repaso más nuevos ganan, no siempre los de la nube.
+    state.texts = mergeTexts(localTexts, imported.texts);
     /* Per-day study minutes: keep whichever side recorded more for a given day
      * rather than letting a stale snapshot erase an afternoon of work. */
     {
@@ -4902,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01a';
+const APP_BUILD = '2026-10-01b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11606,6 +11607,7 @@ function toggleTextMastered(id) {
   const repasa = t.mastered && textInReview(t);
   if (repasa) startTextReview(t, todayLocal());
   else delete t.review;
+  t.markedAt = Date.now();   // ver mergeTextCopy: sin esto la nube lo desmarcaba
   save();
   renderTexts();
   renderTextReview();
@@ -11686,6 +11688,30 @@ function textReviewsDue(texts, hoy) {
     .sort((a, b) => (a.review.due < b.review.due ? -1 : a.review.due > b.review.due ? 1 : textReviewOrder(a, b)));
 }
 
+/* Al juntar un texto que está en los dos lados (este aparato y la nube), la
+ * copia de la nube ganaba entera. El 1 de octubre él marcó la p. 109 en un
+ * aparato; el otro ya había subido su copia sin marcar, y al traer la nube
+ * antes de subir, la 109 volvió a quedar sin marcar. El ✅ y el repaso llevan
+ * la hora en que se tocaron (markedAt): si la de aquí es más nueva, se quedan
+ * los de aquí. Todo lo demás del texto sigue viniendo de la nube. */
+function mergeTextCopy(local, cloud) {
+  if (!local) return cloud;
+  if (!cloud) return local;
+  const aqui = local.markedAt || 0, alla = cloud.markedAt || 0;
+  if (aqui <= alla) return cloud;
+  const out = { ...cloud, mastered: local.mastered, markedAt: aqui };
+  if (local.review) out.review = local.review;
+  else delete out.review;
+  return out;
+}
+
+function mergeTexts(localArr, cloudArr) {
+  const out = new Map();
+  (localArr || []).forEach(t => { if (t && t.id != null) out.set(t.id, t); });
+  (cloudArr || []).forEach(t => { if (t && t.id != null) out.set(t.id, mergeTextCopy(out.get(t.id), t)); });
+  return [...out.values()];
+}
+
 function textReviewWhen(due, hoy) {
   if (!due || due <= hoy) return 'today';
   const [y1, m1, d1] = hoy.split('-').map(Number);
@@ -11698,6 +11724,7 @@ function markTextReview(id, recordado) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!textReviewDue(t)) return;
   const dias = scheduleTextReview(t, recordado, todayLocal());
+  t.markedAt = Date.now();
   save();
   renderTexts();
   renderTextReview();

@@ -498,6 +498,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `["Here you go.", "", "", "here you go: al pasarle algo",`,
   },
   {
+    nombre: 'que la nube vuelva a ganar siempre el ✅ de un texto',
+    buscar: `  if (aqui <= alla) return cloud;`,
+    reemplazo: `  return cloud;`,
+  },
+  {
+    nombre: 'olvidar la hora al marcar un texto ✅',
+    buscar: `  t.markedAt = Date.now();   // ver mergeTextCopy: sin esto la nube lo desmarcaba`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,
