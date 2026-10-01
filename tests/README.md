@@ -61,6 +61,10 @@ se reconozca igual, y que sin tipo conocido no salga una etiqueta equivocada.
 I'll) conserven su apóstrofo y que las comillas alrededor de una palabra se
 sigan quitando.
 
+`fc-unit-card.test.js` — La tarjeta de cada unidad en Flashcards: que cuente
+las palabras ya vistas (azules) en vez de decir "291 words to start" con varias
+estudiadas, y que la leyenda explique todos los colores de los puntos.
+
 `fc-queue.test.js` — Qué trae la sesión al tocar Start: las pendientes si hay,
 si no las nuevas (lo que dice la pantalla), y la unidad entera solo cuando ya
 no hay nada nuevo.
