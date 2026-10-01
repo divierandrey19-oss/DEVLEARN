@@ -33,6 +33,8 @@ function unir(local, nube) {
   h.ejecutar(`
     ${h.extraerFuncion('allBatchIds')}
     ${h.extraerFuncion('mergeFcProgress')}
+    ${h.extraerFuncion('mergeTextCopy')}
+    ${h.extraerFuncion('mergeTexts')}
     ${funcionDeVentana('_mergeCloudState')}
     window._mergeCloudState(nube);
   `, {
@@ -119,4 +121,43 @@ test('la página recuperada recibe también sus correcciones a mano', () => {
   assert.match(h.extraerFuncion('applyPageFixes'),
     /\[fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids,\s*fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,\s*fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal\]/);
   assert.match(fuente, /onchange="restorePagesFromBackup\(event\)"/);
+});
+
+// ---------------------------------------------------------------------------
+// El ✅ de los textos. El 1 de octubre él marcó la p. 109 en un aparato; el
+// otro ya había subido su copia sin marcar y, al traer la nube antes de subir,
+// la copia de la nube ganó entera: la 109 se desmarcó sola.
+// ---------------------------------------------------------------------------
+
+const texto = (extra = {}) => ({ id: 'txt_u10_p109', title: 'U10 · pág 109', body: 'Let me think...', ...extra });
+
+test('el ✅ que se acaba de marcar aquí no lo deshace una copia vieja de la nube', () => {
+  const aqui = { units: {}, texts: [texto({ mastered: true, markedAt: 2000, review: { step: 0, due: '2026-10-02', last: '2026-10-01' } })] };
+  const nube = { units: {}, texts: [texto({ mastered: false })] };
+  const t = unir(aqui, nube).texts[0];
+  assert.equal(t.mastered, true);
+  assert.deepEqual(t.review, { step: 0, due: '2026-10-02', last: '2026-10-01' });
+});
+
+test('si lo marcó después en el otro aparato, gana el otro', () => {
+  const aqui = { units: {}, texts: [texto({ mastered: true, markedAt: 1000, review: { step: 0, due: '2026-10-02' } })] };
+  const nube = { units: {}, texts: [texto({ mastered: false, markedAt: 3000 })] };
+  const t = unir(aqui, nube).texts[0];
+  assert.equal(t.mastered, false);
+  assert.equal(t.review, undefined, 'desmarcado allá: sin repaso');
+});
+
+test('lo demás del texto sigue viniendo de la nube', () => {
+  const aqui = { units: {}, texts: [texto({ mastered: true, markedAt: 2000, lookups: {} })] };
+  const nube = { units: {}, texts: [texto({ body: 'Texto editado en el otro aparato.', lookups: { think: 'pensar' } })] };
+  const t = unir(aqui, nube).texts[0];
+  assert.equal(t.body, 'Texto editado en el otro aparato.');
+  assert.deepEqual(t.lookups, { think: 'pensar' });
+  assert.equal(t.mastered, true);
+});
+
+test('marcar y repasar dejan la hora, que es lo que mira la unión', () => {
+  assert.match(h.extraerFuncion('toggleTextMastered'), /t\.markedAt = Date\.now\(\);/);
+  assert.match(h.extraerFuncion('markTextReview'), /t\.markedAt = Date\.now\(\);/);
+  assert.match(funcionDeVentana('_mergeCloudState'), /state\.texts = mergeTexts\(localTexts, imported\.texts\);/);
 });
