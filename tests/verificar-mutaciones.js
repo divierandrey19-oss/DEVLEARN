@@ -543,6 +543,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `onclick="document.getElementById('page-sheet').remove()"`,
   },
   {
+    nombre: 'volver a "servir" el concentrado en My life',
+    buscar: `"tool:scoop": {"en": "I fill the bag with kibble using a <b>scoop</b>."`,
+    reemplazo: `"tool:scoop": {"en": "I serve the kibble with a <b>scoop</b>."`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,
