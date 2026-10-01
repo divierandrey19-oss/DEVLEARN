@@ -493,6 +493,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  renderCalendar();\n  document.getElementById('dash-levels').innerHTML = '';\n  updateNavBadges();`,
   },
   {
+    nombre: 'que una frase de podcast regale la respuesta en la pista',
+    buscar: `["Here you go.", "", "", "al pasarle algo",`,
+    reemplazo: `["Here you go.", "", "", "here you go: al pasarle algo",`,
+  },
+  {
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,

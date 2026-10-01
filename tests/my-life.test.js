@@ -113,6 +113,19 @@ test('la pista del frente no regala la respuesta en inglés', () => {
   }
 });
 
+test('las frases que mandó el 1 de octubre son una familia nueva de Phrases I heard', () => {
+  // Primero se subieron como una sesión de Podcasts y él preguntó por qué, si
+  // ya tenía sus frases aquí. Cada lote que manda es una familia nueva.
+  const f = PHRASE_FAMILIES.find(x => x.id === 'phr_podcast2');
+  assert.ok(f, 'falta la familia del 1 de octubre');
+  assert.deepEqual(f.verbs.map(v => v[0]), [
+    'How close are they?', 'Ever since when?', "It's gross.", 'Kind of crazy.',
+    "I'm going to train you.", 'And I was like…', 'Here you go.',
+  ]);
+  assert.ok(!f.verbs.some(v => /wish/i.test(v[0])), '"I wish you had to" no entra hasta saber qué decía');
+  assert.doesNotMatch(fuente, /_podPhrases20261001/, 'ni la sesión de Podcasts duplicada');
+});
+
 test('las frases de podcasts salen en su sección', () => {
   assert.ok(PHRASE_FAMILIES.length > 0);
   for (const f of PHRASE_FAMILIES) assert.equal(f.keyPrefix, 'phrase', `${f.id} sin prefijo`);

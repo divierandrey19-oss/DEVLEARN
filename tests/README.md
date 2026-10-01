@@ -155,7 +155,9 @@ su regla.
 `my-life.test.js` — La pestaña My life: que cada tarjeta del local tenga su
 frase en presente (el local, la casa y Going out), que no haya dos frentes
 iguales en español, que la casa no comparta tarjeta con el local, que Verbs ya
-no lleve el local y que cada globito cuente lo suyo.
+no lleve el local y que cada globito cuente lo suyo. Las frases que él manda de
+podcasts van ahí, en "Phrases I heard", una familia por lote (las del 1 de
+octubre son "From a podcast · 2"), y la pista del frente no regala la respuesta.
 
 ## verificar-mutaciones.js
 
