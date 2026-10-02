@@ -67,6 +67,9 @@ progreso; si no se puede guardar, todo queda como estaba. Así esas páginas se 
 revisar contra el libro desde su respaldo, como las demás. Si se equivoca de página: la ✕ ofrece
 "Remove only the photo" (sin borrar la página), y una foto se puede arrastrar
 (mantener presionada) a la página correcta; solo se mueve la foto, no las tarjetas.
+Soltarla sobre una página con foto las intercambia. Cada puesto de la cuadrícula es
+una página fija, en el orden del libro (también las que no tienen foto), así que la
+foto queda donde la suelta; al llevarla al borde, la pantalla se desplaza sola.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
