@@ -85,7 +85,7 @@ test('la unidad muestra las páginas sin foto, y la hoja ofrece agregarla o camb
   assert.match(carga, /\} else \{\s*if \(uploadZone\) uploadZone\.style\.display = '';\s*\/\/[^\n]*\n\s*renderImagePreviews\(imgs\);/);
   const cuadricula = h.extraerFuncion('renderImagePreviews');
   assert.match(cuadricula, /pagesWithoutPhoto\(u\)/);
-  assert.match(cuadricula, /class="img-thumb img-thumb-empty" data-batch="[^"]+" onclick="openPageSheet\(/);
+  assert.match(cuadricula, /class="img-thumb img-thumb-empty" data-batch="\$\{escapeHtml\(b\.id\)\}" onclick="openPageSheet\(/);
   const hoja = h.extraerFuncion('openPageSheet');
   assert.match(hoja, /📷 Add the photo of this page/);
   assert.match(hoja, /🔄 Wrong photo\? Change it/);
@@ -206,7 +206,7 @@ test('mover: las páginas se buscan otra vez al confirmar, no las del momento de
   unidad = JSON.parse(JSON.stringify(unidad));   // llegó la nube: objetos nuevos
   confirmar();
   assert.deepEqual(unidad.batches.map(b => b.images), [[], ['F']], 'la foto se mueve en las páginas que se ven');
-  assert.match(toasts[0], /Photo moved/);
+  assert.match(toasts[0], /Moved: the photo b now goes with 0 cards/);
 });
 
 test('agregar: si la nube llegó mientras se comprimía la foto, se guarda en la página nueva', async () => {
@@ -261,17 +261,25 @@ test('vacío quita el número; basura no cambia nada; si no guarda, vuelve como 
   assert.match(h.extraerFuncion('openPageSheet'), /onclick="setPageNumber\('\$\{escapeStr\(batchId\)\}'\)">✏️ Save page<\/button>/);
 });
 
-// Él quiere ver las fotos en el orden del libro: si le pone "5" a una foto,
-// que aparezca en el quinto puesto.
+// Los puestos de la cuadrícula son páginas fijas, en el orden del libro.
+// Ordenarlas por el número de la foto hacía que, al intercambiar, la foto
+// volviera a su puesto: él arrastró la p. 10 y "no se cambia".
 
-test('las fotos se ordenan por número de página; sin número, al final; la ✕ sigue en su foto', () => {
-  const orden = h.ejecutar(`${['photosInBookOrder', 'sanitizePageNumbers'].map(n => h.extraerFuncion(n)).join('\n')}; return photosInBookOrder;`, {});
-  const u = { batches: [{ id: 'a', pages: [7] }, { id: 'b' }, { id: 'c', pages: [5] }, { id: 'd', pages: [6] }] };
-  const fotos = [{ src: 'A', batchId: 'a' }, { src: 'B', batchId: 'b' }, { src: 'C', batchId: 'c' }, { src: 'D', batchId: 'd' }, { src: 'C2', batchId: 'c' }];
-  const r = orden(fotos, u);
-  assert.deepEqual(r.map(x => x.img.src), ['C', 'C2', 'D', 'A', 'B']);
-  assert.deepEqual(r.map(x => x.i), [2, 4, 3, 0, 1], 'cada una con su índice original');
+test('la cuadrícula va en el orden de las páginas, no del número de la foto', () => {
   const cuadricula = h.extraerFuncion('renderImagePreviews');
-  assert.match(cuadricula, /photosInBookOrder\(images, u\)\.map\(\(\{ img: imgObj, i \}\) =>/);
+  assert.match(cuadricula, /if \(\(b\.images \|\| \[\]\)\.length\) b\.images\.forEach\(src => puestos\.push\(\{ src, batchId: b\.id, i: k\+\+ \}\)\);\s*else if \(vacias\.has\(b\)\) puestos\.push\(\{ vacia: b \}\);/);
+  assert.doesNotMatch(fuente, /photosInBookOrder/);
   assert.match(cuadricula, /onclick="removeUnitImage\(\$\{i\}\)"/);
+  const pedir = h.extraerFuncion('askMovePagePhoto');
+  assert.match(pedir, /each photo goes with the words of the page where you drop it/);
+  assert.match(pedir, /now goes with \$\{cuantas\} card/, 'el aviso dice con qué palabras quedó');
+});
+
+test('arrastrando hacia el borde, la pantalla baja o sube sola', () => {
+  // Con las páginas en su puesto, la 2 y la 10 quedan lejos, y mientras
+  // arrastra el dedo no puede desplazar la pantalla.
+  const arrastre = h.extraerFuncion('enablePhotoDrag');
+  assert.match(arrastre, /st\.scroller = contenedor\(\);\s*st\.raf = requestAnimationFrame\(bordes\);/);
+  assert.match(arrastre, /const v = st\.y < m \? -Math\.ceil\(\(m - st\.y\) \/ 5\) : st\.y > alto - m \? Math\.ceil\(\(st\.y - \(alto - m\)\) \/ 5\) : 0;/);
+  assert.match(arrastre, /if \(st\.raf\) cancelAnimationFrame\(st\.raf\);/, 'al soltar se detiene');
 });

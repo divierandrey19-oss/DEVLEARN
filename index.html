@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02l -->
+<!-- DEVLEARN_BUILD: 2026-10-02m -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4927,7 +4927,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02l';
+const APP_BUILD = '2026-10-02m';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11866,11 +11866,32 @@ function renderImagePreviews(images) {
     return;
   }
   grid.style.display = 'grid';
-  grid.innerHTML = photosInBookOrder(images, u).map(({ img: imgObj, i }) => {
-    const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
-    const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
+  /* Cada puesto es una página fija, en el orden en que se subieron (el del
+   * libro): la foto queda donde él la suelta, y una página sin foto ocupa su
+   * puesto en vez de irse al final. Ordenar por el número de la foto hacía
+   * que, al intercambiar, la foto volviera a su puesto y pareciera que no
+   * pasó nada. Cuando cada foto está en su página, los números quedan 1, 2,
+   * 3… en orden. `i` es el índice de la foto en getUnitImages (el de la ✕). */
+  const vacias = new Set(sinFoto);
+  const puestos = [];
+  let k = 0;
+  if (u) {
+    (u.batches || []).forEach(b => {
+      if ((b.images || []).length) b.images.forEach(src => puestos.push({ src, batchId: b.id, i: k++ }));
+      else if (vacias.has(b)) puestos.push({ vacia: b });
+    });
+  } else {
+    (images || []).forEach((img, i) => puestos.push({ src: typeof img === 'string' ? img : img.src, batchId: img && img.batchId, i }));
+  }
+  grid.innerHTML = puestos.map(({ src, batchId, i, vacia: b }) => {
+    if (b) return `
+    <div class="img-thumb img-thumb-empty" data-batch="${escapeHtml(b.id)}" onclick="openPageSheet('${escapeStr(b.id)}')">
+      <b>📷</b>
+      <span>${escapeHtml(bookPageLabel(b) || b.title || 'Page')}</span>
+      <span style="color:var(--text-3);">Add photo · 🃏 ${(b.vocab || []).length}</span>
+    </div>`;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
-    const libro = batchId && u ? bookPageLabel((u.batches || []).find(b => b.id === batchId)) : '';
+    const libro = batchId && u ? bookPageLabel((u.batches || []).find(x => x.id === batchId)) : '';
     return `
     <div class="img-thumb" ${batchId ? `data-batch="${escapeHtml(batchId)}"` : ''}>
       <img src="${src}" alt="${libro || `page ${i + 1}`}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
@@ -11878,12 +11899,7 @@ function renderImagePreviews(images) {
       <button class="img-thumb-rm" onclick="removeUnitImage(${i})" title="Delete this image and its content">✕</button>
     </div>
   `;
-  }).join('') + sinFoto.map(b => `
-    <div class="img-thumb img-thumb-empty" data-batch="${escapeHtml(b.id)}" onclick="openPageSheet('${escapeStr(b.id)}')">
-      <b>📷</b>
-      <span>${escapeHtml(bookPageLabel(b) || b.title || 'Page')}</span>
-      <span style="color:var(--text-3);">Add photo · 🃏 ${(b.vocab || []).length}</span>
-    </div>`).join('');
+  }).join('');
   enablePhotoDrag(grid);
 }
 
@@ -11897,9 +11913,37 @@ function enablePhotoDrag(grid) {
   grid.dataset.drag = '1';
   let st = null;
   let suprimirClic = false;
+  /* Con las páginas en su puesto, la que busca puede estar más abajo: al
+   * llevar la foto al borde de arriba o de abajo, la pantalla se desplaza
+   * sola (mientras arrastra, el dedo no la puede mover). */
+  const contenedor = () => {
+    for (let el = grid.parentElement; el && el !== document.body; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+    }
+    return document.scrollingElement || document.documentElement;
+  };
+  const destinoEn = (x, y) => {
+    const bajo = document.elementFromPoint(x, y);
+    const t = bajo && bajo.closest('#img-grid [data-batch]');
+    const destino = t && t.dataset.batch !== st.batchId ? t : null;
+    if (st.over !== destino) {
+      if (st.over) st.over.classList.remove('drop-over');
+      st.over = destino;
+      if (destino) destino.classList.add('drop-over');
+    }
+  };
+  const bordes = () => {
+    if (!st || !st.activo) return;
+    const m = 90, alto = window.innerHeight;
+    const v = st.y < m ? -Math.ceil((m - st.y) / 5) : st.y > alto - m ? Math.ceil((st.y - (alto - m)) / 5) : 0;
+    if (v) { st.scroller.scrollTop += v; destinoEn(st.x, st.y); }
+    st.raf = requestAnimationFrame(bordes);
+  };
   const fin = () => {
     if (!st) return;
     clearTimeout(st.timer);
+    if (st.raf) cancelAnimationFrame(st.raf);
     if (st.ghost) st.ghost.remove();
     if (st.over) st.over.classList.remove('drop-over');
     st = null;
@@ -11909,7 +11953,7 @@ function enablePhotoDrag(grid) {
     const tile = img && img.closest('[data-batch]');
     if (!tile) return;
     fin();
-    st = { batchId: tile.dataset.batch, src: img.getAttribute('src'), x0: x, y0: y, activo: false };
+    st = { batchId: tile.dataset.batch, src: img.getAttribute('src'), x0: x, y0: y, x, y, activo: false };
     st.timer = setTimeout(() => {
       if (!st) return;
       st.activo = true;
@@ -11921,22 +11965,19 @@ function enablePhotoDrag(grid) {
       g.style.top = y + 'px';
       document.body.appendChild(g);
       st.ghost = g;
+      st.scroller = contenedor();
+      st.raf = requestAnimationFrame(bordes);
     }, 450);
   };
   const mover = (x, y, e) => {
     if (!st) return;
     if (!st.activo) { if (Math.hypot(x - st.x0, y - st.y0) > 10) fin(); return; }
-    if (e && e.cancelable) e.preventDefault();   // mientras arrastra, la pantalla no se desplaza
+    if (e && e.cancelable) e.preventDefault();   // mientras arrastra, el dedo no desplaza la pantalla
+    st.x = x;
+    st.y = y;
     st.ghost.style.left = x + 'px';
     st.ghost.style.top = y + 'px';
-    const bajo = document.elementFromPoint(x, y);
-    const t = bajo && bajo.closest('#img-grid [data-batch]');
-    const destino = t && t.dataset.batch !== st.batchId ? t : null;
-    if (st.over !== destino) {
-      if (st.over) st.over.classList.remove('drop-over');
-      st.over = destino;
-      if (destino) destino.classList.add('drop-over');
-    }
+    destinoEn(x, y);
   };
   const soltar = () => {
     if (!st) return;
@@ -12007,8 +12048,9 @@ function askMovePagePhoto(fromId, src, toId) {
   const nombreDe = batchLabel(u, fromId), nombreA = batchLabel(u, toId);
   confirmAction({
     title: intercambio ? 'Swap these photos?' : 'Move this photo?',
+    // Las palabras no se mueven: cada foto queda con las de la página donde cae.
     message: intercambio
-      ? `The photo of "${nombreDe}" goes to "${nombreA}",\nand the photo of "${nombreA}" goes to "${nombreDe}".\n\nOnly the photos move: the cards of each page stay where they are.`
+      ? `The photo of "${nombreDe}" goes to "${nombreA}",\nand the photo of "${nombreA}" goes to "${nombreDe}".\n\nThe words stay in their place: each photo goes with the words of the page where you drop it.`
       : `From "${nombreDe}"\nto "${nombreA}".\n\nOnly the photo moves: the cards of each page stay where they are.`,
     confirmText: intercambio ? '🔄 Swap them' : '📷 Move it',
     onConfirm: () => {
@@ -12044,18 +12086,11 @@ function askMovePagePhoto(fromId, src, toId) {
         tile.classList.add('drop-over');
         setTimeout(() => tile.classList.remove('drop-over'), 1600);
       }
-      toast(hecho === 'swap' ? '🔄 Photos swapped. The cards stay the same.' : '📷 Photo moved. The cards stay the same.');
+      // Qué palabras van ahora con la foto que él arrastró.
+      const cuantas = (a.vocab || []).length;
+      toast(`${hecho === 'swap' ? '🔄 Swapped' : '📷 Moved'}: the photo ${batchLabel(uAhora, a.id)} now goes with ${cuantas} card${cuantas !== 1 ? 's' : ''} ("${a.title || 'page'}").`);
     },
   });
-}
-
-/* Las fotos en el orden del libro: él les pone el número (p. 5) y quiere
- * verlas en ese puesto. Las que no tienen número van después, como estaban.
- * Cada una conserva su índice original, que es el que usa la ✕. */
-function photosInBookOrder(images, u) {
-  const paginas = new Map(((u && u.batches) || []).map(b => [b.id, sanitizePageNumbers(b.pages)[0]]));
-  return (images || []).map((img, i) => ({ img, i, p: paginas.get(img && img.batchId) }))
-    .sort((x, y) => (x.p == null) - (y.p == null) || (x.p || 0) - (y.p || 0) || x.i - y.i);
 }
 
 /* Las páginas que se subieron sin foto (Units 1 y 3 a 6, de antes de guardar
