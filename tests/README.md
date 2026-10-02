@@ -96,7 +96,11 @@ pp. 109-111: la trampa del español solo si es real, la frase de contexto de un
 completar sigue la misma situación, como mucho dos temas "derived" en una página
 que no enseña gramática, y nada de lo que escribe puede contradecir el libro.
 La explicación y la trampa de la gramática van en español (con Opus, la p. 112
-salió con ambas en inglés porque el prompt no decía el idioma). Y si la página no
+salió con ambas en inglés porque el prompt no decía el idioma). Y, por la Unit 2: el
+análisis recibe las tarjetas y los temas que la unidad ya tiene en otras páginas, para
+no repetirlos; las frases de un "corrige las afirmaciones falsas" no son hechos; y el
+aviso "no role play scenes" solo sale si la respuesta se cortó (una página sin speaking
+es correcta). Y si la página no
 trae una frase con la palabra, el ejemplo tiene que ser inglés natural aunque cambie
 la forma impresa (en la p. 14 de la Unit 2 salió "I like a basketball game").
 
@@ -175,7 +179,12 @@ basketball games", armado con palabras de la página, sin quitarle el progreso. 
 p. 16, la inauguración de la Burke Gallery es el martes a las 8:00 (salió 6:00);
 "concert", "exhibit" y "talk" repetían "a concert", "an exhibit" y "a talk" de la
 p. 14 (ahora `vocabKey` ignora el artículo), "around the corner" repetía la de la
-p. 15, y "Would you like to…?" ya lo enseña la p. 15.
+p. 15, y "Would you like to…?" ya lo enseña la p. 15. En las pp. 17 a 23: gramática y tarjetas que
+ya estaban en otra página (once del recuadro RECYCLE de la p. 23, con espacios en
+blanco), la misma conversación como varias tareas de speaking, trampas que daban por
+error frases correctas ("You turn left", "helps you to relax") y, en la p. 22, las
+afirmaciones falsas de un ejercicio tomadas como hechos ("The Art Institute is a
+famous hotel"). Las repetidas se unen pasando el progreso.
 
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la

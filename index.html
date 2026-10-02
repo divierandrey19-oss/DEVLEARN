@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02d -->
+<!-- DEVLEARN_BUILD: 2026-10-02e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02d';
+const APP_BUILD = '2026-10-02e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5072,7 +5072,7 @@ const AIService = {
   },
 
   /* ── REAL image analysis ─────────────────────────────────── */
-  async _analyzeReal({ images, level, unitNum }) {
+  async _analyzeReal({ images, level, unitNum, known }) {
     // Build image content blocks (Claude vision)
     const imageBlocks = images.map(b64 => {
       const match = b64.match(/^data:(image\/[^;]+);base64,(.+)$/);
@@ -5087,6 +5087,7 @@ const AIService = {
       c1: 'C1 Advanced', c2: 'C2 Proficiency',
     };
     const levelName = levelNames[level] || level.toUpperCase();
+    const yaEnLaUnidad = unitAlreadyTaughtSection(known);
 
     const prompt = {
       type: 'text',
@@ -5190,6 +5191,12 @@ says a doctor sets the bone, so "Her work is to set broken bones" is FALSE.
   When the answer depends on a recording, skip the task (see the audio rule above).
 - Never build a sentence by joining two options: "I could have to invite him" comes from
   "I (could / have to) invite him" and is not English.
+- A task that asks the student to correct FALSE statements ("Correct each of these false
+  statements", LISTEN FOR ERRORS, true/false) prints sentences that are wrong on purpose,
+  and their correct version is usually in the recording. None of them is a fact: never use
+  one as a vocabulary example, a grammar example, a statement or a question's answer. On a
+  page of Grant Park events, "The Art Institute is a famous hotel in Chicago" became the
+  example for "hotel"; it is a museum.
 
 ━━ WHAT TO SKIP ━━
 
@@ -5250,7 +5257,7 @@ make it natural, but do not bring in a new topic. Never keep the printed form at
 cost of odd English: the page prints "a basketball game", and "I like a basketball
 game" is wrong — "I like basketball games" is what people say about things in general.
 
-━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
+${yaEnLaUnidad}━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
 
 Textbooks flag what they are teaching. Treat every marked item as target language and
 include it:
@@ -5258,7 +5265,8 @@ include it:
 - Labelled boxes: VOCABULARY, GRAMMAR, Social language, Ways to order food, KEEP TALKING.
 - A unit summary box (e.g. "RECYCLE THIS LANGUAGE") lists the language the book itself
   says this unit teaches. It is the book's own checklist of what it will test.
-  Never skip an item that appears there.
+  Never skip an item that appears there — unless another page of this unit already has
+  it as a card (see ALREADY ON OTHER PAGES OF THIS UNIT, when that list is given).
 - Words the page's exercises drill: if a word is the answer to an exercise, it is taught.
 
 Among the words that ARE on the page, prefer these over incidental text.
@@ -5542,6 +5550,8 @@ RULES:
       yaEnLaPagina.add(k);
       parsed.vocabulary.push(c);
     });
+    // "questions" es lo último del JSON: si llegó, la respuesta no se cortó.
+    parsed.complete = Array.isArray(parsed.questions);
     delete parsed.questions;
 
     return parsed;
@@ -5636,9 +5646,9 @@ RULES:
   },
 
   /* ── Main entry point ────────────────────────────────────── */
-  async analyzeContent({ images, level, unitNum }) {
+  async analyzeContent({ images, level, unitNum, known }) {
     if (this.mode === 'claude' && this.getKey()) {
-      return this._analyzeReal({ images, level, unitNum });
+      return this._analyzeReal({ images, level, unitNum, known });
     }
     return this._analyzeLocal({ images, level, unitNum });
   },
@@ -6762,6 +6772,9 @@ function migrateState(s) {
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
+  [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
+   ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   if (!merged._u2P13QuestionsV1 && addU2P13Questions(merged.units)) merged._u2P13QuestionsV1 = true;
   if (!merged._u2P14QuestionsV1 && addU2P14Questions(merged.units)) merged._u2P14QuestionsV1 = true;
   // Las preguntas del mazo aparte pasan a las flashcards (él las quería ahí).
@@ -6975,6 +6988,129 @@ function fixU2P16(units) {
     fixPageContent(units, { unit: 'a2_2', page: 16, quitarGramatica: ["Inviting with 'Would you like to...?'"] });
   }
   return !!(pagina(14) && p15);
+}
+
+/* Unit 2, pp. 17-23, revisadas contra las fotos (su respaldo del 2 de
+ * octubre). Lo que más hubo: gramática y tarjetas que ya enseña otra página
+ * de la unidad (la IA no veía las demás páginas), y la misma conversación
+ * como tres o cuatro tareas de speaking. Él no había estudiado ninguna de
+ * estas tarjetas; aun así, las repetidas se unen pasando el progreso. */
+
+/* p. 17: "Would you like to" (ya en la p. 15) y las preposiciones (la p. 16
+ * las enseña); la conversación salía cuatro veces: quedan la de pareja y
+ * KEEP TALKING. */
+function fixU2P17(units) {
+  return fixPageContent(units, { unit: 'a2_2', page: 17,
+    quitarGramatica: ['Would you like to + verb (invitations)', 'Prepositions on (days) and at (times and places)'],
+    cambios: [
+      ['Read and listen. Then practice the Conversation Model with a partner.', null],
+      ['CHANGE PARTNERS: Change the conversation again. Choose different events.', null],
+    ] });
+}
+
+/* p. 18: la trampa daba por error "You turn left", que está bien. */
+function fixU2P18(units) {
+  return fixPageContent(units, { unit: 'a2_2', page: 18, cambios: [
+    ["Los estudiantes a veces agregan 'You' o conjugan el verbo: 'You turns left'. En inglés basta con 'Turn left'.",
+     "En español el imperativo cambia con tú o usted (gira / gire); en inglés es una sola forma, la base, sin -s ni -ing: 'Turn left', no 'Turns left'."],
+  ] });
+}
+
+/* p. 19: los imperativos ya están en la p. 18 (y su trampa daba por error
+ * "You walk three blocks"); "bookstore (Books)" repetía "bookstore" de la
+ * p. 16; un ejercicio decía que "No worries" no está en la página, y sí está
+ * (Social language). La conversación, una vez menos. */
+function fixU2P19(units) {
+  const ok = fixPageContent(units, { unit: 'a2_2', page: 19,
+    quitarGramatica: ['Imperatives for directions'],
+    cambios: [
+      ['Change the conversation again. Give directions to other places.', null],
+      ['Which is NOT a way to say thank you on this page?', 'Which one is NOT a way to say thank you?'],
+    ] });
+  if (ok) unirEnLaUnidad(units, { unit: 'a2_2', page: 19 }, [['bookstore (Books)', 'bookstore']]);
+  return ok;
+}
+
+/* p. 20: la gramática daba por error "helps you to relax", que está bien:
+ * con help el "to" es opcional; solo make no lo lleva. Y un ejercicio de
+ * corregir daba por error "Sleep is difficult…", que también es correcto. */
+function fixU2P20(units) {
+  return fixPageContent(units, { unit: 'a2_2', page: 20, cambios: [
+    ["En la lectura se repite: 'Music makes you happy', 'makes you feel good', 'Music helps you relax'. Después de 'make' o 'help' y la persona, va el verbo en forma base, sin 'to' (o un adjetivo después de 'make'). En español decimos 'te hace sentir' o 'te ayuda a relajarte', pero en inglés no se agrega 'to' después de 'make'.",
+     "En la lectura se repite: 'Music makes you happy', 'makes you feel good', 'Music helps you relax'. Después de 'make' y la persona va el verbo en forma base, sin 'to', o un adjetivo. Después de 'help' el 'to' es opcional: 'helps you relax' y 'helps you to relax' están bien; la lectura usa la forma sin 'to'."],
+    ["Por traducir 'te ayuda a relajarte' o 'te hace sentir', muchos dicen 'helps you to relax... makes you to feel good'. Con 'make' nunca va 'to'.",
+     "Por traducir 'te hace sentir', muchos dicen 'makes you to feel good'. Con 'make' nunca va 'to': 'Music makes you feel good'. Con 'help' sí se puede: 'helps you relax' o 'helps you to relax'."],
+    ['Sleep is difficult for my brother at night.', 'Listen to music helps you sleep.'],
+    ['Sleeping is difficult for my brother at night.', 'Listening to music helps you sleep.'],
+  ] });
+}
+
+/* p. 21: help / make ya está en la p. 20; worry, come home, is more my style
+ * e is not for me repetían tarjetas de las pp. 20 y 15. */
+function fixU2P21(units) {
+  const ok = fixPageContent(units, { unit: 'a2_2', page: 21, quitarGramatica: ['help / make + person + verb or adjective'] });
+  if (ok) unirEnLaUnidad(units, { unit: 'a2_2', page: 21 }, [
+    ['worry', 'worries'], ['come home', 'come home from work'],
+    ['is more my style', "That's more my style."], ['is not for me', "That's not for me."],
+  ]);
+  return ok;
+}
+
+/* p. 22: el ejercicio B pide corregir afirmaciones FALSAS ("Correct each of
+ * these false statements"), y la IA las tomó como hechos: "The Art Institute
+ * is a famous hotel", el concierto folk del jueves a las 9:00, el del domingo
+ * en Soldier Field… La respuesta correcta está en el audio. Fuera lo que
+ * salía de ellas; los ejemplos, con preguntas que no afirman nada. El acuario
+ * "abierto de 9 a 5" era el horario del Field Museum; queda a orillas del lago
+ * (el mapa). */
+function fixU2P22(units) {
+  const ok = fixBookPage(units, { unit: 'a2_2', page: 22, cambios: [
+    { word: 'folk concert', example: "There's a folk concert at the Harris Theater on Thursday at 9:00.",
+      set: { example: 'Is there a folk concert at the Harris Theater?', exampleTranslation: '¿Hay un concierto de música folclórica en el Harris Theater?' } },
+    { word: 'dance performance', example: "There's a dance performance at the Pritzker Pavilion on Saturday evening.",
+      set: { example: 'Is there a dance performance at the Pritzker Pavilion?', exampleTranslation: '¿Hay una presentación de danza en el Pritzker Pavilion?' } },
+    { word: 'evening', example: "There's a dance performance at the Pritzker Pavilion on Saturday evening.",
+      set: { example: 'Is there a dance performance on Saturday evening?', exampleTranslation: '¿Hay una presentación de danza el sábado por la noche?' } },
+    { word: 'aquarium', example: 'The aquarium is open from 9 to 5.',
+      set: { example: 'The Shedd Aquarium is on Lake Michigan.', exampleTranslation: 'El Acuario Shedd queda a orillas del lago Michigan.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_2', page: 22,
+    quitarPalabras: ['hotel', 'Where is the concert?', 'What time is the folk concert?', 'What day is the concert?'],
+    quitarGramatica: ["There's a + event + at + place + on + day + at + time"],
+    quitarEjercicios: ["There's a concert at Soldier Field ___ Sunday at 3:00.", 'Build a sentence with these words:'],
+    cambios: [
+      ['The aquarium is open from 9 to 5.', 'Is the Field Museum open from 9 to 5?'],
+      ['El acuario está abierto de 9 a 5.', '¿El Field Museum está abierto de 9 a 5?'],
+    ] });
+  return true;
+}
+
+/* p. 23: once tarjetas del recuadro RECYCLE THIS LANGUAGE repetían, con
+ * espacios en blanco, las de las pp. 15 a 18; las preposiciones ya están en
+ * la p. 16. Y "How do I get to the Harris Theater?" respondía con una ruta
+ * que el mapa no da (está en el audio): queda el molde del recuadro. */
+function fixU2P23(units) {
+  const ok = fixBookPage(units, { unit: 'a2_2', page: 23, cambios: [
+    { word: 'How do I get to the Harris Theater?', example: 'Go to the corner of Michigan and Monroe and turn right.',
+      set: { example: 'Turn right / left on ___. Go to the corner of ___ and ___.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_2', page: 23, quitarGramatica: ['Prepositions of time and place: on, at'] });
+  unirEnLaUnidad(units, { unit: 'a2_2', page: 23 }, [
+    ["Now that's more my style!", "That's more my style."],
+    ["That's past my bedtime.", "That's way past my bedtime."],
+    ["Sorry. I'd love to, but I'm busy on ___.", "Sorry, I'd love to, but I'm busy then."],
+    ['Too bad. Maybe some other time.', 'Maybe some other time.'],
+    ['Would you like to ___?', 'Would you like to go to...?'],
+    ["Let's meet at ___.", "Let's meet"],
+    ['How do I get to ___?', 'How do I get to the museum?'],
+    ['Turn right / left on ___.', 'turn left'],
+    ['Go to the corner of ___ and ___.', 'go to the corner of'],
+    ['around the corner from', 'around the corner'],
+    ['between ___ and ___', 'between'],
+  ]);
+  return true;
 }
 
 /* Corrige gramática, ejercicios y speaking de una página, contra su foto.
@@ -12198,6 +12334,35 @@ const ExamSession = {
   },
 };
 
+/* Lo que la unidad ya enseña en sus otras páginas. La IA ve una página a la
+ * vez: en la Unit 2 repitió "Would you like to" en tres páginas y, en la
+ * p. 23, once tarjetas del recuadro RECYCLE con espacios en blanco ("How do I
+ * get to ___?"). La limpieza de repetidas compara el texto y no las ve. */
+function unitKnownContent(unit, batch) {
+  const otras = ((unit && unit.batches) || []).filter(b => b && b !== batch);
+  const unicas = xs => [...new Set(xs.map(x => String(x || '').trim()).filter(Boolean))];
+  return {
+    words: unicas(otras.flatMap(b => (b.vocab || []).map(v => v && v.word))),
+    grammar: unicas(otras.flatMap(b => (b.grammar || []).map(g => g && g.title))),
+  };
+}
+
+function unitAlreadyTaughtSection(known) {
+  const words = (known && known.words) || [];
+  const grammar = (known && known.grammar) || [];
+  if (!words.length && !grammar.length) return '';
+  return `━━ ALREADY ON OTHER PAGES OF THIS UNIT ━━
+
+The student already has these as cards from other pages of this unit. Do not repeat them,
+not even in another form: with blanks ("How do I get to ___?" is "How do I get to the
+museum?"), with or without "That's" / "Now", another tense, or a frame from a RECYCLE box.
+Only a word the page teaches in a really new meaning is new.
+${words.length ? `Cards: ${words.join(' · ')}
+` : ''}${grammar.length ? `Grammar topics (do not make another topic that teaches the same point): ${grammar.join(' · ')}
+` : ''}
+`;
+}
+
 async function analyzeWithAI(images, unit, batch) {
   const isReal = AIService.mode === 'claude' && AIService.getKey();
   showAnalysisLoading(0);
@@ -12218,6 +12383,7 @@ async function analyzeWithAI(images, unit, batch) {
       images,
       level: unit.lid,
       unitNum: unit.uid,
+      known: unitKnownContent(unit, batch),
     });
 
     if (!parsed) throw new Error('Could not generate content');
@@ -12295,7 +12461,10 @@ async function analyzeWithAI(images, unit, batch) {
     const faltan = [];
     const sinDrills = (batch.grammar || []).filter(g => !(g.drillSentences || []).length).length;
     if (sinDrills) faltan.push(`${sinDrills} grammar topic${sinDrills !== 1 ? 's' : ''} without exercises`);
-    if (!(batch.speakingPrompts || []).length) faltan.push('no role play scenes');
+    /* Una página sin tarea de speaking es correcta (la p. 22 de la Unit 2 no
+     * imprime ninguna) y él veía "incomplete". Solo falta si la respuesta se
+     * cortó antes de llegar al final. */
+    if (!(batch.speakingPrompts || []).length && !parsed.complete) faltan.push('no role play scenes');
     if (!(batch.exercises || []).length) faltan.push('no practice exercises');
     if (faltan.length) {
       setTimeout(() => toast(`⚠ The page is incomplete: ${faltan.join(' · ')}. Use ✨ in Grammar or upload it again.`), 1200);
@@ -22022,7 +22191,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, fixU2P16, addU2P13Questions, addU2P14Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    addU9P97Questions, addU9P98Questions, addU9P99Questions, addU9P100Questions, addU9P101Questions,

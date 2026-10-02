@@ -179,7 +179,7 @@ function analizar(json) {
   const fin = fuente.indexOf('  /* ── Main entry point', ini);
   assert.ok(ini > 0 && fin > ini, 'no se encontró _analyzeReal');
   const svc = h.ejecutar(`
-    ${['sanitizeGrammar', 'vocabKey', 'questionCard'].map(n => h.extraerFuncion(n)).join('\n')}
+    ${['sanitizeGrammar', 'vocabKey', 'questionCard', 'unitAlreadyTaughtSection'].map(n => h.extraerFuncion(n)).join('\n')}
     return { async _callClaude() { return ${JSON.stringify(JSON.stringify(json))}; },
     ${fuente.slice(ini, fin)} };`, {});
   return svc._analyzeReal({ images: ['data:image/jpeg;base64,AAAA'], level: 'a2', unitNum: 2 });
