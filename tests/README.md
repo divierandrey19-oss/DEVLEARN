@@ -223,6 +223,16 @@ gramática nueva solo marcan su bandera si la página ya está en v3 en ese apar
 subió antes de que el análisis las hiciera). Las impresas llevan la respuesta del
 libro; las de su vida, la de sus textos de My life.
 
+`u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
+octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
+CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of
+the question… it means it's acceptable"): ahora el ejemplo es la frase impresa
+con sus opciones, que no afirma nada. También: el email de Claire en pasado,
+"You can say that again" = "¡y que lo digas!", gramática que daba por error
+frases correctas, trampas en español, nombres propios fuera, forma base y
+repetidas unidas pasando el progreso (las del lote de phrasal verbs, después de
+las páginas). Lleva los números de página 73-83 y las preguntas de cada página.
+
 `u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
 el ejemplo "I like a basketball game": la página solo imprime "= like", y el

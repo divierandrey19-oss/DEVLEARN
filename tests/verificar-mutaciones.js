@@ -912,6 +912,41 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
     reemplazo: `set: { example: 'I like basketball games a lot.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
   },
+  {
+    nombre: 'que en la Unit 7 "out of the question" vuelva a ser "acceptable"',
+    buscar: `    { word: 'acceptable', set: CUESTION },\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'un ejemplo de la Unit 7 que no está impreso en la página',
+    buscar: `{ word: 'took', set: CUATRO_HORAS },`,
+    reemplazo: `{ word: 'took', set: { example: 'I took a photo of the mountains.' } },`,
+  },
+  {
+    nombre: 'que la Unit 7 vuelva a dar por error "It will be hard to decline"',
+    buscar: `      ['If an offer is tempting, it will be hard to decline.', 'If an offer will be tempting, it is hard to decline.'],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'quitar un tema repetido de la Unit 7 sin la página que lo enseña',
+    buscar: `  if (!hayLote(units, 'a2_7', u7Lote(paginaQueLoEnsena))) return;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que en la Unit 7 "give you a hand" pierda su progreso al renombrarla',
+    buscar: `    if (c.set.word && c.set.word !== v.word) moverProgreso(u, v.word, c.set.word);\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'correr el lote de phrasal verbs de la Unit 7 antes que las páginas',
+    buscar: `   ['_u7P81V1', fixU7P81], ['_u7P82V1', fixU7P82], ['_u7P83V1', fixU7P83], ['_u7PhrasalV1', fixU7Phrasal],`,
+    reemplazo: `   ['_u7PhrasalV1', fixU7Phrasal], ['_u7P81V1', fixU7P81], ['_u7P82V1', fixU7P82], ['_u7P83V1', fixU7P83],`,
+  },
+  {
+    nombre: 'que la Unit 7 no reciba sus preguntas al abrir la app',
+    buscar: `   ['_u7P82QV1', addU7P82Questions], ['_u7P83QV1', addU7P83Questions]]`,
+    reemplazo: `   ['_u7P82QV1', addU7P82Questions]]`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

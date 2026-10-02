@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02t -->
+<!-- DEVLEARN_BUILD: 2026-10-02u -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4946,7 +4946,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02t';
+const APP_BUILD = '2026-10-02u';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6899,6 +6899,17 @@ function migrateState(s) {
    ['_u8P89V1', fixU8P89], ['_u8P90V1', fixU8P90], ['_u8P91V1', fixU8P91], ['_u8P92V1', fixU8P92],
    ['_u8P93V1', fixU8P93], ['_u8P94V1', fixU8P94], ['_u8P95V1', fixU8P95], ['_u8PhrasalV1', fixU8Phrasal]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Unit 7, igual: números de página, las once páginas, el lote de phrasal
+  // verbs (después de que las páginas renombran sus copias) y las preguntas.
+  if (!merged._u7PagesV1 && fixU7Pages(merged.units)) merged._u7PagesV1 = true;
+  [['_u7P73V1', fixU7P73], ['_u7P74V1', fixU7P74], ['_u7P75V1', fixU7P75], ['_u7P76V1', fixU7P76],
+   ['_u7P77V1', fixU7P77], ['_u7P78V1', fixU7P78], ['_u7P79V1', fixU7P79], ['_u7P80V1', fixU7P80],
+   ['_u7P81V1', fixU7P81], ['_u7P82V1', fixU7P82], ['_u7P83V1', fixU7P83], ['_u7PhrasalV1', fixU7Phrasal],
+   ['_u7P73QV1', addU7P73Questions], ['_u7P74QV1', addU7P74Questions], ['_u7P75QV1', addU7P75Questions],
+   ['_u7P76QV1', addU7P76Questions], ['_u7P77QV1', addU7P77Questions], ['_u7P78QV1', addU7P78Questions],
+   ['_u7P79QV1', addU7P79Questions], ['_u7P80QV1', addU7P80Questions], ['_u7P81QV1', addU7P81Questions],
+   ['_u7P82QV1', addU7P82Questions], ['_u7P83QV1', addU7P83Questions]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
 
@@ -7848,6 +7859,700 @@ function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
   ] });
+}
+
+/* ── Unit 7, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
+ * Se analizó en septiembre, antes de las reglas de "las opciones no son
+ * hechos", "forma base" y "trampa en español". Lo peor: las opciones de los
+ * ejercicios de escucha (p. 80) y de UNDERSTAND FROM CONTEXT (p. 83) quedaron
+ * de ejemplo como si fueran ciertas ("out of the question… it means it's
+ * acceptable"), y los ejemplos del email de Claire (p. 78) en presente o
+ * inventados. Él ya había estudiado casi todas las tarjetas: renombrar o unir
+ * repetidas mueve el progreso. Los lotes van por id: no tenían número de página. */
+function u7Lote(pagina) {
+  return { 73: 'b_1788487781173_y6539c', 74: 'b_1788487855800_70zsmh', 75: 'b_1788488004611_7v8nde',
+    76: 'b_1788488185461_08c838', 77: 'b_1788488299790_w9txjr', 78: 'b_1788488422532_bmg3ok',
+    79: 'b_1788489006896_hfl2k4', 80: 'b_1788490785421_5bgbyb', 81: 'b_1788490957211_a6hnbo',
+    82: 'b_1788697775457_pdgpb9', 83: 'b_1788697931913_yyn6zz' }[pagina];
+}
+
+/* Los números de página, primero: así se ven en la cuadrícula y la
+ * restauración desde un respaldo las reconoce. Uno que él ya puso no se toca. */
+function fixU7Pages(units) {
+  const u = units && units.a2_7;
+  if (!u) return false;
+  let alguna = false;
+  (u.batches || []).forEach(b => {
+    const p = b && [73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83].find(n => u7Lote(n) === b.id);
+    if (!p) return;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [p];
+  });
+  return alguna;
+}
+
+/* Un tema que otra página de la unidad enseña desde el recuadro del libro:
+ * se quita de esta solo si esa otra página está en el aparato. */
+function quitarTemaRepetido(units, pagina, titulo, paginaQueLoEnsena) {
+  if (!hayLote(units, 'a2_7', u7Lote(paginaQueLoEnsena))) return;
+  fixPageContent(units, { unit: 'a2_7', id: u7Lote(pagina), quitarGramatica: [titulo] });
+}
+
+/* p. 73: "discuss" no es "discutir" (en Colombia es pelear); "arriving" era
+ * "arrive" de la p. 78 y "hassles" el "hassle" de la p. 82; el tema de "like"
+ * mezclaba cosas que la página no enseña ("I like exciting travel"). */
+function fixU7P73(units) {
+  const id = u7Lote(73);
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'discuss', set: { translation: 'hablar de, conversar sobre' } },
+    { word: 'travel', example: 'Vacations and Travel is an interesting topic.',
+      set: { example: 'Discuss some hassles of travel.', exampleTranslation: 'Hablar de algunas molestias de viajar.' } },
+  ] });
+  if (!ok) return false;
+  unirEnLaUnidad(units, { unit: 'a2_7', id }, [['arriving', 'arrive'], ['hassles', 'hassle']]);
+  // Sin la p. 78 en el aparato, queda aquí en su forma base.
+  fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'arriving', set: { word: 'arrive', translation: 'llegar', phonetic: '/əˈraɪv/' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_7', id,
+    quitarGramatica: ['Infinitives after verbs of preference (like)'],
+    quitarEjercicios: ['___ someone arriving from a trip is polite. You should say hello when they arrive.'] });
+  return true;
+}
+
+/* p. 74: las trampas, en inglés; "creo que" no lleva subjuntivo; la "regla"
+ * de la coma era inventada; dos tareas de speaking eran los globos. */
+function fixU7P74(units) {
+  const id = u7Lote(74);
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'go sport fishing', set: { translation: 'ir de pesca deportiva', exampleTranslation: 'Ir de pesca deportiva es relajante.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id, cambios: [
+    ['In my opinion, taking a cruise is exciting.', null],
+    ['Really? I think taking a cruise is relaxing. Going surfing is exciting!', null],
+    ['Spanish uses infinitives as subjects (nadar, cocinar), but English requires gerunds (swimming, cooking). Never use infinitive form as subject in English.',
+     "En español la actividad va en infinitivo ('hacer snorkel es emocionante'), y por eso sale 'Go snorkeling is exciting'. En inglés, cuando la actividad es el sujeto, va con -ing: 'Going snorkeling is exciting'."],
+    ["Para expresar opiniones en inglés, usamos frases como 'in my opinion' (en mi opinión) o 'I think' (creo que). A diferencia del español donde 'creo que' lleva subjuntivo a veces, en inglés 'I think' siempre va seguido de indicativo normal.",
+     "Para dar tu opinión usamos 'In my opinion,' (en mi opinión) o 'I think' (creo que). Para no estar de acuerdo con cortesía, la página usa 'Really? I think…'. Después va una oración completa, con la actividad de sujeto: 'In my opinion, taking a cruise is exciting.'"],
+    ["The comma after 'in my opinion' is required in English. Spanish 'creo que' doesn't need comma, but English 'I think' can work with or without it.",
+     "En español decimos 'creo que es emocionante hacer un crucero', con la actividad al final. En inglés la actividad va primero, de sujeto: 'I think taking a cruise is exciting', no 'I think is exciting taking a cruise'."],
+    ['In my opinion taking a cruise is exciting.', 'In my opinion, take a cruise is exciting.'],
+    ["Always use comma after 'in my opinion'", "The activity is the subject, so it needs -ing: taking, not take."],
+    ["Spanish only uses 'me gusta + infinitive', but English commonly uses gerund after 'like'. Both are correct, but gerund is more natural in speech.",
+     "En español decimos 'me gusta hacer', y por eso sale 'I like do nothing'. En inglés después de 'like' va el verbo con -ing o con 'to': 'I like doing nothing' o 'I like to do nothing'."],
+  ] });
+  return true;
+}
+
+/* p. 75: "took a staycation" salió "took a vacation"; frases en pasado
+ * (stayed home, slept late, went to the beach) van en forma base; el tema de
+ * frases informales daba por error "I have to run now" y "It was good to see
+ * you", que están bien; las trampas, en inglés; un globo en el speaking. */
+function fixU7P75(units) {
+  const id = u7Lote(75);
+  const STAYCATION = { example: 'As a matter of fact, no. We just stayed home and took a staycation.',
+                       exampleTranslation: 'De hecho, no. Solo nos quedamos en casa y tomamos unas vacaciones en casa.' };
+  const PLAYA = { example: 'Well, basically we slept late and went to the beach.',
+                  exampleTranslation: 'Bueno, básicamente dormimos hasta tarde y fuimos a la playa.' };
+  const CLIMA = { example: 'The weather was so fantastic.', exampleTranslation: 'El clima estuvo buenísimo.' };
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'staycation', set: STAYCATION },
+    { word: 'stayed home', set: { word: 'stay home', translation: 'quedarse en casa', phonetic: '/steɪ hoʊm/',
+      example: 'We just stayed home and took a staycation.', exampleTranslation: 'Solo nos quedamos en casa y tomamos unas vacaciones en casa.' } },
+    { word: 'slept late', set: { word: 'sleep late', translation: 'dormir hasta tarde', phonetic: '/slip leɪt/', ...PLAYA } },
+    { word: 'went to the beach', set: { word: 'go to the beach', translation: 'ir a la playa', phonetic: '/ɡoʊ tə ðə bitʃ/', ...PLAYA } },
+    { word: 'beach', set: PLAYA },
+    { word: 'fantastic', set: CLIMA },
+    { word: 'weather', set: CLIMA },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id,
+    ejercicios: [{ question: 'Translate to English: Nos quedamos en casa y tomamos unas vacaciones.',
+      set: { question: 'Translate to English: Solo nos quedamos en casa y tomamos unas vacaciones en casa.',
+             answer: 'We just stayed home and took a staycation.' } }],
+    cambios: [
+      ["I love beach vacations. They're so relaxing. You can go fishing or swimming.", null],
+      ["En inglés, muchos verbos comunes tienen formas irregulares en el pasado que debes memorizar. A diferencia del español donde muchos verbos siguen patrones regulares (-ar/-aba, -er/-ía), el inglés tiene muchas formas irregulares sin patrón. Por ejemplo: go → went, steal → stole, sleep → slept.",
+       "En inglés muchos verbos de todos los días tienen un pasado irregular: no llevan -ed y hay que aprenderlos de memoria. En la conversación: go → went, steal → stole, sleep → slept, take → took."],
+      ["Colombian speakers often try to apply regular -ed endings to irregular verbs, saying 'goed' instead of 'went' or 'stealed' instead of 'stole'.",
+       "En español casi todos los verbos hacen el pasado igual ('robé', 'dormí'), y por eso sale 'stealed' o 'goed'. En inglés: stole, went."],
+      ["Colombian speakers often forget to use 'did' and say 'You went?' instead of 'Did you go?' or use past form after 'did' saying 'Did you went?' instead of 'Did you go?'",
+       "En español preguntamos '¿Cuándo volviste?' solo con el verbo en pasado, y por eso sale 'When you got back?' o 'Did you went?'. En inglés va 'did' y el verbo vuelve a la forma base: 'When did you get back?', 'Did you go away?'."],
+      ["Colombians often translate literally from Spanish phrases like 'Tengo que correr' for 'gotta run' or 'Fue bueno viéndote' for 'It was great seeing you', which sound unnatural in English.",
+       "Palabra por palabra, 'Gotta run' parece 'tengo que correr', pero significa 'me tengo que ir'. Y 'It was great seeing you' es '¡qué bueno verte!', no 'fue genial viéndote'."],
+      ['I have to run now.', 'Gotta to run now.'],
+      ["In very informal conversation, 'gotta' (got to) is more natural than 'have to' when saying goodbye quickly.",
+       "'Gotta' already includes the 'to' (got to): don't add another one."],
+      ['It was good to see you.', 'It was great see you.'],
+      ["The -ing form 'seeing' is more common in this fixed goodbye phrase.", "After 'It was great', use 'seeing' (or 'to see'), not the base form."],
+      ["Colombian speakers often use only 'good' and 'bad' instead of more specific adjectives, saying 'It was good' instead of 'It was relaxing' or 'It was fantastic'.",
+       "En español decimos 'estuvo muy bueno' para todo, y por eso sale solo 'It was good'. Brett y Marta usan adjetivos más precisos: fantastic, relaxing, awful."],
+    ] });
+  return true;
+}
+
+/* p. 76: "Where were there lots of people?" (el cuadro dice "Were there lots
+ * of people?") y "How were the food…", mal escritas; bumpy no es "agitado" ni
+ * scenic "panorámico"; la trampa decía que en español se dice "bonito muy";
+ * el speaking era inventado (la página repite las preguntas del cuadro). */
+function fixU7P76(units) {
+  const id = u7Lote(76);
+  const MUCHA_GENTE = { example: 'Were there lots of people?', exampleTranslation: '¿Había mucha gente?' };
+  const MOVIDO = { exampleTranslation: 'El vuelo estuvo muy movido.' };
+  const PAISAJES = { exampleTranslation: 'El viaje en tren tuvo paisajes bastante bonitos.' };
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'were', set: MUCHA_GENTE },
+    { word: 'lots of people', set: MUCHA_GENTE },
+    { word: "weren't", set: { example: "Were there lots of people? No, there weren't.", exampleTranslation: '¿Había mucha gente? No, no había.' } },
+    { word: 'bumpy', set: { translation: 'movido, con turbulencia', ...MOVIDO } },
+    { word: 'flight', set: MOVIDO },
+    { word: 'very', set: MOVIDO },
+    { word: 'scenic', set: { translation: 'con paisajes bonitos', ...PAISAJES } },
+    { word: 'train trip', set: PAISAJES },
+    { word: 'pretty', set: PAISAJES },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id, cambios: [
+    ['Where were there lots of people?', 'Were there lots of people?'],
+    ['¿Dónde había mucha gente?', '¿Había mucha gente?'],
+    ['El vuelo fue muy agitado.', 'El vuelo estuvo muy movido.'],
+    ['El viaje en tren fue bastante panorámico.', 'El viaje en tren tuvo paisajes bastante bonitos.'],
+    ["Los colombianos suelen confundir cuándo usar 'was' vs 'were' porque en español 'estaba/estuvo' se usa para singular y plural con diferentes pronombres. Recuerda: 'was' = yo/él/ella/eso estaba; 'were' = tú/ustedes/nosotros/ellos estaban.",
+     "En español 'había' sirve para una cosa o para muchas ('había mucha gente'), y por eso sale 'There was lots of people'. En inglés, con plural es 'there were': 'Were there lots of people?' — 'Yes, there were.'"],
+    ["Los intensificadores modifican adjetivos para expresar grado. En inglés, se colocan ANTES del adjetivo (diferente al español donde algunos van después). 'So', 'very' y 'really' = muy fuerte; 'pretty' y 'quite' = bastante; 'kind of' = un poco. Van entre el verbo 'be' y el adjetivo.",
+     "Los intensificadores dicen qué tanto. Van antes del adjetivo, entre 'was/were' y el adjetivo, igual que en español ('muy movido'). 'So', 'very' y 'really' = muy; 'pretty' y 'quite' = bastante; 'kind of' = un poco, medio."],
+    ["En español decimos 'muy bonito' o 'bonito muy', pero en inglés el intensificador SIEMPRE va antes: 'very pretty' nunca 'pretty very'. Además, 'pretty' como intensificador NO significa 'bonito' sino 'bastante'.",
+     "'Pretty' suena a 'bonito', pero antes de un adjetivo significa 'bastante': 'The train trip was pretty scenic' = 'el viaje en tren tuvo paisajes bastante bonitos'. Y nunca va después: 'very bumpy', no 'bumpy very'."],
+    ['Talk about a trip you took. Describe if it was scary, comfortable, boring, or scenic using intensifiers.',
+     'Listen and repeat the questions from the grammar chart.'],
+    ["Ask your partner about their last trip. Use questions with 'was' and 'were' to find out where they went and how it was.", null],
+    ["Describe your last bus trip, flight, or drive. Say if it was short or long, and use intensifiers like 'so', 'very', 'really', 'pretty', 'quite', or 'kind of'.", null],
+  ] });
+  return true;
+}
+
+/* p. 77: "kidding" suelto (el diálogo dice "No kidding!"), "too" era "That's
+ * too bad!", "give you a hand" es el phrasal "give someone a hand"; la trampa
+ * decía que en español se pregunta "¿Cuánto tiempo tu viaje?"; was / were ya
+ * está en el cuadro de la p. 76. */
+function fixU7P77(units) {
+  const id = u7Lote(77);
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'kidding', set: { word: 'No kidding!', translation: '¡no me digas!, ¿en serio?', phonetic: '/noʊ ˈkɪdɪŋ/', type: 'phrase' } },
+    { word: 'too', example: "That's too bad!", set: { word: "That's too bad!", translation: '¡qué pena!, ¡qué lástima!',
+      phonetic: '/ðæts tu bæd/', type: 'phrase' } },
+    { word: 'give you a hand', set: { word: 'give someone a hand', translation: 'echarle una mano a alguien',
+      phonetic: '/ɡɪv ˈsʌmwʌn ə hænd/', exampleTranslation: 'Oye, ¿te echo una mano?' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id,
+    quitarEjercicios: ['The vacation was short but very ___. I was really happy.'],
+    cambios: [
+      ["En español puedes decir '¿Cuánto tiempo tu viaje?' pero en inglés DEBES incluir el verbo: 'How long was your trip?' no 'How long your trip?'",
+       "En español preguntamos '¿Cuánto duró tu tour?', con 'durar', y por eso sale 'How long lasted your tour?'. En inglés se pregunta con was / were: 'How long was your tour?', 'How long were you away?'."],
+    ] });
+  quitarTemaRepetido(units, 77, "Past Simple with 'was' and 'were'", 76);
+  return true;
+}
+
+/* p. 78: los ejemplos del email de Claire quedaron en presente ("The bus
+ * finally arrive at noon") o inventados ("I met Lynn at the station", "I took
+ * a photo on Instagram"; el libro dice Instasnap): ahora, con el email
+ * completo. "get" es "get on"; la trampa decía que "ir" es regular en español. */
+function fixU7P78(units) {
+  const id = u7Lote(78);
+  const LEVANTARSE = { example: 'We got up early this morning and packed all our clothes into our luggage.',
+                       exampleTranslation: 'Nos levantamos temprano esta mañana y empacamos toda la ropa en las maletas.' };
+  const TAXI = { example: 'Then we checked out of the hotel and took a taxi to the station.',
+                 exampleTranslation: 'Luego salimos del hotel y tomamos un taxi a la estación.' };
+  const TOUR = { example: 'We met the other people on the tour.', exampleTranslation: 'Conocimos a las otras personas del tour.' };
+  const BUS = { example: 'So we all got on the bus and drove into the mountains.',
+                exampleTranslation: 'Entonces todos nos subimos al bus y nos fuimos para las montañas.' };
+  const CUATRO_HORAS = { example: 'The trip took four hours.', exampleTranslation: 'El viaje duró cuatro horas.' };
+  const ALMUERZO = { example: 'The bus finally arrived at noon, and we had lunch in a cute restaurant.',
+                     exampleTranslation: 'El bus por fin llegó al mediodía, y almorzamos en un restaurante lindo.' };
+  const FOTO = { example: 'I posted a photo on Instasnap—have a look there.',
+                 exampleTranslation: 'Publiqué una foto en Instasnap: échale un vistazo.' };
+  const SALIMOS = { example: 'We left at about 6:00 and are now on the way to the airport.',
+                    exampleTranslation: 'Salimos como a las 6:00 y ya vamos para el aeropuerto.' };
+  const TABLA = (verbo, pasado, es) => ({ example: `${verbo} → ${pasado}`, exampleTranslation: es });
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'studied', set: TABLA('study', 'studied', 'estudiar → estudió') },
+    { word: 'shopped', set: TABLA('shop', 'shopped', 'comprar → compró') },
+    { word: 'did', set: TABLA('do', 'did', 'hacer → hizo') },
+    { word: 'drove', set: BUS },
+    { word: 'found', set: TABLA('find', 'found', 'encontrar → encontró') },
+    { word: 'flew', set: TABLA('fly', 'flew', 'volar → voló') },
+    { word: 'got', set: { translation: 'pasado de get: consiguió, se subió (get on)', ...BUS } },
+    { word: 'went', set: { example: 'They went to the beach.', exampleTranslation: 'Fueron a la playa.' } },
+    { word: 'had', set: ALMUERZO },
+    { word: 'left', set: SALIMOS },
+    { word: 'met', set: TOUR },
+    { word: 'took', set: CUATRO_HORAS },
+    { word: 'shopping', set: { example: "They didn't go shopping.", exampleTranslation: 'No fueron de compras.' } },
+    { word: 'station', set: TAXI },
+    { word: 'mountains', set: BUS },
+    { word: 'bus', set: BUS },
+    { word: 'taxi', set: TAXI },
+    { word: 'restaurant', set: ALMUERZO },
+    { word: 'photo', set: FOTO },
+    { word: 'airport', set: SALIMOS },
+    { word: 'get up', set: LEVANTARSE },
+    { word: 'pack', set: LEVANTARSE },
+    { word: 'early', set: LEVANTARSE },
+    { word: 'check out', set: { translation: 'salir del hotel (pagar y entregar la habitación)', ...TAXI } },
+    { word: 'take', set: TAXI },
+    { word: 'meet', set: TOUR },
+    { word: 'get', example: 'So we all get on the bus.', set: { word: 'get on', translation: 'subirse a (un bus, un avión, un tren)',
+      phonetic: '/ɡɛt ɑn/', type: 'phrase', ...BUS } },
+    { word: 'arrive', set: ALMUERZO },
+    { word: 'have', set: { translation: 'tener; (have lunch) almorzar', ...ALMUERZO } },
+    { word: 'cute', set: ALMUERZO },
+    { word: 'post', set: FOTO },
+    { word: 'relax', set: { example: 'After lunch, we took it easy and just relaxed.',
+      exampleTranslation: 'Después del almuerzo, nos lo tomamos con calma y solo descansamos.' } },
+    { word: 'leave', set: SALIMOS },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id,
+    ejercicios: [{ question: 'Build a sentence with these words:',
+      set: { answer: 'We met the other people on the tour.', words: ['the', 'met', 'on', 'other', 'We', 'tour', 'people', 'the'] } }],
+    cambios: [
+      ['Listen and repeat the grammar examples.', null],
+      ['Read and listen. Then listen again and repeat.', null],
+      ['They shopped at the station.', 'I liked the cruise.'],
+      ['Ellos compraron en la estación.', 'Me gustó el crucero.'],
+      ["Los hablantes de español a veces olvidan el -ed porque en español escuchamos la persona en la terminación del verbo (llamé vs. llamaste). En inglés, el pasado simple es igual para todas las personas: I liked, you liked, he liked.",
+       "En español el pasado se oye en la terminación ('llamé'); en inglés la -ed casi no se oye, y por eso se olvida: 'I call the hotel yesterday' ✗ → 'I called the hotel yesterday' ✓. Y no cambia con la persona: I called, she called, they called."],
+      ["Algunos verbos irregulares del inglés tienen formas similares al infinitivo en español (meet → met, read → read), pero la pronunciación cambia. Otros verbos comunes del español son regulares, pero en inglés son irregulares: ir (fui) → go (went), tener (tuve) → have (had).",
+       "En español también hay pasados irregulares (ir → fui, tener → tuve), pero en inglés lo son muchos verbos de todos los días: go → went, have → had, take → took, meet → met. Por eso sale 'goed' o 'meeted': no llevan -ed; hay que aprenderlos de memoria."],
+      ['I took a photo on Instagram.', 'The trip took four hours.'],
+      ['Tomé una foto en Instagram.', 'El viaje duró cuatro horas.'],
+      ['I meeted Lynn at the station.', 'We meeted the other people on the tour.'],
+      ['I met Lynn at the station.', 'We met the other people on the tour.'],
+    ] });
+  quitarTemaRepetido(units, 78, "Past Tense of 'to be' (was/were)", 76);
+  return true;
+}
+
+/* p. 79: "You can say that again" no es "puedes decirlo otra vez" (es "¡y que
+ * lo digas!"); "seat" tenía "We have one in the car."; fuera las tarjetas de
+ * nombres propios (Montevideo, Miami, Flight 3); "missed" va en forma base;
+ * el tema de irregulares ponía "returned" como irregular y ya está en la p. 78. */
+function fixU7P79(units) {
+  const id = u7Lote(79);
+  const ASIENTO = { example: 'What kind of seat would you like? A window or an aisle?',
+                    exampleTranslation: '¿Qué tipo de asiento quiere? ¿Ventana o pasillo?' };
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'window', set: ASIENTO },
+    { word: 'aisle', set: ASIENTO },
+    { word: 'seat', set: ASIENTO },
+    { word: 'walk around', set: { translation: 'caminar por ahí, moverse', exampleTranslation: 'Me gusta pararme a caminar.' } },
+    { word: 'coming back', set: { word: 'come back', translation: 'volver, regresar', phonetic: '/kʌm bæk/',
+      exampleTranslation: 'No voy a volver.' } },
+    { word: 'missed', set: { word: 'miss', translation: 'perder (un vuelo, un bus, un tren)', phonetic: '/mɪs/',
+      example: 'Listen, I missed the 5:12 flight to Miami.', exampleTranslation: 'Oye, perdí el vuelo de las 5:12 a Miami.' } },
+    { word: 'You can say that again', set: { translation: '¡y que lo digas! (estoy totalmente de acuerdo)',
+      exampleTranslation: '¡Y que lo digas!' } },
+    { word: 'arrival time', set: { example: 'Ask or tell your partner about the arrival time.',
+      exampleTranslation: 'Pregúntale o cuéntale a tu compañero la hora de llegada.' } },
+    { word: 'train', set: { example: "Role-play the conversation, inventing the place you're going and the flight, train, or bus times.",
+      exampleTranslation: 'Representa la conversación, inventando a dónde vas y los horarios del vuelo, del tren o del bus.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id, quitarPalabras: ['Montevideo', 'Miami', 'Flight 3'] });
+  unirEnLaUnidad(units, { unit: 'a2_7', id }, [['aisle seats', 'aisle seat']]);
+  quitarTemaRepetido(units, 79, 'Simple Past Tense: Irregular Verb Forms', 78);
+  return true;
+}
+
+/* p. 80: LISTEN FOR DETAILS pide encerrar la opción que dice el audio, y las
+ * tres opciones de cada frase quedaron de ejemplo como hechos ("Someone stole
+ * their tablet on the first day / on the third day / when they arrived",
+ * "They returned her kids"). Ahora el ejemplo es la frase impresa, con sus
+ * opciones, que no afirma nada. Los temas "too + adjective" (salía de las
+ * opciones), was / were y regulares / irregulares no eran de esta página. */
+function fixU7P80(units) {
+  const id = u7Lote(80);
+  const opciones = (example, exampleTranslation) => ({ example, exampleTranslation });
+  const EXPERIENCIA = opciones('Check whether the person had a good or bad vacation experience—or a mixture of both.',
+    'Marca si la persona tuvo una experiencia de vacaciones buena o mala, o una mezcla de ambas.');
+  const AEROLINEA = opciones('The airline lost their (ticket / camera / luggage).', 'La aerolínea perdió su (boleto / cámara / equipaje).');
+  const TABLETA = opciones('Someone stole their tablet (on the first day / on the third day / when they arrived).',
+    'Alguien les robó la tableta (el primer día / el tercer día / cuando llegaron).');
+  const GENTE1 = opciones('The people were (warm and friendly / cold and unfriendly / unhappy).',
+    'La gente era (cálida y amable / fría y poco amable / infeliz).');
+  const GUSTO = opciones('They really liked their (hotel room / tour / tour guide).',
+    'Les gustó mucho (la habitación del hotel / el tour / el guía turístico).');
+  const VOLVIERON = opciones('They got back (last weekend / yesterday / three days ago).',
+    'Volvieron (el fin de semana pasado / ayer / hace tres días).');
+  const SILLAS = opciones('They got (aisle seats / seats together / window seats).',
+    'Les tocaron (asientos de pasillo / asientos juntos / asientos de ventana).');
+  const COMIDA = opciones('The food at the Miami hotel was (fantastic / pretty bad / terrible).',
+    'La comida del hotel de Miami estuvo (buenísima / bastante mala / terrible).');
+  const GENTE4 = opciones('The people were (cold / nice / unfriendly).', 'La gente era (fría / amable / poco amable).');
+  const DEVOLVIERON = opciones('They returned her (kids / car / bike).', 'Le devolvieron (los niños / el carro / la bicicleta).');
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'a good experience', set: EXPERIENCIA },
+    { word: 'a bad experience', set: EXPERIENCIA },
+    { word: 'a mixture of both', set: EXPERIENCIA },
+    { word: 'camera', set: AEROLINEA },
+    { word: 'airline', set: AEROLINEA },
+    { word: 'tablet', set: TABLETA },
+    { word: 'on the first day', set: TABLETA },
+    { word: 'on the third day', set: TABLETA },
+    { word: 'when they arrived', set: TABLETA },
+    { word: 'warm and friendly', set: GENTE1 },
+    { word: 'cold and unfriendly', set: GENTE1 },
+    { word: 'unhappy', set: { translation: 'infeliz, descontento', ...GENTE1 } },
+    { word: 'hotel room', set: GUSTO },
+    { word: 'tour guide', set: GUSTO },
+    { word: 'last weekend', set: VOLVIERON },
+    { word: 'three days ago', set: VOLVIERON },
+    { word: 'seats together', set: SILLAS },
+    { word: 'pretty bad', set: COMIDA },
+    { word: 'terrible', set: COMIDA },
+    { word: 'cold', set: GENTE4 },
+    { word: 'nice', set: GENTE4 },
+    { word: 'unfriendly', set: GENTE4 },
+    { word: 'kids', set: { translation: 'niños, hijos', ...DEVOLVIERON } },
+    { word: 'car', set: { translation: 'carro', ...DEVOLVIERON } },
+    { word: 'bike', set: DEVOLVIERON },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id,
+    quitarGramatica: ['Too + adjective'],
+    cambios: [
+      ['Describe a good vacation experience you had.', null],
+      ['Describe a bad vacation experience you had.', null],
+      ['Talk about what happened on your last vacation — was it a good experience, a bad experience, or a mixture of both?', null],
+    ] });
+  unirEnLaUnidad(units, { unit: 'a2_7', id }, [['window seats', 'window seat']]);
+  quitarTemaRepetido(units, 80, 'Past Simple: was/were', 76);
+  quitarTemaRepetido(units, 80, 'Past Simple: regular and irregular verbs', 78);
+  return true;
+}
+
+/* p. 81: la página es de pronunciar la -ed, y los ejemplos eran frases sin
+ * sentido ("I visited the mood", "I tried the drive"): ahora, el sonido que
+ * enseña. "mood" y "bumped" son "be in the mood for" y "get bumped from"; el
+ * tema de "crazy" decía que "loco" en español es casi siempre negativo; tres
+ * tareas de speaking eran los moldes del recuadro RECYCLE. */
+function fixU7P81(units) {
+  const id = u7Lote(81);
+  const ed = (palabra, sonido) => ({ example: `${palabra} /${sonido}/`, exampleTranslation: `La -ed de ${palabra} suena /${sonido}/.` });
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'played', set: ed('played', 'd') },
+    { word: 'rained', set: ed('rained', 'd') },
+    { word: 'wanted', set: ed('wanted', 'ɪd') },
+    { word: 'needed', set: ed('needed', 'ɪd') },
+    { word: 'tried', set: ed('tried', 'd') },
+    { word: 'walked', set: ed('walked', 't') },
+    { word: 'visited', set: ed('visited', 'ɪd') },
+    { word: 'checked', set: ed('checked', 't') },
+    { word: 'danced', set: ed('danced', 't') },
+    { word: 'waited', set: ed('waited', 'ɪd') },
+    { word: 'wonderful', set: { exampleTranslation: 'La pasé de maravilla.' } },
+    { word: 'mood', set: { word: 'be in the mood for', translation: 'tener ganas de', phonetic: '/bi ɪn ðə mud fɔr/', type: 'phrase',
+      example: 'I was in the mood for ___, but ___.', exampleTranslation: 'Tenía ganas de ___, pero ___.' } },
+    { word: 'bumped', set: { word: 'get bumped from', translation: 'quedarse por fuera de un vuelo (porque estaba sobrevendido)',
+      phonetic: '/ɡɛt bʌmpt frʌm/', type: 'phrase', exampleTranslation: 'Nos dejaron por fuera del vuelo.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_7', id,
+    quitarGramatica: ['Adjectives to Describe Experiences: Wonderful, Fantastic, Crazy'],
+    ejercicios: [
+      { question: 'We ___ our train, so we waited for the flight. It was a shame!', set: { question: 'Bad travel experiences: We ___ our train.' } },
+      { question: "They didn't ___ credit cards, so we waited and checked our mood. It drove me crazy!",
+        set: { question: "They didn't ___ credit cards. What a shame!" } },
+      { question: 'Build a sentence with these words:',
+        set: { answer: 'We had mechanical problems.', words: ['problems', 'had', 'We', 'mechanical'] } },
+    ],
+    cambios: [
+      ['How was the ___?', null],
+      ['How long was the ___?', null],
+      ['Tell me about ___.', null],
+      ["Estudiantes colombianos traducen directamente '¿Cómo hiciste?' como 'How did you do?' cuando quieren decir 'What did you do?' (¿Qué hiciste?). 'How did you do?' en inglés significa '¿Cómo te fue?' no '¿Qué hiciste?'.",
+       "En español '¿Cómo estuvo el viaje?' no lleva auxiliar, y por eso sale 'How did the trip?'. En inglés, con una cosa se pregunta con was: 'How was the trip?'. Y '¿Qué hiciste?' es 'What did you do?', no 'How did you do?' (eso es '¿cómo te fue?')."],
+    ] });
+  return true;
+}
+
+/* p. 82: ejemplos de la lectura con palabras cambiadas (le quitaron "takes off
+ * on time" a la tarjeta de take off; "might go up" dice "can go up"); "out of
+ * the question" no es "fuera de cuestión"; las trampas, en inglés. */
+function fixU7P82(units) {
+  const id = u7Lote(82);
+  const A_TIEMPO = { example: 'Your plane boards on time, takes off on time, and lands on time.',
+                     exampleTranslation: 'Tu avión embarca a tiempo, despega a tiempo y aterriza a tiempo.' };
+  const VALOR = { example: "The value of the voucher can go up and up until it's too good to refuse.",
+                  exampleTranslation: 'El valor del vale puede subir y subir hasta que sea demasiado bueno para rechazarlo.' };
+  const FILA = { example: "You feel lucky because you've scored an aisle seat in the first row.",
+                 exampleTranslation: 'Te sientes de buenas porque conseguiste un asiento de pasillo en la primera fila.' };
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'take off (depart)', set: A_TIEMPO },
+    { word: 'land (arrive)', set: A_TIEMPO },
+    { word: 'on time', set: A_TIEMPO },
+    { word: 'value', set: VALOR },
+    { word: 'refuse', set: VALOR },
+    { word: 'scored', set: { word: 'score', translation: 'conseguir (algo bueno)', phonetic: '/skɔr/', ...FILA } },
+    { word: 'first row', set: FILA },
+    { word: 'kill', set: { word: 'have some time to kill', translation: 'tener tiempo de sobra', phonetic: '/hæv sʌm taɪm tə kɪl/', type: 'phrase',
+      example: "If you have some time to kill, it's possible that waiting two hours for the next flight isn't a problem for you.",
+      exampleTranslation: 'Si tienes tiempo de sobra, de pronto esperar dos horas el siguiente vuelo no es un problema para ti.' } },
+    { word: 'tempting', set: { example: 'And the $200 voucher is tempting—you could use that on your next trip!',
+      exampleTranslation: 'Y el vale de $200 es tentador: ¡lo podrías usar en tu próximo viaje!' } },
+    { word: 'volunteering', set: { word: 'volunteer', translation: 'ofrecerse (como voluntario)', phonetic: '/ˌvɑlənˈtɪr/' } },
+    { word: 'out of the question', set: { translation: 'imposible, ni pensarlo',
+      exampleTranslation: 'Por otro lado, si es un viaje de negocios, ofrecerte para bajarte del avión probablemente es imposible.' } },
+  ] });
+  if (!ok) return false;
+  unirEnLaUnidad(units, { unit: 'a2_7', id }, [['end of the world', 'the end of the world'], ['an aisle seat', 'aisle seat']]);
+  fixPageContent(units, { unit: 'a2_7', id, cambios: [
+    ["Colombian speakers often add the subject pronoun ('You take your luggage') when giving instructions, but in English imperatives the subject is omitted ('Take your luggage').",
+     "En español damos instrucciones con el verbo solo ('Lleva tu equipaje al mostrador'), igual que en inglés: 'Take your luggage to the check-in counter'. El error es agregar 'you' o 'to': 'You show…', 'To board…'."],
+    ["Spanish speakers often add 'to' after 'can' because Spanish uses 'poder + infinitivo', but in English it's 'can + base verb' (can go, NOT can to go).",
+     "Por pensar en 'poder + infinitivo' sale 'can to board'. Después de 'can' va el verbo solo, sin 'to' y sin -s: 'We can rebook you', 'The offer can include a hotel stay'."],
+    ["Spanish allows omitting the subject pronoun ('Llega tarde' = He/she arrives late), but English always requires it ('He arrives late', NOT 'Arrives late').",
+     "En español podemos omitir el sujeto ('Llega tarde'), pero en inglés siempre va: 'He arrives late', no 'Arrives late'. Y con he / she / it el verbo lleva -s: 'Your plane boards on time'."],
+    ["Spanish uses infinitives after many verbs ('No puedes arriesgar llegar tarde'), but English often requires gerunds ('You can't risk being late'). Also, after prepositions, Spanish uses infinitives but English uses gerunds.",
+     "En español decimos 'arriesgarse a llegar tarde', con infinitivo, y por eso sale 'risk to be late'. En inglés después de 'risk' va -ing: 'You can't risk being late'. Y después de una preposición también: 'good at compensating'."],
+    ['Ofrecerse voluntariamente para bajarse probablemente está fuera de cuestión.', 'Ofrecerse para bajarse del avión probablemente es imposible.'],
+  ] });
+  return true;
+}
+
+/* p. 83: UNDERSTAND FROM CONTEXT pide encerrar la palabra correcta, y las
+ * opciones quedaron de ejemplo como hechos, varias falsas: "out of the
+ * question… it means it's acceptable", "A perk is an unusual offer", "it is
+ * easy to decline", "it gives you the ticket". La frase con sus opciones no
+ * afirma nada. Un error común daba por mal "If an offer is tempting, it will
+ * be hard to decline", que está bien. Repetidas con otras páginas, unidas. */
+function fixU7P83(units) {
+  const id = u7Lote(83);
+  const VOLUNTARIO = { example: 'If someone "volunteers" to get off the plane, she or he (has to / agrees to / pays to) get off.',
+                       exampleTranslation: 'Si alguien "se ofrece" para bajarse del avión, (tiene que / acepta / paga por) bajarse.' };
+  const COMPENSA = { example: 'If an airline "compensates" you, it gives you (a voucher / the ticket / another seat on the flight).',
+                     exampleTranslation: 'Si una aerolínea te "compensa", te da (un vale / el boleto / otro asiento en el vuelo).' };
+  const TENTADORA = { example: 'If an offer is "tempting" to you, it is (hard / easy / impossible) to decline.',
+                      exampleTranslation: 'Si una oferta es "tentadora" para ti, es (difícil / fácil / imposible) de rechazar.' };
+  const CUESTION = { example: 'If someone says that something is "out of the question," it means it\'s (good / acceptable / not acceptable).',
+                     exampleTranslation: 'Si alguien dice que algo es "out of the question", quiere decir que es (bueno / aceptable / no aceptable).' };
+  const PERK = { example: 'A "perk" is an (attractive / unusual / impossible) offer.',
+                 exampleTranslation: 'Un "perk" es una oferta (atractiva / poco común / imposible).' };
+  const ultimaVez = (articulo, es) => ({ example: `When was the last time you took ${articulo}?`,
+    exampleTranslation: `¿Cuándo fue la última vez que te subiste a ${es}?` });
+  const ok = fixBookPage(units, { unit: 'a2_7', id, cambios: [
+    { word: 'has to', set: { word: 'have to', translation: 'tener que', phonetic: '/hæv tu/', ...VOLUNTARIO } },
+    { word: 'agrees to', set: { word: 'agree to', translation: 'aceptar (hacer algo)', phonetic: '/əˈɡri tu/',
+      example: 'If someone volunteers to get off the plane, she or he agrees to get off.',
+      exampleTranslation: 'Si alguien se ofrece para bajarse del avión, acepta bajarse.' } },
+    { word: 'pays to', set: { word: 'pay to', translation: 'pagar por (hacer algo)', phonetic: '/peɪ tu/', ...VOLUNTARIO } },
+    { word: 'a voucher', set: { translation: 'un vale', exampleTranslation: 'Si una aerolínea te compensa, te da un vale.' } },
+    { word: 'another seat on the flight', set: COMPENSA },
+    { word: 'easy', set: TENTADORA },
+    { word: 'impossible', set: TENTADORA },
+    { word: 'acceptable', set: CUESTION },
+    { word: 'not acceptable', set: { exampleTranslation: 'Si alguien dice que algo es "out of the question", quiere decir que no es aceptable.' } },
+    { word: 'unusual', set: { translation: 'poco común', ...PERK } },
+    { word: 'a limo', set: ultimaVez('a limo', 'una limusina') },
+    { word: 'a helicopter', set: ultimaVez('a helicopter', 'un helicóptero') },
+    { word: 'a ship', set: ultimaVez('a ship', 'un barco') },
+    { word: 'an airplane', set: ultimaVez('an airplane', 'un avión') },
+    { word: 'a subway', set: ultimaVez('a subway', 'un metro') },
+    { word: 'a ferry', set: ultimaVez('a ferry', 'un ferry') },
+    { word: 'means of transportation', set: { example: 'Ask your partner questions about the means of transportation she or he checked.',
+      exampleTranslation: 'Hazle preguntas a tu compañero sobre los medios de transporte que marcó.' } },
+    { word: 'drove me crazy', set: { word: 'drive someone crazy', translation: 'volver loco a alguien', phonetic: '/draɪv ˈsʌmwʌn ˈkreɪzi/',
+      example: 'The ___ drove me crazy.', exampleTranslation: 'El / la ___ me volvió loco.' } },
+    { word: "didn't work", set: { example: "The ___ didn't work.", exampleTranslation: 'El / la ___ no funcionó.' } },
+    { word: 'got carsick', set: { word: 'get carsick', translation: 'marearse en el carro', phonetic: '/ɡɛt ˈkɑrsɪk/',
+      example: 'First, I got carsick in the airport limo.', exampleTranslation: 'Primero, me mareé en la limusina del aeropuerto.' } },
+  ] });
+  if (!ok) return false;
+  unirEnLaUnidad(units, { unit: 'a2_7', id }, [
+    ['compensates', 'compensate'], ['the ticket', 'ticket'], ['perk', 'perks'], ['giving up', 'give up'],
+    ['passengers', 'a passenger'], ['flights', 'flight'], ['a bus', 'bus'], ['a taxi', 'taxi'], ['a train', 'train'],
+  ]);
+  fixPageContent(units, { unit: 'a2_7', id,
+    quitarGramatica: ['Adjectives describing offers and situations'],
+    quitarEjercicios: ['Which is INCORRECT? A perk is an ___ offer.'],
+    ejercicios: [
+      { question: 'When you ___ something, you agree to take a different flight.',
+        set: { question: 'When you ___ your seat, you agree to take a different flight.' } },
+      { question: 'A ___ is an attractive offer. This is often an unusual benefit that airlines give passengers.',
+        set: { question: 'A ___ is an attractive offer.' } },
+      { question: 'Find and correct the mistake: Someone steal my helicopter on the trip.',
+        set: { question: 'Find and correct the mistake: Someone steal my luggage on the trip.', answer: 'Someone stole my luggage on the trip.' } },
+    ],
+    cambios: [
+      ['If someone volunteers to get off the plane, she or he gets off.', 'If someone volunteers to get off the plane, she or he agrees to get off.'],
+      ['Si alguien se ofrece como voluntario para bajarse del avión, ella o él se baja.', 'Si alguien se ofrece para bajarse del avión, acepta bajarse.'],
+      ['Si una aerolínea te compensa, te da un cupón.', 'Si una aerolínea te compensa, te da un vale.'],
+      ["Las oraciones con 'if' en el presente se usan para hablar de situaciones generales o hechos que siempre son ciertos. La estructura usa presente simple en ambas partes. A diferencia del subjuntivo en español, en inglés estas oraciones usan el indicativo (presente simple).",
+       "Con 'if' + presente hablamos de lo que pasa siempre o en general: 'If an airline compensates you, it gives you a voucher.' Las dos partes van en presente simple, igual que en español ('si una aerolínea te compensa, te da un vale')."],
+      ["En español usamos subjuntivo después de 'si' en algunos casos (si fuera...), pero en el zero conditional inglés SIEMPRE usamos presente simple, nunca subjuntivo.",
+       "En español decimos 'si alguien se ofrece, se baja', en presente. El error es pensar en futuro y poner 'will' después de 'if': 'If someone will volunteer' ✗ → 'If someone volunteers' ✓."],
+      ['If an offer is tempting, it will be hard to decline.', 'If an offer will be tempting, it is hard to decline.'],
+      ['For general truths, use present simple in the result clause, not future.', "After 'if', use the present, not 'will'."],
+      ["Los colombianos suelen decir 'it is hard for decline' porque en español decimos 'es difícil de rechazar'. En inglés NO se usa preposición: 'hard to decline'.",
+       "En español decimos 'es difícil de rechazar', con 'de', y por eso sale 'hard of decline' o 'hard for decline'. En inglés va 'to' + el verbo: 'it is hard to decline'."],
+    ] });
+  quitarTemaRepetido(units, 83, 'Past simple tense in travel narratives', 78);
+  return true;
+}
+
+/* El lote de phrasal verbs de la Unit 7 (escrito a mano, sin foto). Como en las
+ * Units 8 y 9: solo los que lo son quedan como phrasal verb, y se quita la copia
+ * de los que su página del libro ya tiene con el mismo nombre (comparten el
+ * progreso). Corre después de las páginas, que renombran "give you a hand",
+ * "mood", "bumped", "drove me crazy" y "get". */
+function fixU7Phrasal(units) {
+  const u = units && units.a2_7;
+  const b = u && (u.batches || []).find(x => x && x.id === 'pv_a2_7');
+  if (!b) return false;
+  const siLoSon = ['go away', 'get back', 'get up', 'find out', 'look after', 'pick up', 'check out', 'get on', 'hang out with'];
+  b.vocab = (b.vocab || []).map(v => (v && v.type === 'phrasal verb' && !siLoSon.includes(v.word)) ? { ...v, type: 'phrase' } : v);
+  if (b.title === 'Phrasal verbs — Unit 7') b.title = 'Phrasal verbs & expressions — Unit 7';
+  const enSuPagina = w => (u.batches || []).some(x => x && x !== b && (x.vocab || []).some(v => v && v.word === w));
+  fixPageContent(units, { unit: 'a2_7', id: 'pv_a2_7', quitarPalabras: ['go away', 'get back', 'gotta run', 'get up', 'check out',
+    'get on', 'give someone a hand', 'be in the mood for', 'get bumped from', 'drive someone crazy'].filter(enSuPagina) });
+  return true;
+}
+
+/* ── Unit 7: preguntas para las flashcards (él las pidió el 2 de octubre) ───
+ * Se subió antes de que el análisis hiciera preguntas. Primero las que el libro
+ * imprime, con la respuesta del libro; después las que la página practica. Van
+ * después de las correcciones, para que no repitan una tarjeta ya unida. */
+function addU7Questions(units, pagina, preguntas) {
+  return addPageExtras(units, 'a2_7', u7Lote(pagina), { preguntas });
+}
+
+function addU7P73Questions(units) {
+  return addU7Questions(units, 73, [
+    { q: 'What kinds of vacations do you like?', es: '¿Qué tipo de vacaciones te gustan?', a: 'I like relaxing vacations.' },
+    { q: 'Do you like exciting vacations?', es: '¿Te gustan las vacaciones emocionantes?',
+      a: "Yes, I do. I like exciting vacations. / No, I don't. I like relaxing vacations." },
+  ]);
+}
+
+function addU7P74Questions(units) {
+  return addU7Questions(units, 74, [
+    { q: 'Which activities do you like to do on vacation?', es: '¿Qué actividades te gusta hacer en vacaciones?',
+      a: 'I like hanging out with friends and visiting a museum.' },
+    { q: 'Which activities are exciting? Which are relaxing?', es: '¿Qué actividades son emocionantes? ¿Cuáles son relajantes?',
+      a: 'In my opinion, taking a cruise is exciting. / Really? I think taking a cruise is relaxing. Going surfing is exciting!' },
+    { q: 'Which activity do you absolutely NOT like?', es: '¿Qué actividad definitivamente NO te gusta?',
+      a: "I absolutely don't like doing nothing. It's boring!" },
+  ]);
+}
+
+function addU7P75Questions(units) {
+  return addU7Questions(units, 75, [
+    { q: 'When did you get back?', es: '¿Cuándo volviste?', a: 'Late last night.' },
+    { q: 'Did you have a good time?', es: '¿La pasaste bien?', a: 'We sure did! The weather was so fantastic.' },
+    { q: 'Did you go away?', es: '¿Saliste de viaje?', a: 'As a matter of fact, no. We just stayed home and took a staycation.' },
+    { q: 'What did you do every day?', es: '¿Qué hacías cada día?', a: 'Well, basically we slept late and went to the beach.' },
+    { q: 'What happened on Friday?', es: '¿Qué pasó el viernes?', a: 'Someone stole my wallet at the mall.' },
+    { q: 'What kind of vacation did Brett take?', es: '¿Qué tipo de vacaciones tomó Brett?', a: 'He took a cruise.' },
+    { q: 'What is a staycation?', es: '¿Qué es una "staycation"?', a: "It's a vacation at home: you stay home and don't travel." },
+  ]);
+}
+
+function addU7P76Questions(units) {
+  return addU7Questions(units, 76, [
+    { q: 'Was your flight late?', es: '¿Tu vuelo llegó tarde?', a: "Yes, it was. / No, it wasn't." },
+    { q: 'Were there lots of people?', es: '¿Había mucha gente?', a: "Yes, there were. / No, there weren't." },
+    { q: 'Who was with you on the bus?', es: '¿Quién iba contigo en el bus?', a: 'My girlfriend.' },
+    { q: 'How was the food on the cruise?', es: '¿Qué tal la comida en el crucero?', a: 'Terrible!' },
+    { q: 'How were the activities?', es: '¿Qué tal las actividades?', a: 'They were awesome.' },
+    { q: 'How long was the drive?', es: '¿Cuánto duró el viaje en carro?', a: 'It was three hours.' },
+    { q: 'Was your luggage really heavy?', es: '¿Tu equipaje estaba muy pesado?', a: "Yes, it was. / No, it wasn't." },
+  ]);
+}
+
+function addU7P77Questions(units) {
+  return addU7Questions(units, 77, [
+    { q: 'So, how was the drive?', es: '¿Y qué tal el viaje en carro?', a: 'It was pretty long and boring, actually.' },
+    { q: 'Hey, can I give you a hand?', es: 'Oye, ¿te echo una mano?', a: "It's OK. I'm fine. / Thank you! That's really nice of you!" },
+    { q: 'How long were you away?', es: '¿Cuánto tiempo estuviste por fuera?',
+      a: "Only a week, unfortunately. The vacation really wasn't long enough." },
+    { q: 'Were you alone?', es: '¿Estabas solo?', a: "No, I wasn't. My sister was with me." },
+    { q: 'Was the weather good?', es: '¿Hizo buen tiempo?', a: "No, it wasn't, actually. Most days it was rainy." },
+    { q: 'Were there a lot of people on the tour?', es: '¿Había mucha gente en el tour?',
+      a: 'Yes, there were. The people on the tour were very nice.' },
+  ]);
+}
+
+function addU7P78Questions(units) {
+  return addU7Questions(units, 78, [
+    { q: 'What did Claire do this morning?', es: '¿Qué hizo Claire esta mañana?',
+      a: 'She got up early and packed all her clothes into her luggage.' },
+    { q: 'How did they get to the station?', es: '¿Cómo llegaron a la estación?', a: 'They took a taxi.' },
+    { q: 'Where did they have lunch?', es: '¿Dónde almorzaron?', a: 'In a cute restaurant.' },
+    { q: 'What did they do after lunch?', es: '¿Qué hicieron después del almuerzo?', a: 'They took it easy and just relaxed.' },
+    { q: 'When did they leave?', es: '¿A qué hora salieron?', a: 'At about 6:00. Now they are on the way to the airport.' },
+  ]);
+}
+
+function addU7P79Questions(units) {
+  return addU7Questions(units, 79, [
+    { q: "How long did Claire's trip to the mountains take?", es: '¿Cuánto duró el viaje de Claire a las montañas?', a: 'It took four hours.' },
+    { q: 'Did he buy a non-stop ticket?', es: '¿Él compró un tiquete sin escalas?', a: "Yes, he did. / No, he didn't." },
+    { q: 'Did we get aisle seats?', es: '¿Nos tocaron asientos de pasillo?', a: "Yes, we did. / No, we didn't." },
+    { q: 'Who did they meet?', es: '¿A quién conocieron?', a: 'They met Max.' },
+    { q: 'What kind of seat would you like?', es: '¿Qué tipo de asiento quiere?',
+      a: 'An aisle. I like to walk around. / A window seat. I like to see the scenery.' },
+    { q: 'Is there a later one?', es: '¿Hay uno más tarde?', a: 'Luckily, there is. I got a ticket on the 8:30.' },
+    { q: 'Is it a non-stop flight?', es: '¿Es un vuelo sin escalas?',
+      a: "No. It's a direct flight. It makes a stop, but you don't have to change planes." },
+  ]);
+}
+
+function addU7P80Questions(units) {
+  return addU7Questions(units, 80, [
+    { q: 'Today is Thursday, January 8th. When was January 6th?', es: 'Hoy es jueves 8 de enero. ¿Cuándo fue el 6 de enero?',
+      a: 'The day before yesterday was January 6th.' },
+    { q: 'Today is January 8th. When was December?', es: 'Hoy es 8 de enero. ¿Cuándo fue diciembre?', a: 'Last month was December.' },
+    { q: 'How do you say 2018?', es: '¿Cómo se dice 2018?', a: 'Twenty eighteen, or two thousand eighteen.' },
+    { q: 'Was it a good or a bad vacation?', es: '¿Fueron unas vacaciones buenas o malas?',
+      a: 'A mixture of both. The people were warm and friendly, but the food was pretty bad.' },
+  ]);
+}
+
+function addU7P81Questions(units) {
+  return addU7Questions(units, 81, [
+    { q: 'How was the trip?', es: '¿Qué tal el viaje?', a: 'I had a wonderful time.' },
+    { q: 'Who were you with?', es: '¿Con quién estabas?', a: 'I was with my family.' },
+    { q: 'Where did you go?', es: '¿A dónde fuiste?', a: 'I went on a great trip to the beach.' },
+    { q: 'How long did you stay?', es: '¿Cuánto tiempo te quedaste?', a: 'We stayed for five days.' },
+    { q: 'What did you do?', es: '¿Qué hiciste?', a: 'We went to the beach and took it easy.' },
+    { q: 'Did you ever get seasick?', es: '¿Alguna vez te mareaste en un barco?', a: "Yes, I did. / No, I didn't." },
+  ]);
+}
+
+function addU7P82Questions(units) {
+  return addU7Questions(units, 82, [
+    { q: 'What are some of the hassles of flying?', es: '¿Cuáles son algunas de las molestias de viajar en avión?',
+      a: 'Delays due to mechanical problems, lost luggage, and airsickness.' },
+    { q: 'What should you do if your flight is overbooked?', es: '¿Qué deberías hacer si tu vuelo está sobrevendido?',
+      a: 'Well, that depends. If you have some time to kill, you can volunteer and get a travel voucher.' },
+  ]);
+}
+
+function addU7P83Questions(units) {
+  return addU7Questions(units, 83, [
+    { q: 'Why do you think airlines overbook flights?', es: '¿Por qué crees que las aerolíneas sobrevenden los vuelos?',
+      a: "Because some passengers don't come, and the airlines want all the seats full." },
+    { q: "When is the airline's offer too good to refuse?", es: '¿Cuándo es la oferta de la aerolínea demasiado buena para rechazarla?',
+      a: 'When the voucher is big, or when they give you a hotel stay and meals.' },
+    { q: 'Do you think all passengers would accept the same offer?', es: '¿Crees que todos los pasajeros aceptarían la misma oferta?',
+      a: 'No. If it is a business trip, volunteering is probably out of the question.' },
+    { q: 'What was wrong with the bus?', es: '¿Qué le pasaba al bus?', a: "The bus was late, and the air conditioning didn't work." },
+    { q: 'Did you ever have a transportation problem?', es: '¿Alguna vez tuviste un problema de transporte?',
+      a: 'I had a terrible experience on my business trip. First, I got carsick in the airport limo...' },
+  ]);
 }
 
 /* ── Unit 8: preguntas para las flashcards (él las pidió el 2 de octubre) ───
@@ -23607,7 +24312,12 @@ function applyPageFixes(units) {
    addU9P102Questions, addU9P103Questions, addU9P104Questions, addU9P105Questions, addU9P106Questions,
    addU9P107Questions,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
-   fixU8P93, fixU8P94, fixU8P95, fixU8Phrasal]
+   fixU8P93, fixU8P94, fixU8P95, fixU8Phrasal,
+   fixU7Pages, fixU7P73, fixU7P74, fixU7P75, fixU7P76, fixU7P77, fixU7P78, fixU7P79, fixU7P80,
+   fixU7P81, fixU7P82, fixU7P83, fixU7Phrasal,
+   addU7P73Questions, addU7P74Questions, addU7P75Questions, addU7P76Questions, addU7P77Questions,
+   addU7P78Questions, addU7P79Questions, addU7P80Questions, addU7P81Questions, addU7P82Questions,
+   addU7P83Questions]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
