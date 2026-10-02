@@ -56,6 +56,9 @@ solas al subir la foto. Ahora son tarjetas de la página (etiqueta "Question"): 
 análisis las pide, las de las pp. 109 a 113 pasan del mazo aparte sin repetirse,
 y una pregunta que la unidad ya tiene como tarjeta no entra dos veces. Las de las pp. 13 y 14 de la
 Unit 2, que se subieron antes, son solo las principales (él lo pidió así).
+Las de la Unit 9 (pp. 97 a 107), para el speaking test: las que el libro imprime
+tal cual, más las que cada página practica, después de que las páginas tienen
+número.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
