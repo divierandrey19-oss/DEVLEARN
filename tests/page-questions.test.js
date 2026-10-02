@@ -16,7 +16,8 @@ const assert = require('node:assert/strict');
 const h = require('./harness.js');
 
 const fuente = h.fuente();
-const PAGINAS = ['addU10P109Questions', 'addU10P110Questions', 'addU10P111Questions', 'addU10P112Questions', 'addU10P113Questions'];
+const PAGINAS = ['addU10P109Questions', 'addU10P110Questions', 'addU10P111Questions', 'addU10P112Questions', 'addU10P113Questions',
+  'addU2P13Questions', 'addU2P14Questions'];
 const NOMBRES = ['vocabKey', 'questionCard', 'addQuestionCards', 'addPageQuestions', 'moveQuestionsToCards', 'wordKind', 'pageCardsLabel', 'fcWordClass', ...PAGINAS];
 const f = h.ejecutar(`const PHRASAL_PARTICLES = new Set(['up']);
   ${NOMBRES.map(n => h.extraerFuncion(n)).join('\n')}
@@ -91,6 +92,31 @@ test('pp. 110 a 113: sus preguntas, del tema de cada página', () => {
   assert.ok(p112.every(q => /would/i.test(q)), 'todas con would');
   assert.ok(p112.includes('Who would like to get rich?'), 'Who como sujeto, sin "you"');
   assert.ok(p113.includes('What do you mean?'), 'la del Social language');
+});
+
+test('Unit 2, pp. 13 y 14: solo las principales, del tema de cada página', () => {
+  // Se subieron antes de que el análisis hiciera las preguntas; él pidió solo
+  // las principales.
+  const units = { a2_2: { batches: [
+    { id: 'p13', pages: [13], vocab: [{ word: 'prefer' }] },
+    { id: 'p14', pages: [14], vocab: [{ word: "What's more your style?", type: 'phrase' }, { word: 'How about you?', type: 'phrase' }] },
+  ] } };
+  assert.equal(f.addU2P13Questions(units), true);
+  assert.equal(f.addU2P14Questions(units), true);
+  const [p13, p14] = units.a2_2.batches.map(b => preguntas(b));
+  assert.ok(p13.length >= 2 && p13.length <= 4 && p14.length >= 2 && p14.length <= 5, 'pocas: las principales');
+  assert.equal(p13[0].word, 'Which do you prefer? Rock concerts or soccer games?', 'la del Warm-Up, tal como está impresa');
+  assert.ok(p13.every(x => /concert|soccer/.test(x.word)), 'del tema de la p. 13');
+  assert.ok(p14.every(x => /style|opinion|entertainment|exhibit|game|concert/.test(x.word)), 'del tema de la p. 14');
+  for (const x of [...p13, ...p14]) {
+    assert.match(x.word, /\?$/, `"${x.word}" no es pregunta`);
+    assert.ok(x.translation && x.example, `"${x.word}" sin traducción o sin respuesta de ejemplo`);
+  }
+  assert.equal(f.addU2P13Questions({ a2_2: { batches: [] } }), false, 'sin la página, nada');
+  const migrar = h.extraerFuncion('migrateState');
+  assert.match(migrar, /if \(!merged\._u2P13QuestionsV1 && addU2P13Questions\(merged\.units\)\) merged\._u2P13QuestionsV1 = true;/);
+  assert.match(migrar, /if \(!merged\._u2P14QuestionsV1 && addU2P14Questions\(merged\.units\)\) merged\._u2P14QuestionsV1 = true;/);
+  assert.match(h.extraerFuncion('applyPageFixes'), /addU2P13Questions, addU2P14Questions/);
 });
 
 test('en la tarjeta: etiqueta "Question", letra que cabe, y la hoja las cuenta aparte', () => {

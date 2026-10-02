@@ -54,7 +54,8 @@ para preguntar): del tema del libro, casi todas abiertas. Primero iban en un maz
 aparte; él las quería dentro de las flashcards, con su repaso, y que salieran
 solas al subir la foto. Ahora son tarjetas de la página (etiqueta "Question"): el
 análisis las pide, las de las pp. 109 a 113 pasan del mazo aparte sin repetirse,
-y una pregunta que la unidad ya tiene como tarjeta no entra dos veces.
+y una pregunta que la unidad ya tiene como tarjeta no entra dos veces. Las de las pp. 13 y 14 de la
+Unit 2, que se subieron antes, son solo las principales (él lo pidió así).
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la

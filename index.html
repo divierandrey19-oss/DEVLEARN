@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02a -->
+<!-- DEVLEARN_BUILD: 2026-10-02b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02a';
+const APP_BUILD = '2026-10-02b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6761,6 +6761,8 @@ function migrateState(s) {
   if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
+  if (!merged._u2P13QuestionsV1 && addU2P13Questions(merged.units)) merged._u2P13QuestionsV1 = true;
+  if (!merged._u2P14QuestionsV1 && addU2P14Questions(merged.units)) merged._u2P14QuestionsV1 = true;
   // Las preguntas del mazo aparte pasan a las flashcards (él las quería ahí).
   moveQuestionsToCards(merged.units);
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
@@ -7293,6 +7295,39 @@ function addU10P113Questions(units) {
     { q: 'Would you like to buy a virtual assistant?',
       es: '¿Te gustaría comprar un asistente virtual?',
       a: "Yes, I would. / No, I wouldn't." },
+  ]);
+}
+
+/* Unit 2, pp. 13 y 14: se subieron antes de que el análisis hiciera las
+ * preguntas. Él pidió solo las principales de cada página. */
+function addU2P13Questions(units) {
+  return addPageQuestions(units, 'a2_2', 13, [
+    { q: 'Which do you prefer? Rock concerts or soccer games?',
+      es: '¿Qué prefieres? ¿Conciertos de rock o partidos de fútbol?',
+      a: 'I prefer rock concerts. I never go to soccer games.' },
+    { q: 'Why do you prefer rock concerts?',
+      es: '¿Por qué prefieres los conciertos de rock?',
+      a: 'Because I love music.' },
+    { q: 'Do you go to soccer games?',
+      es: '¿Vas a partidos de fútbol?',
+      a: 'No, I never go to soccer games. / Yes, I do.' },
+  ]);
+}
+
+function addU2P14Questions(units) {
+  return addPageQuestions(units, 'a2_2', 14, [
+    { q: "What's more your style? A rock concert or a classical music concert?",
+      es: '¿Qué va más con tu estilo? ¿Un concierto de rock o un concierto de música clásica?',
+      a: 'A rock concert at a stadium!' },
+    { q: "What's your opinion of art exhibits?",
+      es: '¿Qué opinas de las exposiciones de arte?',
+      a: 'I love art exhibits at museums.' },
+    { q: 'Which entertainment events do you like?',
+      es: '¿Qué eventos de entretenimiento te gustan?',
+      a: 'I like dance performances and talks about interesting topics.' },
+    { q: 'Do you like basketball games?',
+      es: '¿Te gustan los partidos de baloncesto?',
+      a: "Yes, I do. I love basketball games. / No, I don't." },
   ]);
 }
 
@@ -21733,7 +21768,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,

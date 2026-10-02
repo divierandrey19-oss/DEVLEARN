@@ -538,6 +538,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que las preguntas de la p. 14 (Unit 2) no lleguen al arrancar',
+    buscar: `  if (!merged._u2P14QuestionsV1 && addU2P14Questions(merged.units)) merged._u2P14QuestionsV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
     buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
     reemplazo: `    if (!k || !c.translation) return;`,
