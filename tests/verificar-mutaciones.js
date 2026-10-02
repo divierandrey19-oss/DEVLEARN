@@ -673,6 +673,61 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `    b.pages = [k];\n`,
   },
   {
+    nombre: 'que la p. 11 de la Unit 1 no se corrija al abrir la app',
+    buscar: `  if (!merged._u1P11V1 && fixU1P11(merged.units)) merged._u1P11V1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que accent y rhythm sigan con la definición cruzada',
+    buscar: `      ['accent → the characteristic stress pattern of sentences', 'accent → the particular way you pronounce sounds and words'],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el ejemplo falso de "non-native speakers" se quede',
+    buscar: `    { word: 'non-native speakers', example: 'Only a small number`,
+    reemplazo: `    { word: 'non-native speakers', example: 'Only a big number`,
+  },
+  {
+    nombre: 'que hometown siga siendo "ciudad natal"',
+    buscar: `    { word: 'hometown', set: { translation: 'tu ciudad (donde vives ahora)'`,
+    reemplazo: `    { word: 'hometown', set: { translation: 'ciudad natal'`,
+  },
+  {
+    nombre: 'que "Gloria is an engineer" (una opción del audio) siga de ejemplo',
+    buscar: `    { word: 'engineer', example: 'Gloria is an engineer.', set: { example: 'Is Gloria an engineer?', exampleTranslation: '¿Gloria es ingeniera?' } },\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que Jin-soo siga saludando a "Mr. and Mrs. Jin-soo Park"',
+    buscar: `      ['Nice to meet you, Mr. and Mrs. Jin-soo Park.', TELLER.example],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que no se quiten las tarjetas de nombres propios',
+    buscar: `    quitarPalabras: ['Dallas', 'Paris City Tours', 'Seoul, South Korea'],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que "How interesting!" siga saliendo como error',
+    buscar: `    g.commonErrors = (g.commonErrors || []).map(e => (e && e.wrong === 'How interesting!'`,
+    reemplazo: `    g.commonErrors = (g.commonErrors || []).map(e => (e && e.wrong === 'How interesting?'`,
+  },
+  {
+    nombre: 'que un tema repetido se quite aunque falte la página que lo enseña',
+    buscar: `  if (hayLote(units, 'a2_1', u1Lote(4))) quitar.push('Contractions of the verb be', 'Information questions with be for a partner');`,
+    reemplazo: `  quitar.push('Contractions of the verb be', 'Information questions with be for a partner');`,
+  },
+  {
+    nombre: 'que "helps" quede repetida con "help" de la p. 8',
+    buscar: `  unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(10) }, [['stressing', 'stress'], ['helps', 'help']]);`,
+    reemplazo: `  unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(10) }, [['stressing', 'stress']]);`,
+  },
+  {
+    nombre: 'que el análisis tome como pareja la línea de al lado en un ejercicio de emparejar',
+    buscar: `  prints its two columns in MIXED order on purpose: a word and the line printed next to it\n  are NOT a pair.`,
+    reemplazo: `  prints its two columns.`,
+  },
+  {
     nombre: 'que la copia de la nube borre el número escrito a mano',
     buscar: `          if (lt > ct || (!lt && !ct && lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand)) {`,
     reemplazo: `          if (false) {`,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02n -->
+<!-- DEVLEARN_BUILD: 2026-10-02o -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4930,7 +4930,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02n';
+const APP_BUILD = '2026-10-02o';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5222,6 +5222,11 @@ says a doctor sets the bone, so "Her work is to set broken bones" is FALSE.
   one as a vocabulary example, a grammar example, a statement or a question's answer. On a
   page of Grant Park events, "The Art Institute is a famous hotel in Chicago" became the
   example for "hotel"; it is a museum.
+- A matching task ("Match each word with its meaning", "Match the questions and answers")
+  prints its two columns in MIXED order on purpose: a word and the line printed next to it
+  are NOT a pair. Pair them only where the page's own text (the reading, the dialogue)
+  shows the match; otherwise do not use the pairs. Printed "1 accent · a the characteristic
+  stress pattern of sentences" — but the reading says that is rhythm.
 
 ━━ WHAT TO SKIP ━━
 
@@ -6797,6 +6802,17 @@ function migrateState(s) {
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
   if (!merged._u1PagesV1 && fixU1Pages(merged.units)) merged._u1PagesV1 = true;
+  if (!merged._u1P1V1 && fixU1P1(merged.units)) merged._u1P1V1 = true;
+  if (!merged._u1P2V1 && fixU1P2(merged.units)) merged._u1P2V1 = true;
+  if (!merged._u1P3V1 && fixU1P3(merged.units)) merged._u1P3V1 = true;
+  if (!merged._u1P4V1 && fixU1P4(merged.units)) merged._u1P4V1 = true;
+  if (!merged._u1P5V1 && fixU1P5(merged.units)) merged._u1P5V1 = true;
+  if (!merged._u1P6V1 && fixU1P6(merged.units)) merged._u1P6V1 = true;
+  if (!merged._u1P7V1 && fixU1P7(merged.units)) merged._u1P7V1 = true;
+  if (!merged._u1P8V1 && fixU1P8(merged.units)) merged._u1P8V1 = true;
+  if (!merged._u1P9V1 && fixU1P9(merged.units)) merged._u1P9V1 = true;
+  if (!merged._u1P10V1 && fixU1P10(merged.units)) merged._u1P10V1 = true;
+  if (!merged._u1P11V1 && fixU1P11(merged.units)) merged._u1P11V1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -7000,6 +7016,376 @@ function fixU1Pages(units) {
     b.pagesAt = ahora;
   });
   return alguna;
+}
+
+/* ── Unit 1, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
+ * Se analizó en julio, antes de las reglas de "las opciones no son hechos",
+ * "forma base" y "trampa en español". Los lotes van por id: sus números de
+ * página son los que él escribe a mano. */
+/* Una función y no una constante: migrateState corre en el arranque, antes de
+ * esta línea, y una constante declarada aquí todavía no existiría. */
+function u1Lote(n) {
+  return ['b_1784933801961_jg41en', 'b_1784933920718_on8e5x', 'b_1784934033932_a1ihfr', 'b_1784934257952_n0d9q6',
+    'b_1784934450964_kq94hk', 'b_1784934628845_dc482u', 'b_1784934716414_0dynho', 'b_1784934862013_kb5nd7',
+    'b_1784935076851_92nm9r', 'b_1784935285620_ziff3w', 'b_1784935498127_j4a5jm'][n - 1];
+}
+
+/* Si el lote de otra página de la unidad está en el aparato. Quitar un tema
+ * repetido sin la página que lo enseña dejaría la unidad sin él. */
+function hayLote(units, unit, id) {
+  return !!(units && units[unit] && (units[unit].batches || []).some(b => b && b.id === id));
+}
+
+/* Un tema de gramática por su título exacto, para quitarle un ejemplo o un
+ * error común que está mal (el mismo texto puede estar bien en otro lugar). */
+function fixGrammarTopic(units, fix, titulo, arreglar) {
+  const u = units && units[fix.unit];
+  const b = u && (u.batches || []).find(x => x && loteDeLaCorreccion(x, fix));
+  const g = b && (b.grammar || []).find(x => x && x.title === titulo);
+  if (g) arreglar(g);
+  return !!g;
+}
+
+/* p. 1: "discuss" no es "discutir" (en Colombia es pelear); "learning" va en
+ * forma base; el tema de want to no es para "purpose". */
+function fixU1P1(units) {
+  const HABLAR = { exampleTranslation: 'Hablar de la importancia del inglés en tu vida.' };
+  const DIFICULTADES = { exampleTranslation: 'Hablar de algunas dificultades de aprender un idioma.' };
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(1), cambios: [
+    { word: 'discuss', set: { translation: 'hablar de, conversar sobre', ...HABLAR } },
+    { word: 'importance', example: 'Discuss the importance of English in your life.', set: HABLAR },
+    { word: 'life', example: 'Discuss the importance of English in your life.', set: HABLAR },
+    { word: 'difficulties', set: DIFICULTADES },
+    { word: 'learning', set: { word: 'learn', translation: 'aprender', type: 'verb', phonetic: '/lɜrn/', ...DIFICULTADES } },
+    { word: 'get acquainted', set: { translation: 'conocerse, llegar a conocer a alguien', exampleTranslation: 'Conocer a alguien.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(1), cambios: [
+    ['Want + infinitive (to express purpose)', 'Want + to + verb (to say what you want)'],
+  ] });
+  return true;
+}
+
+/* p. 2: el presente continuo decía que en español no se usa ("estoy
+ * estudiando" sí se usa); las trampas, en español; "communicating" repetía
+ * "communicate" de la p. 1. */
+function fixU1P2(units) {
+  const ok = fixPageContent(units, { unit: 'a2_1', id: u1Lote(2), cambios: [
+    ["En inglés, usamos el presente continuo (be + gerundio) para hablar de acciones en progreso o situaciones actuales. A diferencia del español, donde decimos 'estudio inglés para trabajar', en inglés usamos 'I am studying English for work'. Se forma con el verbo 'to be' (am/is/are) + verbo con -ing.",
+     "En inglés usamos el presente continuo (am/is/are + verbo con -ing) para lo que está pasando ahora o en esta época: 'How many students in your class are studying English for work?'. En español es igual ('están estudiando inglés'), pero en inglés el 'be' (am/is/are) nunca se omite."],
+    ["Colombian Spanish speakers often drop the auxiliary 'be' and say 'I studying' instead of 'I am studying'",
+     "Como en español a veces respondemos solo 'estudiando inglés', sale 'I studying English'. En inglés el 'be' es obligatorio: 'I am studying English'."],
+    ["Spanish speakers often omit 'It' because in Spanish we say 'Es útil' not 'Ello es útil'. English requires the subject pronoun 'It'",
+     "En español decimos 'Es útil', sin sujeto. En inglés el 'It' es obligatorio: 'It's useful', no 'Is useful'."],
+    ["Spanish speakers often forget the auxiliary verb in questions, saying 'Why you study?' instead of 'Why do you study?' or keep Spanish word order",
+     "En español preguntamos '¿Por qué estudias inglés?' sin auxiliar. En inglés hace falta 'do': 'Why do you study English?', no 'Why you study English?'."],
+  ] });
+  if (ok) unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(2) }, [['communicating', 'communicate']]);
+  return ok;
+}
+
+/* p. 3: en el libro Jin-soo les dice "Nice to meet you" a los Teller (salió
+ * "Mr. and Mrs. Jin-soo Park"); "Tellier" y "Mi-run" mal leídos; Dallas,
+ * "I'm from Dallas, Texas" no está en la página. Fuera las tarjetas de nombres
+ * propios (él lo pidió) y "acquainted", suelta, que ya está como "get
+ * acquainted" en la p. 1. */
+function fixU1P3(units) {
+  const TELLER = { example: 'Nice to meet you, Mr. and Mrs. Teller.', exampleTranslation: 'Mucho gusto, señor y señora Teller.' };
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(3), cambios: [
+    { word: 'by the way', example: "We are. By the way, I'm Marty Tellier.",
+      set: { example: "We are. By the way, I'm Marty Teller.", exampleTranslation: 'Sí. Por cierto, soy Marty Teller.' } },
+    { word: 'Nice to meet you', example: 'Nice to meet you, Mr. and Mrs. Jin-soo Park.', set: TELLER },
+    { word: 'we live in', example: "I'm from Dallas, Texas, and we live in Dallas.",
+      set: { example: 'We live in Dallas.', exampleTranslation: 'Vivimos en Dallas.' } },
+    { word: 'First / Given Name', example: 'First / Given Name: Mi-run',
+      set: { example: 'First / Given Name: Mi-sun', exampleTranslation: 'Nombre: Mi-sun' } },
+    { word: 'Yes, we do', set: { translation: 'sí (respuesta corta a una pregunta con do)',
+      example: 'Does everyone here speak English? Yes, we do.', exampleTranslation: '¿Todos aquí hablan inglés? Sí, todos.' } },
+    { word: "Well, that's great!", set: { translation: '¡bueno, qué bien!', exampleTranslation: '¡Bueno, qué bien!' } },
+    { word: 'originally', set: { exampleTranslation: 'Bueno, yo soy originaria de Ecuador, pero Marty es de Estados Unidos.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(3),
+    quitarPalabras: ['Dallas', 'Paris City Tours', 'Seoul, South Korea'],
+    cambios: [
+      ['Nice to meet you, Mr. and Mrs. Jin-soo Park.', TELLER.example],
+      ['Mucho gusto, Sr. y Sra. Jin-soo Park.', TELLER.exampleTranslation],
+      ['Nice to ___ you, Mr. and Mrs. Park.', 'Nice to ___ you, Mr. and Mrs. Teller.'],
+      ['Bueno, soy originaria de Ecuador, pero Marty es de los Estados.', 'Bueno, yo soy originaria de Ecuador, pero Marty es de Estados Unidos.'],
+      ["En inglés formal, usamos 'It's a pleasure to meet you' (es un placer conocerte) cuando conocemos a alguien. A diferencia del español donde decimos 'mucho gusto' como una frase fija, en inglés usamos una oración completa con 'it's a pleasure'. También podemos responder 'too' (también) al final.",
+       "'It's a pleasure to meet you' (es un placer conocerte) es una forma cortés de saludar cuando conoces a alguien; 'Nice to meet you' es más corta y también muy común. Para responder se agrega 'too' al final: 'It's a pleasure to meet you, too.'"],
+    ],
+    ejercicios: [{ question: 'Find and correct the mistake: Am from Dallas and we live in Dallas.',
+      set: { question: 'Find and correct the mistake: Am originally from Ecuador.', answer: "I'm originally from Ecuador." } }],
+  });
+  // Nadie dice "Excuse me" antes de "Nice to meet you": no está en la página.
+  fixGrammarTopic(units, { unit: 'a2_1', id: u1Lote(3) }, "Starting conversations: 'Excuse me'", g => {
+    g.examples = (g.examples || []).filter(e => !(e && e.en === 'Excuse me. Nice to meet you.'));
+  });
+  unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(3) }, [['acquainted', 'get acquainted']]);
+  return true;
+}
+
+/* p. 4: la trampa decía que en español se dice "¿Quién tu profesor es?"; un
+ * error común daba por mal "Where is your teacher from?" (sin contraer también
+ * está bien), y un ejercicio daba por incorrecta "Who're", que existe y la
+ * página no enseña. */
+function fixU1P4(units) {
+  const ok = fixPageContent(units, { unit: 'a2_1', id: u1Lote(4),
+    quitarEjercicios: ['Which contraction is INCORRECT?'],
+    cambios: [
+      ["En inglés, las preguntas de información comienzan con palabras interrogativas (What, Who, Where, When, How) seguidas del verbo be. A diferencia del español, donde el verbo puede ir después del sujeto, en inglés el verbo be siempre va inmediatamente después de la palabra interrogativa. El orden es: Wh-word + be + subject.",
+       "Las preguntas de información empiezan con una palabra de pregunta (What, Who, Where, When, How) y enseguida va el verbo be, antes del sujeto: Wh- + be + sujeto. Con 'from', la preposición queda al final: 'Where's Sam from?'. La edad se pregunta con 'How old' + be: 'How old is Melanie?'."],
+      ["En español se puede decir '¿Quién tu profesor es?' pero en inglés el verbo be SIEMPRE va después de la palabra interrogativa: 'Who is your teacher?' El orden sujeto-verbo del español no funciona aquí.",
+       "En español decimos '¿De dónde es Sam?' y '¿Cuántos años tiene Melanie?', y por eso salen 'From where is Sam?' y 'How many years has Melanie?'. En inglés la preposición va al final y la edad se pregunta con be: 'Where's Sam from?', 'How old is Melanie?'."],
+    ] });
+  if (!ok) return false;
+  fixGrammarTopic(units, { unit: 'a2_1', id: u1Lote(4) }, 'Contractions with be', g => {
+    g.commonErrors = (g.commonErrors || []).map(e => (e && e.wrong === 'Where is your teacher from?'
+      ? { wrong: 'Whats your email address?', correct: "What's your email address?", why: "The contraction needs an apostrophe: What's = What is" } : e));
+  });
+  return true;
+}
+
+/* p. 5: tres temas repetían los de las pp. 3 y 4 (y el de contracciones daba
+ * por error "I am not sure" y "He is a lawyer", que están bien). "Same here"
+ * responde a "Pleasure to meet you": es "igualmente". Un ejercicio mezclaba
+ * dos conversaciones y otro tenía de respuesta "'m". */
+function fixU1P5(units) {
+  const quitar = [];
+  if (hayLote(units, 'a2_1', u1Lote(4))) quitar.push('Contractions of the verb be', 'Information questions with be for a partner');
+  if (hayLote(units, 'a2_1', u1Lote(3))) quitar.push("Introductions with 'Let me introduce you to'");
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(5), cambios: [
+    { word: 'same here', set: { translation: 'igualmente, lo mismo digo', exampleTranslation: '¡Igualmente! Entonces, ¿de dónde eres?' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(5), quitarGramatica: quitar,
+    cambios: [
+      ['¡Yo también! Entonces, ¿de dónde eres?', '¡Igualmente! Entonces, ¿de dónde eres?'],
+      ["La expresión 'Same here' se usa para decir que tienes la misma opinión o situación que otra persona. Es similar a 'Yo también' o 'Igual yo' en español. Se usa después de que alguien hace un comentario positivo.",
+       "'Same here' dice que lo que la otra persona acaba de decir también vale para ti: es como 'igualmente' o 'lo mismo digo'. En la conversación, Lisa dice 'Pleasure to meet you, Mark!' y Mark responde 'Same here!'."],
+      ["No traduzcas literalmente 'lo mismo aquí'. 'Same here' es una expresión fija que funciona como 'yo también' en español.",
+       "No traduzcas literalmente 'lo mismo aquí'. 'Same here' es una expresión fija que funciona como 'igualmente' o 'yo también'."],
+      ['Complete: ___ to meet you! She is from Pakistan.', "Lisa, I'd like you to meet Mark. ___ to meet you, Mark!"],
+      ['Let me introduce you to Mark.', null],
+    ],
+    ejercicios: [{ question: 'Complete the sentence: I ___ not sure. I think he is about twenty-five.',
+      set: { question: "Complete the sentence: ___ not sure. I think he's about twenty-five.", answer: "I'm" } }],
+  });
+  return true;
+}
+
+/* p. 6: en el libro "hometown" es donde vive ahora ("I live in Toronto.
+ * That's my hometown now"); donde nació es "birthplace". Salía "ciudad
+ * natal", al revés. El segundo tema repetía el primero e inventaba
+ * "negative questions"; "What's your birthplace?" es la burbuja de ejemplo. */
+function fixU1P6(units) {
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(6), cambios: [
+    { word: 'hometown', set: { translation: 'tu ciudad (donde vives ahora)', exampleTranslation: 'Vivo en Toronto. Esa es mi ciudad ahora.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(6),
+    quitarGramatica: ["Contractions with 'be' in questions and negatives"],
+    cambios: [
+      ["What's your birthplace?", null],
+      ['hometown → ciudad natal', 'hometown → ciudad donde vives'],
+    ] });
+  return true;
+}
+
+/* p. 7: "What's Janet's title Mrs.?" (es "Is Janet's title Mrs.?"; title aquí
+ * es el tratamiento); daba por error "How interesting!", que es correcto; y
+ * repetía los temas de preguntas de las pp. 3, 4 y 6. */
+function fixU1P7(units) {
+  const quitar = [];
+  if (hayLote(units, 'a2_1', u1Lote(4))) quitar.push('Information Questions with be (What, Where)');
+  if (hayLote(units, 'a2_1', u1Lote(6))) quitar.push('Yes/No Questions with be');
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(7), cambios: [
+    { word: 'title', example: "What's Janet's title Mrs.?", set: { translation: 'tratamiento (Mr., Mrs., Ms., Miss)',
+      example: "Is Janet's title Mrs.?", exampleTranslation: "¿A Janet se le dice 'Mrs.'?" } },
+    { word: "that's great", set: { translation: '¡qué bien!', exampleTranslation: '¡Qué bien!' } },
+    { word: 'great', example: "It's great to meet you.", set: { exampleTranslation: 'Qué bueno conocerte.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(7), quitarGramatica: quitar,
+    cambios: [
+      ["Los colombianos pueden traducir literalmente '¡Qué interesante!' como 'How interesting!' pero en inglés casual se dice simplemente 'Interesting!'.",
+       "No se traduce palabra por palabra: '¡Qué interesante!' es 'Interesting!' o 'How interesting!', nunca 'What interesting!'; y '¡Qué bien!' es 'That's great!', no 'What good!'."],
+      ['¡Eso es genial!', '¡Qué bien!'],
+      ['Es genial conocerte. Soy Joseph. Joe para abreviar.', 'Qué bueno conocerte. Soy Joseph. Joe, para abreviar.'],
+      ['hometown → ciudad natal', 'hometown → ciudad donde vives'],
+    ],
+    ejercicios: [
+      { question: 'Which is the correct response to show interest?',
+        set: { options: ['What interesting!', 'Very wow!', 'Interesting!', 'Much great!'],
+               explanation: "Say 'Interesting!' (or 'How interesting!'), not 'What interesting!', 'Very wow!' or 'Much great!'" } },
+      { question: 'Find and correct the mistake: She is married? Yes, I think.',
+        set: { question: 'Find and correct the mistake: She is married? Yes, I think she is.', answer: 'Is she married? Yes, I think she is.' } },
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_1', id: u1Lote(7) }, 'Responding with Interest - Social Language', g => {
+    g.commonErrors = (g.commonErrors || []).map(e => (e && e.wrong === 'How interesting!'
+      ? { wrong: 'What interesting!', correct: 'Interesting! / How interesting!', why: "'¡Qué interesante!' is 'Interesting!' or 'How interesting!', never 'What interesting!'" } : e));
+  });
+  return true;
+}
+
+/* p. 8: "Gloria is an engineer" y "Louie needs English for his studies and
+ * travel" eran opciones de LISTEN FOR DETAILS (la respuesta está en el audio).
+ * mathematics y medicine tenían ejemplos sin la palabra; information
+ * technology, una frase inventada. Verbos en forma base. Las trampas, en
+ * español; "studying in medicine" no es inglés. Y el speaking era el título
+ * de la lección. */
+function fixU1P8(units) {
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(8), cambios: [
+    { word: 'engineer', example: 'Gloria is an engineer.', set: { example: 'Is Gloria an engineer?', exampleTranslation: '¿Gloria es ingeniera?' } },
+    { word: 'studies', example: 'Louie needs English for his studies and travel.',
+      set: { example: 'I need English for my studies.', exampleTranslation: 'Necesito inglés para mis estudios.' } },
+    { word: 'mathematics', example: 'My wife is great with numbers.',
+      set: { example: "My wife is great with numbers. She's a professor of mathematics at a technical university.",
+             exampleTranslation: 'Mi esposa es excelente con los números. Es profesora de matemáticas en una universidad técnica.' } },
+    { word: 'medicine', example: 'Jason wants to be a doctor.',
+      set: { example: "Jason wants to be a doctor. He's studying medicine in Miami.",
+             exampleTranslation: 'Jason quiere ser médico. Está estudiando medicina en Miami.' } },
+    { word: 'information technology', example: "He's working in information technology right now.",
+      set: { example: "I'm really good with computers. I want a career in information technology.",
+             exampleTranslation: 'Soy muy bueno con las computadoras. Quiero una carrera en tecnología de la información.' } },
+    { word: 'enjoys', set: { word: 'enjoy', translation: 'disfrutar', phonetic: '/ɪnˈdʒɔɪ/' } },
+    { word: 'talking', set: { word: 'talk', translation: 'hablar', phonetic: '/tɔk/' } },
+    { word: 'helping', set: { word: 'help', translation: 'ayudar', phonetic: '/hɛlp/' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(8),
+    quitarEjercicios: ['Louie needs English for his ___ and travel. Adriana needs English for her studies.'],
+    cambios: [
+      ['Discuss the importance of English in your life.', null],
+      ["I'm working as a restaurant ___ right now. That's my current occupation. She's working in information technology.",
+       "I'm working as a restaurant ___ right now. That's my current occupation."],
+      ["Después de verbos como 'enjoy' y después de preposiciones como 'good with', usamos el gerundio (-ing). La página muestra: 'Miranda enjoys talking to people' y 'I'm really good with computers.' A diferencia del español, donde usamos el infinitivo ('disfrutar hablar'), en inglés siempre usamos la forma -ing después de 'enjoy'.",
+       "Después de 'enjoy' el verbo va con -ing: 'Miranda enjoys talking to people'. En español decimos 'disfruta hablar', con infinitivo, pero en inglés 'enjoys to talk' es un error. Y para decir que alguien maneja bien algo se usa 'good with' + un sustantivo: 'I'm really good with computers'."],
+      ["Usamos 'in' para hablar de campos de estudio o carreras: 'a career in architecture', 'studying in medicine'. Usamos 'at' para instituciones: 'at a university', 'at City University'. En español se usa 'en' para ambos, pero en inglés la distinción es importante.",
+       "Usamos 'in' para hablar de campos de estudio o carreras: 'a career in architecture', 'a career in medicine'. Usamos 'at' para instituciones: 'at a university', 'at City University'. En español se usa 'en' para ambos, pero en inglés la distinción es importante."],
+      ["Colombian Spanish speakers often use 'carrera' for both concepts. Remember: 'career' = future/long-term goal; 'occupation' = what you do right now for work.",
+       "En Colombia decimos 'carrera' para lo que se estudia. En inglés 'career' es la profesión para la que te preparas o que haces a largo plazo, y 'occupation' es lo que haces ahora para trabajar: 'I'm studying for a career in architecture… That's my current occupation'."],
+      ["Spanish uses the infinitive after 'disfrutar' (disfrutar hablar), but English requires the gerund: 'enjoy talking' NOT 'enjoy to talk'.",
+       "En español decimos 'disfruta hablar', con infinitivo; en inglés después de 'enjoy' va -ing: 'enjoys talking', no 'enjoys to talk'."],
+      ["Spanish speakers often omit the article: 'I'm doctor' instead of 'I'm a doctor'. Always include 'a' or 'an' before singular occupations in English.",
+       "En español decimos 'Soy médico', sin artículo, y por eso sale 'I'm doctor'. En inglés va siempre 'a' o 'an': 'I'm a doctor', 'She's an engineer'."],
+      ["Spanish uses 'en' for both ('carrera en arquitectura', 'estudio en la universidad'), but English distinguishes: 'career IN architecture', 'study AT the university'.",
+       "En español usamos 'en' para los dos ('carrera en arquitectura', 'estudio en la universidad'); en inglés se distingue: 'a career IN architecture', 'study AT the university'."],
+    ] });
+  return true;
+}
+
+/* p. 9: las preposiciones at / in ya están en la p. 8; un ejemplo de "Wh- +
+ * do" no usaba do, y la trampa de los adverbios daba por raro "Sometimes I use
+ * English", que está bien. */
+function fixU1P9(units) {
+  return fixPageContent(units, { unit: 'a2_1', id: u1Lote(9),
+    quitarGramatica: hayLote(units, 'a2_1', u1Lote(8)) ? ['Prepositions with places: at, in, with'] : [],
+    cambios: [
+      ['What is the career or occupation?', 'What area of English do you want to improve?'],
+      ['¿Cuál es la carrera u ocupación?', '¿Qué área del inglés quieres mejorar?'],
+      ["Los hispanohablantes tienden a poner el adverbio al inicio ('Sometimes I use English') que es posible pero menos común que ponerlo antes del verbo ('I sometimes use English').",
+       "En español decimos 'uso a veces el inglés', con el adverbio después del verbo, y sale 'I use sometimes English'. En inglés va antes del verbo principal: 'I sometimes use English'. Al comienzo también se puede: 'Sometimes I use English'."],
+    ] });
+}
+
+/* p. 10: verbos en forma base ("stressing" y "helps" se unen con stress y
+ * help); "silenciosamente" es "en voz baja"; el imperativo daba por error
+ * "You practice sounds every day", que es una frase correcta. */
+function fixU1P10(units) {
+  const NUEVA = 'Y repite lo que le oyes decir a esa gente, en voz baja, ¡para ti mismo, claro!';
+  const REPITE = 'And repeat what you hear those people say—quietly, to yourself of course!';
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(10), cambios: [
+    { word: 'mispronounces', set: { word: 'mispronounce', translation: 'pronunciar mal', phonetic: '/ˌmɪsprəˈnaʊns/' } },
+    { word: 'rises', set: { word: 'rise', translation: 'subir', phonetic: '/raɪz/' } },
+    { word: 'falls', set: { word: 'fall', translation: 'bajar', phonetic: '/fɔl/' } },
+    { word: 'responding', set: { word: 'respond', translation: 'responder', phonetic: '/rɪˈspɑnd/' } },
+    { word: 'affects', set: { word: 'affect', translation: 'afectar', phonetic: '/əˈfɛkt/' } },
+    { word: 'disappears', set: { word: 'disappear', translation: 'desaparecer', phonetic: '/ˌdɪsəˈpɪr/' } },
+    { word: 'quietly', set: { translation: 'en voz baja' } },
+    ...['repeat', 'hear', 'those', 'say', 'quietly', 'yourself', 'of course']
+      .map(word => ({ word, example: REPITE, set: { exampleTranslation: NUEVA } })),
+  ] });
+  if (!ok) return false;
+  unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(10) }, [['stressing', 'stress'], ['helps', 'help']]);
+  // Sin la p. 8 no hay "help" con qué unirla: se renombra.
+  fixBookPage(units, { unit: 'a2_1', id: u1Lote(10), cambios: [
+    { word: 'helps', set: { word: 'help', translation: 'ayudar', phonetic: '/hɛlp/' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(10), cambios: [
+    ['Repite lo que escuchas que esa gente dice—silenciosamente, para ti mismo, ¡por supuesto!',
+     'Repite lo que le oyes decir a esa gente, en voz baja, ¡para ti mismo, claro!'],
+    ['Your voice rise when you ask a yes question.', 'Your voice rise when you ask a yes / no question.'],
+    ['Your voice rises when you ask a yes question.', 'Your voice rises when you ask a yes / no question.'],
+  ] });
+  fixGrammarTopic(units, { unit: 'a2_1', id: u1Lote(10) }, 'Imperative for giving advice and instructions', g => {
+    g.commonErrors = (g.commonErrors || []).filter(e => !(e && e.wrong === 'You practice sounds every day.'));
+  });
+  return true;
+}
+
+/* p. 11: CONFIRM CONTENT pide marcar T / F / NI, y la IA tomó las falsas como
+ * hechos ("Mispronouncing a sound is never a problem", "Only a small number…
+ * are non-native speakers"). UNDERSTAND FROM CONTEXT imprime las definiciones
+ * en desorden, y las emparejó con la línea de al lado: accent es "the
+ * particular way you pronounce sounds and words" y rhythm "the characteristic
+ * stress pattern of sentences". Verbos en forma base, y el tema de presente
+ * continuo no tenía ni un ejemplo de presente continuo. */
+function fixU1P11(units) {
+  const RITMO = { example: 'Rhythm is the characteristic stress pattern of sentences.',
+                  exampleTranslation: 'El ritmo es el patrón de acentuación característico de las oraciones.' };
+  const ok = fixBookPage(units, { unit: 'a2_1', id: u1Lote(11), cambios: [
+    { word: 'non-native speakers', example: 'Only a small number of the English speakers in the world are non-native speakers of the language.',
+      set: { example: 'Approximately 80% of the English speakers in the world are non-native speakers.',
+             exampleTranslation: 'Aproximadamente el 80% de los hablantes de inglés en el mundo son hablantes no nativos.' } },
+    { word: 'stress pattern', example: 'The accent is the characteristic stress pattern of sentences.', set: RITMO },
+    { word: 'sentences', example: 'The accent is the characteristic stress pattern of sentences.', set: RITMO },
+    { word: 'particular', example: 'Rhythm is the particular way you pronounce sounds and words.',
+      set: { example: 'Accent is the particular way you pronounce sounds and words.',
+             exampleTranslation: 'El acento es la manera particular en que pronuncias los sonidos y las palabras.' } },
+    { word: 'watching TV', set: { word: 'watch TV', phonetic: '/wɑtʃ ˌtiˈvi/' } },
+    { word: 'watching videos online', set: { word: 'watch videos online', phonetic: '/wɑtʃ ˈvɪdioʊz ˌɑnˈlaɪn/' } },
+    { word: 'doing', set: { word: 'do', translation: 'hacer', phonetic: '/du/' } },
+    { word: 'writing', set: { word: 'write', translation: 'escribir', phonetic: '/raɪt/',
+      example: 'Write what you hear and then repeat it.', exampleTranslation: 'Escribe lo que oyes y luego repítelo.' } },
+  ] });
+  if (!ok) return false;
+  unirEnLaUnidad(units, { unit: 'a2_1', id: u1Lote(11) }, [
+    ['mispronouncing', 'mispronounce'], ['repeating', 'repeat'], ['studying', 'study'], ['using', 'use'],
+  ]);
+  // Lo que no se pudo unir (sin las pp. 1 o 10 en el aparato) queda en forma base.
+  fixBookPage(units, { unit: 'a2_1', id: u1Lote(11), cambios: [
+    { word: 'mispronouncing', set: { word: 'mispronounce', phonetic: '/ˌmɪsprəˈnaʊns/',
+      example: 'If a speaker mispronounces certain vowel sounds, it may cause a problem.',
+      exampleTranslation: 'Si un hablante pronuncia mal ciertos sonidos vocálicos, puede causar un problema.' } },
+    { word: 'repeating', set: { word: 'repeat', phonetic: '/rɪˈpit/' } },
+    { word: 'studying', set: { word: 'study', phonetic: '/ˈstʌdi/' } },
+    { word: 'using', set: { word: 'use', phonetic: '/juz/' } },
+  ] });
+  const VERDADERA = 'French speakers often find the th sound difficult';
+  fixPageContent(units, { unit: 'a2_1', id: u1Lote(11),
+    quitarGramatica: ['Present Continuous for ongoing actions'],
+    cambios: [
+      ['accent → the characteristic stress pattern of sentences', 'accent → the particular way you pronounce sounds and words'],
+      ['rhythm → the particular way you pronounce sounds and words', 'rhythm → the characteristic stress pattern of sentences'],
+      ['I watch TV in English, and I repeat what I hear.', null],
+    ],
+    ejercicios: [
+      { question: 'Which statement is FALSE according to the article?',
+        set: { options: [VERDADERA, 'Only a small number of English speakers are non-native speakers',
+                         'Listening to English speakers can help your pronunciation', 'Repeating what you hear helps you pronounce words in English'],
+               explanation: "Approximately 80% of the world's English speakers are not native speakers: most of them are non-native." } },
+      { question: 'English ___ is difficult. It refers to the characteristic stress pattern of sentences.',
+        set: { question: '___ is the characteristic stress pattern of sentences.', answer: 'Rhythm',
+               explanation: 'Rhythm is the characteristic stress pattern of sentences; accent is the particular way you pronounce sounds and words.' } },
+      { question: 'According to the page, which statement is TRUE?',
+        set: { answer: VERDADERA,
+               options: ['Mispronouncing a sound is never a problem', 'Only a small number of English speakers are non-native speakers',
+                         VERDADERA, "Intonation doesn't change in different types of questions"],
+               explanation: 'The article says the sound "th" is hard for speakers of French. The other three are false.' } },
+    ] });
+  return true;
 }
 
 /* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
@@ -22590,7 +22976,8 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU1P1, fixU1P2, fixU1P3, fixU1P4, fixU1P5, fixU1P6, fixU1P7, fixU1P8, fixU1P9, fixU1P10, fixU1P11,
+   fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    addU9P97Questions, addU9P98Questions, addU9P99Questions, addU9P100Questions, addU9P101Questions,

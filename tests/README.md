@@ -187,6 +187,17 @@ un ejercicio o de un audio tomadas como hechos, un dato del plano al revés
 está en la transcripción de su página; las repetidas se unen pasando el progreso,
 y solo si la que queda está en el aparato.
 
+`u1-fix.test.js` — La Unit 1, revisada contra sus fotos (respaldo del 2 de
+octubre). Se analizó en julio, antes de las reglas nuevas, y enseñaba cosas
+falsas: las afirmaciones F de CONFIRM CONTENT como ejemplos, accent y rhythm con
+la definición cruzada (el ejercicio de emparejar imprime las columnas en
+desorden), opciones del audio como hechos, "hometown" como "ciudad natal" y
+"Mr. and Mrs. Jin-soo Park". También: gramática que daba por error frases
+correctas, temas repetidos (solo se quitan si está la página que los enseña),
+verbos en forma base y tarjetas repetidas unidas sin perder progreso. Los
+lotes van por id (`u1Lote`, una función: una constante no existiría aún en el
+arranque).
+
 `u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
 el ejemplo "I like a basketball game": la página solo imprime "= like", y el
