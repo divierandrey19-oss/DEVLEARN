@@ -260,3 +260,18 @@ test('vacío quita el número; basura no cambia nada; si no guarda, vuelve como 
   assert.deepEqual([falla.u.batches[0].pages, falla.u.batches[0].pagesByHand], [[10], true]);
   assert.match(h.extraerFuncion('openPageSheet'), /onclick="setPageNumber\('\$\{escapeStr\(batchId\)\}'\)">✏️ Save page<\/button>/);
 });
+
+// Él quiere ver las fotos en el orden del libro: si le pone "5" a una foto,
+// que aparezca en el quinto puesto.
+
+test('las fotos se ordenan por número de página; sin número, al final; la ✕ sigue en su foto', () => {
+  const orden = h.ejecutar(`${['photosInBookOrder', 'sanitizePageNumbers'].map(n => h.extraerFuncion(n)).join('\n')}; return photosInBookOrder;`, {});
+  const u = { batches: [{ id: 'a', pages: [7] }, { id: 'b' }, { id: 'c', pages: [5] }, { id: 'd', pages: [6] }] };
+  const fotos = [{ src: 'A', batchId: 'a' }, { src: 'B', batchId: 'b' }, { src: 'C', batchId: 'c' }, { src: 'D', batchId: 'd' }, { src: 'C2', batchId: 'c' }];
+  const r = orden(fotos, u);
+  assert.deepEqual(r.map(x => x.img.src), ['C', 'C2', 'D', 'A', 'B']);
+  assert.deepEqual(r.map(x => x.i), [2, 4, 3, 0, 1], 'cada una con su índice original');
+  const cuadricula = h.extraerFuncion('renderImagePreviews');
+  assert.match(cuadricula, /photosInBookOrder\(images, u\)\.map\(\(\{ img: imgObj, i \}\) =>/);
+  assert.match(cuadricula, /onclick="removeUnitImage\(\$\{i\}\)"/);
+});

@@ -643,6 +643,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  if (pagina.length) { b.pages = pagina; }\n  else { delete b.pages; delete b.pagesByHand; }`,
   },
   {
+    nombre: 'que las fotos no se ordenen por número de página',
+    buscar: `    .sort((x, y) => (x.p == null) - (y.p == null) || (x.p || 0) - (y.p || 0) || x.i - y.i);`,
+    reemplazo: `    .sort((x, y) => x.i - y.i);`,
+  },
+  {
     nombre: 'que la cuadrícula no deje arrastrar fotos',
     buscar: `    </div>\`).join('');\n  enablePhotoDrag(grid);\n`,
     reemplazo: `    </div>\`).join('');\n`,

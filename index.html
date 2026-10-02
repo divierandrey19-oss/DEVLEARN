@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02k -->
+<!-- DEVLEARN_BUILD: 2026-10-02l -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4927,7 +4927,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02k';
+const APP_BUILD = '2026-10-02l';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11866,7 +11866,7 @@ function renderImagePreviews(images) {
     return;
   }
   grid.style.display = 'grid';
-  grid.innerHTML = (images || []).map((imgObj, i) => {
+  grid.innerHTML = photosInBookOrder(images, u).map(({ img: imgObj, i }) => {
     const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
     const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
@@ -12047,6 +12047,15 @@ function askMovePagePhoto(fromId, src, toId) {
       toast(hecho === 'swap' ? '🔄 Photos swapped. The cards stay the same.' : '📷 Photo moved. The cards stay the same.');
     },
   });
+}
+
+/* Las fotos en el orden del libro: él les pone el número (p. 5) y quiere
+ * verlas en ese puesto. Las que no tienen número van después, como estaban.
+ * Cada una conserva su índice original, que es el que usa la ✕. */
+function photosInBookOrder(images, u) {
+  const paginas = new Map(((u && u.batches) || []).map(b => [b.id, sanitizePageNumbers(b.pages)[0]]));
+  return (images || []).map((img, i) => ({ img, i, p: paginas.get(img && img.batchId) }))
+    .sort((x, y) => (x.p == null) - (y.p == null) || (x.p || 0) - (y.p || 0) || x.i - y.i);
 }
 
 /* Las páginas que se subieron sin foto (Units 1 y 3 a 6, de antes de guardar
