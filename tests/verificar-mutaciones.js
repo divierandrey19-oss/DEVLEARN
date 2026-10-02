@@ -588,6 +588,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que una foto agregada no guarde el número de página',
+    buscar: `    if (pagina.length) b.pages = pagina;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que una foto que no se pudo guardar quede a medias',
+    buscar: `      b.images = antes.images; b.pages = antes.pages;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'esconder las páginas sin foto en una unidad sin fotos',
+    buscar: `    // Sin fotos, la cuadrícula muestra las páginas a las que les falta la foto.\n    renderImagePreviews(imgs);\n`,
+    reemplazo: `    const grid = document.getElementById('img-grid');\n    if (grid) grid.style.display = 'none';\n`,
+  },
+  {
+    nombre: 'contar el lote de phrasal verbs como página sin foto',
+    buscar: `!String(b.id || '').startsWith('pv_') && !b.analyzing);`,
+    reemplazo: `!b.analyzing);`,
+  },
+  {
     nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
     buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
     reemplazo: `    if (!k || !c.translation) return;`,

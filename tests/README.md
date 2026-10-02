@@ -60,6 +60,12 @@ Las de la Unit 9 (pp. 97 a 107), para el speaking test: las que el libro imprime
 tal cual, más las que cada página practica, después de que las páginas tienen
 número.
 
+`page-photo.test.js` — Agregarle la foto a una página que se subió sin ella
+(Units 1 y 3 a 6): la unidad muestra esas páginas con 📷, la foto se guarda con su
+número de página sin analizarla otra vez (no cuesta nada) y sin tocar tarjetas ni
+progreso; si no se puede guardar, todo queda como estaba. Así esas páginas se pueden
+revisar contra el libro desde su respaldo, como las demás.
+
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
 sesión guardada de una página no se retome en la unidad entera ni al revés.
