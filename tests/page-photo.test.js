@@ -92,3 +92,41 @@ test('la unidad muestra las páginas sin foto, y la hoja ofrece agregarla o camb
   assert.equal((hoja.match(/onchange="attachPagePhoto\('\$\{escapeStr\(batchId\)\}', this\)"/g) || []).length, 2);
   assert.ok(fuente.includes('id="ps-page" type="number"'));
 });
+
+// Él le puso una foto a la página equivocada, tocó la ✕ y el aviso solo
+// ofrecía borrar la página con sus 22 palabras.
+
+test('quitar solo la foto: la página queda como antes, con sus tarjetas y progreso', async () => {
+  const { u, f } = montar();
+  f.attachPagePhoto('b1', { files: [{ name: 'p52', size: 1000 }] });
+  await esperar();
+  assert.equal(u.batches[0].pagesByHand, true);
+  const hecho = { puestas: [], toasts: [], recargas: 0 };
+  const g = h.ejecutar(`${h.extraerFuncion('removeOnlyPagePhoto')}; return removeOnlyPagePhoto;`, {
+    current: { lid: 'a2', uid: 4 }, getUnit: () => u, console,
+    ImageStore: { put: async (id, imgs) => { hecho.puestas.push([id, imgs.length]); } },
+    save: () => {}, loadUnitContent: () => { hecho.recargas++; }, toast: m => hecho.toasts.push(m),
+  });
+  assert.equal(g('b1'), true);
+  const b = u.batches[0];
+  assert.deepEqual(b.images, []);
+  assert.equal(b.pages, undefined, 'el número era el de la foto equivocada');
+  assert.deepEqual(b.vocab, [{ word: 'family' }]);
+  assert.deepEqual(u.fcProgress, { family: { interval: 9 } });
+  assert.deepEqual(hecho.puestas, [['b1', 0]], 'también sale de IndexedDB, o volvería al recargar');
+  // Una página analizada conserva su número: no lo escribió él.
+  u.batches[2].pages = [97];
+  g('b2');
+  assert.deepEqual(u.batches[2].pages, [97]);
+  assert.deepEqual(u.batches[2].vocab, [{ word: 'cousin' }]);
+});
+
+test('la ✕ de la última foto ofrece quitar solo la foto, además de borrar', () => {
+  const quitar = h.extraerFuncion('removeUnitImage');
+  assert.match(quitar, /altText: soloFoto \? '📷 Remove only the photo' : '',/);
+  assert.match(quitar, /\(\) => removeOnlyPagePhoto\(batch\.id\)/);
+  const confirmar = h.extraerFuncion('confirmAction');
+  assert.match(confirmar, /alt\.style\.display = onAlt \? '' : 'none'/);
+  assert.match(h.extraerFuncion('closeConfirm'), /if \(confirmed === 'alt'\)/);
+  assert.ok(fuente.includes(`id="confirm-alt-btn" style="display:none;" onclick="closeConfirm('alt')"`));
+});
