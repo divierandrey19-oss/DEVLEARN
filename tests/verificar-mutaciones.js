@@ -608,6 +608,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que arrastrar una foto se lleve también el número de otra página',
+    buscar: `    if (!(a.pages || []).length) { a.pages = de.pages; a.pagesByHand = true; }\n`,
+    reemplazo: `    a.pages = de.pages; a.pagesByHand = true;\n`,
+  },
+  {
+    nombre: 'que la foto arrastrada no salga de la página de origen',
+    buscar: `  de.images = de.images.filter((_, k) => k !== i);\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la cuadrícula no deje arrastrar fotos',
+    buscar: `    </div>\`).join('');\n  enablePhotoDrag(grid);\n`,
+    reemplazo: `    </div>\`).join('');\n`,
+  },
+  {
     nombre: 'esconder las páginas sin foto en una unidad sin fotos',
     buscar: `    // Sin fotos, la cuadrícula muestra las páginas a las que les falta la foto.\n    renderImagePreviews(imgs);\n`,
     reemplazo: `    const grid = document.getElementById('img-grid');\n    if (grid) grid.style.display = 'none';\n`,

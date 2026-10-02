@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02g -->
+<!-- DEVLEARN_BUILD: 2026-10-02h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -1330,7 +1330,14 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   position: relative; border-radius: var(--r-sm);
   overflow: hidden; aspect-ratio: 4/3; background: var(--surface-3);
 }
-.img-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+.img-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: pointer;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+/* Arrastrar una foto a otra página: la página donde caería y la foto en el dedo. */
+.img-thumb.drop-over { outline: 3px solid var(--accent); outline-offset: 2px; }
+.photo-drag-ghost {
+  position: fixed; z-index: 1000; width: 96px; height: 72px; object-fit: cover; pointer-events: none;
+  transform: translate(-50%, -60%); border-radius: 8px; opacity: 0.9; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
 /* Cuántas palabras trae la página: le dice que tocar la foto abre su repaso. */
 .img-thumb-n {
   position: absolute; left: 6px; bottom: 6px; pointer-events: none;
@@ -4913,7 +4920,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02g';
+const APP_BUILD = '2026-10-02h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11858,18 +11865,137 @@ function renderImagePreviews(images) {
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
     const libro = batchId && u ? bookPageLabel((u.batches || []).find(b => b.id === batchId)) : '';
     return `
-    <div class="img-thumb">
+    <div class="img-thumb" ${batchId ? `data-batch="${escapeHtml(batchId)}"` : ''}>
       <img src="${src}" alt="${libro || `page ${i + 1}`}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
       ${n || libro ? `<span class="img-thumb-n">${libro}${libro && n ? ' · ' : ''}${n ? `🃏 ${n}` : ''}</span>` : ''}
       <button class="img-thumb-rm" onclick="removeUnitImage(${i})" title="Delete this image and its content">✕</button>
     </div>
   `;
   }).join('') + sinFoto.map(b => `
-    <div class="img-thumb img-thumb-empty" onclick="openPageSheet('${escapeStr(b.id)}')">
+    <div class="img-thumb img-thumb-empty" data-batch="${escapeHtml(b.id)}" onclick="openPageSheet('${escapeStr(b.id)}')">
       <b>📷</b>
       <span>${escapeHtml(bookPageLabel(b) || b.title || 'Page')}</span>
       <span style="color:var(--text-3);">Add photo · 🃏 ${(b.vocab || []).length}</span>
     </div>`).join('');
+  enablePhotoDrag(grid);
+}
+
+/* Pasar una foto a otra página: él la deja presionada y la suelta sobre la
+ * página correcta (le había puesto una foto a la página equivocada). Solo se
+ * mueve la foto: las tarjetas de cada página se quedan donde están. En el
+ * celular, mantener presionado medio segundo; moverse antes es desplazar la
+ * pantalla, como siempre. */
+function enablePhotoDrag(grid) {
+  if (!grid || grid.dataset.drag) return;
+  grid.dataset.drag = '1';
+  let st = null;
+  let suprimirClic = false;
+  const fin = () => {
+    if (!st) return;
+    clearTimeout(st.timer);
+    if (st.ghost) st.ghost.remove();
+    if (st.over) st.over.classList.remove('drop-over');
+    st = null;
+  };
+  const empezar = (x, y, target) => {
+    const img = target && target.closest && target.closest('.img-thumb img');
+    const tile = img && img.closest('[data-batch]');
+    if (!tile) return;
+    fin();
+    st = { batchId: tile.dataset.batch, src: img.getAttribute('src'), x0: x, y0: y, activo: false };
+    st.timer = setTimeout(() => {
+      if (!st) return;
+      st.activo = true;
+      if (navigator.vibrate) navigator.vibrate(30);
+      const g = document.createElement('img');
+      g.src = st.src;
+      g.className = 'photo-drag-ghost';
+      g.style.left = x + 'px';
+      g.style.top = y + 'px';
+      document.body.appendChild(g);
+      st.ghost = g;
+    }, 450);
+  };
+  const mover = (x, y, e) => {
+    if (!st) return;
+    if (!st.activo) { if (Math.hypot(x - st.x0, y - st.y0) > 10) fin(); return; }
+    if (e && e.cancelable) e.preventDefault();   // mientras arrastra, la pantalla no se desplaza
+    st.ghost.style.left = x + 'px';
+    st.ghost.style.top = y + 'px';
+    const bajo = document.elementFromPoint(x, y);
+    const t = bajo && bajo.closest('#img-grid [data-batch]');
+    const destino = t && t.dataset.batch !== st.batchId ? t : null;
+    if (st.over !== destino) {
+      if (st.over) st.over.classList.remove('drop-over');
+      st.over = destino;
+      if (destino) destino.classList.add('drop-over');
+    }
+  };
+  const soltar = () => {
+    if (!st) return;
+    const { activo, over, batchId, src } = st;
+    fin();
+    if (!activo) return;
+    suprimirClic = true;
+    setTimeout(() => { suprimirClic = false; }, 500);
+    if (over) askMovePagePhoto(batchId, src, over.dataset.batch);
+  };
+  grid.addEventListener('touchstart', e => { const t = e.touches[0]; if (e.touches.length === 1) empezar(t.clientX, t.clientY, e.target); }, { passive: true });
+  grid.addEventListener('mousedown', e => { if (e.button === 0) empezar(e.clientX, e.clientY, e.target); });
+  document.addEventListener('touchmove', e => { if (st) { const t = e.touches[0]; mover(t.clientX, t.clientY, e); } }, { passive: false });
+  document.addEventListener('mousemove', e => { if (st) mover(e.clientX, e.clientY, e); });
+  document.addEventListener('touchend', soltar);
+  document.addEventListener('touchcancel', fin);
+  document.addEventListener('mouseup', soltar);
+  // Que soltar no abra la hoja de la página, ni el menú de la imagen del celular.
+  grid.addEventListener('click', e => { if (suprimirClic) { e.stopPropagation(); e.preventDefault(); } }, true);
+  grid.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.img-thumb img')) e.preventDefault(); });
+}
+
+/* Mueve una foto de una página a otra. El número de página que él escribió
+ * al agregarla es el de esa foto: se va con ella si la página de origen queda
+ * sin fotos y la de destino no tiene número. Devuelve true si la movió. */
+function movePhotoBetweenPages(de, a, src) {
+  const i = ((de && de.images) || []).indexOf(src);
+  if (!a || de === a || i < 0) return false;
+  de.images = de.images.filter((_, k) => k !== i);
+  a.images = [...(a.images || []), src];
+  if (de.pagesByHand && !de.images.length) {
+    if (!(a.pages || []).length) { a.pages = de.pages; a.pagesByHand = true; }
+    delete de.pages;
+    delete de.pagesByHand;
+  }
+  return true;
+}
+
+function askMovePagePhoto(fromId, src, toId) {
+  const u = getUnit(current.lid, current.uid);
+  const de = (u?.batches || []).find(b => b.id === fromId);
+  const a = (u?.batches || []).find(b => b.id === toId);
+  if (!de || !a || de === a) return;
+  confirmAction({
+    title: 'Move this photo?',
+    message: `From "${batchLabel(u, fromId)}"\nto "${batchLabel(u, toId)}".\n\nOnly the photo moves: the cards of each page stay where they are.`,
+    confirmText: '📷 Move it',
+    onConfirm: () => {
+      const antes = JSON.stringify([de, a].map(b => ({ images: b.images, pages: b.pages, pagesByHand: b.pagesByHand })));
+      if (!movePhotoBetweenPages(de, a, src)) return;
+      if (!writeState()) {
+        JSON.parse(antes).forEach((x, k) => {
+          const b = [de, a][k];
+          b.images = x.images || [];
+          if (x.pages) b.pages = x.pages; else delete b.pages;
+          if (x.pagesByHand) b.pagesByHand = true; else delete b.pagesByHand;
+        });
+        toast('⚠️ Could not save — free up space and try again');
+        return;
+      }
+      ImageStore.put(de.id, de.images).catch(e => console.warn('Image save failed:', e));
+      ImageStore.put(a.id, a.images).catch(e => console.warn('Image save failed:', e));
+      loadUnitContent();
+      toast('📷 Photo moved. The cards stay the same.');
+    },
+  });
 }
 
 /* Las páginas que se subieron sin foto (Units 1 y 3 a 6, de antes de guardar
