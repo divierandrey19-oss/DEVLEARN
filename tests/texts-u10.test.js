@@ -21,7 +21,7 @@ const texto = id => semilla.find(t => t.id === id);
 const palabras = s => s.trim().split(/\s+/).length;
 
 test('los textos de la Unit 10 están en la semilla, con traducción', () => {
-  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111']]) {
+  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111'], ['txt_u10_p112113', 'U10 · pág 112 - 113']]) {
     const t = texto(id);
     assert.ok(t, `falta ${id}`);
     assert.equal(t.title, titulo, 'el título agrupa por unidad ("U10 · …")');
@@ -30,7 +30,7 @@ test('los textos de la Unit 10 están en la semilla, con traducción', () => {
 });
 
 test('máximo 170 palabras, como él pidió', () => {
-  for (const id of ['txt_u10_p109', 'txt_u10_p110111']) {
+  for (const id of ['txt_u10_p109', 'txt_u10_p110111', 'txt_u10_p112113']) {
     assert.ok(palabras(texto(id).body) <= 170, `${id} tiene ${palabras(texto(id).body)} palabras`);
   }
 });
@@ -47,5 +47,17 @@ test('dicen lo que él contó de su vida, no lo que se supuso', () => {
 
 test('se entregan subiendo SEED_VERSION', () => {
   const m = fuente.match(/const SEED_VERSION = (\d+);/);
-  assert.ok(m && Number(m[1]) >= 13, 'con 12, quien ya abrió la app no recibe los textos nuevos');
+  assert.ok(m && Number(m[1]) >= 14, 'con 13, quien ya abrió la app no recibe el texto de las pp. 112-113');
+});
+
+test('pp. 112-113: sus deseos con would like, lo que él contó', () => {
+  const t = texto('txt_u10_p112113').body;
+  // Él: graduarse de inglés con C1 el próximo año, trabajar en el exterior en
+  // unos años, hacerse rico, y no casarse.
+  assert.match(t, /graduate from my English course with a C1 level next year/);
+  assert.match(t, /work abroad in a few years/);
+  assert.match(t, /I'd love to get rich/);
+  assert.match(t, /I wouldn't like to get married/);
+  // Termina preguntando, como el Conversation Model: él es flojo para preguntar.
+  assert.match(t, /What would you like to do in the next few years\?$/);
 });

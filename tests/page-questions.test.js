@@ -14,8 +14,9 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const h = require('./harness.js');
 
-const f = h.ejecutar(`${['addPageQuestions', 'addU10P109Questions', 'addU10P110Questions', 'addU10P111Questions'].map(n => h.extraerFuncion(n)).join('\n')}
-  return { addU10P109Questions, addU10P110Questions, addU10P111Questions };`, {});
+const NOMBRES = ['addU10P109Questions', 'addU10P110Questions', 'addU10P111Questions', 'addU10P112Questions', 'addU10P113Questions'];
+const f = h.ejecutar(`${['addPageQuestions', ...NOMBRES].map(n => h.extraerFuncion(n)).join('\n')}
+  return { ${NOMBRES.join(', ')} };`, {});
 const add = f.addU10P109Questions;
 const unidad = () => ({ a2_10: { batches: [{ id: 'p109', pages: [109], vocab: [{ word: 'life goal' }] }] } });
 
@@ -73,4 +74,22 @@ test('el arranque y la restauración agregan también las de 110 y 111', () => {
   assert.match(migrar, /if \(!merged\._u10P110QuestionsV1 && addU10P110Questions\(merged\.units\)\) merged\._u10P110QuestionsV1 = true;/);
   assert.match(migrar, /if \(!merged\._u10P111QuestionsV1 && addU10P111Questions\(merged\.units\)\) merged\._u10P111QuestionsV1 = true;/);
   assert.match(h.extraerFuncion('applyPageFixes'), /addU10P110Questions, addU10P111Questions/);
+});
+
+test('pp. 112 y 113: would like, con las preguntas del cuadro y del Conversation Model', () => {
+  const units = { a2_10: { batches: [{ id: 'a', pages: [112], vocab: [] }, { id: 'b', pages: [113], vocab: [] }] } };
+  assert.equal(f.addU10P112Questions(units), true);
+  assert.equal(f.addU10P113Questions(units), true);
+  const [p112, p113] = units.a2_10.batches.map(b => b.questions);
+  assert.ok(p112.every(x => /would/i.test(x.q)), 'todas con would');
+  assert.ok(p112.some(x => x.q === 'Who would like to get rich?'), 'Who como sujeto, sin "you"');
+  assert.ok(p113.some(x => x.q === 'What do you mean?'), 'la del Social language');
+  for (const x of [...p112, ...p113]) {
+    assert.match(x.q, /\?$/, `"${x.q}" no es pregunta`);
+    assert.ok(x.es && x.a, `"${x.q}" sin traducción o sin respuesta de ejemplo`);
+  }
+  const migrar = h.extraerFuncion('migrateState');
+  assert.match(migrar, /merged\._u10P112QuestionsV1 = true;/);
+  assert.match(migrar, /merged\._u10P113QuestionsV1 = true;/);
+  assert.match(h.extraerFuncion('applyPageFixes'), /addU10P112Questions, addU10P113Questions/);
 });
