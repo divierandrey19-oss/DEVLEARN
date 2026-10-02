@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02s -->
+<!-- DEVLEARN_BUILD: 2026-10-02t -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4946,7 +4946,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02s';
+const APP_BUILD = '2026-10-02t';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6858,6 +6858,17 @@ function migrateState(s) {
   if (!merged._u3P32FixV1 && fixU3P32(merged.units)) merged._u3P32FixV1 = true;
   if (!merged._u3P34FixV1 && fixU3P34(merged.units)) merged._u3P34FixV1 = true;
   if (!merged._u3P35FixV1 && fixU3P35(merged.units)) merged._u3P35FixV1 = true;
+  if (!merged._u8P85QV1 && addU8P85Questions(merged.units)) merged._u8P85QV1 = true;
+  if (!merged._u8P86QV1 && addU8P86Questions(merged.units)) merged._u8P86QV1 = true;
+  if (!merged._u8P87QV1 && addU8P87Questions(merged.units)) merged._u8P87QV1 = true;
+  if (!merged._u8P88QV1 && addU8P88Questions(merged.units)) merged._u8P88QV1 = true;
+  if (!merged._u8P89QV1 && addU8P89Questions(merged.units)) merged._u8P89QV1 = true;
+  if (!merged._u8P90QV1 && addU8P90Questions(merged.units)) merged._u8P90QV1 = true;
+  if (!merged._u8P91QV1 && addU8P91Questions(merged.units)) merged._u8P91QV1 = true;
+  if (!merged._u8P92QV1 && addU8P92Questions(merged.units)) merged._u8P92QV1 = true;
+  if (!merged._u8P93QV1 && addU8P93Questions(merged.units)) merged._u8P93QV1 = true;
+  if (!merged._u8P94QV1 && addU8P94Questions(merged.units)) merged._u8P94QV1 = true;
+  if (!merged._u8P95QV1 && addU8P95Questions(merged.units)) merged._u8P95QV1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -7836,6 +7847,135 @@ function fixU3P34(units) {
 function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
+  ] });
+}
+
+/* ── Unit 8: preguntas para las flashcards (él las pidió el 2 de octubre) ───
+ * Se subió antes de que el análisis hiciera preguntas. Primero las que el libro
+ * imprime, con la respuesta del libro; después las que la página practica.
+ * Donde la respuesta es de su vida, sale de sus textos de My life (las tiendas
+ * pequeñas cerca de su casa), que ya se sabe. */
+function u8Lote(pagina) {
+  return { 85: 'b_1788803892009_h0jubf', 86: 'b_1788803972020_a605bf', 87: 'b_1788804083068_3npuf6',
+    88: 'b_1788919622620_mo7rb1', 89: 'b_1788919778780_vepyxt', 90: 'b_1788957336715_6c0dah',
+    91: 'b_1788957479858_jpdhpz', 92: 'b_1789005314056_2rd9xo', 93: 'b_1789005411193_nsmbrx',
+    94: 'b_1789062264930_45w0kr', 95: 'b_1789062402130_55jc7v' }[pagina];
+}
+
+function addU8P85Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(85), { preguntas: [
+    { q: 'Where do you usually buy your clothes?', es: '¿Dónde compras tu ropa normalmente?',
+      a: "Me? I usually buy my clothes online. They're too expensive at the mall!" },
+    { q: 'Do you buy clothes in a department store or in a small shop?', es: '¿Compras ropa en un almacén por departamentos o en una tienda pequeña?',
+      a: 'In small shops near my house. They have the lowest prices.' },
+    { q: 'Do you buy clothes at a street market?', es: '¿Compras ropa en un mercado callejero?', a: "Yes, I do. / No, I don't." },
+  ] });
+}
+
+function addU8P86Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(86), { preguntas: [
+    { q: 'What do you like to wear at home?', es: '¿Qué te gusta ponerte en la casa?',
+      a: 'I like to wear a T-shirt and sweatpants at home, but not at a party. What about you?' },
+    { q: 'What do you like to wear to keep you warm on a cool day?', es: '¿Qué te gusta ponerte para no tener frío en un día fresco?',
+      a: 'A sweater over a shirt.' },
+    { q: 'What do you like to wear to keep you cool on a hot day?', es: '¿Qué te gusta ponerte para estar fresco en un día caluroso?',
+      a: 'A pair of shorts and a tank top.' },
+    { q: "What do you like to wear for a party at a friend's home?", es: '¿Qué te gusta ponerte para una fiesta en la casa de un amigo?',
+      a: 'A T-shirt and jeans.' },
+  ] });
+}
+
+function addU8P87Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(87), { preguntas: [
+    { q: 'Want to go in?', es: '¿Entramos?', a: 'Why not?' },
+    { q: "What's your size?", es: '¿Cuál es tu talla?', a: 'I need them in size 40.' },
+    { q: 'So how are they?', es: '¿Y qué tal te quedan?', a: "They're a little small. Let me ask for a larger size." },
+    { q: 'So are those any better?', es: '¿Y esos sí te quedan mejor?', a: "Much better. I'll take them." },
+    { q: "What's important to you when you shop for clothes and shoes?", es: '¿Qué es importante para ti cuando compras ropa y zapatos?',
+      a: "Price is very important to me. I don't want to spend a lot of money." },
+  ] });
+}
+
+function addU8P88Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(88), { preguntas: [
+    { q: 'What are some of your favorite clothing and accessories?', es: '¿Cuáles son algunas de tus prendas y accesorios favoritos?',
+      a: "I love my old jeans. They're so comfortable." },
+    { q: 'Did you give your credit card to the salesperson?', es: '¿Le diste tu tarjeta de crédito a la vendedora?', a: 'Yes, I gave it to her.' },
+    { q: 'Did you give the scarf to your brother?', es: '¿Le diste la bufanda a tu hermano?', a: 'Yes, I gave it to him.' },
+  ] });
+}
+
+function addU8P89Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(89), { preguntas: [
+    { q: 'Should I buy this short-sleeve shirt?', es: '¿Debería comprar esta camisa de manga corta?', a: "It's really nice. You should definitely buy it." },
+    { q: 'What do you think of these pajamas?', es: '¿Qué opinas de estas pijamas?',
+      a: "Actually, you shouldn't buy those for her. She doesn't like green." },
+    { q: 'Excuse me. I like this skirt, but can I get it in a different color?', es: 'Disculpe. Me gusta esta falda, pero ¿la tiene en otro color?',
+      a: 'Certainly. Is black OK?' },
+    { q: 'How much are those small purses over there?', es: '¿Cuánto valen esos bolsos pequeños de allá?', a: "They're on sale . . . twenty dollars." },
+    { q: 'How would you like to pay: cash or credit?', es: '¿Cómo quiere pagar: en efectivo o con tarjeta?', a: 'Credit, please. Thanks for your help!' },
+  ] });
+}
+
+function addU8P90Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(90), { preguntas: [
+    { q: 'Is there a nice mall around here?', es: '¿Hay un buen centro comercial por aquí?', a: "Try the Park Plaza. It's the newest mall in town." },
+    { q: "What's the most popular brand of running shoes right now?", es: '¿Cuál es la marca de tenis para correr más popular ahora?',
+      a: "Definitely Marlins. And they're the most attractive, too." },
+    { q: "What's the nearest department store from the train station?", es: '¿Cuál es el almacén por departamentos más cercano a la estación del tren?',
+      a: "Teller's Department Store. Just walk two blocks down Main Street and turn right." },
+    { q: 'Can you recommend a store that has bargains on kitchen equipment?', es: '¿Me recomiendas una tienda con buenas ofertas en cosas de cocina?',
+      a: "Well, I got a good deal on a Mixwell at the Bargain Barn. It's not the cheapest blender, but it's the easiest to use." },
+  ] });
+}
+
+function addU8P91Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(91), { preguntas: [
+    { q: "Where's the best place in town to buy footwear?", es: '¿Cuál es el mejor lugar de la ciudad para comprar calzado?',
+      a: 'That depends. What are you looking for?' },
+    { q: 'What about location?', es: '¿Y la ubicación?', a: "Well, Tom's is near the subway station. It's probably the most convenient." },
+    { q: "Where's the best place in your city to buy clothes?", es: '¿Cuál es el mejor lugar de tu ciudad para comprar ropa?',
+      a: 'That depends. What are you looking for? For cheap clothes, the small shops near my house have the lowest prices.' },
+  ] });
+}
+
+function addU8P92Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(92), { preguntas: [
+    { q: "Where's the men's department?", es: '¿Dónde queda la sección de hombres?',
+      a: "Take the escalator to the third floor. The men's department is on the third floor, in the back, on the right." },
+    { q: 'Is it in the back of the store?', es: '¿Queda al fondo de la tienda?', a: "No. It's in the front of the store." },
+    { q: 'Should I take the stairs?', es: '¿Debería subir por las escaleras?', a: "No. It's on the third floor. Take the escalator." },
+  ] });
+}
+
+function addU8P93Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(93), { preguntas: [
+    { q: 'Excuse me. Where are the running shorts?', es: 'Disculpe. ¿Dónde están las pantalonetas para correr?',
+      a: 'Oh, those are in Sports and Fitness in the basement.' },
+    { q: "Where's the coffee shop?", es: '¿Dónde queda la cafetería?', a: "It's on the second floor." },
+    { q: 'Where can I find luggage?', es: '¿Dónde encuentro las maletas?', a: 'Luggage is in the basement.' },
+  ] });
+}
+
+function addU8P94Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(94), { preguntas: [
+    { q: 'What is a dress code?', es: '¿Qué es un código de vestimenta?', a: 'The rules about appropriate and inappropriate dress.' },
+    { q: 'What do men wear in an office with a "business casual" style?', es: '¿Qué usan los hombres en una oficina de estilo "business casual"?',
+      a: 'Most men simply wear a nice pair of slacks—such as khakis—and a dress shirt.' },
+    { q: 'What do people wear in countries with conservative business dress codes?', es: '¿Qué usa la gente en los países con códigos de vestimenta conservadores en los negocios?',
+      a: 'Men and women typically wear formal suits in an office, even on the hottest days of the year.' },
+    { q: "What is the writer's main idea?", es: '¿Cuál es la idea principal del autor?',
+      a: "It's important to learn about local dress codes before business travel." },
+  ] });
+}
+
+function addU8P95Questions(units) {
+  return addPageExtras(units, 'a2_8', u8Lote(95), { preguntas: [
+    { q: 'Which best describes your personal dress code?', es: '¿Qué describe mejor tu manera personal de vestir?',
+      a: 'I tend to be conservative. / I tend to be liberal. / My attitude is "anything goes!"' },
+    { q: 'Is it important to wear nice clothes in a restaurant?', es: '¿Es importante vestirse bien en un restaurante?', a: "Yes, it is. / No, it isn't." },
+    { q: 'What are the clothing do\'s and don\'ts in your country?', es: '¿Qué se debe y qué no se debe usar en tu país?',
+      a: 'In this country, dress codes are pretty liberal. However, there are a few rules you should keep in mind.' },
   ] });
 }
 
@@ -23459,6 +23599,7 @@ function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU1P1, fixU1P2, fixU1P3, fixU1P4, fixU1P5, fixU1P6, fixU1P7, fixU1P8, fixU1P9, fixU1P10, fixU1P11,
    addU1P1Extras, addU1P2Extras, addU1P3Extras, addU1P4Extras, addU1P5Extras, addU1P6Extras, addU1P7Extras, addU1P8Extras, addU1P9Extras, addU1P10Extras, addU1P11Extras,
    fixU3Order, addU3P26Extras, addU3P29Extras, addU3P30Extras, addU3P31Extras, addU3P32Extras, addU3P33Extras, addU3P34Extras, addU3P35Extras, fixU3P27, fixU3P29, fixU3P31, fixU3P32, fixU3P34, fixU3P35,
+   addU8P85Questions, addU8P86Questions, addU8P87Questions, addU8P88Questions, addU8P89Questions, addU8P90Questions, addU8P91Questions, addU8P92Questions, addU8P93Questions, addU8P94Questions, addU8P95Questions,
    fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
