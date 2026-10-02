@@ -177,6 +177,13 @@ test('las frases de un "corrige las afirmaciones falsas" no son hechos', () => {
   assert.match(analisis, /None of them is a fact: never use\s+one as a vocabulary example, a grammar example, a statement or a question's answer/);
 });
 
+test('en un ejercicio de emparejar, la línea de al lado no es su pareja', () => {
+  // Unit 1, p. 11: UNDERSTAND FROM CONTEXT imprime las definiciones en
+  // desorden y salió "accent = the characteristic stress pattern of sentences".
+  assert.match(analisis, /prints its two columns in MIXED order on purpose: a word and the line printed next to it\s+are NOT a pair\./);
+  assert.match(analisis, /Pair them only where the page's own text \(the reading, the dialogue\)\s+shows the match/);
+});
+
 test('sin speaking no es "incompleta" si la respuesta llegó hasta el final', async () => {
   const completa = await analizarCon({ vocabulary: [], speakingPrompts: [], questions: [] });
   assert.equal(completa.r.complete, true);
