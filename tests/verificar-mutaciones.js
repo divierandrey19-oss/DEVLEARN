@@ -673,6 +673,31 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `    b.pages = [k];\n`,
   },
   {
+    nombre: 'que la nube cambie una página mientras se analiza (la respuesta se pierde)',
+    buscar: `        if (lb && lb.analyzing && Date.now() - (lb.analyzingAt || 0) < 15 * 60 * 1000) { localById.delete(cb.id); return lb; }\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que una página marcada "analizando" hace horas nunca reciba la nube',
+    buscar: `Date.now() - (lb.analyzingAt || 0) < 15 * 60 * 1000`,
+    reemplazo: `true`,
+  },
+  {
+    nombre: 'que una copia vieja de la nube pise la gramática regenerada aquí',
+    buscar: `          if ((lb.generatedAt || 0) > (cb.generatedAt || 0)) {`,
+    reemplazo: `          if (false) {`,
+  },
+  {
+    nombre: 'que la gramática regenerada en la nube no llegue',
+    buscar: `          if ((lb.generatedAt || 0) > (cb.generatedAt || 0)) {`,
+    reemplazo: `          if (true) {`,
+  },
+  {
+    nombre: 'que una página analizada aquí se quede sin tarjetas si en la nube estaba vacía',
+    buscar: `            if (!(cb.vocab || []).length && (lb.vocab || []).length) cb.vocab = lb.vocab;\n`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'que la Unit 3 no se ordene al abrir la app',
     buscar: `  fixU3Order(merged.units);\n`,
     reemplazo: ``,

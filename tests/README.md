@@ -139,7 +139,10 @@ pages" agrega desde un respaldo solo las páginas que faltan, con sus correccion
 de un texto: el 1 de octubre la p. 109 se desmarcó sola porque al juntar con la
 nube ganaba siempre la copia de la nube; ahora gana el ✅ marcado más reciente. Lo mismo con el
 número de página escrito a mano: gana el más reciente, y una copia sin hora no
-pisa uno con hora (la nube le devolvió a la Unit 1 sus números viejos).
+pisa uno con hora (la nube le devolvió a la Unit 1 sus números viejos). Y la gramática regenerada: el 2 de octubre regeneró la p. 26 de la Unit 3, la
+nube trajo su copia vieja y tuvo que pagar otra regeneración. Ahora gana lo que se
+generó más recientemente (`generatedAt`), y una página que se está analizando
+(`analyzingAt`, hasta 15 minutos) no la cambia la nube.
 
 `u10-content-fix.test.js` — La gramática, los ejercicios y el speaking de las
 pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02q -->
+<!-- DEVLEARN_BUILD: 2026-10-02r -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4804,7 +4804,24 @@ window._mergeCloudState = function(cloud) {
       const localById = new Map((localUnit.batches || []).map(b => [b.id, b]));
       const cloudBatches = (cloudUnit.batches || []).map(cb => {
         const lb = localById.get(cb.id);
+        /* Una página que se está analizando aquí se queda como está, el mismo
+         * objeto: el análisis escribe su respuesta en él, y si la nube lo
+         * cambiaba por su copia, la respuesta caía en un objeto que la app ya
+         * no usaba. Él regeneró la p. 26 de la Unit 3, fue a mirar la consola,
+         * volvió, y la gramática nueva no estaba. */
+        // Solo mientras el análisis puede seguir vivo (corta a los 10 minutos):
+        // una página que quedó marcada porque la app se cerró a mitad sí se une.
+        if (lb && lb.analyzing && Date.now() - (lb.analyzingAt || 0) < 15 * 60 * 1000) { localById.delete(cb.id); return lb; }
         if (lb) {
+          /* Lo que el análisis genera gana si aquí es más reciente: una copia
+           * de la nube anterior a la regeneración volvía a poner la gramática
+           * vieja. Las tarjetas siguen viniendo de la nube, salvo que allá la
+           * página esté vacía (subida mientras se analizaba). */
+          if ((lb.generatedAt || 0) > (cb.generatedAt || 0)) {
+            ['grammar', 'exercises', 'speakingPrompts', 'grammarVersion', 'generatedAt', 'topics', 'title',
+             'description', 'analyzing', 'failedAt'].forEach(k => { if (lb[k] !== undefined) cb[k] = lb[k]; else delete cb[k]; });
+            if (!(cb.vocab || []).length && (lb.vocab || []).length) cb.vocab = lb.vocab;
+          }
           cb.images = lb.images || [];   // re-attach THIS batch's own photos
           /* El número de página que él escribe gana si es el más reciente
            * (pagesAt). La nube traía siempre su copia: él ordenó la Unit 1
@@ -4930,7 +4947,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02q';
+const APP_BUILD = '2026-10-02r';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12603,6 +12620,7 @@ function handleUnitUpload(event) {
       createdAt: Date.now(),
       grammarVersion: GRAMMAR_VERSION, // version of the prompt used to generate
       analyzing: true,
+      analyzingAt: Date.now(),
     };
     u.batches.push(batch);
     // Photos go to IndexedDB; the state write below no longer carries them.
@@ -13094,6 +13112,7 @@ function retryBatchAnalysis(batchId) {
     return;
   }
   batch.analyzing = true;
+  batch.analyzingAt = Date.now();
   batch.failedAt  = null;
   saveNow();
   showAnalysisLoading(0);
@@ -13188,6 +13207,7 @@ async function regenerateBatchContent(lid, uid, batchId) {
 
   // Mark as regenerating (keep vocab and images)
   batch.analyzing = true;
+  batch.analyzingAt = Date.now();
   batch.grammar   = [];
   batch.exercises = [];
   batch.speakingPrompts = [];

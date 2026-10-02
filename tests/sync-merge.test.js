@@ -203,3 +203,45 @@ test('la nube sin hora no pisa un número con hora', () => {
   const nube = { units: { a2_1: { batches: [lote('b1', { pages: [1] })] } } };
   assert.deepEqual(unir(celular, nube).units.a2_1.batches[0].pages, [3]);
 });
+
+// Unit 3, 2 de octubre: regeneró la gramática de la p. 26 (v2 → v3), fue a
+// mirar la consola, volvió y la gramática nueva no estaba: tuvo que pagar otra
+// regeneración. La unión tomaba siempre la copia de la nube de la página entera.
+const ahora = Date.now();
+const regenerada = extra => lote('p26', { images: ['foto'], grammar: [{ title: 'Nueva' }], exercises: [{ question: 'nuevo' }],
+  speakingPrompts: ['Take the self-test.'], grammarVersion: 3, generatedAt: 2000, title: 'Self-Test', ...extra });
+const vieja = extra => lote('p26', { grammar: [{ title: 'Vieja' }], exercises: [{ question: 'viejo' }],
+  speakingPrompts: ['inventada'], grammarVersion: 2, generatedAt: 1000, title: 'Old', ...extra });
+
+test('la gramática regenerada aquí no la pisa una copia más vieja de la nube', () => {
+  const r = unir({ units: { a2_3: { batches: [regenerada()] } } }, { units: { a2_3: { batches: [vieja({ vocab: [{ word: 'sing' }] })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.grammar[0].title, b.exercises[0].question, b.speakingPrompts, b.grammarVersion, b.title],
+    ['Nueva', 'nuevo', ['Take the self-test.'], 3, 'Self-Test']);
+  assert.deepEqual(b.images, ['foto']);
+  assert.deepEqual(b.vocab, [{ word: 'sing' }], 'las tarjetas siguen viniendo de la nube');
+});
+
+test('si la regeneración más reciente es la de la nube, gana la nube', () => {
+  const r = unir({ units: { a2_3: { batches: [vieja({ images: ['foto'] })] } } }, { units: { a2_3: { batches: [regenerada({ images: [] })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.grammar[0].title, b.grammarVersion, b.images], ['Nueva', 3, ['foto']]);
+});
+
+test('una página que se está analizando aquí no la cambia la nube', () => {
+  const analizando = lote('p26', { images: ['foto'], grammar: [], vocab: [{ word: 'sing' }], analyzing: true, analyzingAt: ahora, grammarVersion: 2, generatedAt: 1000 });
+  const r = unir({ units: { a2_3: { batches: [analizando] } } }, { units: { a2_3: { batches: [vieja()] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.analyzing, b.grammar, b.images], [true, [], ['foto']]);
+  // Una que quedó marcada hace horas (la app se cerró a mitad) sí se une.
+  const colgada = { ...analizando, analyzingAt: ahora - 3 * 60 * 60 * 1000 };
+  const r2 = unir({ units: { a2_3: { batches: [colgada] } } }, { units: { a2_3: { batches: [vieja()] } } });
+  assert.equal(r2.units.a2_3.batches[0].grammar[0].title, 'Vieja');
+});
+
+test('una página analizada aquí que en la nube quedó vacía trae sus tarjetas', () => {
+  const r = unir({ units: { a2_3: { batches: [regenerada({ vocab: [{ word: 'feel' }] })] } } },
+    { units: { a2_3: { batches: [lote('p26', { vocab: [], grammar: [], analyzing: true })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.vocab, b.analyzing, b.grammar[0].title], [[{ word: 'feel' }], undefined, 'Nueva']);
+});
