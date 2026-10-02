@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02r -->
+<!-- DEVLEARN_BUILD: 2026-10-02s -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4946,7 +4946,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02r';
+const APP_BUILD = '2026-10-02s';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6852,6 +6852,12 @@ function migrateState(s) {
   if (!merged._u3P33ExtrasV1 && addU3P33Extras(merged.units)) merged._u3P33ExtrasV1 = true;
   if (!merged._u3P34ExtrasV1 && addU3P34Extras(merged.units)) merged._u3P34ExtrasV1 = true;
   if (!merged._u3P35ExtrasV1 && addU3P35Extras(merged.units)) merged._u3P35ExtrasV1 = true;
+  if (!merged._u3P27FixV1 && fixU3P27(merged.units)) merged._u3P27FixV1 = true;
+  if (!merged._u3P29FixV1 && fixU3P29(merged.units)) merged._u3P29FixV1 = true;
+  if (!merged._u3P31FixV1 && fixU3P31(merged.units)) merged._u3P31FixV1 = true;
+  if (!merged._u3P32FixV1 && fixU3P32(merged.units)) merged._u3P32FixV1 = true;
+  if (!merged._u3P34FixV1 && fixU3P34(merged.units)) merged._u3P34FixV1 = true;
+  if (!merged._u3P35FixV1 && fixU3P35(merged.units)) merged._u3P35FixV1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -7755,6 +7761,81 @@ function addU3P35Extras(units) {
       a: "I can cook pretty well. I don't have natural ability, but I practice a lot. I cook every day." },
     { q: 'What percentage do you give to each factor?', es: '¿Qué porcentaje le das a cada factor?',
       a: 'For playing a musical instrument: motivation 40%, practice 50%, and natural ability 10%.' },
+  ] });
+}
+
+/* ── Unit 3: correcciones de la gramática regenerada (2 de octubre) ─────────
+ * Regeneró las 8 páginas viejas y salieron bien, salvo esto. Las que tocan
+ * la gramática nueva solo marcan su bandera si la página ya está en v3 en este
+ * aparato: si aquí sigue la de mayo, la corrección se intenta otra vez cuando
+ * llegue la nueva por la nube. */
+function u3Regenerada(units, id) {
+  const b = ((units && units.a2_3 && units.a2_3.batches) || []).find(x => x && x.id === id);
+  return !!b && (b.grammarVersion || 0) >= 3;
+}
+
+/* p. 27: "He's doing great" no está en la página; Coral dice otra cosa. */
+function fixU3P27(units) {
+  return fixBookPage(units, { unit: 'a2_3', id: 'b_1790971568380_jwaq57', cambios: [
+    { word: "How's Ben doing?", example: "He's doing great. He can play three instruments now.",
+      set: { example: 'Ben? He can play three instruments now: piano, guitar, and violin.' } },
+  ] });
+}
+
+/* p. 29: la conversación salía dos veces en el speaking (practicarla y
+ * repetirla con otro compañero). */
+function fixU3P29(units) {
+  fixPageContent(units, { unit: 'a2_3', id: u3Lote(29), cambios: [['Change partners. Role-play the conversation again.', null]] });
+  return u3Regenerada(units, u3Lote(29));
+}
+
+/* p. 31: lo mismo en el speaking; y "discuss" no es "discutir" (en Colombia
+ * es pelear). */
+function fixU3P31(units) {
+  fixBookPage(units, { unit: 'a2_3', id: u3Lote(31), cambios: [
+    { word: 'discuss', set: { translation: 'hablar de, conversar sobre' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_3', id: u3Lote(31), cambios: [
+    ['Change partners. Role-play the conversation again. Discuss other ailments. Give other advice.', null],
+  ] });
+  return u3Regenerada(units, u3Lote(31));
+}
+
+/* p. 32: la cita de Bruce es mañana ("I don't think you can learn to dance in
+ * the next 24 hours"), no en una semana; el partido es de Ruby; y la sopa no
+ * "pone feliz" a Ruby en ninguna parte de la lectura. */
+function fixU3P32(units) {
+  fixPageContent(units, { unit: 'a2_3', id: u3Lote(32), cambios: [
+    ['Bruce has one week before the date. He can go to dance school and take a crash __.',
+     'Then you can go to dance school and take a crash __ so you can learn really fast.'],
+    ['El partido de mañana pone emocionado a Bruce.', 'El partido de mañana pone emocionada a Ruby.'],
+    ['The game tomorrow makes Bruce excited.', 'The game tomorrow makes Ruby excited.'],
+  ] });
+  fixGrammarTopic(units, { unit: 'a2_3', id: u3Lote(32) }, 'Make + person + adjective', g => {
+    g.examples = (g.examples || []).filter(e => !(e && e.en === 'Hot chicken soup makes Ruby happy.'));
+  });
+  return u3Regenerada(units, u3Lote(32));
+}
+
+/* p. 34: el tema "too + adjective + to" usaba de ejemplo "People can be too
+ * old to learn a language", una de las frases de verdadero o falso del
+ * ejercicio de escucha (según el Dr. Meyer, falsa). Y "directions" aquí son
+ * instrucciones o indicaciones, no "direcciones". */
+function fixU3P34(units) {
+  fixBookPage(units, { unit: 'a2_3', id: u3Lote(34), cambios: [
+    { word: 'directions', example: 'Can you give me directions to the library?',
+      set: { translation: 'instrucciones, indicaciones', exampleTranslation: '¿Me puedes indicar cómo llegar a la biblioteca?' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_3', id: u3Lote(34),
+    quitarGramatica: ['Too + adjective + to + base verb'],
+    quitarEjercicios: ['Find and correct the mistake: She is too old for learn the piano.'] });
+  return u3Regenerada(units, u3Lote(34));
+}
+
+/* p. 35: "Practico cocina cada día" no suena a español. */
+function fixU3P35(units) {
+  return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
+    { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
   ] });
 }
 
@@ -23377,7 +23458,7 @@ function newerContentFromBackup(cur, backup) {
 function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU1P1, fixU1P2, fixU1P3, fixU1P4, fixU1P5, fixU1P6, fixU1P7, fixU1P8, fixU1P9, fixU1P10, fixU1P11,
    addU1P1Extras, addU1P2Extras, addU1P3Extras, addU1P4Extras, addU1P5Extras, addU1P6Extras, addU1P7Extras, addU1P8Extras, addU1P9Extras, addU1P10Extras, addU1P11Extras,
-   fixU3Order, addU3P26Extras, addU3P29Extras, addU3P30Extras, addU3P31Extras, addU3P32Extras, addU3P33Extras, addU3P34Extras, addU3P35Extras,
+   fixU3Order, addU3P26Extras, addU3P29Extras, addU3P30Extras, addU3P31Extras, addU3P32Extras, addU3P33Extras, addU3P34Extras, addU3P35Extras, fixU3P27, fixU3P29, fixU3P31, fixU3P32, fixU3P34, fixU3P35,
    fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,

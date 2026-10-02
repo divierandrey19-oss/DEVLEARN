@@ -213,7 +213,11 @@ palabra, y lo que la unidad ya tiene no se repite.
 páginas y el 2 de octubre agregó las que faltaban (25, 27, 28), que quedaron
 al final. `fixU3Order` las ordena por número en cada arranque, sin bandera:
 la nube junta los lotes en el orden que trae, y una copia vieja las volvería a
-desordenar. Y las 8 páginas viejas reciben sus preguntas (`addPageExtras`).
+desordenar. Y las 8 páginas viejas reciben sus preguntas (`addPageExtras`). Después las regeneró
+(gramática v3) y `fixU3P27`…`fixU3P35` corrigen lo que salió mal: la cita de Bruce
+"en una semana" (es mañana), un tema hecho con una frase falsa del audio, la
+conversación repetida en el speaking y tres traducciones. Las que tocan la
+gramática nueva solo marcan su bandera si la página ya está en v3 en ese aparato.
 
 `u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
