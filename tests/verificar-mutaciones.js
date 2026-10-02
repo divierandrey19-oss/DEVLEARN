@@ -552,6 +552,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,
   },
+  {
+    nombre: 'volver a forzar en el prompt la forma impresa ("I like a basketball game")',
+    buscar: `Otherwise write a short, natural \${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",`,
+    reemplazo: `Otherwise write a short \${levelName} sentence using ONLY words printed on these pages",`,
+  },
+  {
+    nombre: 'que la corrección de la p. 14 (Unit 2) no corra al arrancar',
+    buscar: `  if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'un ejemplo de la Unit 2 con una palabra que la página no imprime',
+    buscar: `set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
+    reemplazo: `set: { example: 'I like basketball games a lot.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

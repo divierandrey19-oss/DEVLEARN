@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01h -->
+<!-- DEVLEARN_BUILD: 2026-10-02a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4903,7 +4903,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01h';
+const APP_BUILD = '2026-10-02a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5242,6 +5242,12 @@ can't just keep doing things the same way"; an example "you just have to keep do
 things the same way" teaches the OPPOSITE of the book. If the sentence is too long,
 use a shorter sentence from the page, or copy only a part that keeps its meaning.
 
+When NO sentence on the page uses the word, write one a native speaker would really
+say, built from the page's words. You may change their form (plural, verb ending) to
+make it natural, but do not bring in a new topic. Never keep the printed form at the
+cost of odd English: the page prints "a basketball game", and "I like a basketball
+game" is wrong — "I like basketball games" is what people say about things in general.
+
 ━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
 
 Textbooks flag what they are teaching. Treat every marked item as target language and
@@ -5269,7 +5275,7 @@ Among the words that ARE on the page, prefer these over incidental text.
       "phonetic": "/IPA/",
       "type": "noun|verb|phrasal verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
-      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
+      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short, natural ${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",
       "exampleTranslation": "Spanish translation of example",
       "difficulty": "easy|medium|hard"
     }
@@ -6722,6 +6728,7 @@ function migrateState(s) {
   if (!merged._u10P111QuestionsV1 && addU10P111Questions(merged.units)) merged._u10P111QuestionsV1 = true;
   if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
+  if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
   // las demás correcciones buscan la página por su número.
   if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
@@ -6882,6 +6889,17 @@ function fixU10P111(units) {
       phonetic: '/tɛl ju wʌt/', emoji: '💡',
       example: "Tell you what... Call me when you're done, and I'll come pick you up.",
       exampleTranslation: 'Te propongo algo... Llámame cuando termines y paso a recogerte.' } },
+  ] });
+}
+
+/* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
+ * copiar, el prompt pedía usar solo palabras impresas, y salió "I like a
+ * basketball game" (la página dice "a basketball game"), que no es como se
+ * habla de algo en general. La tarjeta no cambia de nombre: su progreso queda. */
+function fixU2P14(units) {
+  return fixBookPage(units, { unit: 'a2_2', page: 14, marca: ['no opinion', "What's more your style?"], cambios: [
+    { word: 'like', example: 'I like a basketball game.',
+      set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' } },
   ] });
 }
 
@@ -21682,7 +21700,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, fixU2P14,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,

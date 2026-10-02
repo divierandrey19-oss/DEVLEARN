@@ -89,7 +89,9 @@ pp. 109-111: la trampa del español solo si es real, la frase de contexto de un
 completar sigue la misma situación, como mucho dos temas "derived" en una página
 que no enseña gramática, y nada de lo que escribe puede contradecir el libro.
 La explicación y la trampa de la gramática van en español (con Opus, la p. 112
-salió con ambas en inglés porque el prompt no decía el idioma).
+salió con ambas en inglés porque el prompt no decía el idioma). Y si la página no
+trae una frase con la palabra, el ejemplo tiene que ser inglés natural aunque cambie
+la forma impresa (en la p. 14 de la Unit 2 salió "I like a basketball game").
 
 `u10-p110-fix.test.js` — La corrección única de la p. 110 (Unit 10), hecha
 comparando su respaldo con la foto: ningún ejemplo al revés del libro,
@@ -157,6 +159,12 @@ un ejercicio o de un audio tomadas como hechos, un dato del plano al revés
 (Children's), sweatshirt = buzo y ground floor = primer piso. Todo ejemplo nuevo
 está en la transcripción de su página; las repetidas se unen pasando el progreso,
 y solo si la que queda está en el aparato.
+
+`u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
+(era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
+el ejemplo "I like a basketball game": la página solo imprime "= like", y el
+prompt obligaba a usar las palabras tal como estaban impresas. Ahora dice "I like
+basketball games", armado con palabras de la página, sin quitarle el progreso.
 
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la
