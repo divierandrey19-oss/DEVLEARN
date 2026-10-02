@@ -103,3 +103,88 @@ test('sin la página, nada (y no marca la bandera)', () => {
     assert.match(h.extraerFuncion('applyPageFixes'), new RegExp(`\\baddU3P${n}Extras\\b`));
   }
 });
+
+// ── Correcciones de la gramática regenerada (2 de octubre) ────────────────
+const F = ['loteDeLaCorreccion', 'moverProgreso', 'fixBookPage', 'fixPageContent', 'fixGrammarTopic', 'u3Lote', 'u3Regenerada',
+  'fixU3P27', 'fixU3P29', 'fixU3P31', 'fixU3P32', 'fixU3P34', 'fixU3P35'];
+const g = h.ejecutar(`${F.map(n => h.extraerFuncion(n)).join('\n')}
+  return { ${F.join(', ')} };`, {});
+const P27 = 'b_1790971568380_jwaq57';
+const IMPRESO_32 = `Then you can go to dance school and take a crash course so you can learn really fast.`;
+const IMPRESO_27 = `Coral: Ben? He can play three instruments now: piano, guitar, and violin.`;
+
+function regenerada(gv = 3) {
+  const w = (word, example, extra = {}) => ({ word, translation: 't', example, exampleTranslation: 'e', ...extra });
+  return { a2_3: { fcProgress: { discuss: { interval: 58 } }, batches: [
+    { id: P27, pages: [27], vocab: [w("How's Ben doing?", "He's doing great. He can play three instruments now.", { type: 'question' })] },
+    { id: g.u3Lote(29), pages: [29], grammarVersion: gv, speakingPrompts: ['Role-play the conversation. Say why you need to find someone with a particular ability. Then change roles.',
+      'Change partners. Role-play the conversation again.'] },
+    { id: g.u3Lote(31), pages: [31], grammarVersion: gv, vocab: [w('discuss', "Let's discuss the homework with the teacher.", { translation: 'discutir, hablar sobre' })],
+      speakingPrompts: ['Give more advice, using should or shouldn\'t.', 'Change partners. Role-play the conversation again. Discuss other ailments. Give other advice.'] },
+    { id: g.u3Lote(32), pages: [32], grammarVersion: gv,
+      grammar: [{ title: 'Make + person + adjective',
+        examples: [{ en: "I don't want to make her sad and ruin our first date.", es: 'x' }, { en: 'Hot chicken soup makes Ruby happy.', es: 'y' }],
+        drillSentences: [{ type: 'translation', prompt: 'El partido de mañana pone emocionado a Bruce.', answer: 'The game tomorrow makes Bruce excited.' }] }],
+      exercises: [{ type: 'fill_blank', question: 'Bruce has one week before the date. He can go to dance school and take a crash __.', answer: 'course' }] },
+    { id: g.u3Lote(34), pages: [34], grammarVersion: gv,
+      vocab: [w('directions', 'Can you give me directions to the library?', { translation: 'instrucciones, direcciones', exampleTranslation: '¿Puedes darme direcciones a la biblioteca?' })],
+      grammar: [{ title: "It's hard to + base verb" }, { title: 'Too + adjective + to + base verb', examples: [{ en: 'People can be too old to learn a language.' }] }],
+      exercises: [{ question: 'Find and correct the mistake: She is too old for learn the piano.' }, { question: 'Look at the __ . A man tells his dog, "Roll over!"' }] },
+    { id: g.u3Lote(35), pages: [35], vocab: [w('cooking', 'I practice cooking every day.', { exampleTranslation: 'Practico cocina cada día.' })] },
+  ] } };
+}
+const pag = (units, n) => units.a2_3.batches.find(b => b.pages[0] === n);
+const todas = units => { for (const n of [27, 29, 31, 32, 34, 35]) assert.equal(g[`fixU3P${n}`](units), true, `p. ${n}`); };
+
+test('p. 32: la cita de Bruce es mañana, el partido es de Ruby, y la sopa no está en la lectura', () => {
+  const units = regenerada(); todas(units);
+  const p = pag(units, 32);
+  assert.equal(p.exercises[0].question, 'Then you can go to dance school and take a crash __ so you can learn really fast.');
+  assert.ok(IMPRESO_32.includes(p.exercises[0].question.replace('__', 'course')), 'la frase está impresa en la página');
+  assert.deepEqual(p.grammar[0].examples.map(e => e.en), ["I don't want to make her sad and ruin our first date."]);
+  assert.deepEqual([p.grammar[0].drillSentences[0].prompt, p.grammar[0].drillSentences[0].answer],
+    ['El partido de mañana pone emocionada a Ruby.', 'The game tomorrow makes Ruby excited.']);
+});
+
+test('p. 34: fuera el tema que salía de una frase falsa del ejercicio de escucha', () => {
+  const units = regenerada(); todas(units);
+  const p = pag(units, 34);
+  assert.deepEqual(p.grammar.map(x => x.title), ["It's hard to + base verb"]);
+  assert.deepEqual(p.exercises.map(e => e.question), ['Look at the __ . A man tells his dog, "Roll over!"']);
+  const d = p.vocab[0];
+  assert.deepEqual([d.translation, d.exampleTranslation], ['instrucciones, indicaciones', '¿Me puedes indicar cómo llegar a la biblioteca?']);
+});
+
+test('pp. 29 y 31: la conversación una sola vez en el speaking; discuss es "hablar de"', () => {
+  const units = regenerada(); todas(units);
+  assert.equal(pag(units, 29).speakingPrompts.length, 1);
+  assert.deepEqual(pag(units, 31).speakingPrompts, ["Give more advice, using should or shouldn't."]);
+  assert.equal(pag(units, 31).vocab[0].translation, 'hablar de, conversar sobre');
+  assert.deepEqual(units.a2_3.fcProgress.discuss, { interval: 58 }, 'el progreso no se toca');
+});
+
+test('p. 27 y p. 35: la respuesta de Coral, impresa; y "practico la cocina"', () => {
+  const units = regenerada(); todas(units);
+  const ben = pag(units, 27).vocab[0].example;
+  assert.equal(ben, 'Ben? He can play three instruments now: piano, guitar, and violin.');
+  assert.ok(IMPRESO_27.includes(ben));
+  assert.equal(pag(units, 35).vocab[0].exampleTranslation, 'Practico la cocina todos los días.');
+});
+
+test('con la gramática de mayo en este aparato, la corrección no marca su bandera (se reintenta)', () => {
+  const units = regenerada(2);
+  for (const n of [29, 31, 32, 34]) assert.equal(g[`fixU3P${n}`](units), false, `p. ${n}`);
+  assert.equal(pag(units, 31).vocab[0].translation, 'hablar de, conversar sobre', 'lo que no depende de la regeneración sí se corrige');
+  for (const n of [27, 29, 31, 32, 34, 35]) assert.equal(g[`fixU3P${n}`]({}), false);
+});
+
+test('correrlas otra vez no cambia nada; el arranque y la restauración las corren', () => {
+  const units = regenerada(); todas(units);
+  const una = JSON.stringify(units); todas(units);
+  assert.equal(JSON.stringify(units), una);
+  const migrar = h.extraerFuncion('migrateState');
+  for (const n of [27, 29, 31, 32, 34, 35]) {
+    assert.match(migrar, new RegExp(`if \\(!merged\\._u3P${n}FixV1 && fixU3P${n}\\(merged\\.units\\)\\) merged\\._u3P${n}FixV1 = true;`));
+    assert.match(h.extraerFuncion('applyPageFixes'), new RegExp(`\\bfixU3P${n}\\b`));
+  }
+});

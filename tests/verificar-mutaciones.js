@@ -713,6 +713,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  return ['vocab', 'grammar', 'exercises', 'speakingPrompts', 'grammarVersion', 'generatedAt', 'topics', 'title',`,
   },
   {
+    nombre: 'que la cita de Bruce siga siendo "en una semana"',
+    buscar: `    ['Bruce has one week before the date. He can go to dance school and take a crash __.',\n`,
+    reemplazo: `    ['(no está)',\n`,
+  },
+  {
+    nombre: 'que el tema que sale de una frase falsa del audio se quede (p. 34)',
+    buscar: `    quitarGramatica: ['Too + adjective + to + base verb'],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que las correcciones de la gramática nueva marquen su bandera con la gramática de mayo',
+    buscar: `  return !!b && (b.grammarVersion || 0) >= 3;`,
+    reemplazo: `  return !!b;`,
+  },
+  {
     nombre: 'que la Unit 3 no se ordene al abrir la app',
     buscar: `  fixU3Order(merged.units);\n`,
     reemplazo: ``,
