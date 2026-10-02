@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02j -->
+<!-- DEVLEARN_BUILD: 2026-10-02l -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4927,7 +4927,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02j';
+const APP_BUILD = '2026-10-02l';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11866,7 +11866,7 @@ function renderImagePreviews(images) {
     return;
   }
   grid.style.display = 'grid';
-  grid.innerHTML = (images || []).map((imgObj, i) => {
+  grid.innerHTML = photosInBookOrder(images, u).map(({ img: imgObj, i }) => {
     const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
     const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
@@ -12049,6 +12049,15 @@ function askMovePagePhoto(fromId, src, toId) {
   });
 }
 
+/* Las fotos en el orden del libro: él les pone el número (p. 5) y quiere
+ * verlas en ese puesto. Las que no tienen número van después, como estaban.
+ * Cada una conserva su índice original, que es el que usa la ✕. */
+function photosInBookOrder(images, u) {
+  const paginas = new Map(((u && u.batches) || []).map(b => [b.id, sanitizePageNumbers(b.pages)[0]]));
+  return (images || []).map((img, i) => ({ img, i, p: paginas.get(img && img.batchId) }))
+    .sort((x, y) => (x.p == null) - (y.p == null) || (x.p || 0) - (y.p || 0) || x.i - y.i);
+}
+
 /* Las páginas que se subieron sin foto (Units 1 y 3 a 6, de antes de guardar
  * las fotos). Sin foto no se pueden revisar contra el libro ni regenerar. Los
  * lotes hechos a mano (phrasal verbs, pv_*) no son una página del libro. */
@@ -12135,6 +12144,11 @@ function openPageSheet(batchId) {
           <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
         </label>` : ''}
       ${(b.images || []).length && !String(b.id || '').startsWith('pv_') ? `
+        <div style="display:flex;gap:8px;align-items:center;margin:-2px 0 8px;">
+          <input id="ps-page-edit" type="number" inputmode="numeric" min="1" max="999" placeholder="Page in the book" value="${escapeHtml(String((b.pages || [])[0] || ''))}"
+            style="flex:1;min-width:0;padding:9px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;">
+          <button class="btn btn-ghost" style="flex-shrink:0;" onclick="setPageNumber('${escapeStr(batchId)}')">✏️ Save page</button>
+        </div>
         <label style="display:block;text-align:center;font-size:0.75rem;color:var(--text-3);margin:-4px 0 10px;cursor:pointer;">🔄 Wrong photo? Change it (your cards stay the same)
           <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
         </label>` : ''}
@@ -12214,6 +12228,33 @@ function removeUnitImage(i) {
       updateNavBadges();
     }
   });
+}
+
+/* Cambiar el número de página de una página que ya tiene foto: él había
+ * escrito "10" en una foto que en el libro dice "UNIT 1 · 7". El número que
+ * él pone es el de la foto (pagesByHand): viaja con ella si la intercambia.
+ * Vacío, quita el número. */
+function setPageNumber(batchId) {
+  const u = getUnit(current.lid, current.uid);
+  const b = (u?.batches || []).find(x => x.id === batchId);
+  if (!b) return false;
+  const campo = document.getElementById('ps-page-edit');
+  const crudo = String((campo && campo.value) || '').trim();
+  const pagina = sanitizePageNumbers([crudo]);
+  if (crudo && !pagina.length) { toast('Write only the page number, e.g. 7'); return false; }
+  const antes = { pages: b.pages, pagesByHand: b.pagesByHand };
+  if (pagina.length) { b.pages = pagina; b.pagesByHand = true; }
+  else { delete b.pages; delete b.pagesByHand; }
+  if (!writeState()) {
+    if (antes.pages) b.pages = antes.pages; else delete b.pages;
+    if (antes.pagesByHand) b.pagesByHand = true; else delete b.pagesByHand;
+    toast('⚠️ Could not save — free up space and try again');
+    return false;
+  }
+  renderImagePreviews(getUnitImages(u));
+  openPageSheet(batchId);
+  toast(pagina.length ? `✏️ Saved as p. ${pagina[0]}` : 'Page number removed');
+  return true;
 }
 
 /* Quita la foto de una página sin tocar sus tarjetas, gramática ni progreso.
