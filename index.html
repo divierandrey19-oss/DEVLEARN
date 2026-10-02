@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02u -->
+<!-- DEVLEARN_BUILD: 2026-10-02v -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4744,14 +4744,18 @@ function allBatchIds(st) {
  */
 window._recordSyncedBatchIds = function(ids) {
   state.syncedBatchIds = Array.from(new Set(ids || []));
-  saveNow();
+  // Con espera, como el resto: cada sincronización escribía el estado entero
+  // dos veces seguidas (esto y la hora de la nube), medio segundo cada una en
+  // el celular. Si la app se cierra antes, flushState lo guarda; y si ni eso,
+  // la próxima vez solo se vuelve a juntar con la nube, que es seguro.
+  save();
 };
 
 /** Server-time marker of the last cloud snapshot we reconciled with. */
 window._setCloudSeen = function(ms) {
   if (!ms) return;
   state.lastCloudSeen = ms;
-  saveNow();
+  save();
 };
 
 window._mergeCloudState = function(cloud) {
@@ -4946,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02u';
+const APP_BUILD = '2026-10-02v';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11733,18 +11737,24 @@ function toggleSidebar() {
 /* ============================================================
    THEME & LANGUAGE
    ============================================================ */
+/* Al arrancar se llaman con lo que ya está guardado: guardar entonces escribía
+ * todo el estado (2,5 MB con sus diez unidades) en cada apertura, y eso
+ * congelaba la app casi un segundo justo cuando él empezaba a tocar. Solo se
+ * guarda si de verdad cambió. */
 function setTheme(theme) {
+  const cambio = state.theme !== theme;
   state.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-light').classList.toggle('active', theme === 'light');
   document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
-  save();
+  if (cambio) save();
 }
 
 function setLang(lang) {
+  const cambio = state.lang !== lang;
   state.lang = lang;
   ['en', 'es', 'bi'].forEach(l => document.getElementById('lang-' + l).classList.toggle('active', l === lang));
-  save();
+  if (cambio) save();
   // re-render current view
   if (current.lid && current.uid) loadUnitContent();
   if (document.getElementById('page-vocab-all').classList.contains('active')) renderAllVocab();
@@ -22100,7 +22110,41 @@ function filterAllVocab(query) {
     return;
   }
 
-  grid.innerHTML = list.map(w => `
+  // Por tandas: dibujar las ~2900 tarjetas de una vez tardaba más de 4 segundos
+  // en un celular. Se pintan las primeras y el resto entra a medida que baja.
+  window._vocabList = list;
+  grid.innerHTML = '';
+  appendVocabChunk(grid, 0);
+}
+
+const VOCAB_CHUNK = 60;
+function appendVocabChunk(grid, desde) {
+  const list = window._vocabList || [];
+  const hasta = Math.min(list.length, desde + VOCAB_CHUNK);
+  const viejo = grid.querySelector('.vocab-more');
+  if (viejo) viejo.remove();
+  grid.insertAdjacentHTML('beforeend', list.slice(desde, hasta).map(vocabCardHtml).join(''));
+  if (hasta >= list.length) return;
+  const mas = document.createElement('button');
+  mas.className = 'vocab-more btn btn-ghost';
+  mas.style.cssText = 'grid-column:1/-1;margin:8px auto;';
+  mas.textContent = `Show more (${list.length - hasta} left)`;
+  mas.onclick = () => appendVocabChunk(grid, hasta);
+  grid.appendChild(mas);
+  // Sola, al acercarse al final; el botón queda por si el navegador no avisa.
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting) && mas.isConnected && window._vocabList === list) {
+        obs.disconnect();
+        appendVocabChunk(grid, hasta);
+      }
+    }, { rootMargin: '600px' });
+    obs.observe(mas);
+  }
+}
+
+function vocabCardHtml(w) {
+  return `
     <div class="vocab-card"${w.mine || w.heard ? ' style="border-style:dashed;"' : ''}>
       <div class="vocab-image">${w.emoji || '📝'}</div>
       <div class="vocab-word">${escapeHtml(w.word || '')}</div>
@@ -22112,7 +22156,7 @@ function filterAllVocab(query) {
         <span class="vocab-tag">${w.mine ? '✍️ mine' : w.heard ? '🎧 heard' : escapeHtml(w.type || 'word')}</span>
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 /* En qué tramo de la barra de Memory Review va una tarjeta — en uno solo.
@@ -25077,14 +25121,12 @@ const auth = getAuth(app);
 
 window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, serverTimestamp, GoogleAuthProvider, signInWithPopup, signOut };
 
+/* Sin las fotos. Antes era una copia completa (convertir todo a texto y de
+ * vuelta) solo para quitarlas, y después se convertía a texto otra vez para
+ * subirla: tres pasadas por 2,5 MB. stateWithoutImages() copia solo los lotes,
+ * y quien la usa la convierte a texto enseguida, antes de que nada cambie. */
 function getStateForSync() {
-  const s = JSON.parse(JSON.stringify(window._appState ? window._appState() : {}));
-  if (s.units) {
-    Object.values(s.units).forEach(unit => {
-      if (unit.batches) unit.batches.forEach(b => { b.images = []; });
-    });
-  }
-  return s;
+  return window.stateWithoutImages ? window.stateWithoutImages() : {};
 }
 
 let _isSyncing = false;

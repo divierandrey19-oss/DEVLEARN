@@ -947,6 +947,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `   ['_u7P82QV1', addU7P82Questions], ['_u7P83QV1', addU7P83Questions]]`,
     reemplazo: `   ['_u7P82QV1', addU7P82Questions]]`,
   },
+  {
+    nombre: 'volver a guardar todo el estado en cada apertura (setTheme)',
+    buscar: `  if (cambio) save();\n}`,
+    reemplazo: `  save();\n}`,
+  },
+  {
+    nombre: 'que la sincronización vuelva a escribir el estado de inmediato',
+    buscar: `  state.lastCloudSeen = ms;\n  save();`,
+    reemplazo: `  state.lastCloudSeen = ms;\n  saveNow();`,
+  },
+  {
+    nombre: 'que Vocabulary vuelva a dibujar las ~2900 tarjetas de una vez',
+    buscar: `  grid.insertAdjacentHTML('beforeend', list.slice(desde, hasta).map(vocabCardHtml).join(''));`,
+    reemplazo: `  grid.insertAdjacentHTML('beforeend', list.slice(desde).map(vocabCardHtml).join(''));`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

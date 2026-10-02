@@ -223,6 +223,13 @@ gramática nueva solo marcan su bandera si la página ya está en v3 en ese apar
 subió antes de que el análisis las hiciera). Las impresas llevan la respuesta del
 libro; las de su vida, la de sus textos de My life.
 
+`rendimiento.test.js` — La app se sentía lenta con sus datos reales (diez
+unidades, ~2900 palabras, 2,5 MB). Cada apertura guardaba el estado entero
+(setTheme y setLang guardaban sin cambios), cada sincronización lo escribía dos
+veces más de inmediato, y Vocabulary dibujaba todas las tarjetas de una vez
+(4,4 s en un celular). Ahora se guarda solo si cambió, la contabilidad de la
+nube espera al guardado normal, y Vocabulary va por tandas.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of
