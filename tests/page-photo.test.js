@@ -219,3 +219,44 @@ test('agregar: si la nube llegó mientras se comprimía la foto, se guarda en la
   assert.deepEqual(u.batches[0].images, ['data:image/jpeg;base64,p52-comprimida']);
   assert.deepEqual(vieja.images, [], 'no en la copia vieja');
 });
+
+// Él había escrito "10" en una foto que en el libro dice "UNIT 1 · 7", y la
+// hoja de una página con foto no dejaba cambiar el número.
+
+function montarNumero(valor, { guarda = true } = {}) {
+  const u = { batches: [{ id: 'b1', images: ['F'], pages: [10], pagesByHand: true, vocab: [{ word: 'accent' }] },
+                        { id: 'b2', images: ['G'], pages: [97], vocab: [] }] };
+  const hecho = { toasts: [], hojas: [] };
+  const f = h.ejecutar(`${['setPageNumber', 'sanitizePageNumbers'].map(n => h.extraerFuncion(n)).join('\n')}; return setPageNumber;`, {
+    current: { lid: 'a2', uid: 1 }, getUnit: () => u,
+    document: { getElementById: id => (id === 'ps-page-edit' ? { value: valor } : null) },
+    writeState: () => guarda, renderImagePreviews: () => {}, getUnitImages: () => [],
+    openPageSheet: id => hecho.hojas.push(id), toast: m => hecho.toasts.push(m),
+  });
+  return { u, f, hecho };
+}
+
+test('cambiar el número de una página con foto', () => {
+  const { u, f, hecho } = montarNumero('7');
+  assert.equal(f('b1'), true);
+  assert.deepEqual([u.batches[0].pages, u.batches[0].pagesByHand], [[7], true]);
+  assert.deepEqual(u.batches[0].vocab, [{ word: 'accent' }]);
+  assert.match(hecho.toasts[0], /p\. 7/);
+  // Una página analizada también: el número que él pone es el de su foto.
+  const otra = montarNumero('98');
+  otra.f('b2');
+  assert.deepEqual([otra.u.batches[1].pages, otra.u.batches[1].pagesByHand], [[98], true]);
+});
+
+test('vacío quita el número; basura no cambia nada; si no guarda, vuelve como estaba', () => {
+  const vacio = montarNumero('');
+  vacio.f('b1');
+  assert.equal(vacio.u.batches[0].pages, undefined);
+  const basura = montarNumero('p7a');
+  assert.equal(basura.f('b1'), false);
+  assert.deepEqual(basura.u.batches[0].pages, [10]);
+  const falla = montarNumero('7', { guarda: false });
+  assert.equal(falla.f('b1'), false);
+  assert.deepEqual([falla.u.batches[0].pages, falla.u.batches[0].pagesByHand], [[10], true]);
+  assert.match(h.extraerFuncion('openPageSheet'), /onclick="setPageNumber\('\$\{escapeStr\(batchId\)\}'\)">✏️ Save page<\/button>/);
+});

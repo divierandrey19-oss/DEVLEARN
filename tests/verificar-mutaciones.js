@@ -638,6 +638,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `          if (false) {`,
   },
   {
+    nombre: 'que cambiar el número de página no lo marque como escrito por él',
+    buscar: `  if (pagina.length) { b.pages = pagina; b.pagesByHand = true; }\n  else { delete b.pages; delete b.pagesByHand; }`,
+    reemplazo: `  if (pagina.length) { b.pages = pagina; }\n  else { delete b.pages; delete b.pagesByHand; }`,
+  },
+  {
     nombre: 'que la cuadrícula no deje arrastrar fotos',
     buscar: `    </div>\`).join('');\n  enablePhotoDrag(grid);\n`,
     reemplazo: `    </div>\`).join('');\n`,
