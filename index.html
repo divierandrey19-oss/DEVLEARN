@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02p -->
+<!-- DEVLEARN_BUILD: 2026-10-02q -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4930,7 +4930,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02p';
+const APP_BUILD = '2026-10-02q';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6824,6 +6824,18 @@ function migrateState(s) {
   if (!merged._u1P9ExtrasV1 && addU1P9Extras(merged.units)) merged._u1P9ExtrasV1 = true;
   if (!merged._u1P10ExtrasV1 && addU1P10Extras(merged.units)) merged._u1P10ExtrasV1 = true;
   if (!merged._u1P11ExtrasV1 && addU1P11Extras(merged.units)) merged._u1P11ExtrasV1 = true;
+  // Sin bandera: ordenar no cambia nada si ya está en orden, y así una copia
+  // vieja de la nube (o de un aparato con la versión anterior) vuelve a quedar
+  // en el orden del libro cada vez que llega.
+  fixU3Order(merged.units);
+  if (!merged._u3P26ExtrasV1 && addU3P26Extras(merged.units)) merged._u3P26ExtrasV1 = true;
+  if (!merged._u3P29ExtrasV1 && addU3P29Extras(merged.units)) merged._u3P29ExtrasV1 = true;
+  if (!merged._u3P30ExtrasV1 && addU3P30Extras(merged.units)) merged._u3P30ExtrasV1 = true;
+  if (!merged._u3P31ExtrasV1 && addU3P31Extras(merged.units)) merged._u3P31ExtrasV1 = true;
+  if (!merged._u3P32ExtrasV1 && addU3P32Extras(merged.units)) merged._u3P32ExtrasV1 = true;
+  if (!merged._u3P33ExtrasV1 && addU3P33Extras(merged.units)) merged._u3P33ExtrasV1 = true;
+  if (!merged._u3P34ExtrasV1 && addU3P34Extras(merged.units)) merged._u3P34ExtrasV1 = true;
+  if (!merged._u3P35ExtrasV1 && addU3P35Extras(merged.units)) merged._u3P35ExtrasV1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -7404,9 +7416,12 @@ function fixU1P11(units) {
  * preguntas de cada página (la Unit 1 se subió antes de que existieran): primero
  * las que el libro imprime, con la respuesta del libro; después las que esa
  * página practica. Una que la unidad ya tiene no se repite. */
-function addU1Extras(units, n, { palabras = [], preguntas = [] }) {
-  const u = units && units.a2_1;
-  const b = u && (u.batches || []).find(x => x && x.id === u1Lote(n));
+/* Agrega a una página lo que le faltaba: palabras impresas que el análisis no
+ * sacó y preguntas para las flashcards. Lo que la unidad ya tiene no se
+ * repite, así que correrlo otra vez no cambia nada. */
+function addPageExtras(units, unitKey, batchId, { palabras = [], preguntas = [] }) {
+  const u = units && units[unitKey];
+  const b = u && (u.batches || []).find(x => x && x.id === batchId);
   if (!b) return false;
   const ya = new Set((u.batches || []).flatMap(x => (x && x.vocab) || []).map(v => vocabKey(v && v.word)));
   palabras.forEach(p => {
@@ -7416,6 +7431,10 @@ function addU1Extras(units, n, { palabras = [], preguntas = [] }) {
   });
   addQuestionCards(u, b, preguntas);
   return true;
+}
+
+function addU1Extras(units, n, extras) {
+  return addPageExtras(units, 'a2_1', u1Lote(n), extras);
 }
 
 function addU1P1Extras(units) {
@@ -7611,6 +7630,116 @@ function addU1P11Extras(units) {
         a: "Yes, I do. / No, I don't." },
     ],
   });
+}
+
+/* ── Unit 3 (su respaldo del 2 de octubre) ──────────────────────────────────
+ * En mayo subió 8 de las 11 páginas, y el 2 de octubre les puso la foto y
+ * subió las que faltaban (25, 27 y 28), que quedaron al final de la
+ * cuadrícula. Él pidió que quedaran en el orden del libro. Las 8 viejas se
+ * analizaron antes de que existieran las preguntas. */
+function u3Lote(pagina) {
+  return { 26: 'b_1779989085522_wc498d', 29: 'b_1779991308097_469fa2', 30: 'b_1779999214517_10q3on',
+    31: 'b_1779999631283_s6xipq', 32: 'b_1780462092760_qi3g65', 33: 'b_1780462290982_w3pu2e',
+    34: 'b_1780670963952_w6k0jj', 35: 'b_1781063401235_ihpcoz' }[pagina];
+}
+
+/* Las páginas de una unidad en el orden del libro, por su número. Las que no
+ * tienen número quedan al final, en el orden en que estaban; no se mueve
+ * ninguna foto ni tarjeta, solo el orden de los recuadros. */
+function ordenarPorPagina(units, unitKey) {
+  const u = units && units[unitKey];
+  if (!u || !(u.batches || []).length) return false;
+  const pagina = b => { const p = sanitizePageNumbers(b && b.pages); return p.length ? p[0] : Infinity; };
+  u.batches = u.batches.map((b, i) => ({ b, i }))
+    .sort((x, y) => (pagina(x.b) - pagina(y.b)) || (x.i - y.i))
+    .map(x => x.b);
+  return true;
+}
+
+function fixU3Order(units) {
+  return ordenarPorPagina(units, 'a2_3');
+}
+
+function addU3P26Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(26), { preguntas: [
+    { q: 'What can you do?', es: '¿Qué sabes hacer?', a: 'I can play the guitar. What about you?' },
+    { q: 'Can you play the piano?', es: '¿Sabes tocar el piano?', a: "Well, I can't play the guitar, but I can play the piano." },
+    { q: 'Can you speak French?', es: '¿Sabes hablar francés?', a: 'I can speak French. Listen: "Bonjour!" / Well, I can\'t speak French!' },
+    { q: 'Can you drive?', es: '¿Sabes manejar?', a: "Yes, I can. / No, I can't." },
+  ] });
+}
+
+function addU3P29Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(29), { preguntas: [
+    { q: 'What instruments can you play?', es: '¿Qué instrumentos sabes tocar?', a: 'The piano and the guitar.' },
+    { q: 'What can we make for dinner?', es: '¿Qué podemos hacer de comida?', a: 'How about eggs and rice?' },
+    { q: 'When can she go to the bank?', es: '¿Cuándo puede ir ella al banco?', a: 'I think she can go at 4:00.' },
+    { q: "Why can't we go swimming today?", es: '¿Por qué no podemos ir a nadar hoy?', a: 'Because the weather is too cold.' },
+    { q: 'Who can speak English?', es: '¿Quién sabe hablar inglés?', a: 'We all can!' },
+    { q: "What's up?", es: '¿Qué pasa? (para responder a alguien que pide ayuda)',
+      a: "Well, I'm meeting a French colleague today, and I need to find someone who can speak French. Can you?" },
+  ] });
+}
+
+function addU3P30Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(30), { preguntas: [
+    { q: 'Do you ever have a headache at work?', es: '¿Alguna vez te da dolor de cabeza en el trabajo?', a: 'I sometimes have a headache at work.' },
+    { q: 'How do you feel right now?', es: '¿Cómo te sientes ahora?', a: 'Right now I have a backache.' },
+    { q: 'How often do you have a cold?', es: '¿Qué tan seguido te da gripa?', a: 'I never have a cold.' },
+    { q: 'I have a bad cold. What should I do?', es: 'Tengo mucha gripa. ¿Qué debería hacer?', a: 'You should drink some hot tea.' },
+  ] });
+}
+
+function addU3P31Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(31), { preguntas: [
+    { q: "You don't look so good. What's wrong?", es: 'No te ves muy bien. ¿Qué te pasa?',
+      a: 'Actually, I feel horrible. I have a headache and a sore throat.' },
+    { q: 'What should I do?', es: '¿Qué debería hacer?', a: 'You should take something.' },
+    { q: 'Should I go to work?', es: '¿Debería ir a trabajar?', a: "No, you shouldn't go to work. You should go home and rest." },
+    { q: "What's the advice?", es: '¿Cuál es el consejo?', a: 'He should stay home and rest.' },
+  ] });
+}
+
+function addU3P32Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(32), { preguntas: [
+    { q: 'When do you feel excited?', es: '¿Cuándo te sientes emocionado?', a: 'I feel excited when I see my favorite team play soccer.' },
+    { q: 'Should Ruby play tomorrow?', es: '¿Ruby debería jugar mañana?', a: "No, she shouldn't. She should rest." },
+    { q: "What's Bruce's problem?", es: '¿Cuál es el problema de Bruce?', a: "He can't dance, and Daisy wants to go to the Dance Palace." },
+    { q: 'What should Bruce do?', es: '¿Qué debería hacer Bruce?', a: 'He should tell Daisy the truth and ask her to teach him to dance.' },
+  ] });
+}
+
+function addU3P33Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(33), { preguntas: [
+    { q: "So how do you feel when you're home with no plans?", es: '¿Y cómo te sientes cuando estás en la casa sin planes?', a: 'Me? I feel sad.' },
+    { q: 'Your friend invites you to take a dance lesson. How do you feel?', es: 'Tu amigo te invita a una clase de baile. ¿Cómo te sientes?',
+      a: 'I feel excited. / I feel scared.' },
+    { q: 'You get a new job in a different city. How do you feel?', es: 'Te sale un trabajo nuevo en otra ciudad. ¿Cómo te sientes?',
+      a: 'I feel happy and excited.' },
+    { q: 'How old is Ruby?', es: '¿Cuántos años tiene Ruby?', a: "She's 13 years old. Her mom says, 'My 13-year-old daughter, Ruby...'" },
+  ] });
+}
+
+function addU3P34Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(34), { preguntas: [
+    { q: 'What does "You can\'t teach an old dog new tricks" mean?', es: '¿Qué significa "You can\'t teach an old dog new tricks"?',
+      a: "It's hard to learn new things when you're not young." },
+    { q: 'Do you know a proverb with a similar meaning?', es: '¿Conoces un refrán con un significado parecido?',
+      a: 'Yes. In Spanish we say "Loro viejo no aprende a hablar."' },
+    { q: 'What are the three factors that help people develop new abilities?', es: '¿Cuáles son los tres factores que ayudan a desarrollar habilidades nuevas?',
+      a: 'Motivation, practice, and natural ability.' },
+  ] });
+}
+
+function addU3P35Extras(units) {
+  return addPageExtras(units, 'a2_3', u3Lote(35), { preguntas: [
+    { q: 'In your opinion, what makes a person successful in developing an ability?',
+      es: 'En tu opinión, ¿qué hace que una persona tenga éxito al desarrollar una habilidad?', a: 'Practice is the most important factor.' },
+    { q: 'Can you cook?', es: '¿Sabes cocinar?',
+      a: "I can cook pretty well. I don't have natural ability, but I practice a lot. I cook every day." },
+    { q: 'What percentage do you give to each factor?', es: '¿Qué porcentaje le das a cada factor?',
+      a: 'For playing a musical instrument: motivation 40%, practice 50%, and natural ability 10%.' },
+  ] });
 }
 
 /* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
@@ -23203,6 +23332,7 @@ function missingBatchesFromBackup(cur, backup) {
 function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU1P1, fixU1P2, fixU1P3, fixU1P4, fixU1P5, fixU1P6, fixU1P7, fixU1P8, fixU1P9, fixU1P10, fixU1P11,
    addU1P1Extras, addU1P2Extras, addU1P3Extras, addU1P4Extras, addU1P5Extras, addU1P6Extras, addU1P7Extras, addU1P8Extras, addU1P9Extras, addU1P10Extras, addU1P11Extras,
+   fixU3Order, addU3P26Extras, addU3P29Extras, addU3P30Extras, addU3P31Extras, addU3P32Extras, addU3P33Extras, addU3P34Extras, addU3P35Extras,
    fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,

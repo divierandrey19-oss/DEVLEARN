@@ -15,7 +15,7 @@ const assert = require('node:assert/strict');
 const h = require('./harness.js');
 
 const PAGINAS = Array.from({ length: 11 }, (_, i) => i + 1);
-const NOMBRES = ['vocabKey', 'questionCard', 'addQuestionCards', 'u1Lote', 'addU1Extras', ...PAGINAS.map(n => `addU1P${n}Extras`)];
+const NOMBRES = ['vocabKey', 'questionCard', 'addQuestionCards', 'u1Lote', 'addPageExtras', 'addU1Extras', ...PAGINAS.map(n => `addU1P${n}Extras`)];
 const f = h.ejecutar(`${NOMBRES.map(n => h.extraerFuncion(n)).join('\n')}
   return { ${NOMBRES.join(', ')} };`, {});
 

@@ -204,6 +204,12 @@ análisis las hiciera; tenía 0) y 17 palabras y expresiones impresas que el
 análisis de julio no sacó. Los ejemplos se copian de la página palabra por
 palabra, y lo que la unidad ya tiene no se repite.
 
+`u3.test.js` — La Unit 3 en el orden del libro. En mayo subió 8 de sus 11
+páginas y el 2 de octubre agregó las que faltaban (25, 27, 28), que quedaron
+al final. `fixU3Order` las ordena por número en cada arranque, sin bandera:
+la nube junta los lotes en el orden que trae, y una copia vieja las volvería a
+desordenar. Y las 8 páginas viejas reciben sus preguntas (`addPageExtras`).
+
 `u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
 el ejemplo "I like a basketball game": la página solo imprime "= like", y el
