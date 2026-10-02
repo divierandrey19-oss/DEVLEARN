@@ -673,6 +673,31 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `    b.pages = [k];\n`,
   },
   {
+    nombre: 'que la Unit 3 no se ordene al abrir la app',
+    buscar: `  fixU3Order(merged.units);\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el orden de la Unit 3 lleve bandera (una copia vieja de la nube lo desordenaría)',
+    buscar: `  fixU3Order(merged.units);\n`,
+    reemplazo: `  if (!merged._u3OrderV1 && fixU3Order(merged.units)) merged._u3OrderV1 = true;\n`,
+  },
+  {
+    nombre: 'que al ordenar, las páginas sin número no queden al final',
+    buscar: `return p.length ? p[0] : Infinity; };`,
+    reemplazo: `return p.length ? p[0] : 0; };`,
+  },
+  {
+    nombre: 'que el orden no sea estable',
+    buscar: `    .sort((x, y) => (pagina(x.b) - pagina(y.b)) || (x.i - y.i))`,
+    reemplazo: `    .sort((x, y) => (pagina(x.b) - pagina(y.b)) || (y.i - x.i))`,
+  },
+  {
+    nombre: 'que las páginas viejas de la Unit 3 no reciban sus preguntas',
+    buscar: `  if (!merged._u3P31ExtrasV1 && addU3P31Extras(merged.units)) merged._u3P31ExtrasV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'que la Unit 1 no reciba sus preguntas al abrir la app',
     buscar: `  if (!merged._u1P6ExtrasV1 && addU1P6Extras(merged.units)) merged._u1P6ExtrasV1 = true;\n`,
     reemplazo: ``,
