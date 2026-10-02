@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02q -->
+<!-- DEVLEARN_BUILD: 2026-10-02r -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4524,7 +4524,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         </button>
         <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="restorePagesFromBackup(event)"/>
         <div style="font-size:0.72rem;color:var(--text-3);margin-top:4px;line-height:1.5;">
-          Only adds back the pages this device lost. Everything else stays as it is.
+          Only adds back the pages this device lost, and grammar that is newer in the backup. Your cards, progress and everything else stay as they are.
         </div>
       </div>
       <div style="margin-top:10px;">
@@ -4804,7 +4804,23 @@ window._mergeCloudState = function(cloud) {
       const localById = new Map((localUnit.batches || []).map(b => [b.id, b]));
       const cloudBatches = (cloudUnit.batches || []).map(cb => {
         const lb = localById.get(cb.id);
+        /* Una página que se está analizando aquí se queda como está, el mismo
+         * objeto: el análisis escribe su respuesta en él, y si la nube lo
+         * cambiaba por su copia, la respuesta caía en un objeto que la app ya
+         * no usaba. Él regeneró la p. 26 de la Unit 3, fue a mirar la consola,
+         * volvió, y la gramática nueva no estaba. */
+        // Solo mientras el análisis puede seguir vivo (corta a los 10 minutos):
+        // una página que quedó marcada porque la app se cerró a mitad sí se une.
+        if (lb && lb.analyzing && Date.now() - (lb.analyzingAt || 0) < 15 * 60 * 1000) { localById.delete(cb.id); return lb; }
         if (lb) {
+          /* Lo que el análisis genera gana si aquí es más reciente: una copia
+           * de la nube anterior a la regeneración volvía a poner la gramática
+           * vieja. Las tarjetas siguen viniendo de la nube, salvo que allá la
+           * página esté vacía (subida mientras se analizaba). */
+          if ((lb.generatedAt || 0) > (cb.generatedAt || 0)) {
+            generatedFields().forEach(k => { if (lb[k] !== undefined) cb[k] = lb[k]; else delete cb[k]; });
+            if (!(cb.vocab || []).length && (lb.vocab || []).length) cb.vocab = lb.vocab;
+          }
           cb.images = lb.images || [];   // re-attach THIS batch's own photos
           /* El número de página que él escribe gana si es el más reciente
            * (pagesAt). La nube traía siempre su copia: él ordenó la Unit 1
@@ -4930,7 +4946,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02q';
+const APP_BUILD = '2026-10-02r';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12603,6 +12619,7 @@ function handleUnitUpload(event) {
       createdAt: Date.now(),
       grammarVersion: GRAMMAR_VERSION, // version of the prompt used to generate
       analyzing: true,
+      analyzingAt: Date.now(),
     };
     u.batches.push(batch);
     // Photos go to IndexedDB; the state write below no longer carries them.
@@ -13094,6 +13111,7 @@ function retryBatchAnalysis(batchId) {
     return;
   }
   batch.analyzing = true;
+  batch.analyzingAt = Date.now();
   batch.failedAt  = null;
   saveNow();
   showAnalysisLoading(0);
@@ -13188,6 +13206,7 @@ async function regenerateBatchContent(lid, uid, batchId) {
 
   // Mark as regenerating (keep vocab and images)
   batch.analyzing = true;
+  batch.analyzingAt = Date.now();
   batch.grammar   = [];
   batch.exercises = [];
   batch.speakingPrompts = [];
@@ -23325,6 +23344,32 @@ function missingBatchesFromBackup(cur, backup) {
   return faltan;
 }
 
+/* Lo que el análisis genera en una página (no las tarjetas, las fotos ni el
+ * número): lo que la nube o un respaldo pueden traer más nuevo. Una función y
+ * no una constante, porque la unión con la nube corre desde el arranque. */
+function generatedFields() {
+  return ['grammar', 'exercises', 'speakingPrompts', 'grammarVersion', 'generatedAt', 'topics', 'title',
+          'description', 'analyzing', 'failedAt'];
+}
+
+/* Páginas que este aparato tiene, pero cuya gramática el respaldo trae más
+ * nueva (generatedAt). El 2 de octubre regeneró las 8 páginas viejas de la
+ * Unit 3, el otro aparato subió su copia vieja y la nube se las devolvió a la
+ * gramática de mayo; su respaldo de ese día sí las tenía. */
+function newerContentFromBackup(cur, backup) {
+  const out = [];
+  Object.entries((backup && backup.units) || {}).forEach(([key, bu]) => {
+    const aqui = new Map((((cur.units || {})[key] || {}).batches || []).filter(Boolean).map(b => [b.id, b]));
+    ((bu && bu.batches) || []).forEach(b => {
+      const mia = b && aqui.get(b.id);
+      if (mia && !b.analyzing && (b.grammar || []).length && (b.generatedAt || 0) > (mia.generatedAt || 0)) {
+        out.push({ unitKey: key, unit: bu, batch: b });
+      }
+    });
+  });
+  return out;
+}
+
 /* Corre todas las correcciones a mano de páginas. Cada una solo cambia textos
  * que siguen exactamente como los dejó el análisis, así que es seguro correrlas
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
@@ -23358,11 +23403,16 @@ function restorePagesFromBackup(event) {
     try { backup = JSON.parse(e.target.result); } catch (err) { backup = null; }
     if (!backup || !backup.units) { toast('Invalid backup file'); return; }
     const faltan = missingBatchesFromBackup(state, backup);
-    if (!faltan.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
+    const nuevas = newerContentFromBackup(state, backup);
+    if (!faltan.length && !nuevas.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
     const nombre = f => `Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
+    const partes = [];
+    if (faltan.length) partes.push(`Pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises.`);
+    if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${nuevas.map(nombre).join('\n• ')}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
+    const total = faltan.length + nuevas.length;
     confirmAction({
-      title: `Restore ${faltan.length} missing page${faltan.length !== 1 ? 's' : ''}?`,
-      message: `This backup has pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises. Nothing else changes.`,
+      title: `Restore ${total} page${total !== 1 ? 's' : ''}?`,
+      message: `${partes.join('\n\n')}\n\nNothing else changes.`,
       confirmText: '↺ Restore',
       onConfirm: () => {
         faltan.forEach(({ unit: bu, batch }) => {
@@ -23377,13 +23427,21 @@ function restorePagesFromBackup(event) {
           (copia.vocab || []).forEach(v => { if (v && prog[v.word] && !u.fcProgress[v.word]) u.fcProgress[v.word] = prog[v.word]; });
           if (!u.title && bu.title) u.title = bu.title;
         });
+        nuevas.forEach(({ unitKey, batch }) => {
+          // Se busca otra vez: si la nube llegó mientras el aviso estaba abierto,
+          // la página es otro objeto.
+          const aqui = (((state.units || {})[unitKey] || {}).batches || []).find(b => b && b.id === batch.id);
+          if (!aqui) return;
+          const copia = JSON.parse(JSON.stringify(batch));
+          generatedFields().forEach(k => { if (copia[k] !== undefined) aqui[k] = copia[k]; else delete aqui[k]; });
+        });
         applyPageFixes(state.units);
         state.stats.wordsLearned = countTotalWords();
         saveNow();
         if (current.lid && current.uid && document.getElementById('page-unit')?.classList.contains('active')) loadUnitContent();
         updateNavBadges();
         if (window._syncToFirestore) window._syncToFirestore();
-        toast(`✅ Restored: ${faltan.map(nombre).join(', ')}`);
+        toast(`✅ Restored: ${[...faltan, ...nuevas].map(nombre).join(', ')}`);
       },
     });
   };

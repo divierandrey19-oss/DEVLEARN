@@ -32,6 +32,7 @@ function unir(local, nube) {
   const window = {};
   h.ejecutar(`
     ${h.extraerFuncion('allBatchIds')}
+    ${h.extraerFuncion('generatedFields')}
     ${h.extraerFuncion('mergeFcProgress')}
     ${h.extraerFuncion('mergeTextCopy')}
     ${h.extraerFuncion('mergeTexts')}
@@ -202,4 +203,65 @@ test('la nube sin hora no pisa un número con hora', () => {
   const celular = { units: { a2_1: { batches: [lote('b1', { pages: [3], pagesByHand: true, pagesAt: 10 })] } } };
   const nube = { units: { a2_1: { batches: [lote('b1', { pages: [1] })] } } };
   assert.deepEqual(unir(celular, nube).units.a2_1.batches[0].pages, [3]);
+});
+
+// Unit 3, 2 de octubre: regeneró la gramática de la p. 26 (v2 → v3), fue a
+// mirar la consola, volvió y la gramática nueva no estaba: tuvo que pagar otra
+// regeneración. La unión tomaba siempre la copia de la nube de la página entera.
+const ahora = Date.now();
+const regenerada = extra => lote('p26', { images: ['foto'], grammar: [{ title: 'Nueva' }], exercises: [{ question: 'nuevo' }],
+  speakingPrompts: ['Take the self-test.'], grammarVersion: 3, generatedAt: 2000, title: 'Self-Test', ...extra });
+const vieja = extra => lote('p26', { grammar: [{ title: 'Vieja' }], exercises: [{ question: 'viejo' }],
+  speakingPrompts: ['inventada'], grammarVersion: 2, generatedAt: 1000, title: 'Old', ...extra });
+
+test('la gramática regenerada aquí no la pisa una copia más vieja de la nube', () => {
+  const r = unir({ units: { a2_3: { batches: [regenerada()] } } }, { units: { a2_3: { batches: [vieja({ vocab: [{ word: 'sing' }] })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.grammar[0].title, b.exercises[0].question, b.speakingPrompts, b.grammarVersion, b.title],
+    ['Nueva', 'nuevo', ['Take the self-test.'], 3, 'Self-Test']);
+  assert.deepEqual(b.images, ['foto']);
+  assert.deepEqual(b.vocab, [{ word: 'sing' }], 'las tarjetas siguen viniendo de la nube');
+});
+
+test('si la regeneración más reciente es la de la nube, gana la nube', () => {
+  const r = unir({ units: { a2_3: { batches: [vieja({ images: ['foto'] })] } } }, { units: { a2_3: { batches: [regenerada({ images: [] })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.grammar[0].title, b.grammarVersion, b.images], ['Nueva', 3, ['foto']]);
+});
+
+test('una página que se está analizando aquí no la cambia la nube', () => {
+  const analizando = lote('p26', { images: ['foto'], grammar: [], vocab: [{ word: 'sing' }], analyzing: true, analyzingAt: ahora, grammarVersion: 2, generatedAt: 1000 });
+  const r = unir({ units: { a2_3: { batches: [analizando] } } }, { units: { a2_3: { batches: [vieja()] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.analyzing, b.grammar, b.images], [true, [], ['foto']]);
+  // Una que quedó marcada hace horas (la app se cerró a mitad) sí se une.
+  const colgada = { ...analizando, analyzingAt: ahora - 3 * 60 * 60 * 1000 };
+  const r2 = unir({ units: { a2_3: { batches: [colgada] } } }, { units: { a2_3: { batches: [vieja()] } } });
+  assert.equal(r2.units.a2_3.batches[0].grammar[0].title, 'Vieja');
+});
+
+test('una página analizada aquí que en la nube quedó vacía trae sus tarjetas', () => {
+  const r = unir({ units: { a2_3: { batches: [regenerada({ vocab: [{ word: 'feel' }] })] } } },
+    { units: { a2_3: { batches: [lote('p26', { vocab: [], grammar: [], analyzing: true })] } } });
+  const b = r.units.a2_3.batches[0];
+  assert.deepEqual([b.vocab, b.analyzing, b.grammar[0].title], [[{ word: 'feel' }], undefined, 'Nueva']);
+});
+
+test('el respaldo devuelve la gramática regenerada, sin tocar tarjetas ni progreso', () => {
+  const { newerContentFromBackup } = h.ejecutar(`
+    ${h.extraerFuncion('newerContentFromBackup')}
+    return { newerContentFromBackup };
+  `, {});
+  const aqui = { units: { a2_3: { batches: [vieja({ vocab: [{ word: 'sing' }] }), lote('p27', { generatedAt: 3000, grammar: [{ title: 'x' }] })] } } };
+  const respaldo = { units: { a2_3: { lid: 'a2', uid: 3, batches: [regenerada(), lote('p27', { generatedAt: 3000, grammar: [{ title: 'x' }] }),
+    lote('p99', { generatedAt: 9000, grammar: [{ title: 'y' }] }), lote('p30', { generatedAt: 9000, grammar: [], analyzing: true })] } } };
+  const r = newerContentFromBackup(aqui, respaldo);
+  assert.deepEqual(r.map(x => [x.unitKey, x.batch.id]), [['a2_3', 'p26']], 'solo la que aquí está y allá es más nueva');
+  assert.deepEqual(newerContentFromBackup(respaldo, aqui), [], 'un respaldo más viejo no devuelve nada');
+  const restaurar = h.extraerFuncion('restorePagesFromBackup');
+  assert.match(restaurar, /const nuevas = newerContentFromBackup\(state, backup\);/);
+  assert.match(restaurar, /generatedFields\(\)\.forEach\(k => \{ if \(copia\[k\] !== undefined\) aqui\[k\] = copia\[k\]; else delete aqui\[k\]; \}\);/);
+  assert.match(restaurar, /const aqui = \(\(\(state\.units \|\| \{\}\)\[unitKey\] \|\| \{\}\)\.batches \|\| \[\]\)\.find\(b => b && b\.id === batch\.id\);/,
+    'se busca la página al confirmar, no al leer el archivo');
+  assert.doesNotMatch(h.extraerFuncion('generatedFields'), /vocab|images|pages/);
 });
