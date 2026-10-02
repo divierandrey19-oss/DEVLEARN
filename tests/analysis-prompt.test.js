@@ -44,6 +44,15 @@ test('los ejemplos del libro se copian palabra por palabra, sin cambiar un "not"
   assert.match(analisis, /copy that sentence WORD FOR WORD/);
 });
 
+test('sin frase que copiar, el ejemplo es inglés natural aunque cambie la forma impresa', () => {
+  // Unit 2, p. 14: con "solo palabras impresas" salió "I like a basketball
+  // game", porque la página dice "a basketball game".
+  assert.match(analisis, /You may change their form \(plural, verb ending\) to\s+make it natural/);
+  assert.match(analisis, /"I like a basketball\s+game" is wrong/);
+  assert.match(analisis, /write a short, natural \$\{levelName\} sentence built from words printed on these pages \(their form may change/);
+  assert.doesNotMatch(analisis, /sentence using ONLY words printed on these pages/);
+});
+
 test('las expresiones van completas, con su conector y hasta la última palabra', () => {
   const s = analysisSeccion();
   assert.match(s, /"No offense, but…", never just "offense"/);

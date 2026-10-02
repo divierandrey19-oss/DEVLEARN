@@ -50,8 +50,11 @@ corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
 `page-questions.test.js` — Preguntas para el roleplay por página (él es flojo
-para preguntar): en su propio mazo, aparte del vocabulario; del tema del libro,
-casi todas abiertas; sin pisar las que ya tenga. Por ahora las pp. 109 a 113.
+para preguntar): del tema del libro, casi todas abiertas. Primero iban en un mazo
+aparte; él las quería dentro de las flashcards, con su repaso, y que salieran
+solas al subir la foto. Ahora son tarjetas de la página (etiqueta "Question"): el
+análisis las pide, las de las pp. 109 a 113 pasan del mazo aparte sin repetirse,
+y una pregunta que la unidad ya tiene como tarjeta no entra dos veces.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
@@ -89,7 +92,9 @@ pp. 109-111: la trampa del español solo si es real, la frase de contexto de un
 completar sigue la misma situación, como mucho dos temas "derived" en una página
 que no enseña gramática, y nada de lo que escribe puede contradecir el libro.
 La explicación y la trampa de la gramática van en español (con Opus, la p. 112
-salió con ambas en inglés porque el prompt no decía el idioma).
+salió con ambas en inglés porque el prompt no decía el idioma). Y si la página no
+trae una frase con la palabra, el ejemplo tiene que ser inglés natural aunque cambie
+la forma impresa (en la p. 14 de la Unit 2 salió "I like a basketball game").
 
 `u10-p110-fix.test.js` — La corrección única de la p. 110 (Unit 10), hecha
 comparando su respaldo con la foto: ningún ejemplo al revés del libro,
@@ -157,6 +162,12 @@ un ejercicio o de un audio tomadas como hechos, un dato del plano al revés
 (Children's), sweatshirt = buzo y ground floor = primer piso. Todo ejemplo nuevo
 está en la transcripción de su página; las repetidas se unen pasando el progreso,
 y solo si la que queda está en el aparato.
+
+`u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
+(era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
+el ejemplo "I like a basketball game": la página solo imprime "= like", y el
+prompt obligaba a usar las palabras tal como estaban impresas. Ahora dice "I like
+basketball games", armado con palabras de la página, sin quitarle el progreso.
 
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la

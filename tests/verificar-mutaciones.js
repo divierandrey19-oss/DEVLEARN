@@ -533,14 +533,24 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `   `,
   },
   {
-    nombre: 'pisar las preguntas que él ya tenía en la página',
-    buscar: `  if ((b.questions || []).length) return true;   // las que ya tenga no se pisan\n`,
+    nombre: 'dejar las preguntas en el mazo aparte en vez de las flashcards',
+    buscar: `  moveQuestionsToCards(merged.units);\n`,
     reemplazo: ``,
   },
   {
-    nombre: 'quitar el botón de preguntas de la hoja de la página',
-    buscar: `onclick="document.getElementById('page-sheet').remove();practicePageQuestions('\${escapeStr(batchId)}')"`,
-    reemplazo: `onclick="document.getElementById('page-sheet').remove()"`,
+    nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
+    buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
+    reemplazo: `    if (!k || !c.translation) return;`,
+  },
+  {
+    nombre: 'que las preguntas del análisis no entren a las tarjetas',
+    buscar: `      yaEnLaPagina.add(k);\n      parsed.vocabulary.push(c);\n`,
+    reemplazo: `      yaEnLaPagina.add(k);\n`,
+  },
+  {
+    nombre: 'aceptar del análisis una "pregunta" sin signo de pregunta',
+    buscar: `!/\\?$/.test(c.word) || `,
+    reemplazo: ``,
   },
   {
     nombre: 'volver a "servir" el concentrado en My life',
@@ -551,6 +561,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     nombre: 'no repartir los textos aprendidos al arrancar',
     buscar: `  seedTextReviews(merged.texts, todayLocal());\n`,
     reemplazo: ``,
+  },
+  {
+    nombre: 'volver a forzar en el prompt la forma impresa ("I like a basketball game")',
+    buscar: `Otherwise write a short, natural \${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",`,
+    reemplazo: `Otherwise write a short \${levelName} sentence using ONLY words printed on these pages",`,
+  },
+  {
+    nombre: 'que la corrección de la p. 14 (Unit 2) no corra al arrancar',
+    buscar: `  if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'un ejemplo de la Unit 2 con una palabra que la página no imprime',
+    buscar: `set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
+    reemplazo: `set: { example: 'I like basketball games a lot.', exampleTranslation: 'Me gustan los partidos de baloncesto.' }`,
   },
 ];
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-01h -->
+<!-- DEVLEARN_BUILD: 2026-10-02a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -1757,6 +1757,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   margin-bottom: 4px;
   color: var(--text);
 }
+/* Una pregunta del roleplay no cabe en la letra de una palabra suelta. */
+.fc-word.fc-word-long { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.01em; }
 .fc-phonetic {
   font-family: var(--font-mono);
   font-size: 0.74rem;
@@ -4903,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-01h';
+const APP_BUILD = '2026-10-02a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5242,6 +5244,12 @@ can't just keep doing things the same way"; an example "you just have to keep do
 things the same way" teaches the OPPOSITE of the book. If the sentence is too long,
 use a shorter sentence from the page, or copy only a part that keeps its meaning.
 
+When NO sentence on the page uses the word, write one a native speaker would really
+say, built from the page's words. You may change their form (plural, verb ending) to
+make it natural, but do not bring in a new topic. Never keep the printed form at the
+cost of odd English: the page prints "a basketball game", and "I like a basketball
+game" is wrong — "I like basketball games" is what people say about things in general.
+
 ━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━
 
 Textbooks flag what they are teaching. Treat every marked item as target language and
@@ -5269,7 +5277,7 @@ Among the words that ARE on the page, prefer these over incidental text.
       "phonetic": "/IPA/",
       "type": "noun|verb|phrasal verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
-      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short ${levelName} sentence using ONLY words printed on these pages",
+      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short, natural ${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",
       "exampleTranslation": "Spanish translation of example",
       "difficulty": "easy|medium|hard"
     }
@@ -5327,6 +5335,9 @@ Among the words that ARE on the page, prefer these over incidental text.
     "Speaking prompt using this page's topic, grammar and words",
     "Speaking prompt 2 — same constraint",
     "Speaking prompt 3 — same constraint"
+  ],
+  "questions": [
+    { "q": "A question about this page's topic, in English", "es": "Natural Colombian Spanish", "a": "A short sample answer" }
   ]
 }
 
@@ -5401,6 +5412,19 @@ RULES:
   A SPEECH BUBBLE IS NOT A TASK. Lines printed in bubbles over photos or characters are sample language: they show the student how the task sounds when people do it. They are not separate assignments. The instruction is the task; the bubbles are one way of answering it. Turning each bubble into its own prompt splits a single conversation into several fake ones.
   NO QUOTA HERE EITHER. If the page prints one speaking task, return one. If it prints none, return an empty list. NEVER write a speaking prompt the page does not print: these become role play scenes the student rehearses for an oral exam graded on this book, so an invented scene drills a conversation their book never assigned.
   A unit contents strip (a COMMUNICATION GOALS bar listing "Lesson 1 ... Lesson 2 ... Lesson 3 ...") is a table of contents, not a task for THIS page. Those lessons live on their own pages, with their own speaking sections. Never turn a lesson title into a speaking prompt.
+- questions: the questions this student could be asked about this page's topic in a role
+  play or a speaking test, or could ask someone else. He is weak at asking questions; these
+  become flashcards he memorizes to learn how a question is built.
+  • First the questions the page itself prints (Warm-Up, PAIR WORK, Conversation Model,
+    Social language, the grammar box), copied WORD FOR WORD. Then questions built with the
+    page's own words and grammar, about the BOOK's topic — never about the student's life.
+  • Mostly open questions (What, Which, Why, How, Where, When, Who), plus the yes/no
+    questions the page prints or practices.
+  • Usually 5-8. A page with little to talk about gives fewer, and a page with nothing to
+    ask about gives none. NEVER pad, and never repeat a question that is already in
+    "vocabulary".
+  • q: correct, natural English ending in "?". es: what it means, in natural Colombian
+    Spanish. a: a short, natural sample answer that uses the page's language.
 - All Spanish must be natural Colombian Spanish
 - IPA phonetics must be accurate
 - Examples must be at ${levelName} level
@@ -5505,6 +5529,20 @@ RULES:
     // Sanitize remaining arrays
     if (!Array.isArray(parsed.speakingPrompts))  parsed.speakingPrompts = [];
     if (!Array.isArray(parsed.detectedTopics))   parsed.detectedTopics = [];
+
+    // Las preguntas del roleplay entran como tarjetas de la página, al final
+    // de su vocabulario (él las quería en las flashcards). Sin traducción o
+    // sin signo de pregunta no sirven; una repetida no entra.
+    const yaEnLaPagina = new Set(parsed.vocabulary.map(v => vocabKey(v.word)));
+    (Array.isArray(parsed.questions) ? parsed.questions : []).forEach(x => {
+      if (!x || typeof x !== 'object') return;
+      const c = questionCard(x);
+      const k = vocabKey(c.word);
+      if (!k || !c.translation || !/\?$/.test(c.word) || yaEnLaPagina.has(k)) return;
+      yaEnLaPagina.add(k);
+      parsed.vocabulary.push(c);
+    });
+    delete parsed.questions;
 
     return parsed;
   },
@@ -6722,6 +6760,9 @@ function migrateState(s) {
   if (!merged._u10P111QuestionsV1 && addU10P111Questions(merged.units)) merged._u10P111QuestionsV1 = true;
   if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
+  if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
+  // Las preguntas del mazo aparte pasan a las flashcards (él las quería ahí).
+  moveQuestionsToCards(merged.units);
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
   // las demás correcciones buscan la página por su número.
   if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
@@ -6885,6 +6926,17 @@ function fixU10P111(units) {
   ] });
 }
 
+/* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
+ * copiar, el prompt pedía usar solo palabras impresas, y salió "I like a
+ * basketball game" (la página dice "a basketball game"), que no es como se
+ * habla de algo en general. La tarjeta no cambia de nombre: su progreso queda. */
+function fixU2P14(units) {
+  return fixBookPage(units, { unit: 'a2_2', page: 14, marca: ['no opinion', "What's more your style?"], cambios: [
+    { word: 'like', example: 'I like a basketball game.',
+      set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' } },
+  ] });
+}
+
 /* Corrige gramática, ejercicios y speaking de una página, contra su foto.
  * `cambios` son pares [texto viejo, texto nuevo]: se reemplaza cualquier campo
  * cuyo valor sea EXACTAMENTE el viejo (si él lo editó, ya no coincide y no se
@@ -7040,18 +7092,54 @@ function fixU10P109Kids(units) {
 }
 
 /* Preguntas para el roleplay, por página: él dice que es flojo para
- * preguntar. Van en su propio mazo (b.questions), no en el vocabulario, para
- * no cruzarse con la limpieza de repetidas ni inflar los pendientes. Son del
- * tema del libro, no de sus textos; abiertas, más las de sí o no que el
- * roleplay usa. Tarjeta: la pregunta en inglés → qué significa y una
- * respuesta de ejemplo. Primero la p. 109, para que él vea cómo queda. */
+ * preguntar. Primero iban en un mazo aparte (b.questions); él las quería
+ * dentro de las flashcards, con su repaso, para aprenderse la estructura de
+ * cada pregunta. Ahora son tarjetas de la página: al frente la pregunta en
+ * inglés; atrás qué significa y una respuesta de ejemplo. Son del tema del
+ * libro, no de sus textos; abiertas, más las de sí o no que el roleplay usa. */
+function questionCard(x) {
+  return { word: String(x.q || '').trim(), translation: String(x.es || '').trim(), phonetic: '',
+           type: 'question', emoji: '❓', example: String(x.a || '').trim(), exampleTranslation: '',
+           difficulty: 'medium' };
+}
+
+/* Agrega las preguntas a las tarjetas de la página. Una que la unidad ya
+ * tiene (la misma pregunta, o la expresión "What do you mean?" de la p. 113)
+ * no se repite: correrla otra vez no cambia nada. Devuelve cuántas entraron. */
+function addQuestionCards(u, b, preguntas) {
+  const ya = new Set((u.batches || []).flatMap(x => (x && x.vocab) || []).map(v => vocabKey(v && v.word)));
+  let n = 0;
+  (preguntas || []).forEach(x => {
+    const c = x && typeof x === 'object' ? questionCard(x) : null;
+    const k = c && vocabKey(c.word);
+    if (!k || !c.translation || ya.has(k)) return;
+    ya.add(k);
+    (b.vocab = b.vocab || []).push(c);
+    n++;
+  });
+  return n;
+}
+
 function addPageQuestions(units, unit, page, preguntas) {
   const u = units && units[unit];
   const b = u && (u.batches || []).find(x => x && (x.pages || []).includes(page));
   if (!b) return false;
-  if ((b.questions || []).length) return true;   // las que ya tenga no se pisan
-  b.questions = preguntas;
+  addQuestionCards(u, b, preguntas);
   return true;
+}
+
+/* Las del mazo aparte (b.questions, pp. 109-113) pasan a las tarjetas de su
+ * página. Corre en cada arranque, sin bandera: un aparato con la versión vieja
+ * puede volver a subir la página con b.questions, y esto las vuelve a pasar
+ * sin repetir ninguna. */
+function moveQuestionsToCards(units) {
+  let movidas = 0;
+  Object.values(units || {}).forEach(u => ((u && u.batches) || []).forEach(b => {
+    if (!b || !Array.isArray(b.questions)) return;
+    movidas += addQuestionCards(u, b, b.questions);
+    delete b.questions;
+  }));
+  return movidas > 0;
 }
 
 function addU10P109Questions(units) {
@@ -8551,9 +8639,13 @@ function wordKind(v) {
     pronoun: ['Pronoun', 'var(--pink, var(--red))'],
     phrase: ['Expression', 'var(--text-2)'], expression: ['Expression', 'var(--text-2)'],
     instruction: ['Expression', 'var(--text-2)'],
+    question: ['Question', 'var(--indigo)'],
   };
   const t = tipos[type];
   return t ? { label: t[0], color: t[1] } : null;
+}
+function fcWordClass(text) {
+  return String(text || '').length > 28 ? 'fc-word fc-word-long' : 'fc-word';
 }
 function wordKindBadge(v) {
   const k = wordKind(v);
@@ -11344,6 +11436,15 @@ function renderImagePreviews(images) {
 /* Él toca una foto y quiere repasar solo las palabras de esa página. La hoja
  * muestra la página y el botón; las fotos de la misma página (104 y 105)
  * abren el mismo lote. */
+/* "23 words and 8 questions": las preguntas del roleplay son tarjetas de la
+ * página, pero no son palabras. */
+function pageCardsLabel(cards) {
+  const q = (cards || []).filter(v => v && v.type === 'question').length;
+  const w = (cards || []).length - q;
+  const palabras = `${w} word${w !== 1 ? 's' : ''}`;
+  return q ? `${palabras} and ${q} question${q !== 1 ? 's' : ''}` : palabras;
+}
+
 function openPageSheet(batchId) {
   const u = getUnit(current.lid, current.uid);
   const b = (u?.batches || []).find(x => x.id === batchId);
@@ -11358,70 +11459,19 @@ function openPageSheet(batchId) {
       <div class="vb-sheet-head">
         <div>
           <div class="vb-sheet-sound">${escapeHtml(batchLabel(u, batchId))}</div>
-          <div class="vb-sheet-name">${words.length} word${words.length !== 1 ? 's' : ''}${(b.topics || []).length ? ' · ' + escapeHtml(b.topics.slice(0, 2).join(', ')) : ''}</div>
+          <div class="vb-sheet-name">${pageCardsLabel(words)}${(b.topics || []).length ? ' · ' + escapeHtml(b.topics.slice(0, 2).join(', ')) : ''}</div>
         </div>
         <button class="vb-x" aria-label="Close" onclick="document.getElementById('page-sheet').remove()">✕</button>
       </div>
       ${(b.images || []).map(src => `<img src="${src}" alt="" style="width:100%;border-radius:var(--r-sm);margin-bottom:10px;">`).join('')}
       ${words.length ? `
         <div class="vb-sheet-txt" style="color:var(--text-2);">${escapeHtml(words.slice(0, 6).map(v => v.word).join(' · '))}${words.length > 6 ? ' …' : ''}</div>
-        <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('page-sheet').remove();openFcStudy(current.lid, current.uid, false, '${escapeStr(batchId)}')">🃏 Review these ${words.length} words</button>
+        <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('page-sheet').remove();openFcStudy(current.lid, current.uid, false, '${escapeStr(batchId)}')">🃏 Review these ${pageCardsLabel(words)}</button>
       ` : `<div class="vb-sheet-txt" style="color:var(--text-3);">This page has no words.</div>`}
-      ${(b.questions || []).length ? `
-        <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="document.getElementById('page-sheet').remove();practicePageQuestions('${escapeStr(batchId)}')">❓ Practice ${b.questions.length} questions for a role play</button>` : ''}
     </div>`;
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
   document.body.appendChild(ov);
   Sound.tap();
-}
-
-/* El mazo de preguntas de una página: la pregunta en inglés (léela en voz
- * alta y respóndela), y al voltear qué significa y una respuesta de ejemplo.
- * Sin calendario por ahora: es para ver cómo le queda. */
-function practicePageQuestions(batchId) {
-  const u = getUnit(current.lid, current.uid);
-  const b = (u?.batches || []).find(x => x.id === batchId);
-  const qs = ((b && b.questions) || []).filter(x => x && x.q);
-  if (!qs.length) { toast('This page has no questions yet'); return; }
-  window._pqState = { batchId, label: batchLabel(u, batchId), qs, idx: 0, flipped: false };
-  renderPageQuestions();
-}
-
-function renderPageQuestions() {
-  document.getElementById('pq-overlay')?.remove();
-  const st = window._pqState;
-  if (!st) return;
-  const done = st.idx >= st.qs.length;
-  const x = st.qs[Math.min(st.idx, st.qs.length - 1)];
-  const ov = document.createElement('div');
-  ov.id = 'pq-overlay';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:900;display:flex;align-items:center;justify-content:center;padding:18px;';
-  ov.innerHTML = `
-    <div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:18px;max-width:400px;width:100%;padding:20px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;">
-        <div style="font-weight:700;">❓ ${escapeHtml(st.label)} ${done ? '' : `· ${st.idx + 1}/${st.qs.length}`}</div>
-        <button class="btn btn-ghost btn-sm" onclick="window._pqState=null;document.getElementById('pq-overlay').remove()">✕</button>
-      </div>
-      ${done ? `
-        <div style="text-align:center;padding:12px 0;">
-          <div style="font-size:1.6rem;margin-bottom:8px;">🎉</div>
-          <div style="font-size:0.85rem;color:var(--text-2);margin-bottom:16px;">You practiced ${st.qs.length} questions.</div>
-          <button class="btn btn-primary" style="padding:10px 22px;" onclick="practicePageQuestions('${escapeStr(st.batchId)}')">🔁 Again</button>
-        </div>` : `
-        <div onclick="window._pqState.flipped=!window._pqState.flipped;renderPageQuestions()" style="cursor:pointer;text-align:center;background:var(--card, var(--surface));border:1px dashed var(--border);border-radius:14px;padding:28px 16px;margin-bottom:14px;">
-          <div style="font-size:1.2rem;font-weight:800;line-height:1.35;margin-bottom:8px;">${escapeHtml(x.q)}</div>
-          ${st.flipped ? `
-            <div style="font-size:0.86rem;color:var(--text-2);margin-bottom:10px;">${escapeHtml(x.es || '')}</div>
-            ${x.a ? `<div style="font-size:0.8rem;color:var(--text-3);text-align:left;border-top:1px solid var(--border);padding-top:8px;">💬 ${escapeHtml(x.a)}</div>` : ''}`
-          : `<div style="font-size:0.7rem;color:var(--text-3);">Read it out loud and answer it. Then tap.</div>`}
-        </div>
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-ghost" style="flex:1;padding:10px;" onclick="speak(this.dataset.say)" data-say="${escapeStr(x.q)}">🔊</button>
-          <button class="btn btn-primary" style="flex:2;padding:10px;" onclick="window._pqState.idx++;window._pqState.flipped=false;renderPageQuestions()">Next →</button>
-        </div>`}
-    </div>`;
-  ov.addEventListener('click', e => { if (e.target === ov) { window._pqState = null; ov.remove(); } });
-  document.body.appendChild(ov);
 }
 
 function removeUnitImage(i) {
@@ -14893,7 +14943,7 @@ function renderFcStage() {
           <div class="fc-face front">
             <div class="fc-image-area">${v.emoji || '📝'}</div>
             <div class="fc-label">English</div>
-            <div class="fc-word">${v.word}</div>
+            <div class="${fcWordClass(v.word)}">${v.word}</div>
             <div class="fc-phonetic">${v.phonetic || ''}</div>
             ${wordKindBadge(v)}
             <button class="audio-btn" style="margin-top:6px;" onclick="event.stopPropagation();speak('${escapeStr(v.word)}')">🔊</button>
@@ -14944,7 +14994,7 @@ function renderFcStage() {
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 24px;text-align:center;">
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
           <div class="fc-label">${questionLbl}</div>
-          <div class="fc-word" style="margin-bottom:6px;">${question}</div>
+          <div class="${fcWordClass(question)}" style="margin-bottom:6px;">${question}</div>
           ${wordKindBadge(v)}
           <div class="fc-phonetic" style="margin-bottom:14px;">${enToEs ? (v.phonetic || '') : ''}</div>
           ${enToEs ? `<button class="audio-btn" style="margin-bottom:14px;" onclick="speak('${escapeStr(v.word)}')">🔊</button>` : ''}
@@ -14970,7 +15020,7 @@ function renderFcStage() {
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 24px;text-align:center;">
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
           <div class="fc-label">${prompt.label}</div>
-          <div class="fc-word" style="margin-bottom:4px;">${prompt.clue}</div>
+          <div class="${fcWordClass(prompt.clue)}" style="margin-bottom:4px;">${prompt.clue}</div>
           ${wordKindBadge(v)}
           ${!toSpanish ? `<button class="audio-btn" style="margin:8px auto 12px;display:block;" onclick="speak('${escapeStr(v.word)}')">🔊</button>` : '<div style="margin-bottom:14px;"></div>'}
           <input class="fc-write-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="fc-write"
@@ -14993,8 +15043,8 @@ function renderFcStage() {
       <div class="fc-stage" style="aspect-ratio:auto;perspective:none;">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:28px 24px;text-align:center;">
           <div class="fc-image-area" style="margin:0 auto 14px;">${v.emoji || '📝'}</div>
-          <div class="fc-label">Write a sentence using this word</div>
-          <div class="fc-word" style="margin-bottom:4px;">${v.word}</div>
+          <div class="fc-label">${v.type === 'question' ? 'Answer this question' : 'Write a sentence using this word'}</div>
+          <div class="${fcWordClass(v.word)}" style="margin-bottom:4px;">${v.word}</div>
           ${wordKindBadge(v)}
           <div class="fc-phonetic" style="margin-bottom:4px;">${v.phonetic || ''}</div>
           <div class="fc-example" style="margin-bottom:14px;font-size:0.76rem;">
@@ -15002,7 +15052,7 @@ function renderFcStage() {
           </div>
           <button class="audio-btn" style="margin:0 auto 14px;display:block;" onclick="speak('${escapeStr(v.word)}')">🔊</button>
           <textarea class="fc-write-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" id="fc-sentence" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" rows="2"
-            placeholder='Write a full sentence with "${v.word}"…'
+            placeholder='${v.type === 'question' ? 'Write your answer…' : `Write a full sentence with "${v.word}"…`}'
             style="resize:none;"
             data-word="${escapeStr(v.word)}" data-example="${escapeStr(v.example||'')}"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();checkSentence(unescapeData(this.dataset.word),unescapeData(this.dataset.example));}"></textarea>
@@ -16241,8 +16291,9 @@ async function checkSentence(word, modelExample) {
   if (AIService.mode === 'claude' && AIService.getKey()) {
     try {
       const prompt = `You are an English teacher for a Colombian A2-level student.
-Word being practiced: "${word}"
-Model example: "${modelExample}"
+${/\?$/.test(word) ? `Question the student is answering: "${word}"
+Model answer: "${modelExample}"` : `Word being practiced: "${word}"
+Model example: "${modelExample}"`}
 Student wrote: "${sentence}"
 
 Respond ONLY with JSON:
@@ -20806,7 +20857,7 @@ function renderFocusFlashcard() {
           <div class="fc-face front">
             <div class="fc-image-area">${v.emoji || '📝'}</div>
             <div class="fc-label">English</div>
-            <div class="fc-word">${v.word}</div>
+            <div class="${fcWordClass(v.word)}">${v.word}</div>
             <div class="fc-phonetic">${v.phonetic || ''}</div>
             <button class="audio-btn" style="margin-top:8px;" onclick="event.stopPropagation();speak('${escapeStr(v.word)}')">🔊</button>
             <div class="fc-tap-hint">Tap to flip</div>
@@ -21682,7 +21733,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
