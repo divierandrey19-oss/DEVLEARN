@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02f -->
+<!-- DEVLEARN_BUILD: 2026-10-02g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4314,8 +4314,9 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div id="confirm-title" style="font-size:1.15rem;font-weight:600;letter-spacing:-0.02em;">Are you sure?</div>
     </div>
     <div id="confirm-message" style="font-size:0.92rem;color:var(--text-2);line-height:1.6;white-space:pre-line;margin-bottom:24px;">This action cannot be undone.</div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
       <button class="btn btn-ghost" onclick="closeConfirm(false)">Cancel</button>
+      <button class="btn btn-ghost" id="confirm-alt-btn" style="display:none;" onclick="closeConfirm('alt')"></button>
       <button class="btn btn-primary" id="confirm-ok-btn" onclick="closeConfirm(true)">Confirm</button>
     </div>
   </div>
@@ -4912,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02f';
+const APP_BUILD = '2026-10-02g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11898,11 +11899,12 @@ function attachPagePhoto(batchId, input) {
     const fotos = raw.filter(Boolean);
     if (!fotos.length) { toast('❌ Could not read the photo'); return; }
     const comprimidas = await Promise.all(fotos.map(img => compressImage(img)));
-    const antes = { images: b.images, pages: b.pages };
+    const antes = { images: b.images, pages: b.pages, pagesByHand: b.pagesByHand };
     b.images = comprimidas;
     if (pagina.length) b.pages = pagina;
+    if (pagina.length) b.pagesByHand = true;
     if (!writeState()) {
-      b.images = antes.images; b.pages = antes.pages;
+      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand;
       toast('⚠️ Could not save — free up space and try again');
       return;
     }
@@ -11987,17 +11989,25 @@ function removeUnitImage(i) {
 
   if (isLastImage && (stats.vocab > 0 || stats.grammar > 0 || stats.exercises > 0)) {
     title = 'Delete image and linked content?';
-    message = `This is the last image of this upload. Deleting it will also remove:\n\n• ${stats.vocab} vocabulary words\n• ${stats.grammar} grammar topic${stats.grammar !== 1 ? 's' : ''}\n• ${stats.exercises} exercise${stats.exercises !== 1 ? 's' : ''}\n\nThis cannot be undone.`;
+    message = `This is the last image of this upload. Deleting it will also remove:\n\n• ${stats.vocab} vocabulary words\n• ${stats.grammar} grammar topic${stats.grammar !== 1 ? 's' : ''}\n• ${stats.exercises} exercise${stats.exercises !== 1 ? 's' : ''}\n\nThis cannot be undone.\n\nWrong photo? "Remove only the photo" keeps the page with its cards and progress.`;
   } else {
     title = 'Delete this image?';
     message = isLastImage ? 'This will remove the image. No linked content to delete.' : 'This will only remove this image. The generated vocabulary and exercises will remain (they came from the other images in this upload).';
   }
+
+  /* Él le puso una foto a la página equivocada y la ✕ solo ofrecía borrar la
+   * página con sus 22 palabras. Quitar solo la foto deja la página como
+   * estaba antes de la foto. */
+  const soloFoto = isLastImage && (stats.vocab > 0 || stats.grammar > 0 || stats.exercises > 0)
+    ? () => removeOnlyPagePhoto(batch.id) : null;
 
   confirmAction({
     title,
     message,
     confirmText: '🗑 Delete',
     danger: true,
+    altText: soloFoto ? '📷 Remove only the photo' : '',
+    onAlt: soloFoto,
     onConfirm: () => {
       // Find image index within batch
       const imgIdxInBatch = batch.images.indexOf(target.src);
@@ -12023,6 +12033,22 @@ function removeUnitImage(i) {
       updateNavBadges();
     }
   });
+}
+
+/* Quita la foto de una página sin tocar sus tarjetas, gramática ni progreso.
+ * Si el número de página lo escribió él al agregar la foto, también se va:
+ * era el de la foto equivocada. */
+function removeOnlyPagePhoto(batchId) {
+  const u = getUnit(current.lid, current.uid);
+  const b = (u?.batches || []).find(x => x.id === batchId);
+  if (!b) return false;
+  b.images = [];
+  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; }
+  ImageStore.put(b.id, []).catch(e => console.warn('Image save failed:', e));
+  save();
+  loadUnitContent();
+  toast('📷 Photo removed. Your cards stay the same.');
+  return true;
 }
 
 function retryBatchAnalysis(batchId) {
@@ -21793,7 +21819,9 @@ function closeCelebrate() {
    ============================================================ */
 let _confirmCallback = null;
 
-function confirmAction({ title, message, confirmText, danger, onConfirm }) {
+/* altText / onAlt: una tercera salida, más segura que la principal (quitar
+ * solo la foto en vez de borrar la página con sus tarjetas). */
+function confirmAction({ title, message, confirmText, danger, onConfirm, altText, onAlt }) {
   document.getElementById('confirm-title').textContent = title || 'Are you sure?';
   document.getElementById('confirm-message').textContent = message || 'This action cannot be undone.';
   const btn = document.getElementById('confirm-ok-btn');
@@ -21810,11 +21838,22 @@ function confirmAction({ title, message, confirmText, danger, onConfirm }) {
     icon.textContent = '?';
   }
   _confirmCallback = onConfirm;
+  _confirmAltCallback = onAlt || null;
+  const alt = document.getElementById('confirm-alt-btn');
+  if (alt) { alt.textContent = altText || ''; alt.style.display = onAlt ? '' : 'none'; }
   document.getElementById('confirm-modal').classList.add('open');
 }
+let _confirmAltCallback = null;
 
 function closeConfirm(confirmed) {
   document.getElementById('confirm-modal').classList.remove('open');
+  const alt = _confirmAltCallback;
+  _confirmAltCallback = null;
+  if (confirmed === 'alt') {
+    _confirmCallback = null;
+    if (alt) setTimeout(() => alt(), 100);
+    return;
+  }
   if (confirmed && _confirmCallback) {
     const cb = _confirmCallback;
     _confirmCallback = null;

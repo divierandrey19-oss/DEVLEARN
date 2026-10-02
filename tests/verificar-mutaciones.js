@@ -594,7 +594,17 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'que una foto que no se pudo guardar quede a medias',
-    buscar: `      b.images = antes.images; b.pages = antes.pages;\n`,
+    buscar: `      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la ✕ vuelva a ofrecer solo borrar la página con sus tarjetas',
+    buscar: `    altText: soloFoto ? '📷 Remove only the photo' : '',\n    onAlt: soloFoto,\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que quitar solo la foto deje el número de página de la foto equivocada',
+    buscar: `  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; }\n`,
     reemplazo: ``,
   },
   {
