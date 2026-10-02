@@ -50,8 +50,11 @@ corte la racha, que hoy sin grabar todavía no la corte, que un día no cuente
 dos veces y que los días de otro dispositivo se sumen en vez de pisarse.
 
 `page-questions.test.js` — Preguntas para el roleplay por página (él es flojo
-para preguntar): en su propio mazo, aparte del vocabulario; del tema del libro,
-casi todas abiertas; sin pisar las que ya tenga. Por ahora las pp. 109 a 113.
+para preguntar): del tema del libro, casi todas abiertas. Primero iban en un mazo
+aparte; él las quería dentro de las flashcards, con su repaso, y que salieran
+solas al subir la foto. Ahora son tarjetas de la página (etiqueta "Question"): el
+análisis las pide, las de las pp. 109 a 113 pasan del mazo aparte sin repetirse,
+y una pregunta que la unidad ya tiene como tarjeta no entra dos veces.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
