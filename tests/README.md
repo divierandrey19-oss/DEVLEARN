@@ -219,6 +219,10 @@ desordenar. Y las 8 páginas viejas reciben sus preguntas (`addPageExtras`). Des
 conversación repetida en el speaking y tres traducciones. Las que tocan la
 gramática nueva solo marcan su bandera si la página ya está en v3 en ese aparato.
 
+`u8-questions.test.js` — Las 40 preguntas de la Unit 8 en las flashcards (se
+subió antes de que el análisis las hiciera). Las impresas llevan la respuesta del
+libro; las de su vida, la de sus textos de My life.
+
 `u2-fix.test.js` — La Unit 2, revisada contra las fotos a medida que él la sube
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
 el ejemplo "I like a basketball game": la página solo imprime "= like", y el

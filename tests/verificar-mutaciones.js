@@ -728,6 +728,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  return !!b;`,
   },
   {
+    nombre: 'que la Unit 8 no reciba sus preguntas al abrir la app',
+    buscar: `  if (!merged._u8P89QV1 && addU8P89Questions(merged.units)) merged._u8P89QV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que una respuesta impresa de la Unit 8 no sea la del libro',
+    buscar: `a: "Much better. I'll take them." },`,
+    reemplazo: `a: "Much better. I'll buy them." },`,
+  },
+  {
     nombre: 'que la Unit 3 no se ordene al abrir la app',
     buscar: `  fixU3Order(merged.units);\n`,
     reemplazo: ``,
