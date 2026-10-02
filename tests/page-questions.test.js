@@ -17,7 +17,7 @@ const h = require('./harness.js');
 
 const fuente = h.fuente();
 const PAGINAS = ['addU10P109Questions', 'addU10P110Questions', 'addU10P111Questions', 'addU10P112Questions', 'addU10P113Questions',
-  'addU2P13Questions', 'addU2P14Questions'];
+  'addU2P13Questions', 'addU2P14Questions', ...[97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107].map(p => `addU9P${p}Questions`)];
 const NOMBRES = ['vocabKey', 'questionCard', 'addQuestionCards', 'addPageQuestions', 'moveQuestionsToCards', 'wordKind', 'pageCardsLabel', 'fcWordClass', ...PAGINAS];
 const f = h.ejecutar(`const PHRASAL_PARTICLES = new Set(['up']);
   ${NOMBRES.map(n => h.extraerFuncion(n)).join('\n')}
@@ -117,6 +117,39 @@ test('Unit 2, pp. 13 y 14: solo las principales, del tema de cada página', () =
   assert.match(migrar, /if \(!merged\._u2P13QuestionsV1 && addU2P13Questions\(merged\.units\)\) merged\._u2P13QuestionsV1 = true;/);
   assert.match(migrar, /if \(!merged\._u2P14QuestionsV1 && addU2P14Questions\(merged\.units\)\) merged\._u2P14QuestionsV1 = true;/);
   assert.match(h.extraerFuncion('applyPageFixes'), /addU2P13Questions, addU2P14Questions/);
+});
+
+test('Unit 9: todas sus páginas, con las preguntas del libro para el roleplay', () => {
+  // Para el speaking test de las Units 9-10. Él ya estudió las palabras de la
+  // Unit 9; las preguntas entran como tarjetas nuevas, al final de cada página.
+  const PAGS = [97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107];
+  const units = { a2_9: { batches: PAGS.map(p => ({ id: 'p' + p, pages: [p], vocab: [{ word: 'w' + p }] })) } };
+  PAGS.forEach(p => assert.equal(f[`addU9P${p}Questions`](units), true, `p. ${p}`));
+  const por = Object.fromEntries(units.a2_9.batches.map(b => [b.pages[0], preguntas(b).map(x => x.word)]));
+  PAGS.forEach(p => assert.ok(por[p].length >= 4, `p. ${p}: ${por[p].length}`));
+  // Las que el libro imprime, tal cual.
+  assert.equal(por[97][0], 'Which kinds of activities are the most fun for you?');
+  assert.ok(por[99].includes('Do I have to sign up? Or can I just walk in?'));
+  assert.ok(por[101].includes("Why don't we go swimming sometime?") && por[101].includes('Where should we meet?'));
+  assert.ok(por[103].includes('What kind of exercise appeals to you?'));
+  assert.ok(por[106].includes("What's one way a physical therapist can help a patient with an injury?"));
+  assert.ok(por[107].includes('When did it happen?') && por[107].includes('Where were you?') && por[107].includes('Did you have to go back home?'));
+  for (const b of units.a2_9.batches) {
+    assert.equal(b.vocab[0].word, 'w' + b.pages[0], 'las palabras quedan primero');
+    for (const x of preguntas(b)) {
+      assert.match(x.word, /\?$/, `"${x.word}" no es pregunta`);
+      assert.ok(x.translation && x.example, `"${x.word}" sin traducción o sin respuesta de ejemplo`);
+    }
+  }
+  const todas = Object.values(por).flat();
+  assert.equal(new Set(todas.map(f.vocabKey)).size, todas.length, 'ninguna repetida en la unidad');
+  // En el arranque, después de fixU9Pages: las páginas se encuentran por número.
+  const migrar = h.extraerFuncion('migrateState');
+  assert.ok(migrar.indexOf("['_u9P97QuestionsV1', addU9P97Questions]") > migrar.indexOf('fixU9Pages(merged.units)'));
+  PAGS.forEach(p => assert.match(migrar, new RegExp(`\\['_u9P${p}QuestionsV1', addU9P${p}Questions\\]`)));
+  const restaurar = h.extraerFuncion('applyPageFixes');
+  assert.ok(restaurar.indexOf('addU9P97Questions') > restaurar.indexOf('fixU9Pages'));
+  PAGS.forEach(p => assert.match(restaurar, new RegExp(`\\baddU9P${p}Questions\\b`)));
 });
 
 test('en la tarjeta: etiqueta "Question", letra que cabe, y la hoja las cuenta aparte', () => {

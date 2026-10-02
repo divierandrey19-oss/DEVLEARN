@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02b -->
+<!-- DEVLEARN_BUILD: 2026-10-02c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02b';
+const APP_BUILD = '2026-10-02c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6772,6 +6772,14 @@ function migrateState(s) {
    ['_u9P101V1', fixU9P101], ['_u9P102V1', fixU9P102], ['_u9P103V1', fixU9P103], ['_u9P104V1', fixU9P104],
    ['_u9P105V1', fixU9P105], ['_u9P106V1', fixU9P106], ['_u9P107V1', fixU9P107], ['_u9PhrasalV1', fixU9Phrasal]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Sus preguntas para el roleplay, después de que las páginas tienen número.
+  [['_u9P97QuestionsV1', addU9P97Questions], ['_u9P98QuestionsV1', addU9P98Questions],
+   ['_u9P99QuestionsV1', addU9P99Questions], ['_u9P100QuestionsV1', addU9P100Questions],
+   ['_u9P101QuestionsV1', addU9P101Questions], ['_u9P102QuestionsV1', addU9P102Questions],
+   ['_u9P103QuestionsV1', addU9P103Questions], ['_u9P104QuestionsV1', addU9P104Questions],
+   ['_u9P105QuestionsV1', addU9P105Questions], ['_u9P106QuestionsV1', addU9P106Questions],
+   ['_u9P107QuestionsV1', addU9P107Questions]]
+    .forEach(([bandera, add]) => { if (!merged[bandera] && add(merged.units)) merged[bandera] = true; });
   // Unit 8, igual: primero los números de página, al final el lote de phrasal
   // verbs (quita su copia de "try on" cuando la p. 87 ya la tiene).
   if (!merged._u8PagesV1 && fixU8Pages(merged.units)) merged._u8PagesV1 = true;
@@ -7698,6 +7706,219 @@ function fixU9Phrasal(units) {
   fixPageContent(units, { unit: 'a2_9', id: 'pv_a2_9',
     quitarPalabras: ['go out', 'work out', 'get in shape', 'make that class'] });
   return true;
+}
+
+/* ── Unit 9: preguntas para el roleplay (speaking test de las Units 9-10) ──
+ * Se subió antes de que el análisis hiciera las preguntas. Primero las que el
+ * libro imprime (Warm-Up, PAIR WORK, diálogos, Conversation Model, notepad),
+ * tal cual; después las que esa página practica. Las respuestas salen de la
+ * misma página siempre que la página trae una. */
+function addU9P97Questions(units) {
+  return addPageQuestions(units, 'a2_9', 97, [
+    { q: 'Which kinds of activities are the most fun for you?',
+      es: '¿Qué tipos de actividades son las más divertidas para ti?',
+      a: 'I prefer cold-weather sports. I like to be outdoors in the cold.' },
+    { q: 'Do you prefer warm-weather sports or cold-weather sports?',
+      es: '¿Prefieres los deportes de clima cálido o los de clima frío?',
+      a: 'I prefer warm-weather sports, such as waterskiing.' },
+    { q: 'Do you prefer individual sports or team sports?',
+      es: '¿Prefieres los deportes individuales o los de equipo?',
+      a: 'I prefer team sports, such as soccer.' },
+    { q: 'Which indoor activities do you like?',
+      es: '¿Qué actividades bajo techo te gustan?',
+      a: 'I like bowling.' },
+  ]);
+}
+
+function addU9P98Questions(units) {
+  return addPageQuestions(units, 'a2_9', 98, [
+    { q: 'Which activities would you like to do at the health club?',
+      es: '¿Qué actividades te gustaría hacer en el club de salud?',
+      a: "I'd like to swim in that beautiful pool. What about you?" },
+    { q: 'Would you like to take a spin class?',
+      es: '¿Te gustaría tomar una clase de spinning?',
+      a: "Yes, I would. It's great exercise." },
+    { q: 'Would you like to work out with a personal trainer?',
+      es: '¿Te gustaría entrenar con un entrenador personal?',
+      a: "Yes, I would. / No, I wouldn't." },
+    { q: 'Do you prefer to do yoga or lift weights?',
+      es: '¿Prefieres hacer yoga o levantar pesas?',
+      a: 'I prefer to lift weights.' },
+  ]);
+}
+
+function addU9P99Questions(units) {
+  return addPageQuestions(units, 'a2_9', 99, [
+    { q: 'Do I have to sign up? Or can I just walk in?',
+      es: '¿Tengo que inscribirme? ¿O puedo llegar sin inscripción?',
+      a: "Let me check. That's a very popular time, so a lot of people come in then." },
+    { q: 'What about another option at 6:00?',
+      es: '¿Qué tal otra opción a las 6:00?',
+      a: "Hmm. No, that won't work. It's a bit too early for me." },
+    { q: 'Does that appeal to you?',
+      es: '¿Eso te llama la atención?',
+      a: "I'm afraid yoga's not really a good fit for me." },
+    { q: 'By any chance did you bring your bathing suit?',
+      es: '¿De casualidad trajiste tu vestido de baño?',
+      a: "Yes, I did. / No, I didn't." },
+    { q: 'Which sports are a good way to unwind for you?',
+      es: '¿Qué deportes son una buena forma de relajarte para ti?',
+      a: 'Yoga is a good way to unwind after a busy day.' },
+    { q: "Which sports don't appeal to you?",
+      es: '¿Qué deportes no te llaman la atención?',
+      a: "Golf doesn't appeal to me." },
+  ]);
+}
+
+function addU9P100Questions(units) {
+  return addPageQuestions(units, 'a2_9', 100, [
+    { q: 'Which place do you sometimes go to?',
+      es: '¿A qué lugar vas a veces?',
+      a: 'I go to the basketball court in Stone Park.' },
+    { q: 'How often do you go there?',
+      es: '¿Con qué frecuencia vas allá?',
+      a: 'Once a week, usually on the weekend.' },
+    { q: 'Do you have to work late today?',
+      es: '¿Tienes que trabajar hasta tarde hoy?',
+      a: "No, I don't have to work late today. I can go out for dinner with you." },
+    { q: 'Do they have to wear running shoes at the gym?',
+      es: '¿Tienen que usar tenis para correr en el gimnasio?',
+      a: "Yes, they do. / No, they don't." },
+    { q: 'Did you have to work late yesterday?',
+      es: '¿Tuviste que trabajar hasta tarde ayer?',
+      a: "Yes, I did. / No, I didn't." },
+  ]);
+}
+
+function addU9P101Questions(units) {
+  return addPageQuestions(units, 'a2_9', 101, [
+    { q: "Why don't we go swimming sometime?",
+      es: '¿Por qué no vamos a nadar algún día?',
+      a: "I'd love to. When's good for you?" },
+    { q: 'How about Friday at 6:30?',
+      es: '¿Qué tal el viernes a las 6:30?',
+      a: "Let me check... Yes, that's good for me. Where should we meet?" },
+    { q: 'Where should we meet?',
+      es: '¿Dónde nos encontramos?',
+      a: 'How about at the pool?' },
+    { q: 'Would you like to go, too?',
+      es: '¿Te gustaría ir también?',
+      a: 'I definitely would. But I have to study for a test.' },
+    { q: 'Do you want to go running tonight?',
+      es: '¿Quieres ir a correr esta noche?',
+      a: "Sorry, I can't then. I have to work." },
+  ]);
+}
+
+function addU9P102Questions(units) {
+  return addPageQuestions(units, 'a2_9', 102, [
+    { q: 'Where should we go this afternoon?',
+      es: '¿A dónde deberíamos ir esta tarde?',
+      a: 'Well, we could go to the movies. What do you think?' },
+    { q: 'Should I get tickets for all of us?',
+      es: '¿Debería comprar boletas para todos?',
+      a: 'Yes, you should.' },
+    { q: 'Could I go running on a track instead of on the treadmill?',
+      es: '¿Podría correr en una pista en vez de en la caminadora?',
+      a: 'Yes, you could.' },
+    { q: 'What should he do to unwind?',
+      es: '¿Qué debería hacer él para relajarse?',
+      a: 'He should exercise. He could swim.' },
+  ]);
+}
+
+function addU9P103Questions(units) {
+  return addPageQuestions(units, 'a2_9', 103, [
+    { q: 'What kind of exercise appeals to you?',
+      es: '¿Qué tipo de ejercicio te llama la atención?',
+      a: 'Let me think... Well, I like outdoor activities.' },
+    { q: 'What should I do to get in shape?',
+      es: '¿Qué debería hacer para ponerme en forma?',
+      a: 'You should go bike riding or running. You can do those every day.' },
+    { q: 'What about a bicycle? Does he have one?',
+      es: '¿Y una bicicleta? ¿Él tiene una?',
+      a: "No, unfortunately, he doesn't." },
+    { q: 'Which sports are pretty strenuous?',
+      es: '¿Qué deportes son bastante exigentes?',
+      a: 'Tennis and basketball are pretty strenuous.' },
+  ]);
+}
+
+function addU9P104Questions(units) {
+  return addPageQuestions(units, 'a2_9', 104, [
+    { q: 'Which of these activities do you do?',
+      es: '¿Cuáles de estas actividades haces?',
+      a: 'I go mountain biking in the national park.' },
+    { q: "Which activities don't you do?",
+      es: '¿Qué actividades no haces?',
+      a: 'I never go camping.' },
+    { q: 'Which water activities would you like to try?',
+      es: '¿Qué actividades acuáticas te gustaría probar?',
+      a: "I'd like to try paddleboarding." },
+    { q: 'Is it necessary to take an expensive vacation to enjoy outdoor recreation?',
+      es: '¿Es necesario tomar unas vacaciones caras para disfrutar de la recreación al aire libre?',
+      a: "No, it isn't. Walking and going to the beach can be just like a mini-vacation." },
+  ]);
+}
+
+function addU9P105Questions(units) {
+  return addPageQuestions(units, 'a2_9', 105, [
+    { q: 'What equipment do you need for mountain biking?',
+      es: '¿Qué equipo necesitas para hacer ciclismo de montaña?',
+      a: 'If you go mountain biking, you have to have a mountain bike and you have to wear a helmet.' },
+    { q: 'Do you agree about necessary equipment?',
+      es: '¿Están de acuerdo sobre el equipo necesario?',
+      a: "To tell you the truth, I don't think a helmet is really necessary." },
+    { q: 'Do you have to wear a life vest when you go kayaking?',
+      es: '¿Tienes que usar chaleco salvavidas cuando vas en kayak?',
+      a: 'Yes, you have to wear a life vest!' },
+    { q: 'What are your favorite outdoor activities?',
+      es: '¿Cuáles son tus actividades al aire libre favoritas?',
+      a: 'I love outdoor activities. My favorite is hiking.' },
+  ]);
+}
+
+function addU9P106Questions(units) {
+  return addPageQuestions(units, 'a2_9', 106, [
+    { q: "What's one way a physical therapist can help a patient with an injury?",
+      es: '¿Cuál es una forma en que un fisioterapeuta puede ayudar a un paciente con una lesión?',
+      a: 'The exercises help patients walk, work, and carry on their normal activities without pain.' },
+    { q: 'How can exercise therapy help?',
+      es: '¿Cómo puede ayudar la terapia con ejercicios?',
+      a: 'It helps patients get strong again.' },
+    { q: "What happens if you don't move?",
+      es: '¿Qué pasa si no te mueves?',
+      a: "If you don't move, your muscles get weak." },
+    { q: 'Where does Martha Roberts work?',
+      es: '¿Dónde trabaja Martha Roberts?',
+      a: 'She works in a physical therapy center.' },
+  ]);
+}
+
+function addU9P107Questions(units) {
+  return addPageQuestions(units, 'a2_9', 107, [
+    { q: 'Did you have an accident last summer?',
+      es: '¿Tuviste un accidente el verano pasado?',
+      a: 'Yes. Last summer I had a mountain biking accident. I broke my foot.' },
+    { q: 'When did it happen?',
+      es: '¿Cuándo pasó?',
+      a: 'Last night.' },
+    { q: 'Where were you?',
+      es: '¿Dónde estabas?',
+      a: 'I was in my kitchen.' },
+    { q: 'Did you have to go back home?',
+      es: '¿Tuviste que regresar a casa?',
+      a: 'Yes, I did. I had to go to the hospital.' },
+    { q: 'Did you have to use crutches?',
+      es: '¿Tuviste que usar muletas?',
+      a: 'Yes, I did. They gave me a cast. I had to use crutches.' },
+    { q: 'Did you need physical therapy?',
+      es: '¿Necesitaste fisioterapia?',
+      a: 'Yes, I needed physical therapy.' },
+    { q: 'Are you OK now?',
+      es: '¿Ya estás bien?',
+      a: "I'm OK now." },
+  ]);
 }
 
 /* ── Unit 8, revisada contra las fotos (su respaldo del 29 de septiembre) ──
@@ -21771,6 +21992,9 @@ function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
+   addU9P97Questions, addU9P98Questions, addU9P99Questions, addU9P100Questions, addU9P101Questions,
+   addU9P102Questions, addU9P103Questions, addU9P104Questions, addU9P105Questions, addU9P106Questions,
+   addU9P107Questions,
    fixU8Pages, fixU8P85, fixU8P86, fixU8P87, fixU8P88, fixU8P89, fixU8P90, fixU8P91, fixU8P92,
    fixU8P93, fixU8P94, fixU8P95, fixU8Phrasal]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });

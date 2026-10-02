@@ -543,6 +543,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'olvidar las preguntas de una página de la Unit 9 en el arranque',
+    buscar: `   ['_u9P103QuestionsV1', addU9P103Questions], `,
+    reemplazo: `   `,
+  },
+  {
     nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
     buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
     reemplazo: `    if (!k || !c.translation) return;`,
