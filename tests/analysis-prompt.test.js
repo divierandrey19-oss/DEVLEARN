@@ -120,3 +120,67 @@ test('las opciones de un ejercicio de selección no son hechos', () => {
   assert.match(analisis, /Never turn an option into a vocabulary example, a grammar example or a statement/);
   assert.match(analisis, /Never build a sentence by joining two options/);
 });
+
+// ── Unit 2, pp. 17-23 (respaldo del 2 de octubre) ─────────────────────────
+// La IA ve una página a la vez: repitió "Would you like to" en tres páginas y,
+// en la p. 23, once tarjetas del recuadro RECYCLE con espacios en blanco. En la
+// p. 22 tomó como hechos las afirmaciones FALSAS de un ejercicio. Y el aviso
+// "no role play scenes" salía en una página que no imprime speaking.
+
+const analyzeWithAI = (() => {
+  const a = fuente.indexOf('async function analyzeWithAI(');
+  return fuente.slice(a, fuente.indexOf('\n}\n', a));
+})();
+
+const ayuda = h.ejecutar(`${['unitKnownContent', 'unitAlreadyTaughtSection', 'sanitizeGrammar', 'vocabKey', 'questionCard']
+  .map(n => h.extraerFuncion(n)).join('\n')}
+  return { unitKnownContent, unitAlreadyTaughtSection, sanitizeGrammar, vocabKey, questionCard };`, {});
+
+/** _analyzeReal con una IA de mentira: guarda el prompt y responde `json`. */
+async function analizarCon(json, known) {
+  const fin2 = fuente.indexOf('  /* ── Main entry point', ini);
+  const enviado = {};
+  const svc = h.ejecutar(`
+    ${['sanitizeGrammar', 'vocabKey', 'questionCard', 'unitAlreadyTaughtSection'].map(n => h.extraerFuncion(n)).join('\n')}
+    return { async _callClaude(opts) { enviado.prompt = opts.messages[0].content.find(c => c.type === 'text').text;
+                                       return ${JSON.stringify(JSON.stringify(json))}; },
+    ${fuente.slice(fuente.lastIndexOf('\n', ini) + 1, fin2)} };`, { enviado });
+  const r = await svc._analyzeReal({ images: ['data:image/jpeg;base64,AAAA'], level: 'a2', unitNum: 2, known });
+  return { r, prompt: enviado.prompt };
+}
+
+test('lo que la unidad ya tiene en otras páginas, sin la página que se analiza', () => {
+  const nueva = { id: 'n', vocab: [{ word: 'Same here!' }], grammar: [{ title: 'Nuevo' }] };
+  const unidad = { batches: [
+    { id: 'a', vocab: [{ word: "That's more my style." }, { word: 'between' }], grammar: [{ title: 'Would you like to' }] },
+    { id: 'b', vocab: [{ word: 'between' }, null], grammar: [] },
+    nueva,
+  ] };
+  assert.deepEqual(ayuda.unitKnownContent(unidad, nueva), { words: ["That's more my style.", 'between'], grammar: ['Would you like to'] });
+  assert.equal(ayuda.unitAlreadyTaughtSection({ words: [], grammar: [] }), '', 'la primera página de la unidad no lleva la sección');
+});
+
+test('el análisis recibe esa lista y la pone en el prompt', async () => {
+  const { prompt } = await analizarCon({ vocabulary: [] }, { words: ['How do I get to the museum?', 'between'], grammar: ['Prepositions of time: on, in, at'] });
+  assert.match(prompt, /━━ ALREADY ON OTHER PAGES OF THIS UNIT ━━/);
+  assert.match(prompt, /Cards: How do I get to the museum\? · between/);
+  assert.match(prompt, /Grammar topics \(do not make another topic that teaches the same point\): Prepositions of time: on, in, at/);
+  assert.match(prompt, /with blanks \("How do I get to ___\?" is "How do I get to the\s+museum\?"\)/);
+  assert.match(prompt, /Never skip an item that appears there — unless another page of this unit already has\s+it as a card/);
+  const { prompt: primera } = await analizarCon({ vocabulary: [] }, undefined);
+  assert.doesNotMatch(primera, /ALREADY ON OTHER PAGES OF THIS UNIT ━━\n\nThe student/);
+  assert.match(analyzeWithAI, /known: unitKnownContent\(unit, batch\),/);
+});
+
+test('las frases de un "corrige las afirmaciones falsas" no son hechos', () => {
+  assert.match(analisis, /A task that asks the student to correct FALSE statements \("Correct each of these false\s+statements", LISTEN FOR ERRORS, true\/false\)/);
+  assert.match(analisis, /None of them is a fact: never use\s+one as a vocabulary example, a grammar example, a statement or a question's answer/);
+});
+
+test('sin speaking no es "incompleta" si la respuesta llegó hasta el final', async () => {
+  const completa = await analizarCon({ vocabulary: [], speakingPrompts: [], questions: [] });
+  assert.equal(completa.r.complete, true);
+  const cortada = await analizarCon({ vocabulary: [] });
+  assert.equal(cortada.r.complete, false);
+  assert.match(analyzeWithAI, /if \(!\(batch\.speakingPrompts \|\| \[\]\)\.length && !parsed\.complete\) faltan\.push\('no role play scenes'\);/);
+});

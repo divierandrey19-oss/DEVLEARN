@@ -563,6 +563,31 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `      set: { example: 'The opening reception is on Tuesday at 6:00 PM.',`,
   },
   {
+    nombre: 'no mandarle al análisis lo que la unidad ya tiene',
+    buscar: `      known: unitKnownContent(unit, batch),\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el prompt no lleve la lista de lo que ya está en la unidad',
+    buscar: `\${yaEnLaUnidad}━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━`,
+    reemplazo: `━━ THE PAGE MARKS ITS OWN TARGET LANGUAGE ━━`,
+  },
+  {
+    nombre: 'quitar la regla de las afirmaciones falsas',
+    buscar: `- A task that asks the student to correct FALSE statements`,
+    reemplazo: `- A task`,
+  },
+  {
+    nombre: 'volver a avisar "incomplete" en una página sin speaking',
+    buscar: `if (!(batch.speakingPrompts || []).length && !parsed.complete) faltan.push`,
+    reemplazo: `if (!(batch.speakingPrompts || []).length) faltan.push`,
+  },
+  {
+    nombre: 'olvidar la p. 22 de la Unit 2 en el arranque',
+    buscar: `['_u2P22V1', fixU2P22], `,
+    reemplazo: ``,
+  },
+  {
     nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
     buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
     reemplazo: `    if (!k || !c.translation) return;`,
