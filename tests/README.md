@@ -171,7 +171,11 @@ y solo si la que queda está en el aparato.
 (era la única unidad que faltaba para el examen final). En la p. 14, "like" tenía
 el ejemplo "I like a basketball game": la página solo imprime "= like", y el
 prompt obligaba a usar las palabras tal como estaban impresas. Ahora dice "I like
-basketball games", armado con palabras de la página, sin quitarle el progreso.
+basketball games", armado con palabras de la página, sin quitarle el progreso. En la
+p. 16, la inauguración de la Burke Gallery es el martes a las 8:00 (salió 6:00);
+"concert", "exhibit" y "talk" repetían "a concert", "an exhibit" y "a talk" de la
+p. 14 (ahora `vocabKey` ignora el artículo), "around the corner" repetía la de la
+p. 15, y "Would you like to…?" ya lo enseña la p. 15.
 
 `u10-p111-fix.test.js` — La corrección de la p. 111: el diálogo de Jake y Nicole
 leído mal ("Ring Street", "how much time", "the deadline…"), "deadline" que la

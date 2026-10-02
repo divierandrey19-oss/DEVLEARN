@@ -548,6 +548,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `   `,
   },
   {
+    nombre: 'que vocabKey vuelva a separar "a concert" de "concert"',
+    buscar: `    .replace(/^(a|an|the)\\s+/, '')\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la corrección de la p. 16 (Unit 2) no corra al arrancar',
+    buscar: `  if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'volver a poner la inauguración de la p. 16 a las 6:00',
+    buscar: `      set: { example: 'The opening reception is on Tuesday at 8:00 PM.',`,
+    reemplazo: `      set: { example: 'The opening reception is on Tuesday at 6:00 PM.',`,
+  },
+  {
     nombre: 'repetir una pregunta que la unidad ya tiene como tarjeta',
     buscar: `    if (!k || !c.translation || ya.has(k)) return;`,
     reemplazo: `    if (!k || !c.translation) return;`,

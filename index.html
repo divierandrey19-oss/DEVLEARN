@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02c -->
+<!-- DEVLEARN_BUILD: 2026-10-02d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02c';
+const APP_BUILD = '2026-10-02d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6761,6 +6761,7 @@ function migrateState(s) {
   if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
+  if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   if (!merged._u2P13QuestionsV1 && addU2P13Questions(merged.units)) merged._u2P13QuestionsV1 = true;
   if (!merged._u2P14QuestionsV1 && addU2P14Questions(merged.units)) merged._u2P14QuestionsV1 = true;
   // Las preguntas del mazo aparte pasan a las flashcards (él las quería ahí).
@@ -6945,6 +6946,35 @@ function fixU2P14(units) {
     { word: 'like', example: 'I like a basketball game.',
       set: { example: 'I like basketball games.', exampleTranslation: 'Me gustan los partidos de baloncesto.' } },
   ] });
+}
+
+/* Unit 2, p. 16: el afiche de la Burke Gallery dice "Tuesday 8:00 PM" y salió
+ * 6:00 (en la tarjeta y en un ejercicio). concert, exhibit y talk repetían "a
+ * concert", "an exhibit" y "a talk" de la p. 14 (vocabKey no ignoraba el
+ * artículo), y "around the corner" repetía "right around the corner" de la
+ * p. 15. "Would you like to…?" ya lo enseña la p. 15, con la misma trampa.
+ * Solo se da por hecha cuando las pp. 14 y 15 están en el aparato: antes, la
+ * repetida no tiene dónde quedar. */
+function fixU2P16(units) {
+  const ok = fixBookPage(units, { unit: 'a2_2', page: 16, cambios: [
+    { word: 'opening reception', example: 'The opening reception is at 6:00 PM.',
+      set: { example: 'The opening reception is on Tuesday at 8:00 PM.',
+             exampleTranslation: 'La inauguración es el martes a las 8:00 p. m.' } },
+  ] });
+  if (!ok) return false;
+  fixPageContent(units, { unit: 'a2_2', page: 16, cambios: [
+    ['The opening reception is on Tuesday ___ 6:00 PM.', 'The opening reception is on Tuesday ___ 8:00 PM.'],
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_2', page: 16 }, [
+    ['concert', 'a concert'], ['exhibit', 'an exhibit'], ['talk', 'a talk'],
+    ['around the corner', 'right around the corner'],
+  ]);
+  const pagina = n => (units.a2_2.batches || []).find(b => b && (b.pages || []).includes(n));
+  const p15 = pagina(15);
+  if (p15 && (p15.grammar || []).some(g => g && /Would you like to/.test(g.title || ''))) {
+    fixPageContent(units, { unit: 'a2_2', page: 16, quitarGramatica: ["Inviting with 'Would you like to...?'"] });
+  }
+  return !!(pagina(14) && p15);
 }
 
 /* Corrige gramática, ejercicios y speaking de una página, contra su foto.
@@ -8866,10 +8896,13 @@ function getUnitVocab(u) {
  * cual dejaba pasar "to have kids" (p. 109) y "have kids" (p. 113) como dos
  * tarjetas, con progreso separado. Se ignoran mayúsculas, el "to" del
  * infinitivo al principio y la puntuación del final. "go kayaking" y
- * "kayaking" también son la misma tarjeta (Unit 9 tenía trece así). */
+ * "kayaking" también son la misma tarjeta (Unit 9 tenía trece así). Y el
+ * artículo tampoco cuenta: "a concert" (p. 14 de la Unit 2) y "concert"
+ * (p. 16) salieron como dos tarjetas. */
 function vocabKey(word) {
   return String(word || '').toLowerCase().trim()
     .replace(/^to\s+/, '')
+    .replace(/^(a|an|the)\s+/, '')
     .replace(/[\s.!?…]+$/, '')
     .replace(/\s+/g, ' ')
     .replace(/^go (?=[a-z -]*ing$)/, '');
@@ -21989,7 +22022,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, addU2P13Questions, addU2P14Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, fixU2P16, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    addU9P97Questions, addU9P98Questions, addU9P99Questions, addU9P100Questions, addU9P101Questions,
