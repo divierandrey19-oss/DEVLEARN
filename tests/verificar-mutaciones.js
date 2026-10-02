@@ -698,6 +698,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que recuperar de un respaldo no devuelva la gramática regenerada',
+    buscar: `      if (mia && !b.analyzing && (b.grammar || []).length && (b.generatedAt || 0) > (mia.generatedAt || 0)) {`,
+    reemplazo: `      if (false) {`,
+  },
+  {
+    nombre: 'que un respaldo más viejo devuelva su gramática vieja',
+    buscar: `(b.generatedAt || 0) > (mia.generatedAt || 0)) {`,
+    reemplazo: `(b.generatedAt || 0) !== (mia.generatedAt || 0)) {`,
+  },
+  {
+    nombre: 'que al recuperar la gramática se toquen las tarjetas',
+    buscar: `  return ['grammar', 'exercises', 'speakingPrompts', 'grammarVersion', 'generatedAt', 'topics', 'title',`,
+    reemplazo: `  return ['vocab', 'grammar', 'exercises', 'speakingPrompts', 'grammarVersion', 'generatedAt', 'topics', 'title',`,
+  },
+  {
     nombre: 'que la Unit 3 no se ordene al abrir la app',
     buscar: `  fixU3Order(merged.units);\n`,
     reemplazo: ``,

@@ -32,6 +32,7 @@ function unir(local, nube) {
   const window = {};
   h.ejecutar(`
     ${h.extraerFuncion('allBatchIds')}
+    ${h.extraerFuncion('generatedFields')}
     ${h.extraerFuncion('mergeFcProgress')}
     ${h.extraerFuncion('mergeTextCopy')}
     ${h.extraerFuncion('mergeTexts')}
@@ -244,4 +245,23 @@ test('una página analizada aquí que en la nube quedó vacía trae sus tarjetas
     { units: { a2_3: { batches: [lote('p26', { vocab: [], grammar: [], analyzing: true })] } } });
   const b = r.units.a2_3.batches[0];
   assert.deepEqual([b.vocab, b.analyzing, b.grammar[0].title], [[{ word: 'feel' }], undefined, 'Nueva']);
+});
+
+test('el respaldo devuelve la gramática regenerada, sin tocar tarjetas ni progreso', () => {
+  const { newerContentFromBackup } = h.ejecutar(`
+    ${h.extraerFuncion('newerContentFromBackup')}
+    return { newerContentFromBackup };
+  `, {});
+  const aqui = { units: { a2_3: { batches: [vieja({ vocab: [{ word: 'sing' }] }), lote('p27', { generatedAt: 3000, grammar: [{ title: 'x' }] })] } } };
+  const respaldo = { units: { a2_3: { lid: 'a2', uid: 3, batches: [regenerada(), lote('p27', { generatedAt: 3000, grammar: [{ title: 'x' }] }),
+    lote('p99', { generatedAt: 9000, grammar: [{ title: 'y' }] }), lote('p30', { generatedAt: 9000, grammar: [], analyzing: true })] } } };
+  const r = newerContentFromBackup(aqui, respaldo);
+  assert.deepEqual(r.map(x => [x.unitKey, x.batch.id]), [['a2_3', 'p26']], 'solo la que aquí está y allá es más nueva');
+  assert.deepEqual(newerContentFromBackup(respaldo, aqui), [], 'un respaldo más viejo no devuelve nada');
+  const restaurar = h.extraerFuncion('restorePagesFromBackup');
+  assert.match(restaurar, /const nuevas = newerContentFromBackup\(state, backup\);/);
+  assert.match(restaurar, /generatedFields\(\)\.forEach\(k => \{ if \(copia\[k\] !== undefined\) aqui\[k\] = copia\[k\]; else delete aqui\[k\]; \}\);/);
+  assert.match(restaurar, /const aqui = \(\(\(state\.units \|\| \{\}\)\[unitKey\] \|\| \{\}\)\.batches \|\| \[\]\)\.find\(b => b && b\.id === batch\.id\);/,
+    'se busca la página al confirmar, no al leer el archivo');
+  assert.doesNotMatch(h.extraerFuncion('generatedFields'), /vocab|images|pages/);
 });
