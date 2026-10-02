@@ -56,6 +56,7 @@ test('agregar la foto la guarda con su número de página, sin tocar tarjetas ni
   const b = u.batches[0];
   assert.deepEqual(b.images, ['data:image/jpeg;base64,p52-comprimida']);
   assert.deepEqual(b.pages, [52]);
+  assert.ok(b.pagesAt > 0, 'el número lleva la hora, para que la nube no lo pise');
   assert.deepEqual(b.vocab, [{ word: 'family' }]);
   assert.deepEqual(u.fcProgress, { family: { interval: 9 } });
   assert.deepEqual(hecho.puestas, [['b1', 1]], 'la foto va a IndexedDB, como las demás');
@@ -76,6 +77,7 @@ test('si no se puede guardar, todo vuelve como estaba', async () => {
   await esperar();
   assert.deepEqual(u.batches[0].images, []);
   assert.equal(u.batches[0].pages, undefined);
+  assert.equal(u.batches[0].pagesAt, undefined);
   assert.deepEqual(hecho.puestas, [], 'no se escribe en IndexedDB');
   assert.match(hecho.toasts[0], /Could not save/);
 });
@@ -111,6 +113,7 @@ test('quitar solo la foto: la página queda como antes, con sus tarjetas y progr
   const b = u.batches[0];
   assert.deepEqual(b.images, []);
   assert.equal(b.pages, undefined, 'el número era el de la foto equivocada');
+  assert.ok(b.pagesAt > 0, 'quitar el número también lleva la hora, o la nube lo devuelve');
   assert.deepEqual(b.vocab, [{ word: 'family' }]);
   assert.deepEqual(u.fcProgress, { family: { interval: 9 } });
   assert.deepEqual(hecho.puestas, [['b1', 0]], 'también sale de IndexedDB, o volvería al recargar');
@@ -118,6 +121,7 @@ test('quitar solo la foto: la página queda como antes, con sus tarjetas y progr
   u.batches[2].pages = [97];
   g('b2');
   assert.deepEqual(u.batches[2].pages, [97]);
+  assert.equal(u.batches[2].pagesAt, undefined, 'no cambió ningún número');
   assert.deepEqual(u.batches[2].vocab, [{ word: 'cousin' }]);
 });
 
@@ -135,13 +139,15 @@ test('la ✕ de la última foto ofrece quitar solo la foto, además de borrar', 
 // (mantener presionado y soltar sobre la página correcta).
 
 const mover = h.ejecutar(`${h.extraerFuncion('movePhotoBetweenPages')}; return movePhotoBetweenPages;`, {});
+const sinHora = o => { const c = { ...o }; delete c.pagesAt; return c; };
 
 test('pasar una foto a una página sin foto: solo se mueve la foto, no las tarjetas', () => {
   const de = { id: 'a', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'job' }] };
   const a = { id: 'b', images: [], vocab: [{ word: 'occupation' }] };
   assert.equal(mover(de, a, 'F1'), 'move');
-  assert.deepEqual(de, { id: 'a', images: [], vocab: [{ word: 'job' }] }, 'el número que él escribió se va con la foto');
-  assert.deepEqual(a, { id: 'b', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'occupation' }] });
+  assert.ok(de.pagesAt > 0 && a.pagesAt > 0, 'las dos páginas cambiaron de número: llevan la hora');
+  assert.deepEqual(sinHora(de), { id: 'a', images: [], vocab: [{ word: 'job' }] }, 'el número que él escribió se va con la foto');
+  assert.deepEqual(sinHora(a), { id: 'b', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'occupation' }] });
 });
 
 test('soltarla sobre una página con foto las intercambia, con sus números', () => {
@@ -160,8 +166,8 @@ test('el número de una página analizada no se mueve ni se pisa', () => {
   const mia = { images: ['H'], pages: [6], pagesByHand: true };
   const analizada = { images: ['G'], pages: [97] };
   assert.equal(mover(mia, analizada, 'H'), 'swap');
-  assert.deepEqual(analizada, { images: ['H'], pages: [97] });
-  assert.deepEqual(mia, { images: ['G'] }, 'su número era el de la foto que se fue');
+  assert.deepEqual(analizada, { images: ['H'], pages: [97] }, 'su número no cambió: tampoco lleva hora');
+  assert.deepEqual(sinHora(mia), { images: ['G'] }, 'su número era el de la foto que se fue');
   // Con dos fotos en el origen no se intercambia: la foto se agrega.
   const dos = { images: ['F1', 'F2'], pages: [5], pagesByHand: true };
   const otra = { images: ['G'], pages: [97] };
@@ -240,6 +246,7 @@ test('cambiar el número de una página con foto', () => {
   const { u, f, hecho } = montarNumero('7');
   assert.equal(f('b1'), true);
   assert.deepEqual([u.batches[0].pages, u.batches[0].pagesByHand], [[7], true]);
+  assert.ok(u.batches[0].pagesAt > 0, 'lleva la hora, para que la copia vieja de la nube no lo pise');
   assert.deepEqual(u.batches[0].vocab, [{ word: 'accent' }]);
   assert.match(hecho.toasts[0], /p\. 7/);
   // Una página analizada también: el número que él pone es el de su foto.
@@ -257,7 +264,7 @@ test('vacío quita el número; basura no cambia nada; si no guarda, vuelve como 
   assert.deepEqual(basura.u.batches[0].pages, [10]);
   const falla = montarNumero('7', { guarda: false });
   assert.equal(falla.f('b1'), false);
-  assert.deepEqual([falla.u.batches[0].pages, falla.u.batches[0].pagesByHand], [[10], true]);
+  assert.deepEqual([falla.u.batches[0].pages, falla.u.batches[0].pagesByHand, falla.u.batches[0].pagesAt], [[10], true, undefined]);
   assert.match(h.extraerFuncion('openPageSheet'), /onclick="setPageNumber\('\$\{escapeStr\(batchId\)\}'\)">✏️ Save page<\/button>/);
 });
 
@@ -282,4 +289,40 @@ test('arrastrando hacia el borde, la pantalla baja o sube sola', () => {
   assert.match(arrastre, /st\.scroller = contenedor\(\);\s*st\.raf = requestAnimationFrame\(bordes\);/);
   assert.match(arrastre, /const v = st\.y < m \? -Math\.ceil\(\(m - st\.y\) \/ 5\) : st\.y > alto - m \? Math\.ceil\(\(st\.y - \(alto - m\)\) \/ 5\) : 0;/);
   assert.match(arrastre, /if \(st\.raf\) cancelAnimationFrame\(st\.raf\);/, 'al soltar se detiene');
+});
+
+// ── Unit 1: los números que la nube le devolvió a los de antes ─────────────
+// Su respaldo del 2 de octubre: las 11 fotos en orden (cada una trae impreso su
+// número, del 1 al 11) con los números [1],[10],[3],[4],[1],[2],[3],[4],[5],
+// [10],[11]. Pidió acomodarlos sin mover las fotos.
+
+const U1 = ['b_1784933801961_jg41en', 'b_1784933920718_on8e5x', 'b_1784934033932_a1ihfr', 'b_1784934257952_n0d9q6',
+  'b_1784934450964_kq94hk', 'b_1784934628845_dc482u', 'b_1784934716414_0dynho', 'b_1784934862013_kb5nd7',
+  'b_1784935076851_92nm9r', 'b_1784935285620_ziff3w', 'b_1784935498127_j4a5jm'];
+const fixU1 = h.ejecutar(`${h.extraerFuncion('fixU1Pages')} return fixU1Pages;`, {});
+
+test('Unit 1: cada foto queda con su número, del 1 al 11, sin mover nada', () => {
+  const viejos = [[1], [10], [3], [4], [1], [2], [3], [4], [5], [10], [11]];
+  const otro = { id: 'otro', pages: [12], images: ['x'] };
+  const units = { a2_1: { batches: U1.map((id, k) => ({ id, pages: viejos[k], images: [`foto${k}`] })).concat(otro) } };
+  assert.equal(fixU1(units), true);
+  const bs = units.a2_1.batches;
+  assert.deepEqual(bs.map(b => b.id), U1.concat('otro'), 'el orden de las fotos no cambia');
+  assert.deepEqual(bs.slice(0, 11).map(b => b.pages[0]), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.deepEqual(bs.slice(0, 11).map(b => b.images[0]), U1.map((_, k) => `foto${k}`));
+  assert.ok(bs.slice(0, 11).every(b => b.pagesByHand && b.pagesAt > 0), 'con hora, para que la nube no los pise');
+  assert.deepEqual(otro, { id: 'otro', pages: [12], images: ['x'] });
+});
+
+test('Unit 1: lo que él renumeró después no se toca al correrla otra vez', () => {
+  const units = { a2_1: { batches: [{ id: U1[0], pages: [4], pagesByHand: true, pagesAt: 99 }, { id: U1[1], pages: [9] }] } };
+  assert.equal(fixU1(units), true);
+  assert.deepEqual(units.a2_1.batches.map(b => b.pages), [[4], [2]]);
+  assert.equal(fixU1({ a2_1: { batches: [{ id: 'x' }] } }), false, 'sin sus páginas no marca la bandera');
+  assert.equal(fixU1({}), false);
+});
+
+test('Unit 1: corre al abrir la app y al recuperar páginas de un respaldo', () => {
+  assert.match(h.extraerFuncion('migrateState'), /if \(!merged\._u1PagesV1 && fixU1Pages\(merged\.units\)\) merged\._u1PagesV1 = true;/);
+  assert.match(h.extraerFuncion('applyPageFixes'), /\bfixU1Pages\b/);
 });

@@ -594,7 +594,7 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'que una foto que no se pudo guardar quede a medias',
-    buscar: `      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand;\n`,
+    buscar: `      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand; b.pagesAt = antes.pagesAt;\n`,
     reemplazo: ``,
   },
   {
@@ -604,7 +604,7 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'que quitar solo la foto deje el número de página de la foto equivocada',
-    buscar: `  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; }\n`,
+    buscar: `  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; b.pagesAt = Date.now(); }\n`,
     reemplazo: ``,
   },
   {
@@ -633,8 +633,48 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que la copia vieja de la nube pise el número escrito después (Unit 1)',
+    buscar: `          if (lt > ct || (!lt && !ct`,
+    reemplazo: `          if ((!lt && !ct`,
+  },
+  {
+    nombre: 'que la nube no traiga el número que él cambió después en el otro aparato',
+    buscar: `          if (lt > ct || (!lt && !ct`,
+    reemplazo: `          if (lt || (!lt && !ct`,
+  },
+  {
+    nombre: 'que cambiar el número de página no lleve la hora',
+    buscar: `  b.pagesAt = Date.now();\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que una foto con número no lleve la hora',
+    buscar: `    if (pagina.length) { b.pagesByHand = true; b.pagesAt = Date.now(); }`,
+    reemplazo: `    if (pagina.length) { b.pagesByHand = true; }`,
+  },
+  {
+    nombre: 'que arrastrar una foto cambie los números sin la hora',
+    buscar: `if (firma(b) !== antes[k]) b.pagesAt = t;`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la Unit 1 no se renumere al abrir la app',
+    buscar: `  if (!merged._u1PagesV1 && fixU1Pages(merged.units)) merged._u1PagesV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que recuperar páginas de un respaldo pise lo que él renumeró después en la Unit 1',
+    buscar: `    if (b.pagesAt) return;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la Unit 1 quede en otro orden',
+    buscar: `    b.pages = [k + 1];\n`,
+    reemplazo: `    b.pages = [k];\n`,
+  },
+  {
     nombre: 'que la copia de la nube borre el número escrito a mano',
-    buscar: `          if (lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand) {`,
+    buscar: `          if (lt > ct || (!lt && !ct && lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand)) {`,
     reemplazo: `          if (false) {`,
   },
   {
