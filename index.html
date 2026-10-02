@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02e -->
+<!-- DEVLEARN_BUILD: 2026-10-02f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -1346,6 +1346,13 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   width: 52px; height: 40px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
   background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
 }
+/* Página subida sin foto (Units 1 y 3 a 6): se toca para agregarle la foto. */
+.img-thumb-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px; text-align: center; cursor: pointer; border: 1px dashed var(--border);
+  background: var(--surface); color: var(--text-2); font-size: 0.7rem; line-height: 1.25;
+}
+.img-thumb-empty b { font-size: 1.3rem; }
 .img-thumb-rm {
   position: absolute; top: 6px; right: 6px;
   width: 22px; height: 22px; border-radius: 50%;
@@ -4905,7 +4912,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02e';
+const APP_BUILD = '2026-10-02f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11696,8 +11703,8 @@ function loadUnitContent() {
     renderImagePreviews(imgs);
   } else {
     if (uploadZone) uploadZone.style.display = '';
-    const grid = document.getElementById('img-grid');
-    if (grid) grid.style.display = 'none';
+    // Sin fotos, la cuadrícula muestra las páginas a las que les falta la foto.
+    renderImagePreviews(imgs);
   }
   const vocab     = getUnitVocab(u);
   const grammar   = getUnitGrammar(u);
@@ -11837,13 +11844,14 @@ function handleUnitUpload(event) {
 function renderImagePreviews(images) {
   const grid = document.getElementById('img-grid');
   if (!grid) return;
-  if (!images || images.length === 0) {
+  const u = current.lid && current.uid ? getUnit(current.lid, current.uid) : null;
+  const sinFoto = pagesWithoutPhoto(u);
+  if ((!images || images.length === 0) && !sinFoto.length) {
     grid.style.display = 'none';
     return;
   }
   grid.style.display = 'grid';
-  const u = current.lid && current.uid ? getUnit(current.lid, current.uid) : null;
-  grid.innerHTML = images.map((imgObj, i) => {
+  grid.innerHTML = (images || []).map((imgObj, i) => {
     const src = typeof imgObj === 'string' ? imgObj : imgObj.src;
     const batchId = typeof imgObj === 'string' ? null : imgObj.batchId;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
@@ -11855,7 +11863,54 @@ function renderImagePreviews(images) {
       <button class="img-thumb-rm" onclick="removeUnitImage(${i})" title="Delete this image and its content">✕</button>
     </div>
   `;
-  }).join('');
+  }).join('') + sinFoto.map(b => `
+    <div class="img-thumb img-thumb-empty" onclick="openPageSheet('${escapeStr(b.id)}')">
+      <b>📷</b>
+      <span>${escapeHtml(bookPageLabel(b) || b.title || 'Page')}</span>
+      <span style="color:var(--text-3);">Add photo · 🃏 ${(b.vocab || []).length}</span>
+    </div>`).join('');
+}
+
+/* Las páginas que se subieron sin foto (Units 1 y 3 a 6, de antes de guardar
+ * las fotos). Sin foto no se pueden revisar contra el libro ni regenerar. Los
+ * lotes hechos a mano (phrasal verbs, pv_*) no son una página del libro. */
+function pagesWithoutPhoto(u) {
+  return ((u && u.batches) || []).filter(b => b && !(b.images || []).length && !String(b.id || '').startsWith('pv_') && !b.analyzing);
+}
+
+/* Agregarle la foto a una página que ya existe, sin analizarla otra vez: no
+ * cuesta nada y no toca sus tarjetas ni su progreso. Con la foto, la página
+ * se puede revisar contra el libro (su respaldo la trae) y regenerar. */
+function attachPagePhoto(batchId, input) {
+  const u = getUnit(current.lid, current.uid);
+  const b = (u?.batches || []).find(x => x.id === batchId);
+  const files = Array.from((input && input.files) || []).slice(0, 4);
+  if (!b || !files.length) return;
+  const pagina = sanitizePageNumbers([(document.getElementById('ps-page') || {}).value]);
+  const lee = f => new Promise(res => {
+    if (f.size > 10 * 1024 * 1024) { res(null); return; }
+    const r = new FileReader();
+    r.onload = ev => res(ev.target.result);
+    r.onerror = () => res(null);
+    r.readAsDataURL(f);
+  });
+  Promise.all(files.map(lee)).then(async raw => {
+    const fotos = raw.filter(Boolean);
+    if (!fotos.length) { toast('❌ Could not read the photo'); return; }
+    const comprimidas = await Promise.all(fotos.map(img => compressImage(img)));
+    const antes = { images: b.images, pages: b.pages };
+    b.images = comprimidas;
+    if (pagina.length) b.pages = pagina;
+    if (!writeState()) {
+      b.images = antes.images; b.pages = antes.pages;
+      toast('⚠️ Could not save — free up space and try again');
+      return;
+    }
+    ImageStore.put(b.id, b.images).catch(e => console.warn('Image save failed:', e));
+    renderImagePreviews(getUnitImages(u));
+    openPageSheet(batchId);
+    toast('📷 Photo added. Your cards stay the same.');
+  });
 }
 
 /* Él toca una foto y quiere repasar solo las palabras de esa página. La hoja
@@ -11889,6 +11944,17 @@ function openPageSheet(batchId) {
         <button class="vb-x" aria-label="Close" onclick="document.getElementById('page-sheet').remove()">✕</button>
       </div>
       ${(b.images || []).map(src => `<img src="${src}" alt="" style="width:100%;border-radius:var(--r-sm);margin-bottom:10px;">`).join('')}
+      ${pagesWithoutPhoto(u).includes(b) ? `
+        <div class="vb-sheet-txt" style="color:var(--text-2);">📷 This page has no photo. Add it to check it against the book. It isn't analyzed again: your cards and progress stay the same.</div>
+        <input id="ps-page" type="number" inputmode="numeric" min="1" max="999" placeholder="Page in the book (e.g. 52)" value="${escapeHtml(String((b.pages || [])[0] || ''))}"
+          style="width:100%;padding:10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);margin-bottom:8px;font:inherit;">
+        <label class="btn btn-ghost" style="width:100%;margin-bottom:10px;cursor:pointer;">📷 Add the photo of this page
+          <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
+        </label>` : ''}
+      ${(b.images || []).length && !String(b.id || '').startsWith('pv_') ? `
+        <label style="display:block;text-align:center;font-size:0.75rem;color:var(--text-3);margin:-4px 0 10px;cursor:pointer;">🔄 Wrong photo? Change it (your cards stay the same)
+          <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
+        </label>` : ''}
       ${words.length ? `
         <div class="vb-sheet-txt" style="color:var(--text-2);">${escapeHtml(words.slice(0, 6).map(v => v.word).join(' · '))}${words.length > 6 ? ' …' : ''}</div>
         <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('page-sheet').remove();openFcStudy(current.lid, current.uid, false, '${escapeStr(batchId)}')">🃏 Review these ${pageCardsLabel(words)}</button>
