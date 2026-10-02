@@ -187,3 +187,35 @@ test('la cuadrícula deja arrastrar: cada recuadro sabe su página y soltar pide
   assert.match(pedir, /ImageStore\.put\(a\.id, a\.images\)/);
   assert.match(pedir, /tile\.scrollIntoView\(/, 'le muestra dónde quedó');
 });
+
+// Con el computador abierto, la nube trae cambios mientras el aviso está
+// abierto, y juntar reemplaza las páginas por copias nuevas. La foto se movía
+// en la copia vieja: salía "Photo moved" y nada cambiaba.
+
+test('mover: las páginas se buscan otra vez al confirmar, no las del momento de soltar', () => {
+  let unidad = { batches: [{ id: 'a', images: ['F'], vocab: [] }, { id: 'b', images: [], vocab: [] }] };
+  let confirmar = null;
+  const toasts = [];
+  const pedir = h.ejecutar(`${['askMovePagePhoto', 'movePhotoBetweenPages'].map(n => h.extraerFuncion(n)).join('\n')}; return askMovePagePhoto;`, {
+    current: { lid: 'a2', uid: 1 }, getUnit: () => unidad, batchLabel: (u, id) => id,
+    confirmAction: o => { confirmar = o.onConfirm; }, writeState: () => true,
+    ImageStore: { put: async () => {} }, loadUnitContent: () => {}, toast: m => toasts.push(m), console,
+    document: { querySelector: () => null }, CSS: { escape: x => x },
+  });
+  pedir('a', 'F', 'b');
+  unidad = JSON.parse(JSON.stringify(unidad));   // llegó la nube: objetos nuevos
+  confirmar();
+  assert.deepEqual(unidad.batches.map(b => b.images), [[], ['F']], 'la foto se mueve en las páginas que se ven');
+  assert.match(toasts[0], /Photo moved/);
+});
+
+test('agregar: si la nube llegó mientras se comprimía la foto, se guarda en la página nueva', async () => {
+  const { u, f } = montar();
+  const vieja = u.batches[0];
+  f.attachPagePhoto('b1', { files: [{ name: 'p52', size: 1000 }] });
+  // Antes de que termine de leer la foto, la nube reemplaza la página.
+  u.batches[0] = JSON.parse(JSON.stringify(vieja));
+  await esperar();
+  assert.deepEqual(u.batches[0].images, ['data:image/jpeg;base64,p52-comprimida']);
+  assert.deepEqual(vieja.images, [], 'no en la copia vieja');
+});

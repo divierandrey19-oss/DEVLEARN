@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02i -->
+<!-- DEVLEARN_BUILD: 2026-10-02j -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4806,6 +4806,13 @@ window._mergeCloudState = function(cloud) {
         const lb = localById.get(cb.id);
         if (lb) {
           cb.images = lb.images || [];   // re-attach THIS batch's own photos
+          /* El número de página que él escribió al ponerle la foto, en este
+           * aparato: si la copia de la nube todavía no lo tiene (el otro
+           * aparato subió antes que este), no se pierde. */
+          if (lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand) {
+            cb.pages = lb.pages;
+            cb.pagesByHand = true;
+          }
           localById.delete(cb.id);
         } else {
           cb.images = cb.images || [];   // batch from another device — no photos here
@@ -4920,7 +4927,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02i';
+const APP_BUILD = '2026-10-02j';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12005,6 +12012,15 @@ function askMovePagePhoto(fromId, src, toId) {
       : `From "${nombreDe}"\nto "${nombreA}".\n\nOnly the photo moves: the cards of each page stay where they are.`,
     confirmText: intercambio ? '🔄 Swap them' : '📷 Move it',
     onConfirm: () => {
+      /* Las páginas se buscan otra vez al confirmar. Con el computador
+       * abierto, la nube puede traer cambios mientras el aviso está abierto,
+       * y juntar con la nube reemplaza las páginas por copias nuevas: la foto
+       * se movía en la copia vieja, que ya no se ve ("Photo moved" y nada
+       * cambiaba). */
+      const uAhora = getUnit(current.lid, current.uid);
+      const de = (uAhora?.batches || []).find(b => b.id === fromId);
+      const a = (uAhora?.batches || []).find(b => b.id === toId);
+      if (!de || !a || !(de.images || []).includes(src)) { toast('The page changed meanwhile — try again'); loadUnitContent(); return; }
       const antes = JSON.stringify([de, a].map(b => ({ images: b.images, pages: b.pages, pagesByHand: b.pagesByHand })));
       const hecho = movePhotoBetweenPages(de, a, src);
       if (!hecho) return;
@@ -12045,7 +12061,7 @@ function pagesWithoutPhoto(u) {
  * se puede revisar contra el libro (su respaldo la trae) y regenerar. */
 function attachPagePhoto(batchId, input) {
   const u = getUnit(current.lid, current.uid);
-  const b = (u?.batches || []).find(x => x.id === batchId);
+  let b = (u?.batches || []).find(x => x.id === batchId);
   const files = Array.from((input && input.files) || []).slice(0, 4);
   if (!b || !files.length) return;
   const pagina = sanitizePageNumbers([(document.getElementById('ps-page') || {}).value]);
@@ -12060,6 +12076,10 @@ function attachPagePhoto(batchId, input) {
     const fotos = raw.filter(Boolean);
     if (!fotos.length) { toast('❌ Could not read the photo'); return; }
     const comprimidas = await Promise.all(fotos.map(img => compressImage(img)));
+    // Leer y comprimir toma un momento: si mientras tanto llegó la nube, la
+    // página es otro objeto. Se busca otra vez para no guardar en la vieja.
+    const uAhora = getUnit(current.lid, current.uid);
+    b = (uAhora?.batches || []).find(x => x.id === batchId) || b;
     const antes = { images: b.images, pages: b.pages, pagesByHand: b.pagesByHand };
     b.images = comprimidas;
     if (pagina.length) b.pages = pagina;
@@ -12070,7 +12090,7 @@ function attachPagePhoto(batchId, input) {
       return;
     }
     ImageStore.put(b.id, b.images).catch(e => console.warn('Image save failed:', e));
-    renderImagePreviews(getUnitImages(u));
+    renderImagePreviews(getUnitImages(getUnit(current.lid, current.uid)));
     openPageSheet(batchId);
     toast('📷 Photo added. Your cards stay the same.');
   });

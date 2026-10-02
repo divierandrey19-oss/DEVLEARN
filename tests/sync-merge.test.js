@@ -161,3 +161,18 @@ test('marcar y repasar dejan la hora, que es lo que mira la unión', () => {
   assert.match(h.extraerFuncion('markTextReview'), /t\.markedAt = Date\.now\(\);/);
   assert.match(funcionDeVentana('_mergeCloudState'), /state\.texts = mergeTexts\(localTexts, imported\.texts\);/);
 });
+
+// ---------------------------------------------------------------------------
+// Fotos agregadas a mano (2 de octubre). Con el computador abierto, la nube
+// trae su copia de las páginas: el número que él escribió en el celular al
+// ponerle la foto no puede perderse porque el otro aparato subió antes.
+// ---------------------------------------------------------------------------
+
+test('el número de página escrito a mano en este aparato no lo borra la copia de la nube', () => {
+  const celular = { units: { a2_1: { batches: [lote('b1', { images: ['foto'], pages: [5], pagesByHand: true }), lote('b2', { pages: [97] })] } } };
+  const nube = { units: { a2_1: { batches: [lote('b1'), lote('b2', { pages: [98] })] } } };
+  const r = unir(celular, nube);
+  const [b1, b2] = r.units.a2_1.batches;
+  assert.deepEqual([b1.images, b1.pages, b1.pagesByHand], [['foto'], [5], true]);
+  assert.deepEqual(b2.pages, [98], 'un número que no escribió él sigue viniendo de la nube');
+});
