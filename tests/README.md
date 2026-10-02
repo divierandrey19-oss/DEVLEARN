@@ -64,7 +64,9 @@ número.
 (Units 1 y 3 a 6): la unidad muestra esas páginas con 📷, la foto se guarda con su
 número de página sin analizarla otra vez (no cuesta nada) y sin tocar tarjetas ni
 progreso; si no se puede guardar, todo queda como estaba. Así esas páginas se pueden
-revisar contra el libro desde su respaldo, como las demás.
+revisar contra el libro desde su respaldo, como las demás. Si se equivoca de página: la ✕ ofrece
+"Remove only the photo" (sin borrar la página), y una foto se puede arrastrar
+(mantener presionada) a la página correcta; solo se mueve la foto, no las tarjetas.
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la

@@ -85,7 +85,7 @@ test('la unidad muestra las páginas sin foto, y la hoja ofrece agregarla o camb
   assert.match(carga, /\} else \{\s*if \(uploadZone\) uploadZone\.style\.display = '';\s*\/\/[^\n]*\n\s*renderImagePreviews\(imgs\);/);
   const cuadricula = h.extraerFuncion('renderImagePreviews');
   assert.match(cuadricula, /pagesWithoutPhoto\(u\)/);
-  assert.match(cuadricula, /class="img-thumb img-thumb-empty" onclick="openPageSheet\(/);
+  assert.match(cuadricula, /class="img-thumb img-thumb-empty" data-batch="[^"]+" onclick="openPageSheet\(/);
   const hoja = h.extraerFuncion('openPageSheet');
   assert.match(hoja, /📷 Add the photo of this page/);
   assert.match(hoja, /🔄 Wrong photo\? Change it/);
@@ -129,4 +129,48 @@ test('la ✕ de la última foto ofrece quitar solo la foto, además de borrar', 
   assert.match(confirmar, /alt\.style\.display = onAlt \? '' : 'none'/);
   assert.match(h.extraerFuncion('closeConfirm'), /if \(confirmed === 'alt'\)/);
   assert.ok(fuente.includes(`id="confirm-alt-btn" style="display:none;" onclick="closeConfirm('alt')"`));
+});
+
+// Él le puso la foto a la página equivocada y preguntó si podía arrastrarla
+// (mantener presionado y soltar sobre la página correcta).
+
+const mover = h.ejecutar(`${h.extraerFuncion('movePhotoBetweenPages')}; return movePhotoBetweenPages;`, {});
+
+test('pasar una foto a otra página: solo se mueve la foto, no las tarjetas', () => {
+  const de = { id: 'a', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'job' }] };
+  const a = { id: 'b', images: [], vocab: [{ word: 'occupation' }] };
+  assert.equal(mover(de, a, 'F1'), true);
+  assert.deepEqual(de, { id: 'a', images: [], vocab: [{ word: 'job' }] }, 'el número que él escribió se va con la foto');
+  assert.deepEqual(a, { id: 'b', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'occupation' }] });
+});
+
+test('el número no pisa el de la página de destino, ni se va si quedan fotos', () => {
+  const de = { images: ['F1', 'F2'], pages: [5], pagesByHand: true };
+  const a = { images: ['G'], pages: [97] };
+  assert.equal(mover(de, a, 'F1'), true);
+  assert.deepEqual(de.images, ['F2']);
+  assert.deepEqual(de.pages, [5], 'le queda otra foto: su número sigue');
+  assert.deepEqual(a, { images: ['G', 'F1'], pages: [97] });
+  // La única foto, con número escrito por él, hacia una página que ya tiene el suyo.
+  const sola = { images: ['H'], pages: [6], pagesByHand: true };
+  assert.equal(mover(sola, a, 'H'), true);
+  assert.deepEqual(a.pages, [97], 'el número del destino no se pisa');
+  assert.equal(sola.pages, undefined);
+  assert.equal(mover(a, a, 'G'), false, 'a la misma página, nada');
+  assert.equal(mover(de, a, 'NO'), false, 'una foto que no es de esa página, nada');
+});
+
+test('la cuadrícula deja arrastrar: cada recuadro sabe su página y soltar pide confirmar', () => {
+  const cuadricula = h.extraerFuncion('renderImagePreviews');
+  assert.match(cuadricula, /<div class="img-thumb" \$\{batchId \? `data-batch="\$\{escapeHtml\(batchId\)\}"` : ''\}>/);
+  assert.match(cuadricula, /enablePhotoDrag\(grid\);/);
+  const arrastre = h.extraerFuncion('enablePhotoDrag');
+  assert.match(arrastre, /}, 450\);/, 'mantener presionado medio segundo');
+  assert.match(arrastre, /if \(Math\.hypot\(x - st\.x0, y - st\.y0\) > 10\) fin\(\)/, 'moverse antes es desplazar la pantalla');
+  assert.match(arrastre, /if \(e && e\.cancelable\) e\.preventDefault\(\);/);
+  assert.match(arrastre, /if \(over\) askMovePagePhoto\(batchId, src, over\.dataset\.batch\);/);
+  const pedir = h.extraerFuncion('askMovePagePhoto');
+  assert.match(pedir, /confirmText: '📷 Move it'/);
+  assert.match(pedir, /ImageStore\.put\(de\.id, de\.images\)/);
+  assert.match(pedir, /ImageStore\.put\(a\.id, a\.images\)/);
 });
