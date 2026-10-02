@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02h -->
+<!-- DEVLEARN_BUILD: 2026-10-02i -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4920,7 +4920,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02h';
+const APP_BUILD = '2026-10-02i';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -11952,20 +11952,43 @@ function enablePhotoDrag(grid) {
   grid.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('.img-thumb img')) e.preventDefault(); });
 }
 
-/* Mueve una foto de una página a otra. El número de página que él escribió
- * al agregarla es el de esa foto: se va con ella si la página de origen queda
- * sin fotos y la de destino no tiene número. Devuelve true si la movió. */
+/* Pasa una foto de una página a otra. Si la página donde la suelta ya tiene
+ * foto y la de origen tiene solo esa, las fotos se INTERCAMBIAN: él las ponía
+ * en la página equivocada, y soltar encima de otra foto agregaba una segunda
+ * foto a esa página en vez de cambiarlas ("no queda donde la pongo").
+ * El número de página que él escribió (pagesByHand) es el de su foto y viaja
+ * con ella; el de una página analizada es de su contenido y no se mueve.
+ * Devuelve 'swap', 'move' o false. */
 function movePhotoBetweenPages(de, a, src) {
   const i = ((de && de.images) || []).indexOf(src);
   if (!a || de === a || i < 0) return false;
+  const numero = b => (b.pagesByHand && (b.pages || []).length ? b.pages : null);
+  const ponerNumero = (b, n) => {
+    if (n) { if (!(b.pages || []).length || b.pagesByHand) { b.pages = n; b.pagesByHand = true; } }
+    else if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; }
+  };
+  if ((a.images || []).length && de.images.length === 1) {
+    const nDe = numero(de), nA = numero(a);
+    const fotosA = a.images;
+    a.images = [src];
+    de.images = fotosA;
+    if (nDe || nA) {
+      if (de.pagesByHand) { delete de.pages; delete de.pagesByHand; }
+      if (a.pagesByHand) { delete a.pages; delete a.pagesByHand; }
+      ponerNumero(a, nDe);
+      ponerNumero(de, nA);
+    }
+    return 'swap';
+  }
+  const nDe = numero(de);
   de.images = de.images.filter((_, k) => k !== i);
   a.images = [...(a.images || []), src];
-  if (de.pagesByHand && !de.images.length) {
-    if (!(a.pages || []).length) { a.pages = de.pages; a.pagesByHand = true; }
+  if (nDe && !de.images.length) {
     delete de.pages;
     delete de.pagesByHand;
+    ponerNumero(a, nDe);
   }
-  return true;
+  return 'move';
 }
 
 function askMovePagePhoto(fromId, src, toId) {
@@ -11973,13 +11996,18 @@ function askMovePagePhoto(fromId, src, toId) {
   const de = (u?.batches || []).find(b => b.id === fromId);
   const a = (u?.batches || []).find(b => b.id === toId);
   if (!de || !a || de === a) return;
+  const intercambio = (a.images || []).length && (de.images || []).length === 1;
+  const nombreDe = batchLabel(u, fromId), nombreA = batchLabel(u, toId);
   confirmAction({
-    title: 'Move this photo?',
-    message: `From "${batchLabel(u, fromId)}"\nto "${batchLabel(u, toId)}".\n\nOnly the photo moves: the cards of each page stay where they are.`,
-    confirmText: '📷 Move it',
+    title: intercambio ? 'Swap these photos?' : 'Move this photo?',
+    message: intercambio
+      ? `The photo of "${nombreDe}" goes to "${nombreA}",\nand the photo of "${nombreA}" goes to "${nombreDe}".\n\nOnly the photos move: the cards of each page stay where they are.`
+      : `From "${nombreDe}"\nto "${nombreA}".\n\nOnly the photo moves: the cards of each page stay where they are.`,
+    confirmText: intercambio ? '🔄 Swap them' : '📷 Move it',
     onConfirm: () => {
       const antes = JSON.stringify([de, a].map(b => ({ images: b.images, pages: b.pages, pagesByHand: b.pagesByHand })));
-      if (!movePhotoBetweenPages(de, a, src)) return;
+      const hecho = movePhotoBetweenPages(de, a, src);
+      if (!hecho) return;
       if (!writeState()) {
         JSON.parse(antes).forEach((x, k) => {
           const b = [de, a][k];
@@ -11993,7 +12021,14 @@ function askMovePagePhoto(fromId, src, toId) {
       ImageStore.put(de.id, de.images).catch(e => console.warn('Image save failed:', e));
       ImageStore.put(a.id, a.images).catch(e => console.warn('Image save failed:', e));
       loadUnitContent();
-      toast('📷 Photo moved. The cards stay the same.');
+      // Que vea dónde quedó: la página de destino, a la vista y resaltada.
+      const tile = document.querySelector(`#img-grid [data-batch="${CSS.escape(a.id)}"]`);
+      if (tile) {
+        tile.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        tile.classList.add('drop-over');
+        setTimeout(() => tile.classList.remove('drop-over'), 1600);
+      }
+      toast(hecho === 'swap' ? '🔄 Photos swapped. The cards stay the same.' : '📷 Photo moved. The cards stay the same.');
     },
   });
 }

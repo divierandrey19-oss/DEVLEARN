@@ -136,28 +136,40 @@ test('la ✕ de la última foto ofrece quitar solo la foto, además de borrar', 
 
 const mover = h.ejecutar(`${h.extraerFuncion('movePhotoBetweenPages')}; return movePhotoBetweenPages;`, {});
 
-test('pasar una foto a otra página: solo se mueve la foto, no las tarjetas', () => {
+test('pasar una foto a una página sin foto: solo se mueve la foto, no las tarjetas', () => {
   const de = { id: 'a', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'job' }] };
   const a = { id: 'b', images: [], vocab: [{ word: 'occupation' }] };
-  assert.equal(mover(de, a, 'F1'), true);
+  assert.equal(mover(de, a, 'F1'), 'move');
   assert.deepEqual(de, { id: 'a', images: [], vocab: [{ word: 'job' }] }, 'el número que él escribió se va con la foto');
   assert.deepEqual(a, { id: 'b', images: ['F1'], pages: [5], pagesByHand: true, vocab: [{ word: 'occupation' }] });
 });
 
-test('el número no pisa el de la página de destino, ni se va si quedan fotos', () => {
-  const de = { images: ['F1', 'F2'], pages: [5], pagesByHand: true };
-  const a = { images: ['G'], pages: [97] };
-  assert.equal(mover(de, a, 'F1'), true);
-  assert.deepEqual(de.images, ['F2']);
-  assert.deepEqual(de.pages, [5], 'le queda otra foto: su número sigue');
-  assert.deepEqual(a, { images: ['G', 'F1'], pages: [97] });
-  // La única foto, con número escrito por él, hacia una página que ya tiene el suyo.
-  const sola = { images: ['H'], pages: [6], pagesByHand: true };
-  assert.equal(mover(sola, a, 'H'), true);
-  assert.deepEqual(a.pages, [97], 'el número del destino no se pisa');
-  assert.equal(sola.pages, undefined);
-  assert.equal(mover(a, a, 'G'), false, 'a la misma página, nada');
-  assert.equal(mover(de, a, 'NO'), false, 'una foto que no es de esa página, nada');
+test('soltarla sobre una página con foto las intercambia, con sus números', () => {
+  // Él soltaba la foto encima de otra y la app le agregaba una segunda foto a
+  // esa página: "no queda donde la pongo".
+  const p9 = { id: 'a', images: ['FOTO_DE_LA_P10'], pages: [9], pagesByHand: true, vocab: [{ word: 'x' }] };
+  const p10 = { id: 'b', images: ['FOTO_DE_LA_P9'], pages: [10], pagesByHand: true, vocab: [{ word: 'y' }] };
+  assert.equal(mover(p9, p10, 'FOTO_DE_LA_P10'), 'swap');
+  assert.deepEqual(p9.images, ['FOTO_DE_LA_P9']);
+  assert.deepEqual(p10.images, ['FOTO_DE_LA_P10']);
+  assert.deepEqual([p9.pages, p10.pages], [[10], [9]], 'cada número viaja con su foto');
+  assert.deepEqual([p9.vocab, p10.vocab], [[{ word: 'x' }], [{ word: 'y' }]], 'las tarjetas no se mueven');
+});
+
+test('el número de una página analizada no se mueve ni se pisa', () => {
+  const mia = { images: ['H'], pages: [6], pagesByHand: true };
+  const analizada = { images: ['G'], pages: [97] };
+  assert.equal(mover(mia, analizada, 'H'), 'swap');
+  assert.deepEqual(analizada, { images: ['H'], pages: [97] });
+  assert.deepEqual(mia, { images: ['G'] }, 'su número era el de la foto que se fue');
+  // Con dos fotos en el origen no se intercambia: la foto se agrega.
+  const dos = { images: ['F1', 'F2'], pages: [5], pagesByHand: true };
+  const otra = { images: ['G'], pages: [97] };
+  assert.equal(mover(dos, otra, 'F1'), 'move');
+  assert.deepEqual(dos, { images: ['F2'], pages: [5], pagesByHand: true }, 'le queda otra foto: su número sigue');
+  assert.deepEqual(otra, { images: ['G', 'F1'], pages: [97] });
+  assert.equal(mover(otra, otra, 'G'), false, 'a la misma página, nada');
+  assert.equal(mover(dos, otra, 'NO'), false, 'una foto que no es de esa página, nada');
 });
 
 test('la cuadrícula deja arrastrar: cada recuadro sabe su página y soltar pide confirmar', () => {
@@ -170,7 +182,8 @@ test('la cuadrícula deja arrastrar: cada recuadro sabe su página y soltar pide
   assert.match(arrastre, /if \(e && e\.cancelable\) e\.preventDefault\(\);/);
   assert.match(arrastre, /if \(over\) askMovePagePhoto\(batchId, src, over\.dataset\.batch\);/);
   const pedir = h.extraerFuncion('askMovePagePhoto');
-  assert.match(pedir, /confirmText: '📷 Move it'/);
+  assert.match(pedir, /confirmText: intercambio \? '🔄 Swap them' : '📷 Move it'/);
   assert.match(pedir, /ImageStore\.put\(de\.id, de\.images\)/);
   assert.match(pedir, /ImageStore\.put\(a\.id, a\.images\)/);
+  assert.match(pedir, /tile\.scrollIntoView\(/, 'le muestra dónde quedó');
 });

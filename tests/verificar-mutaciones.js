@@ -608,9 +608,14 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
-    nombre: 'que arrastrar una foto se lleve también el número de otra página',
-    buscar: `    if (!(a.pages || []).length) { a.pages = de.pages; a.pagesByHand = true; }\n`,
-    reemplazo: `    a.pages = de.pages; a.pagesByHand = true;\n`,
+    nombre: 'que soltar una foto sobre otra vuelva a agregarla en vez de intercambiarlas',
+    buscar: `  if ((a.images || []).length && de.images.length === 1) {`,
+    reemplazo: `  if (false) {`,
+  },
+  {
+    nombre: 'que el número escrito a mano pise el de una página analizada',
+    buscar: `    if (n) { if (!(b.pages || []).length || b.pagesByHand) { b.pages = n; b.pagesByHand = true; } }`,
+    reemplazo: `    if (n) { b.pages = n; b.pagesByHand = true; }`,
   },
   {
     nombre: 'que la foto arrastrada no salga de la página de origen',
