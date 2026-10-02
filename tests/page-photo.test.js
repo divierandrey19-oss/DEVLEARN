@@ -151,6 +151,11 @@ test('el número no pisa el de la página de destino, ni se va si quedan fotos',
   assert.deepEqual(de.images, ['F2']);
   assert.deepEqual(de.pages, [5], 'le queda otra foto: su número sigue');
   assert.deepEqual(a, { images: ['G', 'F1'], pages: [97] });
+  // La única foto, con número escrito por él, hacia una página que ya tiene el suyo.
+  const sola = { images: ['H'], pages: [6], pagesByHand: true };
+  assert.equal(mover(sola, a, 'H'), true);
+  assert.deepEqual(a.pages, [97], 'el número del destino no se pisa');
+  assert.equal(sola.pages, undefined);
   assert.equal(mover(a, a, 'G'), false, 'a la misma página, nada');
   assert.equal(mover(de, a, 'NO'), false, 'una foto que no es de esa página, nada');
 });
