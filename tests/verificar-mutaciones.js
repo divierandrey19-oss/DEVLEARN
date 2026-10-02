@@ -623,6 +623,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'mover la foto en las páginas del momento de soltar (la nube ya las cambió)',
+    buscar: `      const uAhora = getUnit(current.lid, current.uid);\n      const de = (uAhora?.batches || []).find(b => b.id === fromId);\n      const a = (uAhora?.batches || []).find(b => b.id === toId);\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'guardar la foto agregada en la página vieja si llegó la nube',
+    buscar: `    b = (uAhora?.batches || []).find(x => x.id === batchId) || b;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la copia de la nube borre el número escrito a mano',
+    buscar: `          if (lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand) {`,
+    reemplazo: `          if (false) {`,
+  },
+  {
     nombre: 'que la cuadrícula no deje arrastrar fotos',
     buscar: `    </div>\`).join('');\n  enablePhotoDrag(grid);\n`,
     reemplazo: `    </div>\`).join('');\n`,
