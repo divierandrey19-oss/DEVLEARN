@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02m -->
+<!-- DEVLEARN_BUILD: 2026-10-02n -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4806,12 +4806,15 @@ window._mergeCloudState = function(cloud) {
         const lb = localById.get(cb.id);
         if (lb) {
           cb.images = lb.images || [];   // re-attach THIS batch's own photos
-          /* El número de página que él escribió al ponerle la foto, en este
-           * aparato: si la copia de la nube todavía no lo tiene (el otro
-           * aparato subió antes que este), no se pierde. */
-          if (lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand) {
-            cb.pages = lb.pages;
-            cb.pagesByHand = true;
+          /* El número de página que él escribe gana si es el más reciente
+           * (pagesAt). La nube traía siempre su copia: él ordenó la Unit 1
+           * del 1 al 11, salió, volvió a entrar y los números habían vuelto a
+           * los de antes (las fotos no, porque no viajan a la nube). Sin
+           * hora en ninguno de los dos, el que él escribió aquí gana sobre
+           * una nube que no tiene ninguno. */
+          const lt = lb.pagesAt || 0, ct = cb.pagesAt || 0;
+          if (lt > ct || (!lt && !ct && lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand)) {
+            ['pages', 'pagesByHand', 'pagesAt'].forEach(k => { if (lb[k] !== undefined) cb[k] = lb[k]; else delete cb[k]; });
           }
           localById.delete(cb.id);
         } else {
@@ -4927,7 +4930,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02m';
+const APP_BUILD = '2026-10-02n';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6793,6 +6796,7 @@ function migrateState(s) {
   if (!merged._u10P112QuestionsV1 && addU10P112Questions(merged.units)) merged._u10P112QuestionsV1 = true;
   if (!merged._u10P113QuestionsV1 && addU10P113Questions(merged.units)) merged._u10P113QuestionsV1 = true;
   if (!merged._u2P14V1 && fixU2P14(merged.units)) merged._u2P14V1 = true;
+  if (!merged._u1PagesV1 && fixU1Pages(merged.units)) merged._u1PagesV1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -6970,6 +6974,32 @@ function fixU10P111(units) {
       example: "Tell you what... Call me when you're done, and I'll come pick you up.",
       exampleTranslation: 'Te propongo algo... Llámame cuando termines y paso a recogerte.' } },
   ] });
+}
+
+/* Unit 1: él le puso a cada página su foto, del 1 al 11 en orden (cada foto
+ * trae su número impreso), salió, volvió a entrar, y los números habían vuelto
+ * a los de antes: la nube traía su copia vieja (las fotos no viajan a la
+ * nube, los números sí). Él pidió dejarlas así y que los acomodara sin mover
+ * las fotos. Lleva la hora para que una copia vieja de la nube no los pise. */
+function fixU1Pages(units) {
+  const u = units && units.a2_1;
+  if (!u) return false;
+  const orden = ['b_1784933801961_jg41en', 'b_1784933920718_on8e5x', 'b_1784934033932_a1ihfr', 'b_1784934257952_n0d9q6',
+    'b_1784934450964_kq94hk', 'b_1784934628845_dc482u', 'b_1784934716414_0dynho', 'b_1784934862013_kb5nd7',
+    'b_1784935076851_92nm9r', 'b_1784935285620_ziff3w', 'b_1784935498127_j4a5jm'];
+  const ahora = Date.now();
+  let alguna = false;
+  (u.batches || []).forEach(b => {
+    const k = b ? orden.indexOf(b.id) : -1;
+    if (k < 0) return;
+    alguna = true;
+    // Con hora ya la numeró esto o él a mano después: no se toca otra vez.
+    if (b.pagesAt) return;
+    b.pages = [k + 1];
+    b.pagesByHand = true;
+    b.pagesAt = ahora;
+  });
+  return alguna;
 }
 
 /* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
@@ -12010,6 +12040,10 @@ function enablePhotoDrag(grid) {
 function movePhotoBetweenPages(de, a, src) {
   const i = ((de && de.images) || []).indexOf(src);
   if (!a || de === a || i < 0) return false;
+  // La página cuyo número cambió lleva la hora, para que la nube no lo pise.
+  const firma = b => JSON.stringify([b.pages, b.pagesByHand]);
+  const antes = [firma(de), firma(a)];
+  const marcar = r => { const t = Date.now(); [de, a].forEach((b, k) => { if (firma(b) !== antes[k]) b.pagesAt = t; }); return r; };
   const numero = b => (b.pagesByHand && (b.pages || []).length ? b.pages : null);
   const ponerNumero = (b, n) => {
     if (n) { if (!(b.pages || []).length || b.pagesByHand) { b.pages = n; b.pagesByHand = true; } }
@@ -12026,7 +12060,7 @@ function movePhotoBetweenPages(de, a, src) {
       ponerNumero(a, nDe);
       ponerNumero(de, nA);
     }
-    return 'swap';
+    return marcar('swap');
   }
   const nDe = numero(de);
   de.images = de.images.filter((_, k) => k !== i);
@@ -12036,7 +12070,7 @@ function movePhotoBetweenPages(de, a, src) {
     delete de.pagesByHand;
     ponerNumero(a, nDe);
   }
-  return 'move';
+  return marcar('move');
 }
 
 function askMovePagePhoto(fromId, src, toId) {
@@ -12063,7 +12097,7 @@ function askMovePagePhoto(fromId, src, toId) {
       const de = (uAhora?.batches || []).find(b => b.id === fromId);
       const a = (uAhora?.batches || []).find(b => b.id === toId);
       if (!de || !a || !(de.images || []).includes(src)) { toast('The page changed meanwhile — try again'); loadUnitContent(); return; }
-      const antes = JSON.stringify([de, a].map(b => ({ images: b.images, pages: b.pages, pagesByHand: b.pagesByHand })));
+      const antes = JSON.stringify([de, a].map(b => ({ images: b.images, pages: b.pages, pagesByHand: b.pagesByHand, pagesAt: b.pagesAt })));
       const hecho = movePhotoBetweenPages(de, a, src);
       if (!hecho) return;
       if (!writeState()) {
@@ -12072,6 +12106,7 @@ function askMovePagePhoto(fromId, src, toId) {
           b.images = x.images || [];
           if (x.pages) b.pages = x.pages; else delete b.pages;
           if (x.pagesByHand) b.pagesByHand = true; else delete b.pagesByHand;
+          if (x.pagesAt) b.pagesAt = x.pagesAt; else delete b.pagesAt;
         });
         toast('⚠️ Could not save — free up space and try again');
         return;
@@ -12124,12 +12159,12 @@ function attachPagePhoto(batchId, input) {
     // página es otro objeto. Se busca otra vez para no guardar en la vieja.
     const uAhora = getUnit(current.lid, current.uid);
     b = (uAhora?.batches || []).find(x => x.id === batchId) || b;
-    const antes = { images: b.images, pages: b.pages, pagesByHand: b.pagesByHand };
+    const antes = { images: b.images, pages: b.pages, pagesByHand: b.pagesByHand, pagesAt: b.pagesAt };
     b.images = comprimidas;
     if (pagina.length) b.pages = pagina;
-    if (pagina.length) b.pagesByHand = true;
+    if (pagina.length) { b.pagesByHand = true; b.pagesAt = Date.now(); }
     if (!writeState()) {
-      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand;
+      b.images = antes.images; b.pages = antes.pages; b.pagesByHand = antes.pagesByHand; b.pagesAt = antes.pagesAt;
       toast('⚠️ Could not save — free up space and try again');
       return;
     }
@@ -12277,12 +12312,14 @@ function setPageNumber(batchId) {
   const crudo = String((campo && campo.value) || '').trim();
   const pagina = sanitizePageNumbers([crudo]);
   if (crudo && !pagina.length) { toast('Write only the page number, e.g. 7'); return false; }
-  const antes = { pages: b.pages, pagesByHand: b.pagesByHand };
+  const antes = { pages: b.pages, pagesByHand: b.pagesByHand, pagesAt: b.pagesAt };
   if (pagina.length) { b.pages = pagina; b.pagesByHand = true; }
   else { delete b.pages; delete b.pagesByHand; }
+  b.pagesAt = Date.now();
   if (!writeState()) {
     if (antes.pages) b.pages = antes.pages; else delete b.pages;
     if (antes.pagesByHand) b.pagesByHand = true; else delete b.pagesByHand;
+    if (antes.pagesAt) b.pagesAt = antes.pagesAt; else delete b.pagesAt;
     toast('⚠️ Could not save — free up space and try again');
     return false;
   }
@@ -12300,7 +12337,7 @@ function removeOnlyPagePhoto(batchId) {
   const b = (u?.batches || []).find(x => x.id === batchId);
   if (!b) return false;
   b.images = [];
-  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; }
+  if (b.pagesByHand) { delete b.pages; delete b.pagesByHand; b.pagesAt = Date.now(); }
   ImageStore.put(b.id, []).catch(e => console.warn('Image save failed:', e));
   save();
   loadUnitContent();
@@ -22553,7 +22590,7 @@ function missingBatchesFromBackup(cur, backup) {
  * otra vez sobre una página recuperada de un respaldo viejo, aunque su bandera
  * ya esté marcada. */
 function applyPageFixes(units) {
-  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
+  [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,
    addU9P97Questions, addU9P98Questions, addU9P99Questions, addU9P100Questions, addU9P101Questions,

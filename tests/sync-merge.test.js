@@ -176,3 +176,30 @@ test('el número de página escrito a mano en este aparato no lo borra la copia 
   assert.deepEqual([b1.images, b1.pages, b1.pagesByHand], [['foto'], [5], true]);
   assert.deepEqual(b2.pages, [98], 'un número que no escribió él sigue viniendo de la nube');
 });
+
+// Unit 1 (respaldo del 2 de octubre): numeró las 11 fotos del 1 al 11, salió,
+// volvió a entrar y los números eran los de antes. La nube traía su copia
+// vieja del lote entero. Ahora cada número escrito lleva su hora y gana el más
+// reciente, venga de donde venga.
+test('el número escrito más reciente gana, venga de la nube o de este aparato', () => {
+  const celular = { units: { a2_1: { batches: [
+    lote('b1', { images: ['foto'], pages: [2], pagesByHand: true, pagesAt: 200 }),
+    lote('b2', { pagesAt: 200 }),
+    lote('b3', { pages: [7], pagesByHand: true, pagesAt: 100 }),
+  ] } } };
+  const nube = { units: { a2_1: { batches: [
+    lote('b1', { pages: [10], pagesByHand: true, pagesAt: 50 }),
+    lote('b2', { pages: [4], pagesByHand: true, pagesAt: 50 }),
+    lote('b3', { pages: [8], pagesByHand: true, pagesAt: 300 }),
+  ] } } };
+  const [b1, b2, b3] = unir(celular, nube).units.a2_1.batches;
+  assert.deepEqual([b1.images, b1.pages, b1.pagesAt], [['foto'], [2], 200], 'la copia vieja de la nube no lo pisa');
+  assert.deepEqual([b2.pages, b2.pagesByHand, b2.pagesAt], [undefined, undefined, 200], 'quitar el número también es más reciente');
+  assert.deepEqual([b3.pages, b3.pagesAt], [[8], 300], 'si lo cambió después en el otro aparato, gana ese');
+});
+
+test('la nube sin hora no pisa un número con hora', () => {
+  const celular = { units: { a2_1: { batches: [lote('b1', { pages: [3], pagesByHand: true, pagesAt: 10 })] } } };
+  const nube = { units: { a2_1: { batches: [lote('b1', { pages: [1] })] } } };
+  assert.deepEqual(unir(celular, nube).units.a2_1.batches[0].pages, [3]);
+});

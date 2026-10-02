@@ -70,6 +70,9 @@ revisar contra el libro desde su respaldo, como las demás. Si se equivoca de p�
 Soltarla sobre una página con foto las intercambia. Cada puesto de la cuadrícula es
 una página fija, en el orden del libro (también las que no tienen foto), así que la
 foto queda donde la suelta; al llevarla al borde, la pantalla se desplaza sola.
+El 2 de octubre numeró la Unit 1 del 1 al 11, salió, volvió a entrar y los números
+eran los de antes: `fixU1Pages` los pone otra vez, sin mover fotos, y cada número
+escrito lleva su hora (`pagesAt`).
 
 `page-review.test.js` — Repasar una sola página: que la baraja traiga solo sus
 palabras, que abrirla no borre el progreso del resto de la unidad, y que la
@@ -134,7 +137,9 @@ explícito de que él la borró (`deletedBatchIds`, unido entre aparatos); cada
 aparato trae la nube antes de subir y al volver a la pestaña; y "Restore missing
 pages" agrega desde un respaldo solo las páginas que faltan, con sus correcciones. Y el ✅
 de un texto: el 1 de octubre la p. 109 se desmarcó sola porque al juntar con la
-nube ganaba siempre la copia de la nube; ahora gana el ✅ marcado más reciente.
+nube ganaba siempre la copia de la nube; ahora gana el ✅ marcado más reciente. Lo mismo con el
+número de página escrito a mano: gana el más reciente, y una copia sin hora no
+pisa uno con hora (la nube le devolvió a la Unit 1 sus números viejos).
 
 `u10-content-fix.test.js` — La gramática, los ejercicios y el speaking de las
 pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que
