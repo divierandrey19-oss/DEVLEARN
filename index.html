@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02o -->
+<!-- DEVLEARN_BUILD: 2026-10-02p -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4930,7 +4930,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02o';
+const APP_BUILD = '2026-10-02p';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6813,6 +6813,17 @@ function migrateState(s) {
   if (!merged._u1P9V1 && fixU1P9(merged.units)) merged._u1P9V1 = true;
   if (!merged._u1P10V1 && fixU1P10(merged.units)) merged._u1P10V1 = true;
   if (!merged._u1P11V1 && fixU1P11(merged.units)) merged._u1P11V1 = true;
+  if (!merged._u1P1ExtrasV1 && addU1P1Extras(merged.units)) merged._u1P1ExtrasV1 = true;
+  if (!merged._u1P2ExtrasV1 && addU1P2Extras(merged.units)) merged._u1P2ExtrasV1 = true;
+  if (!merged._u1P3ExtrasV1 && addU1P3Extras(merged.units)) merged._u1P3ExtrasV1 = true;
+  if (!merged._u1P4ExtrasV1 && addU1P4Extras(merged.units)) merged._u1P4ExtrasV1 = true;
+  if (!merged._u1P5ExtrasV1 && addU1P5Extras(merged.units)) merged._u1P5ExtrasV1 = true;
+  if (!merged._u1P6ExtrasV1 && addU1P6Extras(merged.units)) merged._u1P6ExtrasV1 = true;
+  if (!merged._u1P7ExtrasV1 && addU1P7Extras(merged.units)) merged._u1P7ExtrasV1 = true;
+  if (!merged._u1P8ExtrasV1 && addU1P8Extras(merged.units)) merged._u1P8ExtrasV1 = true;
+  if (!merged._u1P9ExtrasV1 && addU1P9Extras(merged.units)) merged._u1P9ExtrasV1 = true;
+  if (!merged._u1P10ExtrasV1 && addU1P10Extras(merged.units)) merged._u1P10ExtrasV1 = true;
+  if (!merged._u1P11ExtrasV1 && addU1P11Extras(merged.units)) merged._u1P11ExtrasV1 = true;
   if (!merged._u2P16V1 && fixU2P16(merged.units)) merged._u2P16V1 = true;
   [['_u2P17V1', fixU2P17], ['_u2P18V1', fixU2P18], ['_u2P19V1', fixU2P19], ['_u2P20V1', fixU2P20],
    ['_u2P21V1', fixU2P21], ['_u2P22V1', fixU2P22], ['_u2P23V1', fixU2P23]]
@@ -7386,6 +7397,220 @@ function fixU1P11(units) {
                explanation: 'The article says the sound "th" is hard for speakers of French. The other three are false.' } },
     ] });
   return true;
+}
+
+/* ── Unit 1: lo que faltaba (él lo pidió el 2 de octubre) ──────────────────
+ * Palabras y expresiones impresas que el análisis de julio no sacó, y las
+ * preguntas de cada página (la Unit 1 se subió antes de que existieran): primero
+ * las que el libro imprime, con la respuesta del libro; después las que esa
+ * página practica. Una que la unidad ya tiene no se repite. */
+function addU1Extras(units, n, { palabras = [], preguntas = [] }) {
+  const u = units && units.a2_1;
+  const b = u && (u.batches || []).find(x => x && x.id === u1Lote(n));
+  if (!b) return false;
+  const ya = new Set((u.batches || []).flatMap(x => (x && x.vocab) || []).map(v => vocabKey(v && v.word)));
+  palabras.forEach(p => {
+    if (ya.has(vocabKey(p.word))) return;
+    ya.add(vocabKey(p.word));
+    (b.vocab = b.vocab || []).push({ difficulty: 'medium', type: 'phrase', ...p });
+  });
+  addQuestionCards(u, b, preguntas);
+  return true;
+}
+
+function addU1P1Extras(units) {
+  return addU1Extras(units, 1, { preguntas: [
+    { q: 'Why are you studying English?', es: '¿Por qué estás estudiando inglés?',
+      a: 'I want to meet people from a lot of countries. I need English for that!' },
+    { q: 'Do you want to travel internationally?', es: '¿Quieres viajar a otros países?',
+      a: 'Yes, I do. I want to travel internationally.' },
+    { q: 'Do you want to use English in your work?', es: '¿Quieres usar el inglés en tu trabajo?',
+      a: "Yes, I do. I want to use English in my work. / No, I don't." },
+    { q: 'Do you want to study in another country?', es: '¿Quieres estudiar en otro país?',
+      a: "Yes, I do. / No, I don't." },
+  ] });
+}
+
+function addU1P2Extras(units) {
+  return addU1Extras(units, 2, { preguntas: [
+    { q: 'Why study English?', es: '¿Por qué estudiar inglés?',
+      a: "It's the international language of business. It's useful for communicating with visitors to my country." },
+    { q: 'How many students in your class are studying English for work?',
+      es: '¿Cuántos estudiantes de tu clase están estudiando inglés por el trabajo?',
+      a: 'Three students are studying English for work.' },
+    { q: 'Are your favorite websites in English?', es: '¿Tus sitios web favoritos están en inglés?',
+      a: 'Yes. A lot of my favorite websites are in English.' },
+    { q: 'Do you like American movies?', es: '¿Te gustan las películas estadounidenses?',
+      a: "Yes, I do. I love American movies! I like the actors' accents." },
+  ] });
+}
+
+function addU1P3Extras(units) {
+  return addU1Extras(units, 3, {
+    palabras: [
+      { word: 'This is...', translation: 'este / esta es... (para presentar a alguien)', phonetic: '/ðɪs ɪz/', emoji: '👋',
+        example: "By the way, I'm Marty Teller. And this is my wife, Ana . . . and our daughter, Catherine.",
+        exampleTranslation: 'Por cierto, soy Marty Teller. Y ella es mi esposa, Ana... y nuestra hija, Catherine.' },
+      { word: 'Please call me...', translation: 'por favor, dime... / llámame...', phonetic: '/pliz kɔl mi/', emoji: '🏷️',
+        example: "It's a pleasure to meet you, too. But please call me Marty.",
+        exampleTranslation: 'El gusto es mío. Pero, por favor, dime Marty.' },
+    ],
+    preguntas: [
+      { q: "Are you on the nine o'clock tour?", es: '¿Están en el tour de las nueve?', a: 'Yes, we are. You too?' },
+      { q: 'Where are you from?', es: '¿De dónde eres?', a: "I'm originally from Ecuador, but Marty's from the States. We live in Dallas." },
+      { q: "Who's Sunny?", es: '¿Quién es Sunny?', a: "She's Jin-soo's wife." },
+      { q: "What's your nickname?", es: '¿Cuál es tu apodo?', a: "Everyone calls me Cat. It's my nickname." },
+      { q: "What's your present English language level?", es: '¿Cuál es tu nivel actual de inglés?',
+        a: "I'm high-beginner level." },
+    ],
+  });
+}
+
+function addU1P4Extras(units) {
+  return addU1Extras(units, 4, {
+    palabras: [
+      { word: 'weather', translation: 'el clima', phonetic: '/ˈwɛðər/', type: 'noun', emoji: '☀️',
+        example: "How's the weather today? It's hot and sunny.", exampleTranslation: '¿Cómo está el clima hoy? Hace calor y está soleado.' },
+    ],
+    preguntas: [
+      { q: "What's your email address?", es: '¿Cuál es tu correo electrónico?', a: "It's selma@realcity.com." },
+      { q: 'What city are you from?', es: '¿De qué ciudad eres?', a: "I'm from Montevideo." },
+      { q: "When's your birthday?", es: '¿Cuándo es tu cumpleaños?', a: "It's March 22nd." },
+      { q: "Who's your teacher?", es: '¿Quién es tu profesor?', a: 'George Baker.' },
+      { q: "How's the weather today?", es: '¿Cómo está el clima hoy?', a: "It's hot and sunny." },
+    ],
+  });
+}
+
+function addU1P5Extras(units) {
+  return addU1Extras(units, 5, {
+    palabras: [
+      { word: "I'd like you to meet...", translation: 'te presento a... / quiero que conozcas a...', phonetic: '/aɪd laɪk ju tə mit/', emoji: '🤝',
+        example: "Lisa, I'd like you to meet Mark. Mark, Lisa.", exampleTranslation: 'Lisa, te presento a Mark. Mark, Lisa.' },
+      { word: 'over there', translation: 'allá, por allá', phonetic: '/ˈoʊvər ðɛr/', emoji: '👉',
+        example: "Who's that woman over there?", exampleTranslation: '¿Quién es esa mujer de allá?' },
+      { word: "Let's talk later.", translation: 'hablamos más tarde', phonetic: '/lɛts tɔk ˈleɪtər/', emoji: '🕒',
+        example: "I'm not sure. Let's talk later.", exampleTranslation: 'No estoy seguro. Hablamos más tarde.' },
+    ],
+    preguntas: [
+      { q: 'And what do you do?', es: '¿Y tú a qué te dedicas?', a: "I'm a photographer. / I have a pet shop with my brother." },
+      { q: "Who's that woman over there?", es: '¿Quién es esa mujer de allá?', a: "Oh, that's my colleague Fareesa." },
+      { q: "Where's she from?", es: '¿De dónde es ella?', a: "She's from Pakistan." },
+      { q: 'How old is your teacher?', es: '¿Cuántos años tiene tu profesor?', a: "I'm not sure. I think he's about twenty-five." },
+      { q: "What's your last name?", es: '¿Cuál es tu apellido?', a: "It's ___." },
+    ],
+  });
+}
+
+function addU1P6Extras(units) {
+  return addU1Extras(units, 6, {
+    palabras: [
+      { word: 'Mr.', translation: 'señor (casado o soltero)', phonetic: '/ˈmɪstər/', emoji: '👨',
+        example: 'Mr. = married or single', exampleTranslation: 'Mr. = casado o soltero' },
+      { word: 'Mrs.', translation: 'señora (casada)', phonetic: '/ˈmɪsɪz/', emoji: '👩',
+        example: 'Mrs. = married', exampleTranslation: 'Mrs. = casada' },
+      { word: 'Ms.', translation: 'señora o señorita (sin decir si está casada)', phonetic: '/mɪz/', emoji: '👩',
+        example: 'Ms. = married or single', exampleTranslation: 'Ms. = casada o soltera' },
+      { word: 'Miss', translation: 'señorita (soltera)', phonetic: '/mɪs/', emoji: '👧',
+        example: 'Miss = single', exampleTranslation: 'Miss = soltera' },
+    ],
+    preguntas: [
+      { q: "What's your birthplace?", es: '¿Cuál es tu lugar de nacimiento?', a: "My birthplace? It's Taipei." },
+      { q: "What's your hometown?", es: '¿Cuál es tu ciudad (donde vives)?', a: "I live in Toronto. That's my hometown now." },
+      { q: "What's your nationality?", es: '¿Cuál es tu nacionalidad?', a: "I'm originally from Egypt, but my nationality is Canadian." },
+      { q: "What's your native language?", es: '¿Cuál es tu lengua materna?', a: 'I speak English and French, but my native language is Arabic.' },
+      { q: 'Are you married?', es: '¿Estás casado?', a: "Yes, I am. / No, I'm not. I'm single." },
+    ],
+  });
+}
+
+function addU1P7Extras(units) {
+  return addU1Extras(units, 7, {
+    palabras: [
+      { word: 'for short', translation: 'para abreviar (el nombre corto)', phonetic: '/fər ʃɔrt/', emoji: '✂️',
+        example: "It's great to meet you. I'm Joseph. Joe for short.", exampleTranslation: 'Qué bueno conocerte. Soy Joseph. Joe, para abreviar.' },
+      { word: 'Good to meet you, too.', translation: 'igualmente, mucho gusto', phonetic: '/ɡʊd tə mit ju tu/', emoji: '🤝',
+        example: 'Good to meet you, too. So, Joe, is Boston your hometown?',
+        exampleTranslation: 'Igualmente, mucho gusto. Entonces, Joe, ¿Boston es tu ciudad?' },
+    ],
+    preguntas: [
+      { q: 'Are you Michael Spencer?', es: '¿Eres Michael Spencer?', a: 'Yes, I am. But everyone calls me Spence.' },
+      { q: 'Is Boston your hometown?', es: '¿Boston es tu ciudad?', a: "No, it isn't. I'm originally from Miami." },
+      { q: 'Is your hometown the same as your birthplace?', es: '¿Tu ciudad es la misma donde naciste?', a: "Actually, no, it isn't." },
+      { q: 'Do you have a nickname?', es: '¿Tienes un apodo?', a: 'Yes, I do. Everyone calls me ___.' },
+    ],
+  });
+}
+
+function addU1P8Extras(units) {
+  return addU1Extras(units, 8, { preguntas: [
+    { q: 'Are you studying for a career?', es: '¿Estás estudiando para una carrera?',
+      a: "I'm studying for a career in architecture, but I'm working as a restaurant manager right now." },
+    { q: "What's your current occupation?", es: '¿Cuál es tu ocupación actual?',
+      a: "I'm working as a restaurant manager right now. That's my current occupation." },
+    { q: 'Why do you need English?', es: '¿Para qué necesitas el inglés?', a: 'I need English for my studies and my career.' },
+  ] });
+}
+
+function addU1P9Extras(units) {
+  return addU1Extras(units, 9, {
+    palabras: [
+      { word: 'If so', translation: 'si es así', phonetic: '/ɪf soʊ/', emoji: '➡️',
+        example: 'If so, why do they need English?', exampleTranslation: 'Si es así, ¿por qué necesitan inglés?' },
+      { word: 'own', translation: 'propio', phonetic: '/oʊn/', type: 'adj', emoji: '🏠',
+        example: 'Do you work in your own country?', exampleTranslation: '¿Trabajas en tu propio país?' },
+    ],
+    preguntas: [
+      { q: 'Where are you studying English?', es: '¿Dónde estás estudiando inglés?', a: 'At a private language school.' },
+      { q: 'Do you use English in your life outside of English class?', es: '¿Usas el inglés en tu vida, fuera de la clase de inglés?',
+        a: "Yes, I do. / No, I don't." },
+      { q: 'What do you use English for?', es: '¿Para qué usas el inglés?', a: 'Social media, and movies and TV.' },
+      { q: 'What areas of English do you want to improve?', es: '¿Qué partes del inglés quieres mejorar?',
+        a: 'My conversation skills and my pronunciation.' },
+      { q: 'Do you work in your own country?', es: '¿Trabajas en tu propio país?', a: "Yes, I do. / No, I don't." },
+      { q: 'Would you like to change your career or occupation?', es: '¿Te gustaría cambiar de carrera u ocupación?',
+        a: "Yes, I would. / No, I wouldn't." },
+    ],
+  });
+}
+
+function addU1P10Extras(units) {
+  return addU1Extras(units, 10, {
+    palabras: [
+      { word: 'No kidding!', translation: '¡no me digas!, ¡en serio!', phonetic: '/noʊ ˈkɪdɪŋ/', emoji: '😮',
+        example: 'Intonation can also make it clear in conversation that you are responding with true interest, as in these examples: Really? or No kidding!',
+        exampleTranslation: 'La entonación también deja claro en una conversación que respondes con verdadero interés, como en estos ejemplos: ¿De verdad? o ¡No me digas!' },
+      { word: 'a part of who I am', translation: 'parte de quien soy', phonetic: '/ə pɑrt əv hu aɪ æm/', emoji: '🪪',
+        example: "I actually don't want to lose my accent completely. It's a part of who I am.",
+        exampleTranslation: 'En realidad no quiero perder mi acento por completo. Es parte de quien soy.' },
+    ],
+    preguntas: [
+      { q: 'Which feature of English pronunciation do you want to improve?', es: '¿Qué parte de la pronunciación del inglés quieres mejorar?',
+        a: 'I want to improve my rhythm and stress.' },
+      { q: 'Is pronunciation important?', es: '¿La pronunciación es importante?', a: "Yes. It's important for people to understand me." },
+      { q: 'Do you want to lose your accent?', es: '¿Quieres perder tu acento?',
+        a: "I actually don't want to lose my accent completely. It's a part of who I am." },
+      { q: "What's Marcus Tamm's advice?", es: '¿Cuál es el consejo de Marcus Tamm?',
+        a: 'Listen to people speak English and repeat what you hear.' },
+    ],
+  });
+}
+
+function addU1P11Extras(units) {
+  return addU1Extras(units, 11, {
+    palabras: [
+      { word: 'outside of class', translation: 'fuera de clase', phonetic: '/ˌaʊtˈsaɪd əv klæs/', emoji: '🏫',
+        example: 'Discuss how you practice English outside of class.', exampleTranslation: 'Hablen de cómo practican inglés fuera de clase.' },
+    ],
+    preguntas: [
+      { q: "What's difficult for you?", es: '¿Qué se te hace difícil?', a: 'Pronunciation of certain sounds is very difficult for me.' },
+      { q: "What's important to you?", es: '¿Qué es importante para ti?', a: 'Vocabulary is very important to me.' },
+      { q: 'How do you practice English outside of class?', es: '¿Cómo practicas el inglés fuera de clase?',
+        a: 'I watch TV in English, and I repeat what I hear.' },
+      { q: 'Do you use English language apps on your phone?', es: '¿Usas aplicaciones para aprender inglés en tu celular?',
+        a: "Yes, I do. / No, I don't." },
+    ],
+  });
 }
 
 /* Unit 2, p. 14: la página solo imprime "= like" junto al emoji. Sin frase que
@@ -22977,6 +23202,7 @@ function missingBatchesFromBackup(cur, backup) {
  * ya esté marcada. */
 function applyPageFixes(units) {
   [fixU10P110, fixU10P111, fixU10P109Content, fixU10P110Content, fixU10P111Content, fixU10P112Content, fixU10P109Dupes, fixU10P113Content, fixU10P109Kids, addU10P109Questions, addU10P110Questions, addU10P111Questions, addU10P112Questions, addU10P113Questions, moveQuestionsToCards, fixU1Pages, fixU1P1, fixU1P2, fixU1P3, fixU1P4, fixU1P5, fixU1P6, fixU1P7, fixU1P8, fixU1P9, fixU1P10, fixU1P11,
+   addU1P1Extras, addU1P2Extras, addU1P3Extras, addU1P4Extras, addU1P5Extras, addU1P6Extras, addU1P7Extras, addU1P8Extras, addU1P9Extras, addU1P10Extras, addU1P11Extras,
    fixU2P14, fixU2P16, fixU2P17, fixU2P18, fixU2P19, fixU2P20, fixU2P21, fixU2P22, fixU2P23, addU2P13Questions, addU2P14Questions,
    fixU9Pages, fixU9P97, fixU9P98, fixU9P99, fixU9P100, fixU9P101, fixU9P102, fixU9P103, fixU9P104,
    fixU9P105, fixU9P106, fixU9P107, fixU9Phrasal,

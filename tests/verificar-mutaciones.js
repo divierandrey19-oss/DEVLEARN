@@ -673,6 +673,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `    b.pages = [k];\n`,
   },
   {
+    nombre: 'que la Unit 1 no reciba sus preguntas al abrir la app',
+    buscar: `  if (!merged._u1P6ExtrasV1 && addU1P6Extras(merged.units)) merged._u1P6ExtrasV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que una palabra nueva de la Unit 1 entre aunque la unidad ya la tenga',
+    buscar: `    if (ya.has(vocabKey(p.word))) return;\n    ya.add(vocabKey(p.word));\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el ejemplo de una palabra nueva no sea el del libro',
+    buscar: `        example: "I'm not sure. Let's talk later."`,
+    reemplazo: `        example: "I'm not sure. Let's talk tomorrow."`,
+  },
+  {
+    nombre: 'que las preguntas de la Unit 1 corran antes de unir las repetidas',
+    buscar: `   addU1P1Extras, addU1P2Extras,`,
+    reemplazo: `   addU1P2Extras,`,
+  },
+  {
     nombre: 'que la p. 11 de la Unit 1 no se corrija al abrir la app',
     buscar: `  if (!merged._u1P11V1 && fixU1P11(merged.units)) merged._u1P11V1 = true;\n`,
     reemplazo: ``,
