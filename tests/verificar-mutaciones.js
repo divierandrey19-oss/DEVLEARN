@@ -947,6 +947,51 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `   ['_u7P82QV1', addU7P82Questions], ['_u7P83QV1', addU7P83Questions]]`,
     reemplazo: `   ['_u7P82QV1', addU7P82Questions]]`,
   },
+  {
+    nombre: 'volver a guardar todo el estado en cada apertura (setTheme)',
+    buscar: `  if (cambio) save();\n}`,
+    reemplazo: `  save();\n}`,
+  },
+  {
+    nombre: 'que la sincronización vuelva a escribir el estado de inmediato',
+    buscar: `  state.lastCloudSeen = ms;\n  save();`,
+    reemplazo: `  state.lastCloudSeen = ms;\n  saveNow();`,
+  },
+  {
+    nombre: 'que Vocabulary vuelva a dibujar las ~2900 tarjetas de una vez',
+    buscar: `  grid.insertAdjacentHTML('beforeend', list.slice(desde, hasta).map(vocabCardHtml).join(''));`,
+    reemplazo: `  grid.insertAdjacentHTML('beforeend', list.slice(desde).map(vocabCardHtml).join(''));`,
+  },
+  {
+    nombre: 'que loadState lea el respaldo comprimido como si fuera texto',
+    buscar: `      const st = migrateState(JSON.parse(leerRespaldo(raw)));`,
+    reemplazo: `      const st = migrateState(JSON.parse(raw));`,
+  },
+  {
+    nombre: 'un error en el descompresor (bloques guardados)',
+    buscar: `      n += len; pos += len;`,
+    reemplazo: `      n += len;`,
+  },
+  {
+    nombre: 'un error en el descompresor (distancias)',
+    buscar: `      for (let i = 0; i < len; i++, n++) out[n] = out[n - dist];`,
+    reemplazo: `      for (let i = 0; i < len; i++, n++) out[n] = out[n - dist + 1];`,
+  },
+  {
+    nombre: 'fechar el respaldo aunque no se haya podido escribir',
+    buscar: `    .catch(e => console.warn('Daily backup failed:', e))`,
+    reemplazo: `    .catch(e => { localStorage.setItem(BACKUP_KEY + '_date', today); })`,
+  },
+  {
+    nombre: 'compactar el respaldo aunque la carga haya fallado',
+    buscar: `  if (window.__loadCorrupt || _respaldoEnCurso) return;`,
+    reemplazo: `  if (_respaldoEnCurso) return;`,
+  },
+  {
+    nombre: 'que el respaldo diario vuelva a ir sin comprimir',
+    buscar: `  return 'gz1:' + b64;`,
+    reemplazo: `  return texto;`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

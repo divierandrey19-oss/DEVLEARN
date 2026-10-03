@@ -60,10 +60,10 @@ function lineaDe(patron) {
 
 /**
  * Recorta una función de primer nivel por su nombre: desde `function NOMBRE(`
- * en la columna 0 hasta el siguiente `}` en la columna 0.
+ * (o `async function NOMBRE(`) en la columna 0 hasta el siguiente `}` en la columna 0.
  */
 function extraerFuncion(nombre) {
-  const inicio = LINEAS.findIndex(l => l.startsWith(`function ${nombre}(`));
+  const inicio = LINEAS.findIndex(l => l.startsWith(`function ${nombre}(`) || l.startsWith(`async function ${nombre}(`));
   if (inicio === -1) {
     throw new Error(`No se encontró la función de primer nivel "${nombre}" en index.html`);
   }

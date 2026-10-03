@@ -54,10 +54,19 @@ function montarWriteState({ estado, disco = {}, loadCorrupt = false,
   const codigo = `
     let _saveDirty = false;
     let _storageFull = false;
+    let _respaldoEnCurso = false;
     ${h.extraerFuncion('stateWithoutImages')}
+    ${h.extraerFuncion('_gzipB64')}
+    ${h.extraerFuncion('_ungzipB64')}
+    ${h.extraerFuncion('comprimirRespaldo')}
+    ${h.extraerFuncion('escribirRespaldoDiario')}
+    ${h.extraerFuncion('leerRespaldo')}
+    ${h.extraerFuncion('gunzipSync')}
+    ${h.extraerFuncion('inflateRawSync')}
     ${h.extraerFuncion('writeState')}
     return {
-      writeState,
+      writeState, leerRespaldo,
+      respaldoListo: async () => { for (let i = 0; i < 200 && _respaldoEnCurso; i++) await new Promise(r => setTimeout(r, 10)); },
       sondas: {
         get saveDirty() { return _saveDirty; },
         get storageFull() { return _storageFull; },
@@ -153,36 +162,39 @@ test('guardia 2: un disco ilegible no bloquea el guardado', () => {
 // Guardia 3: respaldo diario.
 // ---------------------------------------------------------------------------
 
-test('guardia 3: el primer guardado del día se duplica en el respaldo', () => {
+test('guardia 3: el primer guardado del día se duplica en el respaldo, comprimido', async () => {
   const m = montarWriteState({ estado: estadoConDatos(), disco: {} });
 
   assert.equal(m.writeState(), true);
+  await m.respaldoListo();
   assert.ok(m.almacen.datos[BACKUP_KEY], 'existe el respaldo');
   assert.equal(m.almacen.datos[BACKUP_KEY + '_date'], HOY, 'queda fechado');
-  assert.equal(m.almacen.datos[BACKUP_KEY], m.almacen.datos[KEY],
+  assert.match(m.almacen.datos[BACKUP_KEY], /^gz1:/, 'comprimido: el doble del estado no cabía');
+  assert.equal(m.leerRespaldo(m.almacen.datos[BACKUP_KEY]), m.almacen.datos[KEY],
                'el respaldo es el mismo contenido que el guardado real');
 });
 
-test('guardia 3: los guardados siguientes del mismo día no repisan el respaldo', () => {
+test('guardia 3: los guardados siguientes del mismo día no repisan el respaldo', async () => {
   const m = montarWriteState({ estado: estadoConDatos(), disco: {} });
   m.writeState();
+  await m.respaldoListo();
   const respaldoInicial = m.almacen.datos[BACKUP_KEY];
 
   // El usuario borra una unidad y vuelve a guardar el mismo día. El respaldo
   // debe seguir siendo el de la mañana, no la versión ya reducida.
-  delete m.almacen.datos.nada;
-  const estado = JSON.parse(respaldoInicial);
+  const estado = JSON.parse(m.leerRespaldo(respaldoInicial));
   delete estado.units.u10;
   const m2 = montarWriteState({ estado, disco: { ...m.almacen.datos } });
   assert.equal(m2.writeState(), true);
+  await m2.respaldoListo();
 
   assert.equal(m2.almacen.datos[BACKUP_KEY], respaldoInicial,
                'el respaldo del día no se sobrescribe');
-  assert.equal(Object.keys(JSON.parse(m2.almacen.datos[BACKUP_KEY]).units).length, 2,
+  assert.equal(Object.keys(JSON.parse(m2.leerRespaldo(m2.almacen.datos[BACKUP_KEY])).units).length, 2,
                'el respaldo conserva las dos unidades');
 });
 
-test('guardia 3: un respaldo que falla no tumba el guardado real', () => {
+test('guardia 3: un respaldo que falla no tumba el guardado real, ni queda fechado', async () => {
   // Es "best-effort" a propósito: el respaldo nunca debe costar el guardado.
   const m = montarWriteState({
     estado: estadoConDatos(), disco: {},
@@ -190,8 +202,20 @@ test('guardia 3: un respaldo que falla no tumba el guardado real', () => {
   });
 
   assert.equal(m.writeState(), true, 'el guardado real sigue devolviendo true');
+  await m.respaldoListo();
   assert.ok(m.almacen.datos[KEY], 'los datos quedaron guardados');
   assert.equal(m.almacen.datos[BACKUP_KEY], undefined);
+  assert.equal(m.almacen.datos[BACKUP_KEY + '_date'], undefined, 'sin fecha: el siguiente guardado lo reintenta');
+});
+
+test('guardia 3: dos guardados seguidos mientras comprime no hacen dos respaldos', async () => {
+  const m = montarWriteState({ estado: estadoConDatos(), disco: {} });
+  m.writeState();
+  const primero = m.almacen.datos[KEY];
+  m.writeState();
+  await m.respaldoListo();
+  assert.equal(m.almacen.escrituras.filter(k => k === BACKUP_KEY).length, 1, 'un solo respaldo');
+  assert.equal(m.leerRespaldo(m.almacen.datos[BACKUP_KEY]), primero, 'el del primer guardado del día');
 });
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02u -->
+<!-- DEVLEARN_BUILD: 2026-10-02w -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4744,14 +4744,18 @@ function allBatchIds(st) {
  */
 window._recordSyncedBatchIds = function(ids) {
   state.syncedBatchIds = Array.from(new Set(ids || []));
-  saveNow();
+  // Con espera, como el resto: cada sincronización escribía el estado entero
+  // dos veces seguidas (esto y la hora de la nube), medio segundo cada una en
+  // el celular. Si la app se cierra antes, flushState lo guarda; y si ni eso,
+  // la próxima vez solo se vuelve a juntar con la nube, que es seguro.
+  save();
 };
 
 /** Server-time marker of the last cloud snapshot we reconciled with. */
 window._setCloudSeen = function(ms) {
   if (!ms) return;
   state.lastCloudSeen = ms;
-  saveNow();
+  save();
 };
 
 window._mergeCloudState = function(cloud) {
@@ -4946,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02u';
+const APP_BUILD = '2026-10-02w';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6316,7 +6320,8 @@ function loadState() {
     // guess.
     raw = localStorage.getItem(BACKUP_KEY);
     if (raw) {
-      const st = migrateState(JSON.parse(raw));
+      // Comprimido desde el 2 de octubre ("gz1:…"); los de antes, tal cual.
+      const st = migrateState(JSON.parse(leerRespaldo(raw)));
       healUnitTitles(st.units);
       window.__loadedFromAutoBackup = true;
       // La fecha se captura AQUÍ, no en el banner: el primer guardado del día
@@ -10460,6 +10465,195 @@ function stateWithoutImages() {
 }
 
 let _saveDirty = false;
+let _respaldoEnCurso = false;
+
+/* Guardia 3, comprimida (2 de octubre). El respaldo era una segunda copia
+ * entera del estado: con diez unidades, 2,5 M de caracteres más 2,5 M del
+ * guardado real, el 97% de lo que Chrome deja guardar (~5,2 M). Unas páginas
+ * más y el respaldo dejaba de actualizarse sin avisar, y luego el guardado
+ * real fallaba. Comprimido ocupa ~23%: el mismo respaldo, el mismo día, en el
+ * mismo lugar. La compresión es del navegador (asíncrona, no traba la app);
+ * antes de reemplazar el respaldo anterior se descomprime y se compara con el
+ * original, y si no sale idéntico se guarda sin comprimir, como antes. Si la
+ * app se cierra a la mitad, el respaldo no queda fechado y el siguiente
+ * guardado lo vuelve a intentar. */
+function escribirRespaldoDiario(payload, today) {
+  if (typeof CompressionStream === 'undefined' || typeof DecompressionStream === 'undefined') {
+    localStorage.setItem(BACKUP_KEY, payload);
+    localStorage.setItem(BACKUP_KEY + '_date', today);
+    return;
+  }
+  if (_respaldoEnCurso) return;
+  _respaldoEnCurso = true;
+  comprimirRespaldo(payload)
+    .then(valor => {
+      localStorage.setItem(BACKUP_KEY, valor);
+      localStorage.setItem(BACKUP_KEY + '_date', today);
+    })
+    .catch(e => console.warn('Daily backup failed:', e))
+    .finally(() => { _respaldoEnCurso = false; });
+}
+
+async function comprimirRespaldo(texto) {
+  const b64 = await _gzipB64(texto);
+  if (await _ungzipB64(b64) !== texto) {
+    console.warn('Compressed backup did not round-trip; keeping it uncompressed');
+    return texto;
+  }
+  return 'gz1:' + b64;
+}
+
+/* El respaldo que ya estaba (sin comprimir) se comprime una vez, sin cambiarle
+ * la fecha ni el contenido, para liberar el espacio desde hoy y no desde el
+ * primer guardado de mañana. Solo lo reemplaza si nadie lo tocó mientras tanto. */
+function compactarRespaldoViejo() {
+  if (window.__loadCorrupt || _respaldoEnCurso) return;
+  if (typeof CompressionStream === 'undefined' || typeof DecompressionStream === 'undefined') return;
+  let raw;
+  try { raw = localStorage.getItem(BACKUP_KEY); } catch (e) { return; }
+  if (!raw || raw.slice(0, 4) === 'gz1:') return;
+  _respaldoEnCurso = true;
+  comprimirRespaldo(raw)
+    .then(valor => { if (valor !== raw && localStorage.getItem(BACKUP_KEY) === raw) localStorage.setItem(BACKUP_KEY, valor); })
+    .catch(e => console.warn('Backup compaction failed:', e))
+    .finally(() => { _respaldoEnCurso = false; });
+}
+
+/* El respaldo diario va comprimido (gzip en base64, con el prefijo "gz1:").
+ * loadState() lo lee en el arranque, que es síncrono, y DecompressionStream no
+ * lo es: por eso aquí hay un descompresor propio, síncrono, de gzip (RFC 1952
+ * y 1951, al estilo de puff.c de zlib). Solo corre si un día hace falta el
+ * respaldo, y una vez al día para comprobar que el respaldo recién comprimido
+ * sale idéntico antes de reemplazar el anterior. */
+function leerRespaldo(raw) {
+  if (!raw || raw.slice(0, 4) !== 'gz1:') return raw;
+  const bin = atob(raw.slice(4));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(gunzipSync(bytes));
+}
+
+function gunzipSync(src) {
+  if (src[0] !== 0x1f || src[1] !== 0x8b || src[2] !== 8) throw new Error('backup: not gzip');
+  const flg = src[3];
+  let p = 10;
+  if (flg & 4) p += 2 + (src[p] | (src[p + 1] << 8));
+  if (flg & 8) while (src[p++] !== 0);
+  if (flg & 16) while (src[p++] !== 0);
+  if (flg & 2) p += 2;
+  return inflateRawSync(src, p);
+}
+
+function inflateRawSync(src, start) {
+  const LBASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  const LEXT = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  const DBASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073,
+    4097, 6145, 8193, 12289, 16385, 24577];
+  const DEXT = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  const ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+  let pos = start, bitbuf = 0, bitcnt = 0;
+  let out = new Uint8Array(Math.max(1 << 16, src.length * 6)), n = 0;
+  const lugar = k => {
+    if (n + k <= out.length) return;
+    let tam = out.length * 2;
+    while (n + k > tam) tam *= 2;
+    const o = new Uint8Array(tam);
+    o.set(out.subarray(0, n));
+    out = o;
+  };
+  const bits = k => {
+    while (bitcnt < k) {
+      if (pos >= src.length) throw new Error('backup: truncated');
+      bitbuf |= src[pos++] << bitcnt;
+      bitcnt += 8;
+    }
+    const v = bitbuf & ((1 << k) - 1);
+    bitbuf >>>= k;
+    bitcnt -= k;
+    return v;
+  };
+  const tabla = (largos, cuantos) => {
+    const count = new Uint16Array(16), symbol = new Uint16Array(cuantos), offs = new Uint16Array(16);
+    for (let s = 0; s < cuantos; s++) count[largos[s]]++;
+    count[0] = 0;
+    for (let l = 1; l < 16; l++) offs[l] = offs[l - 1] + count[l - 1];
+    for (let s = 0; s < cuantos; s++) if (largos[s]) symbol[offs[largos[s]]++] = s;
+    return { count, symbol };
+  };
+  const simbolo = t => {
+    let code = 0, first = 0, index = 0;
+    for (let len = 1; len < 16; len++) {
+      code |= bits(1);
+      const c = t.count[len];
+      if (code - c < first) return t.symbol[index + (code - first)];
+      index += c;
+      first = (first + c) << 1;
+      code <<= 1;
+    }
+    throw new Error('backup: bad code');
+  };
+  const bloque = (lt, dt) => {
+    for (;;) {
+      let s = simbolo(lt);
+      if (s < 256) { lugar(1); out[n++] = s; continue; }
+      if (s === 256) return;
+      s -= 257;
+      if (s >= 29) throw new Error('backup: bad length');
+      const len = LBASE[s] + bits(LEXT[s]);
+      const d = simbolo(dt);
+      if (d >= 30) throw new Error('backup: bad distance');
+      const dist = DBASE[d] + bits(DEXT[d]);
+      if (dist > n) throw new Error('backup: distance too far');
+      lugar(len);
+      for (let i = 0; i < len; i++, n++) out[n] = out[n - dist];
+    }
+  };
+  let fijaL = null, fijaD = null, ultimo;
+  do {
+    ultimo = bits(1);
+    const tipo = bits(2);
+    if (tipo === 0) {
+      bitbuf = 0; bitcnt = 0;
+      if (pos + 4 > src.length) throw new Error('backup: truncated');
+      const len = src[pos] | (src[pos + 1] << 8);
+      if ((len ^ 0xffff) !== (src[pos + 2] | (src[pos + 3] << 8))) throw new Error('backup: bad stored block');
+      pos += 4;
+      if (pos + len > src.length) throw new Error('backup: truncated');
+      lugar(len);
+      out.set(src.subarray(pos, pos + len), n);
+      n += len; pos += len;
+    } else if (tipo === 1) {
+      if (!fijaL) {
+        const l = new Uint8Array(288);
+        l.fill(8, 0, 144); l.fill(9, 144, 256); l.fill(7, 256, 280); l.fill(8, 280, 288);
+        fijaL = tabla(l, 288);
+        fijaD = tabla(new Uint8Array(30).fill(5), 30);
+      }
+      bloque(fijaL, fijaD);
+    } else if (tipo === 2) {
+      const nlen = bits(5) + 257, ndist = bits(5) + 1, ncode = bits(4) + 4;
+      const cl = new Uint8Array(19);
+      for (let i = 0; i < ncode; i++) cl[ORDER[i]] = bits(3);
+      const ct = tabla(cl, 19);
+      const largos = new Uint8Array(nlen + ndist);
+      for (let i = 0; i < nlen + ndist;) {
+        const s = simbolo(ct);
+        if (s < 16) { largos[i++] = s; continue; }
+        let rep, val = 0;
+        if (s === 16) { if (!i) throw new Error('backup: bad repeat'); val = largos[i - 1]; rep = 3 + bits(2); }
+        else if (s === 17) rep = 3 + bits(3);
+        else rep = 11 + bits(7);
+        if (i + rep > nlen + ndist) throw new Error('backup: bad lengths');
+        while (rep--) largos[i++] = val;
+      }
+      if (!largos[256]) throw new Error('backup: no end code');
+      bloque(tabla(largos.subarray(0, nlen), nlen), tabla(largos.subarray(nlen), ndist));
+    } else {
+      throw new Error('backup: bad block type');
+    }
+  } while (!ultimo);
+  return out.subarray(0, n);
+}
 let _storageFull = false;
 
 /**
@@ -10529,8 +10723,7 @@ function writeState() {
     try {
       const today = todayLocal();
       if (localStorage.getItem(BACKUP_KEY + '_date') !== today) {
-        localStorage.setItem(BACKUP_KEY, payload);
-        localStorage.setItem(BACKUP_KEY + '_date', today);
+        escribirRespaldoDiario(payload, today);
       }
     } catch (e) { /* best-effort — never let the backup mirror block the real save */ }
     return true;
@@ -11733,18 +11926,24 @@ function toggleSidebar() {
 /* ============================================================
    THEME & LANGUAGE
    ============================================================ */
+/* Al arrancar se llaman con lo que ya está guardado: guardar entonces escribía
+ * todo el estado (2,5 MB con sus diez unidades) en cada apertura, y eso
+ * congelaba la app casi un segundo justo cuando él empezaba a tocar. Solo se
+ * guarda si de verdad cambió. */
 function setTheme(theme) {
+  const cambio = state.theme !== theme;
   state.theme = theme;
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-light').classList.toggle('active', theme === 'light');
   document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
-  save();
+  if (cambio) save();
 }
 
 function setLang(lang) {
+  const cambio = state.lang !== lang;
   state.lang = lang;
   ['en', 'es', 'bi'].forEach(l => document.getElementById('lang-' + l).classList.toggle('active', l === lang));
-  save();
+  if (cambio) save();
   // re-render current view
   if (current.lid && current.uid) loadUnitContent();
   if (document.getElementById('page-vocab-all').classList.contains('active')) renderAllVocab();
@@ -22100,7 +22299,41 @@ function filterAllVocab(query) {
     return;
   }
 
-  grid.innerHTML = list.map(w => `
+  // Por tandas: dibujar las ~2900 tarjetas de una vez tardaba más de 4 segundos
+  // en un celular. Se pintan las primeras y el resto entra a medida que baja.
+  window._vocabList = list;
+  grid.innerHTML = '';
+  appendVocabChunk(grid, 0);
+}
+
+const VOCAB_CHUNK = 60;
+function appendVocabChunk(grid, desde) {
+  const list = window._vocabList || [];
+  const hasta = Math.min(list.length, desde + VOCAB_CHUNK);
+  const viejo = grid.querySelector('.vocab-more');
+  if (viejo) viejo.remove();
+  grid.insertAdjacentHTML('beforeend', list.slice(desde, hasta).map(vocabCardHtml).join(''));
+  if (hasta >= list.length) return;
+  const mas = document.createElement('button');
+  mas.className = 'vocab-more btn btn-ghost';
+  mas.style.cssText = 'grid-column:1/-1;margin:8px auto;';
+  mas.textContent = `Show more (${list.length - hasta} left)`;
+  mas.onclick = () => appendVocabChunk(grid, hasta);
+  grid.appendChild(mas);
+  // Sola, al acercarse al final; el botón queda por si el navegador no avisa.
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting) && mas.isConnected && window._vocabList === list) {
+        obs.disconnect();
+        appendVocabChunk(grid, hasta);
+      }
+    }, { rootMargin: '600px' });
+    obs.observe(mas);
+  }
+}
+
+function vocabCardHtml(w) {
+  return `
     <div class="vocab-card"${w.mine || w.heard ? ' style="border-style:dashed;"' : ''}>
       <div class="vocab-image">${w.emoji || '📝'}</div>
       <div class="vocab-word">${escapeHtml(w.word || '')}</div>
@@ -22112,7 +22345,7 @@ function filterAllVocab(query) {
         <span class="vocab-tag">${w.mine ? '✍️ mine' : w.heard ? '🎧 heard' : escapeHtml(w.type || 'word')}</span>
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 /* En qué tramo de la barra de Memory Review va una tarjeta — en uno solo.
@@ -24747,6 +24980,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setLang(state.lang || 'en');
   loadSettings();   // load AI mode + API key
   initImageStorage();
+  // Después del arranque, para no competir con él.
+  setTimeout(compactarRespaldoViejo, 5000);
 
   // Load sound preference
   if (state.settings && state.settings.soundEnabled === false) {
@@ -25077,14 +25312,12 @@ const auth = getAuth(app);
 
 window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, serverTimestamp, GoogleAuthProvider, signInWithPopup, signOut };
 
+/* Sin las fotos. Antes era una copia completa (convertir todo a texto y de
+ * vuelta) solo para quitarlas, y después se convertía a texto otra vez para
+ * subirla: tres pasadas por 2,5 MB. stateWithoutImages() copia solo los lotes,
+ * y quien la usa la convierte a texto enseguida, antes de que nada cambie. */
 function getStateForSync() {
-  const s = JSON.parse(JSON.stringify(window._appState ? window._appState() : {}));
-  if (s.units) {
-    Object.values(s.units).forEach(unit => {
-      if (unit.batches) unit.batches.forEach(b => { b.images = []; });
-    });
-  }
-  return s;
+  return window.stateWithoutImages ? window.stateWithoutImages() : {};
 }
 
 let _isSyncing = false;

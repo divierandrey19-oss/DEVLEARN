@@ -25,6 +25,9 @@ function montarLoadState(disco) {
     const migrateState = s => s;          // doble: la migración tiene lo suyo
     const healUnitTitles = () => {};      // doble: no influye en la elección
     ${h.extraerFuncion('defaultState')}
+    ${h.extraerFuncion('leerRespaldo')}
+    ${h.extraerFuncion('gunzipSync')}
+    ${h.extraerFuncion('inflateRawSync')}
     ${h.extraerFuncion('loadState')}
     return loadState();
   `;
