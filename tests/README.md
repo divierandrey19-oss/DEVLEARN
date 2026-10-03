@@ -271,6 +271,14 @@ audio como hechos. Las repetidas se unen con su progreso; la p. 67 une su "For
 starters" con el que corrige la p. 63, así que corre después. También prueba la
 regla nueva del prompt: no inventar datos de él en ejemplos ni respuestas.
 
+`revision.test.js` — La revisión de todas las unidades (3 de octubre), después de
+la Unit 6. Unit 3: ejemplos inventados sobre su familia ("My sister can play the
+piano beautifully", "My son has a runny nose…") pasan a lo que la página imprime,
+sin tocar la tarjeta ni su progreso; el de la p. 28 ("My brother? No way.") sí es
+del libro y se queda. Unit 2, p. 20: el ejemplo de hip-hop. Unit 8, p. 88: "to
+her" y "to the salesperson" se unen con su progreso. Unit 9: orden del libro (la
+p. 104 salía después de la 106). Unit 10, p. 110: tres trampas al español.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of
