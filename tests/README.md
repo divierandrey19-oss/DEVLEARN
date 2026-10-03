@@ -260,6 +260,17 @@ de cada página; la de la portada (p. 37, que no se subió) va en la p. 42.
 `fixU4Title` le pone el nombre del libro, "Talking about People", en vez del
 que puso el primer análisis; solo si el nombre es exactamente el viejo.
 
+`u6.test.js` — La Unit 6, revisada contra sus fotos (pp. 61-71). Las pp. 61-64
+se subieron en julio sin foto ni número: errores de lectura ("for quarters" por
+"for starters", "Absolutely no" por "Actually, no"), "smart phone habits" como
+"hábitos inteligentes", el ejercicio de unir broken / obsolete / up to date /
+defective con las respuestas desordenadas y ejemplos que no tenían que ver con
+su palabra. Las siete de octubre salieron bien, salvo frases sobre él y su
+familia ("Yes, my brother. He looks at his phone all the time") y opciones del
+audio como hechos. Las repetidas se unen con su progreso; la p. 67 une su "For
+starters" con el que corrige la p. 63, así que corre después. También prueba la
+regla nueva del prompt: no inventar datos de él en ejemplos ni respuestas.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of

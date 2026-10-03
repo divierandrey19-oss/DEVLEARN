@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03c -->
+<!-- DEVLEARN_BUILD: 2026-10-03d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03c';
+const APP_BUILD = '2026-10-03d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5335,7 +5335,7 @@ Among the words that ARE on the page, prefer these over incidental text.
       "phonetic": "/IPA/",
       "type": "noun|verb|phrasal verb|adj|adv|phrase|pronoun|instruction",
       "emoji": "most relevant emoji",
-      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short, natural ${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",
+      "example": "if a sentence on the page uses this word, copy that sentence WORD FOR WORD. Otherwise write a short, natural ${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending), about the book's people or the topic. Never state a fact about the student, his family or his things ('My father reads the news on his phone', 'I have a copier', 'My car won't start'): you do not know them. Use he / she / they, the book's characters, or the page's own list",
       "exampleTranslation": "Spanish translation of example",
       "difficulty": "easy|medium|hard"
     }
@@ -5483,6 +5483,11 @@ RULES:
     "vocabulary".
   • q: correct, natural English ending in "?". es: what it means, in natural Colombian
     Spanish. a: a short, natural sample answer that uses the page's language.
+    When the question asks about the student himself (Do you…? Are you…? Which devices do
+    you…?), you do not know his answer: give the choices the page prints ("Always. / Never. /
+    Sometimes."), the short answers ("Yes, I do. / No, I don't."), or the book's own sample
+    answer. Never invent his habits, his family or his things: "Yes, my brother. He looks at
+    his phone all the time" told a story about his real brother that nobody asked.
 - All Spanish must be natural Colombian Spanish
 - IPA phonetics must be accurate
 - Examples must be at ${levelName} level
@@ -6938,6 +6943,16 @@ function migrateState(s) {
    ['_u5P55QV1', addU5P55Questions], ['_u5P56QV1', addU5P56Questions], ['_u5P57QV1', addU5P57Questions],
    ['_u5P58QV1', addU5P58Questions], ['_u5P59QV1', addU5P59Questions]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Unit 6: números de página, cada página en orden (la p. 67 une su "For
+  // starters" con el que la p. 63 corrige) y las preguntas de las pp. 61-64.
+  if (!merged._u6PagesV1 && fixU6Pages(merged.units)) merged._u6PagesV1 = true;
+  fixU6Order(merged.units);   // sin bandera, como la Unit 3: una copia vieja de la nube vuelve al orden
+  [['_u6P61V1', fixU6P61], ['_u6P62V1', fixU6P62], ['_u6P63V1', fixU6P63], ['_u6P64V1', fixU6P64],
+   ['_u6P65V1', fixU6P65], ['_u6P66V1', fixU6P66], ['_u6P67V1', fixU6P67], ['_u6P68V1', fixU6P68],
+   ['_u6P69V1', fixU6P69], ['_u6P70V1', fixU6P70],
+   ['_u6P61QV1', addU6P61Questions], ['_u6P62QV1', addU6P62Questions], ['_u6P63QV1', addU6P63Questions],
+   ['_u6P64QV1', addU6P64Questions]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
 
@@ -7887,6 +7902,420 @@ function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
   ] });
+}
+
+/* ── Unit 6, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
+ * Las pp. 61-64 se subieron en julio sin foto ni número, antes de las reglas
+ * de "forma base", "trampa en español" y "las opciones no son hechos": salieron
+ * errores de lectura ("for quarters" por "for starters", "Absolutely no" por
+ * "Actually, no") y ejemplos que no tenían que ver con su palabra. Las otras
+ * siete las subió el 2 de octubre y salieron bien, salvo frases sobre él y su
+ * familia que nadie le preguntó ("Yes, my brother. He looks at his phone all
+ * the time") y opciones del audio como hechos. Él ya había estudiado muchas
+ * tarjetas de julio: unir y renombrar mueve el progreso. */
+function u6Lote(pagina) {
+  return { 61: 'b_1784940961069_p9c9dc', 62: 'b_1784941761008_07an5r', 63: 'b_1784942180561_vbqne0',
+    64: 'b_1784942863443_tudgjn', 65: 'b_1790996930937_o1w24a', 66: 'b_1790992278150_fgq5pt',
+    67: 'b_1790994363451_3ehh7z', 68: 'b_1790997175101_f3mzmd', 69: 'b_1790997958635_aywsf7',
+    70: 'b_1790998044294_rlf50f', 71: 'b_1790992368933_8l3yyb' }[pagina];
+}
+
+/* En el orden del libro: las de octubre quedaban después de la p. 64 en el
+ * orden en que las subió (66, 71, 67, 65…). */
+function fixU6Order(units) {
+  return ordenarPorPagina(units, 'a2_6');
+}
+
+/* Los números de las pp. 61-64 (las demás ya los traen). Uno que él ya puso
+ * no se toca. */
+function fixU6Pages(units) {
+  const u = units && units.a2_6;
+  if (!u) return false;
+  let alguna = false;
+  for (let p = 61; p <= 64; p++) {
+    const b = (u.batches || []).find(x => x && x.id === u6Lote(p));
+    if (!b) continue;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [p];
+  }
+  return alguna;
+}
+
+/* p. 61, Warm-Up: "smart phone habits" salió como "hábitos inteligentes"
+ * (smart = inteligente); son los hábitos con el celular. Verbos en forma base.
+ * La gramática de "while" daba por error frases que están bien ("I use my
+ * phone while eating", "Don't text while you drive") y "I think it's not OK"
+ * no es un error, solo suena menos natural. Las trampas, en inglés. Cuatro
+ * tareas de speaking eran la franja de lecciones. */
+function fixU6P61(units) {
+  const id = u6Lote(61);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'smart', set: { word: 'smart phone', translation: 'celular (teléfono inteligente)', phonetic: '/smɑrt foʊn/', type: 'noun', exampleTranslation: 'Describir los hábitos con el celular' } },
+    { word: 'text', set: { translation: 'textear, mandar mensajes de texto' } },
+    { word: 'crossing', set: { word: 'cross the street', translation: 'cruzar la calle', phonetic: '/krɔs ðə strit/', type: 'phrase' } },
+    { word: 'driving', set: { word: 'drive', translation: 'manejar', phonetic: '/draɪv/' } },
+    { word: 'riding', set: { word: 'ride a bike', translation: 'montar en bicicleta', phonetic: '/raɪd ə baɪk/', type: 'phrase' } },
+    { word: 'traveling', set: { word: 'travel', translation: 'viajar', phonetic: '/ˈtrævəl/' } },
+    { word: 'working', set: { word: 'work', translation: 'funcionar (una máquina); trabajar', phonetic: '/wɜrk/', exampleTranslation: 'Hablar de cosas que no funcionan' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    quitarEjercicios: [
+      'Which is NOT a good phone habit?',
+      'Translate to English: Es inteligente hablar sobre los desafíos de viajar con tecnología.'],
+    cambios: [
+      ["Colombian speakers often translate literally 'Creo que no' as 'I think it's not' instead of the more natural 'I don't think it is'. In English, we prefer to put the negative with 'think'.",
+       "En español decimos 'creo que no está bien', con el 'no' después de 'creo', y traducido sale 'I think it's not OK'. No está mal, pero en inglés lo natural es poner la negación con think: 'I don't think it's OK to use your phone in a restaurant.'"],
+      ["La palabra 'while' (mientras) se usa para mostrar que dos acciones ocurren al mismo tiempo. Normalmente se usa con el presente continuo (you're eating, you're driving). En español usamos 'mientras estás' + gerundio, y en inglés es exactamente igual: 'while you're' + -ing. Nota que después de 'while' siempre va un sujeto + verbo.",
+       "La palabra 'while' (mientras) une dos acciones que pasan al mismo tiempo. En la página va con el presente continuo: while you're eating, while you're driving, while you're riding a bike. Con un sustantivo no va 'while' sino 'during' (durante): to text during a movie."],
+      ["Spanish speakers might forget the subject after 'while'. In Spanish we can say 'mientras comiendo' but in English we must say 'while you're eating' - the subject and 'to be' verb are required.",
+       "En español decimos 'mientras' tanto con un verbo como con un sustantivo ('mientras la película'). En inglés 'while' va con un verbo: 'while you're driving'. Con un sustantivo se usa 'during': 'to text during a movie', no 'while a movie'."],
+      ["Spanish speakers might omit 'it's' because in Spanish we can say just 'Es agradable' without a subject. In English, we must always include 'it' as the subject of this structure.",
+       "En español decimos 'no es agradable', sin sujeto, y por eso sale 'Is not nice'. En inglés hay que poner 'it': 'It's not nice to text during a movie.'"],
+      ["It's smart to describe your phone habits.",
+       "It's not nice to text during a movie."],
+      ['Es inteligente describir tus hábitos con el teléfono.',
+       'No es agradable textear durante una película.'],
+      ['Which sentence correctly expresses a negative opinion?',
+       'Which sentence sounds the most natural?'],
+      ["Find and correct the mistake: I think it's not smart to listen to music while you're riding a bike.",
+       "Make it sound more natural: I think it's not smart to listen to music while you're riding a bike."],
+      ['Describe advantages and disadvantages of a brand',
+       null],
+      ["Talk about things that aren't working",
+       null],
+      ['Describe smart phone habits',
+       null],
+      ['Discuss the challenges of traveling with technology',
+       null],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_6', id }, "Expressing opinions with 'I think' and 'I don't think'", t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ["I think it's not OK to use your phone while driving."].includes(e.wrong)));
+  });
+  fixGrammarTopic(units, { unit: 'a2_6', id }, "Using 'while' to show two actions happening at the same time", t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['I use my phone while eating in a restaurant.', "Don't text while you drive."].includes(e.wrong)));
+  });
+  return true;
+}
+
+/* p. 62, la encuesta de aparatos: los ejemplos contaban cosas de él que nadie
+ * le preguntó ("I have a copier", "I don't want a printer"); ahora, la línea
+ * de la encuesta. "once", "twice" y "week" eran tres tarjetas de "once or
+ * twice a week". Dos errores comunes eran frases correctas ("Which device do
+ * you have?", "twice per week"), la trampa de "can" no tenía sentido y dos
+ * ejercicios tenían varias respuestas. */
+function fixU6P62(units) {
+  const id = u6Lote(62);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'tablet', set: { example: "a tablet: have / want / don't want", exampleTranslation: 'una tableta: la tengo / la quiero / no la quiero' } },
+    { word: 'laptop', set: { example: "a laptop: have / want / don't want", exampleTranslation: 'un portátil: lo tengo / lo quiero / no lo quiero' } },
+    { word: 'desktop computer', set: { translation: 'computador de escritorio', example: "a desktop computer: have / want / don't want", exampleTranslation: 'un computador de escritorio: lo tengo / lo quiero / no lo quiero' } },
+    { word: 'smart TV', set: { example: "a smart TV: have / want / don't want", exampleTranslation: 'un televisor inteligente: lo tengo / lo quiero / no lo quiero' } },
+    { word: 'printer', set: { example: "a printer: have / want / don't want", exampleTranslation: 'una impresora: la tengo / la quiero / no la quiero' } },
+    { word: 'copier', set: { example: "a copier: have / want / don't want", exampleTranslation: 'una fotocopiadora: la tengo / la quiero / no la quiero' } },
+    { word: 'video camera', set: { example: "a video camera: have / want / don't want", exampleTranslation: 'una cámara de video: la tengo / la quiero / no la quiero' } },
+    { word: 'fitness tracker', set: { translation: 'pulsera de actividad (reloj deportivo)', example: "a fitness tracker: have / want / don't want", exampleTranslation: 'una pulsera de actividad: la tengo / la quiero / no la quiero' } },
+    { word: 'wireless earbuds', set: { example: "wireless earbuds: have / want / don't want", exampleTranslation: 'audífonos inalámbricos: los tengo / los quiero / no los quiero' } },
+    { word: 'headphones', set: { translation: 'audífonos (de diadema)', example: "headphones: have / want / don't want", exampleTranslation: 'audífonos: los tengo / los quiero / no los quiero' } },
+    { word: 'digital camera', set: { example: "a digital camera: have / want / don't want", exampleTranslation: 'una cámara digital: la tengo / la quiero / no la quiero' } },
+    { word: 'speakers', set: { example: "speakers: have / want / don't want", exampleTranslation: 'parlantes: los tengo / los quiero / no los quiero' } },
+    { word: 'twice', set: { word: 'once or twice a week', translation: 'una o dos veces a la semana', phonetic: '/wʌns ɔr twaɪs ə wik/', type: 'phrase', example: 'I actually have one, but I only use the thing once or twice a week.', exampleTranslation: 'En realidad tengo uno, pero solo lo uso una o dos veces a la semana.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_6', id }, [
+    ['once', 'once or twice a week'],
+    ['week', 'once or twice a week']]);
+  fixPageContent(units, { unit: 'a2_6', id,
+    quitarEjercicios: [
+      'I ___ use headphones twice a week.',
+      'I ___ a laptop and a tablet.'],
+    cambios: [
+      ["En inglés, 'have' se usa para expresar posesión de objetos. A diferencia del español, 'have' es el único verbo para tener algo: 'I have a laptop' = 'Yo tengo un portátil'. No se usa 'got' en este nivel.",
+       "En inglés 'have' dice que algo es tuyo: 'I have a laptop' = 'Tengo un portátil'. Con he / she / it es 'has': 'She has a tablet'."],
+      ["En español agregamos 'a' o 'con' después del verbo poder ('puede ayudar con'), pero en inglés usamos 'can help with' sin cambios en el verbo.",
+       "En español 'poder' cambia con la persona (puedo, puede, pueden). En inglés 'can' es igual para todos y va directo con el verbo, sin 'to' y sin -s: 'It can help with everything!', no 'It cans help' ni 'It can to help'."],
+      ["En español se dice 'una vez a la semana' o 'una vez por semana', pero en inglés solo usamos 'a': 'once a week', no 'once per week'.",
+       "En español decimos 'una vez', 'dos veces'. En inglés hay palabras propias para eso: once (una vez) y twice (dos veces). Desde tres se dice 'times': three times a week."],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_6', id }, 'Question formation with which', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['Which device do you have?'].includes(e.wrong)));
+  });
+  fixGrammarTopic(units, { unit: 'a2_6', id }, 'Frequency expressions with once/twice', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['I use it one time a week.', 'I use it twice per week.'].includes(e.wrong)));
+  });
+  return true;
+}
+
+/* p. 63, Zoom-In del hotel: "for starters" salió "for quarters" ("en las
+ * habitaciones") y "Actually, no" salió "Absolutely no". "No way" aquí es "¡No
+ * puede ser!", no "de ninguna manera". El ejercicio de unir broken / obsolete
+ * / up to date / defective tenía las respuestas en el orden del libro, que es
+ * el desordenado. Faltaba "Uh-oh!". El tema de "presente simple para estados"
+ * mezclaba tiempos (su ejemplo era presente continuo). */
+function fixU6P63(units) {
+  const id = u6Lote(63);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'quarters', set: { word: 'for starters', translation: 'para empezar', phonetic: '/fər ˈstɑrtərz/', type: 'phrase', example: 'Well, for starters, the sink is clogged.', exampleTranslation: 'Bueno, para empezar, el lavamanos está tapado.' } },
+    { word: 'sink', set: { translation: 'lavamanos (del baño); lavaplatos (de la cocina)', example: 'Well, for starters, the sink is clogged.', exampleTranslation: 'Bueno, para empezar, el lavamanos está tapado.' } },
+    { word: 'Absolutely no', set: { word: 'Actually, no.', translation: 'La verdad, no.', phonetic: '/ˈæktʃuəli noʊ/', type: 'phrase', example: "Actually, no. The TV IS working, but . . . it's like totally obsolete.", exampleTranslation: 'La verdad, no. El televisor SÍ funciona, pero... es como totalmente obsoleto.' } },
+    { word: 'No way', set: { translation: '¡No puede ser! / ¡No me digas!', exampleTranslation: '¡No puede ser! ¿Qué le pasa al televisor?' } },
+    { word: 'defective', set: { example: "It's not defective, and it works fine.", exampleTranslation: 'No está defectuoso, y funciona bien.' } },
+    { word: 'kidding', set: { word: 'Are you kidding?', translation: '¿Es en serio? / ¿Estás bromeando?', phonetic: '/ɑr ju ˈkɪdɪŋ/', type: 'phrase', example: 'Are you kidding? That sounds impossible.', exampleTranslation: '¿Es en serio? Eso suena imposible.' } },
+    { word: 'on the line', set: { word: 'on the line with', translation: 'hablando por teléfono con', exampleTranslation: '¿Ralph? ¿Estás hablando con el servicio de limpieza ahora?' } },
+    { word: 'housekeeping', set: { translation: 'servicio de limpieza (del hotel)' } },
+    { word: 'refrigerator', set: { translation: 'nevera', example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+    { word: 'microwave', set: { example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+    { word: 'stove', set: { example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+    { word: 'shower', set: { example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+    { word: 'lamp', set: { example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+    { word: 'car', set: { example: 'More Ideas: a refrigerator, a microwave, a stove, a sink, a toilet, a shower, a lamp, a car', exampleTranslation: 'Más ideas: una nevera, un microondas, una estufa, un lavamanos, un inodoro, una ducha, una lámpara, un carro' } },
+  ], nuevas: [
+    { despues: 'plumbing', v: { word: 'Uh-oh!', translation: '¡Uy! / ¡Ay, no!', phonetic: '/ˈʌˌoʊ/', type: 'phrase', emoji: '😬', example: "Uh-oh! I think there's some kind of plumbing problem in this hotel.", exampleTranslation: 'Uy, creo que hay algún problema de plomería en este hotel.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    quitarGramatica: ['Present simple for describing current states and problems'],
+    quitarEjercicios: [
+      'Which response shows strong disagreement?'],
+    ejercicios: [
+      { question: 'Match each word with its meaning', set: { options: ["broken → isn't working", 'obsolete → is hard to use because the technology is old', 'up to date → uses new or recent technology', 'defective → has a problem'] } }],
+  });
+  return true;
+}
+
+/* p. 64: varios ejemplos no tenían que ver con su palabra (juicer: "Is she
+ * making her hair right now?"; rice cooker: "I'm cooking dinner for my
+ * family"; dryer: "My machine's totally obsolete") o estaban cambiados ("Where
+ * are you buying…", el libro dice "they"). "shopping" y "paradise" salieron de
+ * "Shopper's Paradise", el nombre de una tienda. En la cocina, "counter" es el
+ * mesón. Repetidas con otras páginas: advantages, disadvantages, devices. */
+function fixU6P64(units) {
+  const id = u6Lote(64);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'rice cooker', set: { example: "I don't think so. She has a rice cooker, and I think she always makes steamed rice.", exampleTranslation: 'No creo. Ella tiene una olla arrocera, y creo que siempre hace arroz al vapor.' } },
+    { word: 'juicer', set: { example: "Sure! It's still in the juicer on the counter in the kitchen.", exampleTranslation: '¡Claro! Todavía está en el exprimidor, en el mesón de la cocina.' } },
+    { word: 'counter', set: { translation: 'mesón (de la cocina)', example: "Sure! It's still in the juicer on the counter in the kitchen.", exampleTranslation: '¡Claro! Todavía está en el exprimidor, en el mesón de la cocina.' } },
+    { word: 'kitchen', set: { example: "Sure! It's still in the juicer on the counter in the kitchen.", exampleTranslation: '¡Claro! Todavía está en el exprimidor, en el mesón de la cocina.' } },
+    { word: 'hair dryer', set: { translation: 'secador (de pelo)', example: 'Is she using the hair dryer right now?', exampleTranslation: '¿Ella está usando el secador ahora mismo?' } },
+    { word: 'dryer', set: { example: 'What kind of dryer is that?', exampleTranslation: '¿Qué clase de secadora es esa?' } },
+    { word: 'old one', set: { example: "It's a Quick Dry. It dries clothes faster than my old one.", exampleTranslation: 'Es una Quick Dry. Seca la ropa más rápido que la vieja.' } },
+    { word: 'dishwasher', set: { translation: 'lavaplatos (la máquina)', example: 'Where are they buying the dishwasher?', exampleTranslation: '¿Dónde van a comprar el lavaplatos?' } },
+    { word: 'vacuum cleaner', set: { example: "No one is! The vacuum cleaner isn't working.", exampleTranslation: '¡Nadie! La aspiradora no está funcionando.' } },
+    { word: 'fry', set: { example: 'Is Marie frying the rice?', exampleTranslation: '¿Marie está friendo el arroz?' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_6', id }, [
+    ['advantages', 'advantage'],
+    ['disadvantages', 'disadvantage'],
+    ['devices', 'device'],
+    ['shopping', 'shop online']]);
+  fixPageContent(units, { unit: 'a2_6', id,
+    quitarPalabras: ['electronics store', 'washing', 'paradise'],
+    quitarEjercicios: [
+      "A: Are you ___ an air-conditioner? B: Yes, we are. No, we aren't. Our old one is still ___."],
+    ejercicios: [
+      { question: "What is the correct present continuous form of 'make'?", set: { options: ['makeing', 'making', 'makking', 'maked'] } },
+      { question: 'A: When are you using the dishwasher? B: Not until ___. Would you like to use it ___?', set: { question: 'A: When are you using the dryer? B: Not until ___. Would you like to use it ___?' } }],
+    cambios: [
+      ["Los colombianos tienden a usar 'will' o 'going to' para todos los planes futuros, pero el presente continuo es muy natural en inglés para planes ya decididos: 'I'm cooking dinner tomorrow' NO 'I will cook dinner tomorrow' (cuando ya está planeado).",
+       "En español decimos 'el sábado cocino' o 'voy a cocinar'. En inglés, para un plan ya decidido, se usa el presente continuo: 'I'm cooking dinner for my dad.' Decir 'I cook dinner tomorrow', en presente simple, suena raro."],
+      ["Al formar el presente continuo, se añade -ing al verbo. Hay reglas importantes: (1) Si el verbo termina en 'e' muda, se elimina la 'e' antes de añadir -ing: make → making, use → use. (2) Si termina en una consonante + vocal + consonante y la última sílaba está acentuada, se duplica la consonante final: shop → shopping. En español no hay este cambio ortográfico.",
+       "Al formar el presente continuo, se añade -ing al verbo. Hay reglas importantes: (1) Si el verbo termina en 'e' muda, se quita la 'e' antes de añadir -ing: make → making, use → using. (2) Si termina en consonante + vocal + consonante, se duplica la consonante final: shop → shopping. En español no hay este cambio."],
+      ['Not until tomorrow. Would you like to use it today?',
+       "I'm cooking dinner for my dad."],
+      ['No hasta mañana. ¿Te gustaría usarla hoy?',
+       'Voy a cocinarle la comida a mi papá.'],
+    ] });
+  return true;
+}
+
+/* p. 65: "My new laptop is very fast" y "My printer is a little slow" contaban
+ * cosas de él; ahora, la lista de Ideas. "Change the conversation again" era
+ * la misma conversación otra vez. */
+function fixU6P65(units) {
+  const id = u6Lote(65);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'fast', set: { example: 'Advantages: fast, cheap, not expensive, small, easy to use', exampleTranslation: 'Ventajas: rápido, barato, no es caro, pequeño, fácil de usar' } },
+    { word: 'a little slow', set: { example: 'Disadvantages: a bit pricey, expensive, a little slow, quite large / small', exampleTranslation: 'Desventajas: un poco caro, caro, un poco lento, bastante grande / pequeño' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    cambios: [
+      ["Algunos dicen 'a little bit expensive' bien, pero dicen 'It's little slow' sin 'a'; sin 'a' cambia el sentido o suena mal.",
+       "En español 'un poco' lleva 'un', y en inglés también lleva 'a': 'a little slow', 'a bit pricey'. Sin la 'a' ('It's little slow') suena mal."],
+      ['Change the conversation again. Discuss the advantages and disadvantages of another brand.',
+       null],
+    ] });
+  return true;
+}
+
+/* p. 66: "We're making a video at school later" estaba cambiado (el libro dice
+ * "She and I"), y una respuesta contaba que él compra aparatos por internet. */
+function fixU6P66(units) {
+  const id = u6Lote(66);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: "I'm sorry", set: { example: "Oh, I'm sorry. She and I are making a video at school later.", exampleTranslation: 'Ay, lo siento. Ella y yo vamos a grabar un video en el colegio más tarde.' } },
+    { word: 'Do you sometimes shop online?', set: { example: "Yes, I do. / No, I don't." } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    cambios: [
+      ['Mi hermana sube videos todos los días.',
+       'Ella sube videos todos los días.'],
+      ['My sister uploads videos every day.',
+       'She uploads videos every day.'],
+    ] });
+  return true;
+}
+
+/* p. 67: "I usually make videos of family parties" y "My car won't start"
+ * contaban cosas de él; "For starters" ya está en la p. 63. "Change partners"
+ * era la misma conversación otra vez. */
+function fixU6P67(units) {
+  const id = u6Lote(67);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'family party', set: { example: 'The woman (often / hardly ever / never) makes videos of family parties.', exampleTranslation: 'La mujer (a menudo / casi nunca / nunca) hace videos de fiestas familiares.' } },
+    { word: "won't start", set: { example: "It won't start.", exampleTranslation: 'No arranca. / No prende.' } },
+  ] });
+  unirEnLaUnidad(units, { unit: 'a2_6', id }, [
+    ['For starters, ...', 'for starters']]);
+  fixPageContent(units, { unit: 'a2_6', id,
+    cambios: [
+      ['CHANGE PARTNERS: Role-play the conversation again. Use another device or appliance.',
+       null],
+    ] });
+  return true;
+}
+
+/* p. 68: ejemplos sobre él y su familia ("My father reads local and world news
+ * on his phone", "I check email every morning", "I listen to podcasts");
+ * ahora, las listas de la página. "waking up" va en forma base. Respuestas que
+ * contaban sus hábitos. */
+function fixU6P68(units) {
+  const id = u6Lote(68);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'check email', set: { example: 'text, check email, post to social media, play games', exampleTranslation: 'textear, revisar el correo, publicar en redes sociales, jugar' } },
+    { word: 'listen to podcasts', set: { example: 'Additional activities: listen to podcasts, listen to music, read local and world news, stream movies, shop online, get information', exampleTranslation: 'Otras actividades: escuchar pódcasts, escuchar música, leer noticias locales y del mundo, ver películas en streaming, comprar por internet, buscar información' } },
+    { word: 'read local and world news', set: { example: 'Additional activities: listen to podcasts, listen to music, read local and world news, stream movies, shop online, get information', exampleTranslation: 'Otras actividades: escuchar pódcasts, escuchar música, leer noticias locales y del mundo, ver películas en streaming, comprar por internet, buscar información' } },
+    { word: 'waking up', set: { word: 'wake up', translation: 'despertarse', phonetic: '/weɪk ʌp/' } },
+    { word: 'In which ways are you dependent on your phone?', set: { example: 'People use their phones all the time—from first thing in the morning to the last thing at night.' } },
+    { word: 'Are you addicted to your smart phone?', set: { example: "Yes, I am. / No, I'm not." } },
+    { word: 'Which activities do you use your smart phone for?', set: { example: 'I use it to (text / check email / post to social media / play games).' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    ejercicios: [
+      { question: 'Find and correct the mistake: My brother spends a lot of time to play games.', set: { question: 'Find and correct the mistake: They spend a lot of time to play games.', answer: 'They spend a lot of time playing games.' } }],
+    cambios: [
+      ['I think my family is addicted of their phones.',
+       'Many people are addicted of their phones.'],
+      ['I think my family is addicted to their phones.',
+       'Many people are addicted to their phones.'],
+    ] });
+  return true;
+}
+
+/* p. 69: "The infographic is about smart phone users around the world" es la
+ * frase falsa del ejercicio de verdadero o falso (la infografía es de Estados
+ * Unidos). Las respuestas de la encuesta contaban cosas de él ("Yes, my
+ * brother. He looks at his phone all the time"); ahora, las opciones de la
+ * encuesta. */
+function fixU6P69(units) {
+  const id = u6Lote(69);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'better', set: { example: 'When the quality of our work suffers, it gets (worse / better).', exampleTranslation: 'Cuando la calidad de nuestro trabajo se ve afectada, se vuelve (peor / mejor).' } },
+    { word: 'infographic', set: { example: 'Write T (true) or F (false), based on the Smart Phone Usage infographic.', exampleTranslation: 'Escribe V (verdadero) o F (falso), según la infografía sobre el uso del celular.' } },
+    { word: 'around the world', set: { example: 'The infographic is about smart phone users around the world. (F: it is about the United States.)', exampleTranslation: 'La infografía es sobre los usuarios de celular en todo el mundo. (Falso: es sobre Estados Unidos.)' } },
+    { word: 'Do you look at your phone first thing in the morning when you get up?', set: { example: 'I look at my phone first thing in the morning because I want to see if I have any text messages.' } },
+    { word: 'Do you look at your phone after you go to bed at night?', set: { example: "Always. / Never. / Sometimes. / I don't keep my phone in my bedroom." } },
+    { word: 'Do you use your phone when you are bored?', set: { example: "Sometimes. / Definitely. Every day. / I'm hardly ever bored, so no." } },
+    { word: 'Is your phone usage increasing or decreasing?', set: { example: "It's increasing. / It's decreasing. / It's staying the same." } },
+    { word: 'Would you like to change your smart phone habits?', set: { example: "Yes. / No. / I'm not sure." } },
+    { word: 'Are you (or is someone you know) dependent on or addicted to a smart phone?', set: { example: 'Yes. / No.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_6', id,
+    quitarPalabras: ["Why don't you keep your phone in your bedroom?"],
+    cambios: [
+      ['Mis hábitos con el celular están mejorando.',
+       'Sus hábitos con el celular están mejorando.'],
+      ['My phone habits are getting better.',
+       'Their phone habits are getting better.'],
+      ['Si estoy aburrido, uso mi celular.',
+       'Si ella está aburrida, usa el celular.'],
+      ["If I'm bored, I use my phone.",
+       "If she's bored, she uses her phone."],
+    ] });
+  return true;
+}
+
+/* p. 70: las opciones del audio quedaron como hechos ("The coffee maker in my
+ * hotel room is broken", "There's a bathtub in my hotel room", "They want to
+ * give advice to other travelers") y "I need to charge my e-reader" contaba
+ * algo de él; ahora, las preguntas del libro con sus opciones. */
+function fixU6P70(units) {
+  const id = u6Lote(70);
+  if (!hayLote(units, 'a2_6', id)) return false;
+  fixBookPage(units, { unit: 'a2_6', id, cambios: [
+    { word: 'e-reader', set: { example: 'What does Caitlin have questions about? (batteries for her e-reader / changing a battery in an e-reader / charging her devices / an adapter for her hair dryer)', exampleTranslation: '¿Sobre qué tiene preguntas Caitlin? (las baterías de su lector electrónico / cambiarle la batería a un lector electrónico / cargar sus aparatos / un adaptador para su secador)' } },
+    { word: 'wi-fi', set: { example: "Which two things are not a problem in Joaquim's hotel room? (the outlets / the wi-fi / the bathtub / the sink)", exampleTranslation: '¿Qué dos cosas no son un problema en la habitación de Joaquim? (los tomacorrientes / el wifi / la tina / el lavamanos)' } },
+    { word: 'bathtub', set: { example: "Which two things are not a problem in Joaquim's hotel room? (the outlets / the wi-fi / the bathtub / the sink)", exampleTranslation: '¿Qué dos cosas no son un problema en la habitación de Joaquim? (los tomacorrientes / el wifi / la tina / el lavamanos)' } },
+    { word: 'coffee maker', set: { example: "What doesn't work well in the Atlanta hotel? (the shower / the coffee maker / the wi-fi / all of the above)", exampleTranslation: '¿Qué no funciona bien en el hotel de Atlanta? (la ducha / la cafetera / el wifi / todas las anteriores)' } },
+    { word: 'travel books', set: { example: 'Who is an author of travel books?', exampleTranslation: '¿Quién es autor de libros de viajes?' } },
+    { word: 'author', set: { example: 'Who is an author of travel books?', exampleTranslation: '¿Quién es autor de libros de viajes?' } },
+    { word: 'advice', set: { example: 'Why do people call Adrienne? (They want to choose good places to travel. / They have questions about possible and real problems when they travel. / They want to give advice to other travelers.)', exampleTranslation: '¿Por qué llaman a Adrienne? (Quieren escoger buenos lugares para viajar. / Tienen preguntas sobre problemas posibles y reales cuando viajan. / Quieren darles consejos a otros viajeros.)' } },
+    { word: 'traveler', set: { example: 'Why do people call Adrienne? (They want to choose good places to travel. / They have questions about possible and real problems when they travel. / They want to give advice to other travelers.)', exampleTranslation: '¿Por qué llaman a Adrienne? (Quieren escoger buenos lugares para viajar. / Tienen preguntas sobre problemas posibles y reales cuando viajan. / Quieren darles consejos a otros viajeros.)' } },
+  ] });
+  return true;
+}
+
+/* ── Unit 6: preguntas para las flashcards de las pp. 61-64 ────────────────
+ * Las páginas que subió en octubre ya las traen. Primero las que el libro
+ * imprime, con la respuesta del libro; en las que preguntan por él, las
+ * opciones, no una respuesta inventada. */
+function addU6Questions(units, pagina, preguntas) {
+  return addPageExtras(units, 'a2_6', u6Lote(pagina), { preguntas });
+}
+
+function addU6P61Questions(units) {
+  return addU6Questions(units, 61, [
+    { q: 'In your opinion, which situations are OK?', es: 'En tu opinión, ¿qué situaciones están bien?', a: "I don't think it's OK to use your phone in a restaurant. It's not nice." },
+    { q: "Is it OK to text while you're driving?", es: '¿Está bien textear mientras manejas?', a: "No, it isn't. I don't think it's OK to text while you're driving." },
+    { q: 'Is it OK to text during a movie?', es: '¿Está bien textear durante una película?', a: "I don't think it's OK. It's not nice." },
+    { q: "Is it OK to listen to music while you're riding a bike?", es: '¿Está bien escuchar música mientras montas en bicicleta?', a: "Yes, I think it's OK. / No, I don't think it's OK." },
+  ]);
+}
+
+function addU6P62Questions(units) {
+  return addU6Questions(units, 62, [
+    { q: 'Which devices do you have now?', es: '¿Qué aparatos tienes ahora?', a: 'I have (a tablet / a laptop / a smart TV).' },
+    { q: 'Which devices do you want?', es: '¿Qué aparatos quieres?', a: "I'd like to have a virtual assistant. It can help with everything!" },
+    { q: "Which devices don't you want?", es: '¿Qué aparatos no quieres?', a: "I don't want (a copier / a printer / a video camera)." },
+    { q: 'How often do you use it?', es: '¿Cada cuánto lo usas?', a: 'I only use the thing once or twice a week.' },
+  ]);
+}
+
+function addU6P63Questions(units) {
+  return addU6Questions(units, 63, [
+    { q: 'What kind of problem?', es: '¿Qué clase de problema?', a: "Well, for starters, the sink is clogged. The water isn't going down." },
+    { q: 'Are you on the line with housekeeping now?', es: '¿Estás hablando con el servicio de limpieza ahora?', a: 'I am. More problems?' },
+    { q: "What's wrong with the TV? Is it broken?", es: '¿Qué le pasa al televisor? ¿Está dañado?', a: "Actually, no. The TV IS working, but . . . it's like totally obsolete." },
+    { q: 'Does something in your home have a problem?', es: '¿Algo en tu casa tiene un problema?', a: "I have a bad problem with my new air-conditioner. It won't turn on." },
+  ]);
+}
+
+function addU6P64Questions(units) {
+  return addU6Questions(units, 64, [
+    { q: 'What are you microwaving?', es: '¿Qué estás calentando en el microondas?', a: 'My soup. I like my soup hot.' },
+    { q: 'What are you doing next Saturday?', es: '¿Qué vas a hacer el próximo sábado?', a: "I'm cooking dinner for my dad." },
+    { q: 'Are you buying an air-conditioner?', es: '¿Van a comprar un aire acondicionado?', a: "Yes, we are. / No, we aren't." },
+    { q: 'Is she using the hair dryer right now?', es: '¿Ella está usando el secador ahora mismo?', a: "Yes, she is. / No, she isn't." },
+    { q: "What's he making with that blender?", es: '¿Qué está haciendo él con esa licuadora?', a: 'Some kind of fruit drink.' },
+    { q: 'Where are they buying the dishwasher?', es: '¿Dónde van a comprar el lavaplatos?', a: "At Shopper's Paradise." },
+    { q: 'Who are you talking to?', es: '¿Con quién estás hablando?', a: "I'm talking to someone at the front desk." },
+    { q: "Who's vacuuming the house tomorrow?", es: '¿Quién va a pasar la aspiradora mañana?', a: "No one is! The vacuum cleaner isn't working." },
+  ]);
 }
 
 /* ── Unit 5, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
@@ -25743,7 +26172,9 @@ function applyPageFixes(units) {
    addU4P38Questions, addU4P39Questions, addU4P40Questions, addU4P41Questions, addU4P42Questions,
    addU4P43Questions, addU4P44Questions, addU4P45Questions, addU4P46Questions, addU4P47Questions,
    fixU5Pages, fixU5P49, fixU5P50, fixU5P51, fixU5P52, fixU5P53, fixU5P54, fixU5P55, fixU5P56, fixU5P57, fixU5P58, fixU5P59,
-   addU5P49Questions, addU5P50Questions, addU5P51Questions, addU5P52Questions, addU5P53Questions, addU5P54Questions, addU5P55Questions, addU5P56Questions, addU5P57Questions, addU5P58Questions, addU5P59Questions]
+   addU5P49Questions, addU5P50Questions, addU5P51Questions, addU5P52Questions, addU5P53Questions, addU5P54Questions, addU5P55Questions, addU5P56Questions, addU5P57Questions, addU5P58Questions, addU5P59Questions,
+   fixU6Pages, fixU6Order, fixU6P61, fixU6P62, fixU6P63, fixU6P64, fixU6P65, fixU6P66, fixU6P67, fixU6P68, fixU6P69, fixU6P70,
+   addU6P61Questions, addU6P62Questions, addU6P63Questions, addU6P64Questions]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
