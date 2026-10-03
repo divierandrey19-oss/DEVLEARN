@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03e -->
+<!-- DEVLEARN_BUILD: 2026-10-03f -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03e';
+const APP_BUILD = '2026-10-03f';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6959,7 +6959,10 @@ function migrateState(s) {
   [['_u3P26EjV1', fixU3P26Ejemplos], ['_u3P29EjV1', fixU3P29Ejemplos], ['_u3P30EjV1', fixU3P30Ejemplos],
    ['_u3P31EjV1', fixU3P31Ejemplos], ['_u3P32EjV1', fixU3P32Ejemplos], ['_u3P33EjV1', fixU3P33Ejemplos],
    ['_u3P34EjV1', fixU3P34Ejemplos], ['_u3P35EjV1', fixU3P35Ejemplos], ['_u2P20EjV1', fixU2P20Ejemplo],
-   ['_u8P88DupesV1', fixU8P88Dupes], ['_u10P110TrapsV1', fixU10P110Traps]]
+   ['_u8P88DupesV1', fixU8P88Dupes], ['_u10P110TrapsV1', fixU10P110Traps],
+   // Unit 10, pp. 114-118 (subidas el 3 de octubre).
+   ['_u10P114V1', fixU10P114], ['_u10P115V1', fixU10P115], ['_u10P116V1', fixU10P116],
+   ['_u10P117V1', fixU10P117], ['_u10P118V1', fixU10P118]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
@@ -10734,6 +10737,72 @@ function fixU10P113Content(units) {
     ['CHANGE PARTNERS: Personalize the conversation again.', null],
   ] });
 }
+
+/* ── Unit 10, pp. 114-119 (subidas el 3 de octubre) ────────────────────────
+ * Salieron bien con el prompt nuevo; solo detalles. La p. 119 no necesita
+ * nada. */
+
+/* p. 114: la explicación del presente continuo para planes tenía una frase
+ * rara en español, y "They're going to invite the company" no tiene sentido. */
+function fixU10P114(units) {
+  const ok = fixBookPage(units, { unit: 'a2_10', page: 114, cambios: [
+    { word: 'Who are they going to invite to the event?', example: "They're going to invite the company.",
+      set: { example: "They're going to invite everyone at the office." } },
+  ] });
+  fixPageContent(units, { unit: 'a2_10', page: 114, cambios: [
+    ["El presente continuo también expresa planes futuros, como en español 'Mañana voy saliendo' no se usa, pero sí 'I'm coming home' = 'Voy a volver a casa'. Funciona con todos los verbos excepto 'be': para 'be' hay que usar 'going to be'.",
+     "El presente continuo también sirve para planes futuros: 'I'm coming home' = 'I'm going to come home' (voy a volver a casa). Funciona con todos los verbos menos 'be': para 'be' se usa 'going to be': 'She's going to be at home', no 'She's being at home'."],
+  ] });
+  return ok;
+}
+
+/* p. 115: un ejercicio de "cuál respuesta es incorrecta" tenía dos ("I'd be
+ * happy to" tampoco responde "Is anyone going to set up the room?"), y
+ * "Change partners" era la misma conversación otra vez. */
+function fixU10P115(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 115,
+    quitarEjercicios: ['Which answer is INCORRECT after "Is anyone going to set up the room?"'],
+    cambios: [['CHANGE PARTNERS: Role-play the conversation again.', null]] });
+}
+
+/* p. 116: "What are you really good at? — I'm really good at decorating" y la
+ * idea "más útil" contaban cosas de él; ahora, las cinco ideas del artículo.
+ * La traducción de "be good at" no se entendía. */
+function fixU10P116(units) {
+  const ok = fixBookPage(units, { unit: 'a2_10', page: 116, cambios: [
+    { word: 'be good at', set: { exampleTranslation: 'Si te gustaría cambiar de carrera, piensa en qué eres realmente bueno.' } },
+    { word: 'Which ideas seem the most helpful to you?', example: '"Stay positive!" and "Learn from your mistakes and failures."',
+      set: { example: 'Dream big! / Find your passion / Target your weaknesses / Stay positive! / Learn from your mistakes and failures' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_10', page: 116, quitarPalabras: ['What are you really good at?'] });
+  return ok;
+}
+
+/* p. 117: "Positive thinking isn't going to help your dreams come true" es una
+ * de las frases que NO dicen lo que piensa el escritor ("Stay positive!"), y
+ * "I don't always stay positive" contaba algo de él: en la página son frases
+ * para completar. */
+function fixU10P117(units) {
+  const DEBILIDADES = { example: 'Complete two statements about your weaknesses: I sometimes think I . . . I don\'t always . . . I could be more . . .',
+    exampleTranslation: 'Completa dos frases sobre tus debilidades: A veces pienso que... No siempre... Podría ser más...' };
+  return fixBookPage(units, { unit: 'a2_10', page: 117, cambios: [
+    { word: 'positive thinking', example: "Positive thinking isn't going to help your dreams come true.", set: {
+      example: "Positive thinking isn't going to help your dreams come true. (Not the writer's opinion: \"Stay positive!\")",
+      exampleTranslation: 'El pensamiento positivo no va a ayudar a que tus sueños se hagan realidad. (No es la opinión del escritor: "¡Mantente positivo!")' } },
+    { word: 'I could be more...', example: 'I could be more hard-working.', set: DEBILIDADES },
+    { word: "I don't always...", example: "I don't always stay positive.", set: DEBILIDADES },
+  ] });
+}
+
+/* p. 118: la respuesta inventaba qué beneficios le importan a él; ahora, las
+ * opciones de la página. */
+function fixU10P118(units) {
+  return fixBookPage(units, { unit: 'a2_10', page: 118, cambios: [
+    { word: 'Which job benefits are important to you?', example: 'Flexible hours and feedback are important to me.',
+      set: { example: '(a challenge / a salary / a perk / feedback / flexible hours / the atmosphere)' } },
+  ] });
+}
+
 
 /* "to have kids" (p. 109) y "have kids" (p. 113) eran dos tarjetas de la misma
  * palabra. Queda la de la p. 113, con mejor ejemplo ("Would you like to have
@@ -26298,7 +26367,8 @@ function applyPageFixes(units) {
    fixU6Pages, fixU6Order, fixU6P61, fixU6P62, fixU6P63, fixU6P64, fixU6P65, fixU6P66, fixU6P67, fixU6P68, fixU6P69, fixU6P70,
    addU6P61Questions, addU6P62Questions, addU6P63Questions, addU6P64Questions,
    fixU3P26Ejemplos, fixU3P29Ejemplos, fixU3P30Ejemplos, fixU3P31Ejemplos, fixU3P32Ejemplos, fixU3P33Ejemplos,
-   fixU3P34Ejemplos, fixU3P35Ejemplos, fixU2P20Ejemplo, fixU8P88Dupes, fixU9Order, fixU10P110Traps]
+   fixU3P34Ejemplos, fixU3P35Ejemplos, fixU2P20Ejemplo, fixU8P88Dupes, fixU9Order, fixU10P110Traps,
+   fixU10P114, fixU10P115, fixU10P116, fixU10P117, fixU10P118]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 

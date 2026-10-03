@@ -279,6 +279,13 @@ del libro y se queda. Unit 2, p. 20: el ejemplo de hip-hop. Unit 8, p. 88: "to
 her" y "to the salesperson" se unen con su progreso. Unit 9: orden del libro (la
 p. 104 salía después de la 106). Unit 10, p. 110: tres trampas al español.
 
+`u10-p114-118.test.js` — Unit 10, pp. 114-119, subidas el 3 de octubre con el
+prompt nuevo: salieron bien, con detalles. p. 117: "Positive thinking isn't going
+to help your dreams come true" es una frase que NO es la opinión del escritor, y
+"I don't always stay positive" contaba algo de él. pp. 116 y 118: respuestas que
+inventaban en qué es bueno o qué le importa. p. 115: un ejercicio con dos
+respuestas incorrectas y "Change partners". p. 114: una explicación rara.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of
