@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-02w -->
+<!-- DEVLEARN_BUILD: 2026-10-03a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-02w';
+const APP_BUILD = '2026-10-03a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6915,6 +6915,17 @@ function migrateState(s) {
    ['_u7P79QV1', addU7P79Questions], ['_u7P80QV1', addU7P80Questions], ['_u7P81QV1', addU7P81Questions],
    ['_u7P82QV1', addU7P82Questions], ['_u7P83QV1', addU7P83Questions]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Unit 4: primero se junta cada copia de julio con su página (y se anota como
+  // borrada, para que la nube no la devuelva), después cada página y sus preguntas.
+  if (!merged._u4MergeV1 && fixU4Merge(merged.units, merged)) merged._u4MergeV1 = true;
+  [['_u4P38V1', fixU4P38], ['_u4P39V1', fixU4P39], ['_u4P40V1', fixU4P40], ['_u4P41V1', fixU4P41],
+   ['_u4P42V1', fixU4P42], ['_u4P43V1', fixU4P43], ['_u4P44V1', fixU4P44], ['_u4P45V1', fixU4P45],
+   ['_u4P46V1', fixU4P46], ['_u4P47V1', fixU4P47],
+   ['_u4P38QV1', addU4P38Questions], ['_u4P39QV1', addU4P39Questions], ['_u4P40QV1', addU4P40Questions],
+   ['_u4P41QV1', addU4P41Questions], ['_u4P42QV1', addU4P42Questions], ['_u4P43QV1', addU4P43Questions],
+   ['_u4P44QV1', addU4P44Questions], ['_u4P45QV1', addU4P45Questions], ['_u4P46QV1', addU4P46Questions],
+   ['_u4P47QV1', addU4P47Questions]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
 
@@ -7864,6 +7875,697 @@ function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
   ] });
+}
+
+/* ── Unit 4, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
+ * Cada página estaba dos veces: se analizaron en junio y, el 1 de julio, se
+ * volvieron a subir las diez, una por una. La copia de julio casi no tenía
+ * tarjetas (la app ya quitaba las repetidas), pero repetía gramática,
+ * ejercicios y speaking. Se analizó antes de las reglas de "las opciones no son
+ * hechos", "forma base" y "trampa en español", y muchos ejemplos contaban cosas
+ * de su vida que nadie le preguntó ("I have three siblings: two brothers and
+ * one sister"). La portada (p. 37) nunca se subió. Él ya había estudiado casi
+ * todas las tarjetas: unir y renombrar mueve el progreso. */
+function u4Lote(pagina) {
+  return { 38: 'b_1781126423009_mk1xn5', 39: 'b_1781130764920_uwcfek', 40: 'b_1781476721130_4udid6',
+    41: 'b_1781477163501_dfxllp', 42: 'b_1781670271577_h75yzv', 43: 'b_1781711353483_ujpa4g',
+    44: 'b_1781799224144_px095f', 45: 'b_1781799590646_pjiqii', 46: 'b_1781799895251_m5x8jv',
+    47: 'b_1781800060017_wzn499' }[pagina];
+}
+
+/* La copia de julio de cada página. */
+function u4Copia(pagina) {
+  return { 38: 'b_1782879686144_jdn2mu', 39: 'b_1782879765442_q52tng', 40: 'b_1782879953533_1wnwpz',
+    41: 'b_1782880095744_c30ief', 42: 'b_1782880204821_crk5cs', 43: 'b_1782880371180_u22v9v',
+    44: 'b_1782880530878_3mexe5', 45: 'b_1782880666712_v22n2p', 46: 'b_1782880765171_76fsr0',
+    47: 'b_1782880901145_k1c8el' }[pagina];
+}
+
+/* Cada página recibe su número, y la copia de julio se junta con ella: sus
+ * tarjetas que la página no tiene pasan a la página (con su progreso, que va
+ * por la palabra), y la copia se borra. Se anota como borrada por él
+ * (deletedBatchIds), igual que cuando él borra una página: si no, la nube la
+ * devolvería al sincronizar, porque que falte no es un borrado. */
+function fixU4Merge(units, st) {
+  const u = units && units.a2_4;
+  if (!u) return false;
+  let alguna = false;
+  for (let p = 38; p <= 47; p++) {
+    const b = (u.batches || []).find(x => x && x.id === u4Lote(p));
+    if (!b) continue;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [p];
+    const copia = u.batches.find(x => x && x.id === u4Copia(p));
+    if (!copia) continue;
+    const ya = new Map();
+    u.batches.forEach(x => { if (x && x !== copia) (x.vocab || []).forEach(v => { if (v) ya.set(vocabKey(v.word), v.word); }); });
+    b.vocab = b.vocab || [];
+    (copia.vocab || []).forEach(v => {
+      if (!v) return;
+      const k = vocabKey(v.word);
+      if (ya.has(k)) { moverProgreso(u, v.word, ya.get(k)); return; }
+      ya.set(k, v.word);
+      b.vocab.push(v);
+    });
+    u.batches = u.batches.filter(x => x !== copia);
+    if (st) st.deletedBatchIds = [...new Set([...(st.deletedBatchIds || []), copia.id])];
+  }
+  return alguna;
+}
+
+/* Un tema que otra página de la unidad enseña desde su recuadro: se quita de
+ * esta solo si esa otra página está en el aparato. */
+function quitarTemaU4(units, pagina, titulo, paginaQueLoEnsena) {
+  if (!hayLote(units, 'a2_4', u4Lote(paginaQueLoEnsena))) return;
+  fixPageContent(units, { unit: 'a2_4', id: u4Lote(pagina), quitarGramatica: [titulo] });
+}
+
+/* Un ejercicio por su respuesta exacta: los de armar frases comparten la misma
+ * pregunta ("Build a sentence with these words:") y guardan sus palabras. */
+function quitarEjerciciosPorRespuesta(units, fix, respuestas) {
+  const u = units && units[fix.unit];
+  const b = u && (u.batches || []).find(x => x && loteDeLaCorreccion(x, fix));
+  if (b) b.exercises = (b.exercises || []).filter(e => !(e && respuestas.includes(e.answer)));
+  return !!b;
+}
+/* p. 38: los ejemplos de "immediate / extended family" contaban quién es su
+ * familia ("my parents and my sister"); ahora, la definición del recuadro. La
+ * gramática, en inglés y con dos temas que la página no enseña. El speaking
+ * era inventado. */
+function fixU4P38(units) {
+  const id = u4Lote(38);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'immediate family', set: { example: 'immediate family = your parents, brothers and sisters, children, wife, or husband.', exampleTranslation: 'familia inmediata = tus papás, hermanos, hijos, esposa o esposo.' } },
+    { word: 'extended family', set: { example: "extended family = your grandparents, your parents' brothers and sisters, their children, your wife or husband's parents.", exampleTranslation: 'familia extendida = tus abuelos, los hermanos de tus papás, sus hijos, y los papás de tu esposa o esposo.' } },
+    { word: 'picture', set: { example: "I'm Kim. This is a picture of me with my husband, Matt, and our kids.", exampleTranslation: 'Soy Kim. Esta es una foto mía con mi esposo, Matt, y nuestros hijos.' } },
+    { word: 'relationship', set: { example: "Look at Kim's photos. Complete her immediate family relationships.", exampleTranslation: 'Mira las fotos de Kim. Completa las relaciones de su familia inmediata.' } },
+    { word: 'learn', set: { example: 'Then learn the words for extended family relationships.', exampleTranslation: 'Luego aprende las palabras de la familia extendida.' } },
+    { word: 'ask', set: { example: 'Ask and answer questions with Who about other relationships in the photos.', exampleTranslation: 'Haz y responde preguntas con Who sobre otras relaciones en las fotos.' } },
+    { word: 'answer', set: { example: 'Ask and answer questions with Who about other relationships in the photos.', exampleTranslation: 'Haz y responde preguntas con Who sobre otras relaciones en las fotos.' } },
+    { word: 'pair work', set: { example: 'Pair work: Ask and answer questions with Who about other relationships in the photos.', exampleTranslation: 'Trabajo en parejas: haz y responde preguntas con Who sobre otras relaciones en las fotos.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ["Subject Pronouns and 'to be' for Relationships", 'Plural Forms of Family Nouns'],
+    cambios: [
+      ["In English, we use apostrophe + s ('s) to show possession or relationships. Unlike Spanish where we use 'de', in English the possessor comes first. For example, 'el esposo de Kim' becomes 'Kim's husband'.",
+       "Para decir de quién es algo o qué parentesco tiene alguien, en inglés va primero la persona con 's y después la cosa o el parentesco: 'el esposo de Kim' = Kim's husband. Con dos personas, la 's va en la última: Luke and Amy's parents. Con un plural que termina en -s, solo el apóstrofo: my parents' house."],
+      ["Colombian Spanish speakers often translate directly using 'of' (the husband of Kim) instead of the possessive 's (Kim's husband). Remember: in English, the possessor comes BEFORE the thing possessed.",
+       "En español decimos 'el esposo de Kim', y por eso sale 'the husband of Kim'. En inglés la persona va primero, con 's: 'Kim's husband', 'Judy is Matt's mother-in-law'."],
+      ["In English, we create compound words for extended family using hyphens with 'in-law'. Unlike Spanish where each relation has a unique word (suegro, yerno, cuñado), English combines the basic relationship word + 'in-law'. For example, mother-in-law = suegra.",
+       "Los parientes por matrimonio se forman con '-in-law', con guiones: mother-in-law (suegra), father-in-law (suegro), son-in-law (yerno), daughter-in-law (nuera), brother-in-law (cuñado), sister-in-law (cuñada). Los suegros juntos son 'in-laws': Kim's parents are Matt's in-laws."],
+      ["Colombian Spanish speakers might forget the hyphens and write 'mother in law' or 'brother in law' as separate words. Always use hyphens: mother-in-law, brother-in-law.",
+       "En español cada parentesco tiene su propia palabra (suegra, yerno, cuñado), así que no hay una pista: hay que armarlo con '-in-law'. Ojo: cuñado es brother-in-law, no 'brother', y los suegros son 'in-laws', no 'parents'."],
+      ['Describe your immediate family. Who are they and what are their names?',
+       "Ask and answer questions with Who about other relationships in the photos: Who is Nina's nephew? Who are Tom's in-laws?"],
+      ['Talk about your extended family. Do you have many cousins? Where do your grandparents live?',
+       null],
+      ['Who is your favorite family member and why? Describe your relationship with them.',
+       null],
+      ['Do you have any brothers-in-law or sisters-in-law? Tell me about them.',
+       null],
+    ] });
+  quitarEjerciciosPorRespuesta(units, { unit: 'a2_4', id }, ["brother's"]);
+  return true;
+}
+
+/* p. 39: casi todos los ejemplos eran frases sueltas, y algunas contaban cosas
+ * de su vida ("My great-grandmother is ninety-one", "We visit our family in
+ * Spain"); ahora, el diálogo de Kyla y Emi. Las trampas, en inglés, y un
+ * "error común" con la frase mala igual a la buena. */
+function fixU4P39(units) {
+  const id = u4Lote(39);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['bunch', 'a bunch of'], ['once', 'once a week'], ['couple', 'every couple of years'], ['side', "on my mother's side"]]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'cousin', set: { example: "But I've got tons of cousins.", exampleTranslation: 'Pero tengo un montón de primos.' } },
+    { word: 'an only child', set: { example: "Actually, no. I'm an only child.", exampleTranslation: 'La verdad, no. Soy hija única.' } },
+    { word: 'tons of', set: { example: "But I've got tons of cousins.", exampleTranslation: 'Pero tengo un montón de primos.' } },
+    { word: 'keep in touch', set: { example: 'Wow! Do you all keep in touch?', exampleTranslation: '¡Uy! ¿Y todos se mantienen en contacto?' } },
+    { word: 'get together', set: { example: 'But is it hard to really get together?', exampleTranslation: '¿Pero es difícil reunirse de verdad?' } },
+    { word: 'drop by', set: { example: 'My mom and I drop by to say hello once a week.', exampleTranslation: 'Mi mamá y yo pasamos a saludarla una vez por semana.' } },
+    { word: 'great-grandmother', set: { example: 'You have a great-grandmother?', exampleTranslation: '¿Tienes bisabuela?' } },
+    { word: 'outgoing', set: { example: "She's super outgoing. Much more outgoing than me!", exampleTranslation: 'Es súper extrovertida. ¡Mucho más extrovertida que yo!' } },
+    { word: 'video call', set: { example: "Some of us like to do video calls. That's fun.", exampleTranslation: 'A algunos nos gusta hacer videollamadas. Es divertido.' } },
+    { word: 'a bunch of', set: { translation: 'un grupo de, varios', example: "Well, a bunch of us get together at my great-grandmother's place once every couple of years.", exampleTranslation: 'Bueno, varios nos reunimos en la casa de mi bisabuela una vez cada dos años.' } },
+    { word: 'terrific', set: { example: 'She looks terrific! How old is she?', exampleTranslation: '¡Se ve estupenda! ¿Cuántos años tiene?' } },
+    { word: 'nearby', set: { example: 'She actually lives nearby.', exampleTranslation: 'En realidad vive cerca.' } },
+    { word: 'actually', set: { example: "Actually, no. I'm an only child.", exampleTranslation: 'La verdad, no. Soy hija única.' } },
+    { word: "on my mother's side", set: { example: "Well, I have twelve on my mother's side, and three on my father's.", exampleTranslation: 'Bueno, tengo doce por parte de mi mamá y tres por parte de mi papá.' } },
+    { word: "on my father's side", set: { example: "On my father's side, I have . . . aunt(s), uncle(s), cousin(s).", exampleTranslation: 'Por parte de mi papá tengo . . . tías, tíos, primos.' } },
+    { word: 'super', set: { example: "She's super outgoing.", exampleTranslation: 'Es súper extrovertida.' } },
+    { word: 'all over', set: { example: "They're all over the world, in Hong Kong, New York, Tokyo, London . . .", exampleTranslation: 'Están por todo el mundo: en Hong Kong, Nueva York, Tokio, Londres...' } },
+    { word: 'once a week', set: { example: 'My mom and I drop by to say hello once a week.', exampleTranslation: 'Mi mamá y yo pasamos a saludarla una vez por semana.' } },
+    { word: 'every couple of years', set: { example: "A bunch of us get together at my great-grandmother's place once every couple of years.", exampleTranslation: 'Varios nos reunimos en la casa de mi bisabuela una vez cada dos años.' } },
+    { word: 'look', set: { translation: 'verse (de alguna forma)', example: 'She looks terrific! How old is she?', exampleTranslation: '¡Se ve estupenda! ¿Cuántos años tiene?' } },
+    { word: 'notice', set: { example: 'Notice the featured words and phrases.', exampleTranslation: 'Fíjate en las palabras y frases destacadas.' } },
+    { word: 'hard', set: { example: 'But is it hard to really get together?', exampleTranslation: '¿Pero es difícil reunirse de verdad?' } },
+    { word: 'fun', set: { example: "Some of us like to do video calls. That's fun.", exampleTranslation: 'A algunos nos gusta hacer videollamadas. Es divertido.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ['Describing people with adjectives: outgoing, terrific, young'],
+    cambios: [
+      ["Colombian students often translate 'mucho/muchos' as 'much/many' in affirmative sentences. In English, we usually say 'a lot of' or 'tons of' in affirmative sentences, not 'much' or 'many'.",
+       "En español 'muchos' sirve para todo. En inglés, en frases afirmativas se dice 'a lot of' o, más informal, 'tons of': 'I've got tons of cousins'. Y 'much' no va con plurales: 'much friends' ✗ → 'a lot of friends' ✓."],
+      ["Colombian students try to translate literally: 'mantener en contacto' instead of 'keep in touch'. These are fixed expressions that must be learned as complete units.",
+       "Palabra por palabra no funcionan: 'mantenerse en contacto' es 'keep in touch' (no 'keep touch'); 'reunirse' es 'get together', sin 'us'; 'pasar a saludar' es 'drop by'. Se aprenden enteras."],
+      ["Colombian students often omit the article: 'once week' instead of 'once a week', translating directly from 'una vez semana' without the article that English requires.",
+       "En español decimos 'una vez por semana' y 'cada dos años'. En inglés: 'once a week' (no 'one time for week') y 'once every couple of years'. Una vez = once; dos veces = twice."],
+      ['Describe your family. How many brothers, sisters, cousins, aunts, and uncles do you have?',
+       'Complete the chart about your family. Write the number of people in each category. Then use the information to ask and answer questions about your immediate and extended family.'],
+      ['How do you keep in touch with your extended family? Do you use video calls, phone calls, or visit them in person?',
+       null],
+      ['How often does your family get together? What do you usually do when you meet?',
+       null],
+      ['Describe a family member using adjectives. What are they like? Are they outgoing, friendly, funny, or serious?',
+       null],
+    ] });
+  return true;
+}
+
+/* p. 40: los ejemplos del estado civil tenían frases inventadas pegadas ("His
+ * wife died two years ago"); ahora, las del libro. Faltaba lo que el cuadro
+ * marca con BUT: "Who calls on Fridays?", no "Who does call". Explicaciones y
+ * trampas, en inglés; el speaking, inventado (la página no trae). */
+function fixU4P40(units) {
+  const id = u4Lote(40);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'married', set: { example: "They're married.", exampleTranslation: 'Están casados.' } },
+    { word: 'single', set: { example: "She's single. She isn't married.", exampleTranslation: 'Es soltera. No está casada.' } },
+    { word: 'engaged', set: { example: "They're engaged. He's her fiancé. She's his fiancée.", exampleTranslation: 'Están comprometidos. Él es su prometido. Ella es su prometida.' } },
+    { word: 'fiancé', set: { example: "They're engaged. He's her fiancé. She's his fiancée.", exampleTranslation: 'Están comprometidos. Él es su prometido. Ella es su prometida.' } },
+    { word: 'fiancée', set: { example: "They're engaged. He's her fiancé. She's his fiancée.", exampleTranslation: 'Están comprometidos. Él es su prometido. Ella es su prometida.' } },
+    { word: 'divorced', set: { example: "They're divorced. He's her ex-husband. She's his ex-wife.", exampleTranslation: 'Están divorciados. Él es su exesposo. Ella es su exesposa.' } },
+    { word: 'ex-husband', set: { example: "They're divorced. He's her ex-husband. She's his ex-wife.", exampleTranslation: 'Están divorciados. Él es su exesposo. Ella es su exesposa.' } },
+    { word: 'widowed', set: { example: "He's widowed.", exampleTranslation: 'Es viudo.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ["Contractions: don't and doesn't"],
+    cambios: [
+      ["In English, the simple present describes habits, facts, and permanent situations. Unlike Spanish, where the verb ending changes for each person (vivo, vives, vive), English only adds '-s' or '-es' for he/she/it. For negatives, we use 'do not' (don't) or 'does not' (doesn't) before the base verb — we NEVER add '-s' to the verb after doesn't.",
+       "En presente simple, con he / she / it el verbo lleva -s: My aunt lives nearby. Con I / you / we / they, no: My in-laws live in Canada. En negativo va don't o doesn't + el verbo sin -s: My cousins don't work now. My grandfather doesn't work on weekends."],
+      ["Colombian students often forget to add -s with he/she/it (saying 'he work' instead of 'he works') or incorrectly add -s after doesn't ('he doesn't works' instead of 'he doesn't work').",
+       "En español el verbo cambia con cada persona; en inglés solo con he / she / it, y por eso se olvida la -s: 'My aunt live nearby' ✗ → 'My aunt lives nearby' ✓. En negativo la -s pasa a doesn't: 'He doesn't works' ✗ → 'He doesn't work' ✓."],
+      ["In English, to form yes/no questions in simple present, we use 'Do' or 'Does' at the beginning, followed by the subject and the base verb. Unlike Spanish, where you can just change intonation (¿Tienes hijos?), English requires the auxiliary 'do/does'. Use 'Does' for he/she/it and 'Do' for I/you/we/they.",
+       'Para preguntar, do / does va antes del sujeto y el verbo queda sin -s: Do you have kids? Does he have grandkids? Where does his ex-wife live? Pero cuando Who es el sujeto (quién hace la acción), no se usa does: Who calls on Fridays?, no Who does call on Fridays?'],
+      ["Colombian students often add -s to the main verb in questions ('Does he works?') or forget the auxiliary entirely ('You have kids?'). Remember: the -s goes on 'does', not on the main verb.",
+       "En español preguntamos solo con la entonación ('¿Tienes hijos?'), y por eso sale 'You have kids?'. En inglés hace falta do / does: 'Do you have kids?'. Y la -s no va dos veces: 'Does she lives?' ✗ → 'Does she live?' ✓."],
+      ["Marital status adjectives describe someone's relationship situation. In English, these are always used with the verb 'to be' (am/is/are), not 'have' like in some Spanish expressions. For example, we say 'She is married' (not 'She has married'). Unlike Spanish, English doesn't require agreement with gender for most of these words (married, single, divorced work for both).",
+       "El estado civil se dice con be: They're married. She's single. They're engaged. They're divorced. The husband and wife are separated. He's widowed. Para la persona: fiancé (él) / fiancée (ella), ex-husband / ex-wife."],
+      ["Colombian students might say 'I have married' (influenced by 'estoy casado/tengo pareja'). Always use 'to be': 'I am married'. Also, 'engaged' is a false cognate — it means 'comprometido para casarse', not 'comprometido con una tarea'.",
+       "En español 'me casé' y 'estoy casado' son distintos, y por eso sale 'I have married' para el estado. El estado va con be: 'I'm married', 'She's divorced'. Y 'engaged' no es comprometido con un trabajo: es comprometido para casarse."],
+      ["Describe the marital status of three people in your family. Use complete sentences with 'is' or 'are'.",
+       null],
+      ["Ask three questions about your classmate's family using 'Do' or 'Does'.",
+       null],
+      ["Talk about where your relatives live and what they do. Use at least two negative sentences with 'don't' or 'doesn't'.",
+       null],
+      ['Imagine you are engaged. Describe your fiancé or fiancée to a friend. What does he or she do? Where does he or she live?',
+       null],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_4', id }, 'Simple Present: Questions with Do and Does', t => {
+    t.commonErrors = t.commonErrors || [];
+    if (!t.commonErrors.some(e => e && e.wrong === 'Who does call on Fridays?')) t.commonErrors.push({ wrong: 'Who does call on Fridays?', correct: 'Who calls on Fridays?', why: 'When Who is the subject, there is no do / does.' });
+  });
+  return true;
+}
+
+/* p. 41: ejemplos inventados, varios de su vida ("My brother is getting
+ * married next month", "I work at a hospital near my house"); ahora, la
+ * conversación del libro. "That's" no es posesivo. El presente simple ya está
+ * en la p. 40. */
+function fixU4P41(units) {
+  const id = u4Lote(41);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['getting married', 'get married'], ['getting divorced', 'get divorced'], ['getting engaged', 'get engaged'], ['about once a year', 'once a year']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'sales manager', set: { example: "His fiancée? She's a sales manager.", exampleTranslation: '¿Su prometida? Es gerente de ventas.' } },
+    { word: 'get married', set: { example: 'I have some good news. My brother Tom is getting married!', exampleTranslation: 'Tengo una buena noticia. ¡Mi hermano Tom se va a casar!' } },
+    { word: 'get engaged', set: { example: 'Good news: getting engaged, getting married.', exampleTranslation: 'Buenas noticias: comprometerse, casarse.' } },
+    { word: 'get divorced', set: { example: 'I have some bad news. My cousin Tina is getting divorced.', exampleTranslation: 'Tengo una mala noticia. Mi prima Tina se va a divorciar.' } },
+    { word: "That's great", set: { example: "That's great. Congratulations!", exampleTranslation: '¡Qué bien! ¡Felicitaciones!' } },
+    { word: "I'm sorry to hear that", set: { translation: 'lo siento mucho (al oír una mala noticia)', example: "I'm sorry to hear that. Is she OK?", exampleTranslation: 'Lo siento mucho. ¿Ella está bien?' } },
+    { word: "That's so nice", set: { example: "That's great / terrific / wonderful! That's so nice!", exampleTranslation: '¡Qué bien / qué maravilla! ¡Qué bueno!' } },
+    { word: 'wonderful', set: { example: "That's great / terrific / wonderful! That's so nice!", exampleTranslation: '¡Qué bien / qué maravilla! ¡Qué bueno!' } },
+    { word: 'work at', set: { example: "He's a bank manager. He works at Metro Bank on First Avenue.", exampleTranslation: 'Es gerente de banco. Trabaja en el Metro Bank de la Primera Avenida.' } },
+    { word: 'bank', set: { example: "He's a bank manager. He works at Metro Bank on First Avenue.", exampleTranslation: 'Es gerente de banco. Trabaja en el Metro Bank de la Primera Avenida.' } },
+    { word: 'live in', set: { example: "No, she doesn't. She lives in Atlanta.", exampleTranslation: 'No. Vive en Atlanta.' } },
+    { word: 'hospital', set: { example: 'Two of them do, but one works at a hospital.', exampleTranslation: 'Dos sí, pero uno trabaja en un hospital.' } },
+    { word: 'once a year', set: { example: 'Oh, we visit her about once a year.', exampleTranslation: 'Ah, la visitamos como una vez al año.' } },
+    { word: 'good news', set: { example: 'I have some good news.', exampleTranslation: 'Tengo una buena noticia.' } },
+    { word: 'bad news', set: { example: 'I have some bad news.', exampleTranslation: 'Tengo una mala noticia.' } },
+    { word: 'congratulations', set: { example: "That's great. Congratulations!", exampleTranslation: '¡Qué bien! ¡Felicitaciones!' } },
+    { word: "That's too bad", set: { example: "I'm sorry to hear that. That's too bad. Oh, no.", exampleTranslation: 'Lo siento mucho. Qué pena. Ay, no.' } },
+    { word: 'role-play', set: { example: 'Role-play the conversation again. Respond to good or bad news.', exampleTranslation: 'Representa la conversación otra vez. Responde a buenas o malas noticias.' } },
+    { word: 'respond', set: { example: 'Role-play the conversation again. Respond to good or bad news.', exampleTranslation: 'Representa la conversación otra vez. Responde a buenas o malas noticias.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    cambios: [
+      ["In English, we have specific expressions to respond to good news (That's great! Congratulations! Wonderful!) and bad news (I'm sorry to hear that. That's too bad. Oh, no.). Unlike Spanish, where you might say '¡Qué bueno!' or 'Qué lástima', English has more varied expressions. The possessive 'that's' (that is) is very common in these responses.",
+       "Para responder a una buena noticia: That's great / terrific / wonderful! That's so nice! Congratulations! A una mala: I'm sorry to hear that. That's too bad. Oh, no. Y después se pregunta más: So tell me about his fiancée. What does she do? / Is she OK?"],
+      ["Spanish speakers often translate directly from Spanish, saying 'How good!' instead of 'That's great!' or 'What pity!' instead of 'What a pity!' or 'That's too bad'. The structure 'That's + adjective' is very common in English but doesn't have a direct equivalent in Spanish.",
+       "En español decimos '¡qué bueno!' o '¡qué pena!', y traducido sale 'How good!' o 'What pity!'. En inglés: 'That's great!', 'That's too bad.' o 'I'm sorry to hear that.'"],
+      ['Tell me about your family. Where do they live and what do they do?',
+       'Imagine you have good or bad news about someone. Write notes about it on the notepad. Use your notes to role-play the conversation. Then change roles.'],
+      ['Think of some good news from your life. How would you tell a friend? How would they respond?',
+       "Ask more questions: Is [he] / Are they / Does [she] / Do they ___? Where ___? How old ___? Provide more information: She [likes / doesn't like / studies] ___."],
+      ['Describe your extended family (aunts, uncles, cousins). How often do you visit them?',
+       null],
+      ['Practice responding to these situations: 1) Your friend is getting married, 2) Your cousin lost their job, 3) Your sister had a baby.',
+       null],
+    ] });
+  quitarTemaU4(units, 41, 'Simple Present Tense - Third Person Singular', 40);
+  quitarTemaU4(units, 41, 'Simple Present Tense - Questions with Do/Does', 40);
+  quitarTemaU4(units, 41, 'Simple Present Tense - Negative Statements', 40);
+  return true;
+}
+
+/* p. 42: ejemplos inventados sobre su familia ("My brother is athletic", "My
+ * sister is quiet", "I am taller than my sister"); ahora, los del libro. La
+ * explicación de irregulares decía que "mejor" y "peor" son regulares en
+ * español. */
+function fixU4P42(units) {
+  const id = u4Lote(42);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['stories', 'story']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'athletic', set: { example: "I'm definitely less athletic than my cousins.", exampleTranslation: 'Definitivamente soy menos atlético que mis primos.' } },
+    { word: 'quiet', set: { example: "Who's quieter—Ben or his father?", exampleTranslation: '¿Quién es más callado, Ben o su papá?' } },
+    { word: 'funny', set: { example: 'My uncle Rick is really funny. Everybody loves his stories!', exampleTranslation: 'Mi tío Rick es muy chistoso. ¡A todos les encantan sus historias!' } },
+    { word: 'hard-working', set: { example: 'I think my mom is more hard-working than my dad.', exampleTranslation: 'Creo que mi mamá es más trabajadora que mi papá.' } },
+    { word: 'describe', set: { example: 'Describe people in your family. Use the adjectives from the Vocabulary.', exampleTranslation: 'Describe a personas de tu familia. Usa los adjetivos del vocabulario.' } },
+    { word: 'compare', set: { example: 'Use comparative adjectives to compare people, places, things, or ideas.', exampleTranslation: 'Usa adjetivos comparativos para comparar personas, lugares, cosas o ideas.' } },
+    { word: 'taller', set: { example: "I'm much taller than my brother.", exampleTranslation: 'Soy mucho más alta que mi hermano.' } },
+    { word: 'better', set: { example: "My spoken English is better than my sister's.", exampleTranslation: 'Mi inglés hablado es mejor que el de mi hermana.' } },
+    { word: 'worse', set: { example: 'good → better, bad → worse', exampleTranslation: 'bueno → mejor, malo → peor' } },
+    { word: 'more', set: { example: "Maggie's brother is pretty funny, but she's more outgoing.", exampleTranslation: 'El hermano de Maggie es bastante chistoso, pero ella es más extrovertida.' } },
+    { word: 'less', set: { example: "I'm definitely less athletic than my cousins.", exampleTranslation: 'Definitivamente soy menos atlético que mis primos.' } },
+    { word: 'than', set: { example: 'Are you older than your two brothers?', exampleTranslation: '¿Eres mayor que tus dos hermanos?' } },
+    { word: 'story', set: { example: 'Everybody loves his stories!', exampleTranslation: '¡A todos les encantan sus historias!' } },
+    { word: 'everybody', set: { example: 'My uncle Rick is really funny. Everybody loves his stories!', exampleTranslation: 'Mi tío Rick es muy chistoso. ¡A todos les encantan sus historias!' } },
+    { word: 'really', set: { example: 'My uncle Rick is really funny.', exampleTranslation: 'Mi tío Rick es muy chistoso.' } },
+    { word: 'pretty', set: { example: "Maggie's brother is pretty funny, but she's more outgoing.", exampleTranslation: 'El hermano de Maggie es bastante chistoso, pero ella es más extrovertida.' } },
+    { word: 'family', set: { example: 'Describe people in your family.', exampleTranslation: 'Describe a personas de tu familia.' } },
+    { word: 'spoken English', set: { example: "My spoken English is better than my sister's.", exampleTranslation: 'Mi inglés hablado es mejor que el de mi hermana.' } },
+    { word: 'older', set: { example: 'Are you older than your two brothers?', exampleTranslation: '¿Eres mayor que tus dos hermanos?' } },
+    { word: 'younger', set: { example: 'young → younger', exampleTranslation: 'joven → más joven' } },
+    { word: 'bigger', set: { example: 'big → bigger', exampleTranslation: 'grande → más grande' } },
+    { word: 'much', set: { example: "I'm much taller than my brother.", exampleTranslation: 'Soy mucho más alta que mi hermano.' } },
+    { word: 'Read and listen', set: { example: 'Read and listen. Then listen again and repeat.', exampleTranslation: 'Lee y escucha. Luego escucha otra vez y repite.' } },
+    { word: 'loves', set: { word: 'love', translation: 'encantar, amar', phonetic: '/lʌv/', type: 'verb', example: 'Everybody loves his stories!', exampleTranslation: '¡A todos les encantan sus historias!' } },
+    { word: 'Use', set: { example: 'Use the adjectives from the Vocabulary and other adjectives you know.', exampleTranslation: 'Usa los adjetivos del vocabulario y otros que conozcas.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    cambios: [
+      ["Colombian students often say 'more tall than' instead of 'taller than' because in Spanish we always use 'más alto que'. Remember: short adjectives use -er, NOT 'more'.",
+       "En español todo se compara con 'más' ('más alto'), y por eso sale 'more tall'. En inglés los adjetivos cortos llevan -er: taller, younger, bigger, funnier. Y 'que' es 'than', no 'that'."],
+      ["Students try to add -er to long adjectives like 'intelligenter' or 'expensiver'. If the adjective has 3+ syllables or sounds awkward with -er, use 'more/less' instead.",
+       "Al revés también pasa: ponerle -er a uno largo ('intelligenter'). Si tiene dos sílabas o más y no termina en -y, va con more o less: more outgoing, more hard-working, less athletic."],
+      ["Algunos adjetivos comunes tienen formas comparativas irregulares que debes memorizar. No siguen las reglas de -er o more/less. Los más importantes son: good → better, bad → worse. A diferencia del español donde 'mejor' y 'peor' son regulares, en inglés estas formas cambian completamente.",
+       "Algunos adjetivos tienen comparativo irregular y hay que aprenderlo de memoria: good → better, bad → worse. En español pasa igual: bueno → mejor, malo → peor. My spoken English is better than my sister's."],
+      ["Students say 'more good' or 'more bad' because in Spanish we can say 'más bueno/más malo'. In English, you MUST use 'better' and 'worse' - never 'more good' or 'more bad'.",
+       "Como en Colombia también se oye 'más bueno' y 'más malo', sale 'more good' o 'more bad'. En inglés siempre es 'better' y 'worse'."],
+      ['Describe two people in your family and compare them using comparative adjectives. (Example: My mother is more patient than my father. My brother is taller than me.)',
+       'Describe people in your family. Use the adjectives from the Vocabulary and other adjectives you know.'],
+      ['Tell me about your best friend. What personality does he or she have? Use at least 3 adjectives from this lesson.',
+       null],
+      ['Compare yourself with a sibling or cousin. How are you similar? How are you different?',
+       null],
+      ['Who is the funniest person in your family? Describe why and give an example of something funny they did.',
+       null],
+    ] });
+  return true;
+}
+
+/* p. 43: "sibling" tenía "I have three siblings: two brothers and one sister",
+ * una afirmación sobre él; ahora, la frase de Adam. La trampa de "much" decía
+ * que en español se dice "más alto mucho". Comparativos e irregulares ya están
+ * en la p. 42. */
+function fixU4P43(units) {
+  const id = u4Lote(43);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'handsome', set: { example: "He's a lot friendlier, and he's much more handsome.", exampleTranslation: 'Es mucho más amable, y mucho más guapo.' } },
+    { word: 'even though', set: { example: "Even though I'm the older sibling, he's a little taller than I am.", exampleTranslation: 'Aunque yo soy el mayor, él es un poco más alto que yo.' } },
+    { word: 'definitely', set: { example: 'My wife and I are definitely much less athletic.', exampleTranslation: 'Mi esposa y yo definitivamente somos mucho menos atléticos.' } },
+    { word: 'quieter', set: { example: 'I tend to be quieter in social situations.', exampleTranslation: 'Suelo ser más callado en las reuniones.' } },
+    { word: 'funnier', set: { example: "He's much funnier than I am.", exampleTranslation: 'Él es mucho más chistoso que yo.' } },
+    { word: 'friendlier', set: { example: "He's a lot friendlier, and he's much more handsome.", exampleTranslation: 'Es mucho más amable, y mucho más guapo.' } },
+    { word: 'sibling', set: { example: "Even though I'm the older sibling, he's a little taller than I am.", exampleTranslation: 'Aunque yo soy el mayor, él es un poco más alto que yo.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    cambios: [
+      ["Usamos 'even though' para conectar dos ideas que contrastan o sorprenden. Es similar a 'aunque' en español, pero en inglés siempre va seguido de un sujeto + verbo completo. Unlike Spanish 'aunque', you cannot use 'even though' with just an adjective; you must have a complete clause with subject and verb.",
+       "'Even though' es 'aunque' para algo que es cierto y sorprende: Even though I'm the older sibling, he's a little taller than I am. Después siempre va una oración completa, con sujeto y verbo."],
+      ["Students often write 'Even though young, he is mature' copying Spanish 'aunque joven'. In English you must say 'Even though he is young, he is mature' with the complete verb.",
+       "En español podemos decir 'aunque cansado, fui', sin verbo. En inglés no: 'Even though tired' ✗ → 'Even though I was tired' ✓. Y no se junta con 'but': 'Although he is young, but…' ✗."],
+      ["Students often put 'much' after the adjective ('taller much') copying Spanish word order 'más alto mucho'. In English, intensifiers always go BEFORE the comparative.",
+       "En español decimos 'mucho más alto', en el mismo orden que en inglés: 'much taller'. El error es usar 'very': 'very taller' ✗ → 'much taller' o 'a lot taller' ✓. Para poca diferencia, 'a little': 'a little taller'."],
+      ['Compare yourself with your brother, sister, or best friend. Who is taller? Who is funnier? Who is more outgoing?',
+       'Take turns making comparisons with than about people in your immediate and extended family.'],
+      ['Tell me about two family members and describe how they are different from each other.',
+       'Personalize the conversation, using comparative adjectives. Then change roles.'],
+      ['Who do you admire in your family? Why? Compare this person to yourself.',
+       'Ask more questions: What does your [friend] do? Where does your [brother-in-law] work? How are you [the same / different]? Are you [funny], too?'],
+      ['Describe your best friend. How is he or she different from you? Use at least three comparative adjectives.',
+       null],
+    ] });
+  quitarTemaU4(units, 43, "Comparative Adjectives with 'than'", 42);
+  quitarTemaU4(units, 43, 'Irregular Comparative Forms', 42);
+  return true;
+}
+
+/* p. 44: ejemplos inventados, algunos sobre su familia ("My brother has
+ * expensive taste in clothes", "I like summer. In contrast, my brother prefers
+ * winter"); ahora, la lectura de los gemelos. "Around the world" no es
+ * "aproximadamente". Un ejercicio hablaba de sus "hermanas Ana y Sofía". */
+function fixU4P44(units) {
+  const id = u4Lote(44);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['siblings', 'sibling'], ['mistake', 'by mistake']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'alike', set: { example: 'They dress alike.', exampleTranslation: 'Se visten igual.' } },
+    { word: 'similar', set: { example: 'Their tastes are similar.', exampleTranslation: 'Sus gustos son parecidos.' } },
+    { word: 'different', set: { example: 'And their personalities are completely different.', exampleTranslation: 'Y sus personalidades son completamente diferentes.' } },
+    { word: 'taste', set: { example: 'The sisters also have the same tastes in clothes.', exampleTranslation: 'Las hermanas también tienen los mismos gustos en ropa.' } },
+    { word: 'dress', set: { example: 'They dress alike.', exampleTranslation: 'Se visten igual.' } },
+    { word: 'neither', set: { example: 'Neither woman likes fish.', exampleTranslation: 'A ninguna de las dos le gusta el pescado.' } },
+    { word: 'both', set: { example: 'Both men have a mustache.', exampleTranslation: 'Los dos hombres tienen bigote.' } },
+    { word: 'twins', set: { example: 'Paula and Rosie, both 25, are identical twins.', exampleTranslation: 'Paula y Rosie, las dos de 25 años, son gemelas idénticas.' } },
+    { word: 'identical', set: { example: 'Identical twins usually look alike . . .', exampleTranslation: 'Los gemelos idénticos casi siempre se parecen...' } },
+    { word: 'fraternal', set: { translation: 'mellizos (fraternal twins)', example: 'Jonah and Brandon, both 19, are fraternal twins.', exampleTranslation: 'Jonah y Brandon, los dos de 19 años, son mellizos.' } },
+    { word: 'personality', set: { example: 'The personalities of identical twins are also more likely to be similar.', exampleTranslation: 'Las personalidades de los gemelos idénticos también suelen parecerse más.' } },
+    { word: 'however', set: { example: 'However, everyone calls Paula "the funny one."', exampleTranslation: 'Sin embargo, todos le dicen a Paula "la chistosa".' } },
+    { word: 'tend to', set: { example: "He tends to be quiet when he's with larger groups of people.", exampleTranslation: 'Suele ser callado cuando está con grupos grandes.' } },
+    { word: 'in contrast', set: { example: 'In contrast, Jonah is friendlier and more outgoing.', exampleTranslation: 'En cambio, Jonah es más amigable y más extrovertido.' } },
+    { word: 'tell apart', set: { example: "Sometimes friends can't tell them apart.", exampleTranslation: 'A veces los amigos no las pueden distinguir.' } },
+    { word: 'look alike', set: { example: 'And they look exactly alike.', exampleTranslation: 'Y son idénticas.' } },
+    { word: 'classify', set: { example: 'Classify: circle the correct word or phrase to complete each statement.', exampleTranslation: 'Clasifica: encierra la palabra o frase correcta para completar cada afirmación.' } },
+    { word: 'by mistake', set: { example: 'Sometimes friends can\'t tell them apart and call Rosie "Paula" or Paula "Rosie" by mistake.', exampleTranslation: 'A veces los amigos no las distinguen y le dicen a Rosie "Paula" o a Paula "Rosie" por error.' } },
+    { word: 'lighter', set: { example: "His hair is a lot lighter than Brandon's.", exampleTranslation: 'Su pelo es mucho más claro que el de Brandon.' } },
+    { word: 'celebrate', set: { example: 'They celebrate the same birthday.', exampleTranslation: 'Celebran el mismo cumpleaños.' } },
+    { word: 'prefer', set: { example: 'Jonah is a huge fan of heavy metal, while Brandon prefers jazz.', exampleTranslation: 'Jonah es muy fan del heavy metal, mientras que Brandon prefiere el jazz.' } },
+    { word: 'fan', set: { example: 'Jonah is a huge fan of heavy metal, while Brandon prefers jazz.', exampleTranslation: 'Jonah es muy fan del heavy metal, mientras que Brandon prefiere el jazz.' } },
+    { word: 'around', set: { translation: 'alrededor de; (around the world) en todo el mundo', example: 'Around the world, about 30 out of every 1,000 births are twins.', exampleTranslation: 'En todo el mundo, unos 30 de cada 1.000 nacimientos son de gemelos.' } },
+    { word: 'develop', set: { example: 'Identical twins develop from the same egg.', exampleTranslation: 'Los gemelos idénticos se forman del mismo óvulo.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarEjercicios: [
+      'My two younger sisters, Ana and Sofia, ___ in the park every Saturday morning. They never miss their routine.'],
+    cambios: [
+      ["In English, we use 'both' to talk about two people or things together (ambos/as), and 'neither' to say that something is not true for either of the two (ninguno/a). Unlike Spanish where you might say 'los dos' or 'ni uno ni otro', English has specific words. 'Both' takes a plural verb, while 'neither' takes a singular verb.",
+       "'Both' (los dos) va con el verbo en plural: Both men have a mustache. 'Neither' (ninguno de los dos) va con el sustantivo en singular y el verbo en afirmativo: Neither woman likes fish."],
+      ["Colombian speakers often use plural verbs with 'neither' because in Spanish 'ninguno de los dos' feels plural. Remember: 'Neither student likes' NOT 'Neither students like'.",
+       "En español decimos 'a ninguna de las dos le gusta' o 'ninguno no come', y por eso sale 'Neither women like' o 'Neither doesn't eat'. En inglés: 'Neither woman likes fish', en singular y sin otro 'not'."],
+      ["In English, 'look' + adjective describes appearance or state (look happy, look tired), while 'look like' + noun makes comparisons (look like twins, look like my father). Spanish uses 'verse' for both but English distinguishes them. This is important when describing similarities between people.",
+       "'Look' + adjetivo dice cómo se ve alguien: She looks terrific. 'Look like' + persona o cosa dice a quién se parece: She looks like her sister. Y 'look alike' es parecerse entre sí: They look exactly alike."],
+      ["Colombian speakers often say 'they look as twins' or 'she looks as her mother' translating 'como' directly. English uses 'like' not 'as' in this pattern: 'look like twins' not 'look as twins'.",
+       "En español 'se ve como' lleva 'como', y por eso sale 'look as a teacher' o 'looks like tired'. Con un adjetivo va solo 'look' ('looks tired'); con una persona, 'look like' ('looks like her sister')."],
+      ['Describe how you and your best friend are similar and different. Talk about personality, appearance, and interests.',
+       null],
+      ["Compare yourself to a family member (brother, sister, parent, cousin). Use comparative adjectives and expressions like 'both', 'neither', 'more than'.",
+       null],
+      ['Tell about two people you know who look alike but have very different personalities. What makes them similar? What makes them different?',
+       null],
+      ['Do you think identical twins have the same personality? Why or why not? Give examples from your experience or imagination.',
+       null],
+    ] });
+  quitarTemaU4(units, 44, "Comparative adjectives with 'more' and '-er'", 42);
+  quitarTemaU4(units, 44, 'Present Simple: Third Person -s', 40);
+  return true;
+}
+
+/* p. 45: ejemplos con su familia ("My brother-in-law is an engineer", "My
+ * grandfather is bald", "Both my parents are good-looking"); ahora, los del
+ * libro. La pronunciación decía que "does she" se une como consonante con
+ * vocal; y un ejercicio decía que su papá tiene bigote y barba. */
+function fixU4P45(units) {
+  const id = u4Lote(45);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['only child', 'an only child']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'tall', set: { example: 'Appearance: tall, short curly black hair, mustache, athletic', exampleTranslation: 'Apariencia: alto, pelo negro corto y crespo, bigote, atlético' } },
+    { word: 'short', set: { example: 'Appearance: tall, short curly black hair, mustache, athletic', exampleTranslation: 'Apariencia: alto, pelo negro corto y crespo, bigote, atlético' } },
+    { word: 'beard', set: { example: 'a mustache / a beard', exampleTranslation: 'bigote / barba' } },
+    { word: 'engineer', set: { example: "My father and my brother-in-law, Sam, are similar in some ways. They're both engineers.", exampleTranslation: 'Mi papá y mi cuñado, Sam, se parecen en algunas cosas. Los dos son ingenieros.' } },
+    { word: 'good-looking', set: { example: 'good-looking / cute / bald', exampleTranslation: 'guapo / lindo / calvo' } },
+    { word: 'bald', set: { example: 'good-looking / cute / bald', exampleTranslation: 'guapo / lindo / calvo' } },
+    { word: 'wavy', set: { example: '[straight / wavy / curly] hair', exampleTranslation: 'pelo [liso / ondulado / crespo]' } },
+    { word: 'straight', set: { example: '[straight / wavy / curly] hair', exampleTranslation: 'pelo [liso / ondulado / crespo]' } },
+    { word: 'linking sounds', set: { example: 'Pay attention to the linking of sounds in does she and does he.', exampleTranslation: 'Fíjate en cómo se unen los sonidos en does she y does he.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ['Possessive Adjectives (my, your, his, her)'],
+    quitarEjercicios: [
+      'My father has a ___ and a ___. He looks like a traditional Colombian grandfather with his facial hair.'],
+    cambios: [
+      ["In spoken English, words connect smoothly when one word ends with a consonant sound and the next begins with a vowel sound. For example, 'does_he' sounds like /dʌzi/. This linking makes English sound natural and fluent, unlike Spanish where words are typically pronounced more separately.",
+       "Al hablar, 'does' y 'she' / 'he' se unen en un solo sonido: 'does she' suena /dʌʃi/ y 'does he' suena /dʌzi/. Pasa en las preguntas: Does she have any cousins? Where does he live?"],
+      ["Spanish speakers often pause between words instead of linking them, which sounds choppy in English. Practice connecting 'does_he', 'does_she', 'has_any' as single sound units.",
+       "En español pronunciamos cada palabra completa, y 'does she' sale en dos golpes: /dʌs ʃi/. En inglés se pegan: /dʌʃi/, /dʌzi/."],
+      ["To compare people or things, use 'similar to' (parecido a) and 'different from' (diferente de). English requires the prepositions 'to' after 'similar' and 'from' after 'different'. You can also say 'the same as' (igual que) or 'both' (ambos) to show similarities.",
+       "Para comparar: 'similar to' (parecido a), 'different from' (diferente de), 'the same' (igual) y 'both' (los dos): My brother-in-law Nelson is similar to my sister Abby in several ways. They both love action movies."],
+      ["Spanish uses 'parecido a' and 'diferente de', but Colombian speakers might incorrectly translate 'similar as' or 'different of' directly from Spanish patterns.",
+       "En español decimos 'parecido a' y 'diferente de', y por eso sale 'similar as' o 'different of'. En inglés: 'similar to' y 'different from'."],
+      ['Describe two people in your family. Talk about their appearance, personality, and what they do.',
+       'Use your Talking Points to compare your two relatives. Say as much as you can.'],
+      ['Compare yourself with a brother, sister, or cousin. How are you similar? How are you different?',
+       'Write notes about two people in your family: name, relationship to me, marital status, appearance, personality, likes and dislikes.'],
+      ['Tell me about your relatives. Who is the most outgoing person? Who is the most hard-working?',
+       'Now practice the questions on your own. Pay attention to the linking of the sounds: Does she have any cousins? Where does he live?'],
+      ["Practice asking and answering: 'Does your brother/sister/cousin live near you? What does he/she do?'",
+       null],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_4', id }, 'Linking of Sounds in Questions', t => {
+    t.examples = [{ en: 'Does she have any cousins? /dʌʃi/', es: '¿Ella tiene primos?' }, { en: 'Where does he live? /dʌzi/', es: '¿Dónde vive él?' }];
+    t.commonErrors = [];
+  });
+  quitarTemaU4(units, 45, 'Third Person Singular Verbs (does/has)', 40);
+  return true;
+}
+
+/* p. 46: es un audio, y sus opciones quedaron como hechos ("About 70% of the
+ * households are multi-generational", "Wu's ex-husband visits their kids"),
+ * además de ejemplos de su vida ("My household has four people: my parents, my
+ * sister, and me"). Ahora, cada frase con sus opciones o su T / F / NI. Los
+ * cuatro temas de gramática salían de ahí (uno daba por error "About 70% of
+ * households", que está bien): la página no enseña gramática. */
+function fixU4P46(units) {
+  const id = u4Lote(46);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['chores', 'chore'], ['changing', 'change']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'household', set: { example: 'Discuss trends in family households.', exampleTranslation: 'Hablar de las tendencias en los hogares.' } },
+    { word: 'traditional', set: { example: 'The traditional North American household consists of two parents and their children.', exampleTranslation: 'El hogar tradicional norteamericano está formado por los dos papás y sus hijos.' } },
+    { word: 'parent', set: { example: 'Many adult children come back home and live with their parents until they are at least (18 / 20 / 30) years old.', exampleTranslation: 'Muchos hijos adultos vuelven a la casa y viven con sus papás hasta que tienen por lo menos (18 / 20 / 30) años.' } },
+    { word: 'single parent', set: { example: 'About (one-third / two-thirds / 70%) of all children live in a household with a single parent.', exampleTranslation: 'Cerca de (un tercio / dos tercios / el 70%) de los niños viven en un hogar con solo su papá o su mamá.' } },
+    { word: 'multi-generational', set: { example: 'About (20% / 70% / 90%) of all households are multi-generational.', exampleTranslation: 'Cerca del (20% / 70% / 90%) de los hogares son multigeneracionales.' } },
+    { word: 'adult', set: { example: 'is an adult child living with parents', exampleTranslation: 'es un hijo adulto que vive con sus papás' } },
+    { word: 'bank manager', set: { example: 'Prakash is a bank manager. (T / F / NI)', exampleTranslation: 'Prakash es gerente de banco. (V / F / sin información)' } },
+    { word: 'check', set: { example: 'Listen to the radio program. Then listen again and check the main idea.', exampleTranslation: 'Escucha el programa de radio. Luego escúchalo otra vez y marca la idea principal.' } },
+    { word: 'match', set: { example: 'Listen again and match each statement with the correct person.', exampleTranslation: 'Escucha otra vez y une cada afirmación con la persona correcta.' } },
+    { word: 'trend', set: { example: 'Read the following statements about trends in family households in North America.', exampleTranslation: 'Lee las siguientes afirmaciones sobre las tendencias en los hogares de Norteamérica.' } },
+    { word: 'growing', set: { example: 'A growing number of families in North America live in multi-generational households.', exampleTranslation: 'Cada vez más familias en Norteamérica viven en hogares multigeneracionales.' } },
+    { word: 'at least', set: { example: 'Many adult children come back home and live with their parents until they are at least (18 / 20 / 30) years old.', exampleTranslation: 'Muchos hijos adultos vuelven a la casa y viven con sus papás hasta que tienen por lo menos (18 / 20 / 30) años.' } },
+    { word: 'come back', set: { example: 'Many adult children come back home and live with their parents until they are at least (18 / 20 / 30) years old.', exampleTranslation: 'Muchos hijos adultos vuelven a la casa y viven con sus papás hasta que tienen por lo menos (18 / 20 / 30) años.' } },
+    { word: 'live with', set: { example: 'is living with adult children and grandchildren', exampleTranslation: 'vive con sus hijos adultos y sus nietos' } },
+    { word: 'help', set: { example: "O'Brien helps his parents with household chores. (T / F / NI)", exampleTranslation: "O'Brien les ayuda a sus papás con los oficios de la casa. (V / F / sin información)" } },
+    { word: 'once a month', set: { example: "Wu's ex-husband visits their kids at her house once a month. (T / F / NI)", exampleTranslation: 'El exesposo de Wu visita a sus hijos en la casa de ella una vez al mes. (V / F / sin información)' } },
+    { word: 'every day', set: { example: "Wu's ex-husband calls his kids every day. (T / F / NI)", exampleTranslation: 'El exesposo de Wu llama a sus hijos todos los días. (V / F / sin información)' } },
+    { word: 'consist of', set: { example: 'The traditional North American household consists of two parents and their children.', exampleTranslation: 'El hogar tradicional norteamericano está formado por los dos papás y sus hijos.' } },
+    { word: 'chore', set: { translation: 'oficio de la casa, tarea doméstica', example: "O'Brien helps his parents with household chores. (T / F / NI)", exampleTranslation: "O'Brien les ayuda a sus papás con los oficios de la casa. (V / F / sin información)" } },
+    { word: 'statement', set: { example: 'Read the following statements about trends in family households in North America.', exampleTranslation: 'Lee las siguientes afirmaciones sobre las tendencias en los hogares de Norteamérica.' } },
+    { word: 'confirm', set: { example: 'Listen to confirm content: circle T (true), F (false), or NI (no information).', exampleTranslation: 'Escucha para confirmar: encierra T (verdadero), F (falso) o NI (sin información).' } },
+    { word: 'social', set: { example: 'Some social trends are changing the traditional North American household.', exampleTranslation: 'Algunas tendencias sociales están cambiando el hogar tradicional norteamericano.' } },
+    { word: 'until', set: { example: 'Many adult children come back home and live with their parents until they are at least (18 / 20 / 30) years old.', exampleTranslation: 'Muchos hijos adultos vuelven a la casa y viven con sus papás hasta que tienen por lo menos (18 / 20 / 30) años.' } },
+    { word: 'about', set: { translation: 'acerca de; (about 20%) cerca de, más o menos', example: 'About (20% / 70% / 90%) of all households are multi-generational.', exampleTranslation: 'Cerca del (20% / 70% / 90%) de los hogares son multigeneracionales.' } },
+    { word: 'main idea', set: { example: 'Then listen again and check the main idea.', exampleTranslation: 'Luego escucha otra vez y marca la idea principal.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ['Present Simple: Third Person Singular', 'Frequency Expressions', "Quantifiers with 'of'", 'Possessive Forms with Family'],
+    quitarEjercicios: [
+      'Complete: My grandmother has three ___. They are my brother, my cousin, and me.',
+      'Complete: About 20% ___ young adults come back home after university. Many of them stay until they are 30 years old.',
+      'Translate to English: El exesposo de mi hermana visita a los niños cada fin de semana.'],
+    cambios: [
+      ['Describe your household. Who lives with you? How many people are in your family?',
+       null],
+      ['Talk about family trends in Colombia. Do young adults live with their parents? Are multi-generational households common?',
+       null],
+      ['What household chores do you help with at home? How often do you do them?',
+       null],
+      ['Do you have grandparents living with you? If not, how often do you visit them?',
+       null],
+    ] });
+  quitarEjerciciosPorRespuesta(units, { unit: 'a2_4', id }, ['My ex-husband visits the children once a month.']);
+  return true;
+}
+
+/* p. 47: la encuesta tiene opciones y los ejemplos las daban por respuesta
+ * ("Most young adults leave home at age 21"); un ejercicio decía que los hijos
+ * se van "between 21 and 25" y la página no lo dice. "Articles" no es de la
+ * página; el negativo ya está en la p. 40. */
+function fixU4P47(units) {
+  const id = u4Lote(47);
+  if (!hayLote(units, 'a2_4', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_4', id }, [['depend on', 'depends on'], ['continue living', 'continue']]);
+  fixBookPage(units, { unit: 'a2_4', id, cambios: [
+    { word: 'leave home', set: { example: 'At what age do children usually leave home?', exampleTranslation: '¿A qué edad suelen irse los hijos de la casa?' } },
+    { word: 'single-parent', set: { example: 'Are single-parent households common in your country?', exampleTranslation: '¿Son comunes en tu país los hogares con solo papá o solo mamá?' } },
+    { word: 'common', set: { example: "Yes. They're very common.", exampleTranslation: 'Sí. Son muy comunes.' } },
+    { word: 'unusual', set: { translation: 'poco común, inusual', example: "No. They're extremely unusual.", exampleTranslation: 'No. Son muy poco comunes.' } },
+    { word: 'get a job', set: { example: 'They get a job.', exampleTranslation: 'Consiguen trabajo.' } },
+    { word: 'go away to study', set: { example: 'They go away to study.', exampleTranslation: 'Se van a estudiar a otra parte.' } },
+    { word: 'marital status', set: { example: 'It depends on their marital status.', exampleTranslation: 'Depende de su estado civil.' } },
+    { word: 'typical', set: { example: 'Complete the survey about the typical household in your country.', exampleTranslation: 'Completa la encuesta sobre el hogar típico de tu país.' } },
+    { word: 'usually', set: { example: 'At what age do children usually leave home?', exampleTranslation: '¿A qué edad suelen irse los hijos de la casa?' } },
+    { word: 'depends on', set: { word: 'depend on', translation: 'depender de', phonetic: '/dɪˈpɛnd ɑn/', example: 'It depends on their marital status.', exampleTranslation: 'Depende de su estado civil.' } },
+    { word: 'reason', set: { example: 'What are the reasons adult children usually leave home?', exampleTranslation: '¿Por qué razones suelen irse de la casa los hijos adultos?' } },
+    { word: 'continue', set: { example: "They don't want to continue living with their parents.", exampleTranslation: 'No quieren seguir viviendo con sus papás.' } },
+    { word: 'survey', set: { example: 'Complete the survey about the typical household in your country.', exampleTranslation: 'Completa la encuesta sobre el hogar típico de tu país.' } },
+    { word: 'imagine', set: { example: 'Imagine you are telling a visitor from North America about family trends in your country.', exampleTranslation: 'Imagina que le cuentas a un visitante de Norteamérica sobre las tendencias familiares en tu país.' } },
+    { word: 'visitor', set: { example: 'Imagine you are telling a visitor from North America about family trends in your country.', exampleTranslation: 'Imagina que le cuentas a un visitante de Norteamérica sobre las tendencias familiares en tu país.' } },
+    { word: 'partner', set: { example: 'Then compare responses with a partner.', exampleTranslation: 'Luego compara las respuestas con un compañero.' } },
+    { word: 'extremely', set: { example: "No. They're extremely unusual.", exampleTranslation: 'No. Son muy poco comunes.' } },
+    { word: 'change', set: { translation: 'cambio; cambiar', example: 'The changes to the traditional household here and in North America are similar.', exampleTranslation: 'Los cambios en el hogar tradicional aquí y en Norteamérica son parecidos.' } },
+    { word: 'response', set: { example: 'Then compare responses with a partner.', exampleTranslation: 'Luego compara las respuestas con un compañero.' } },
+    { word: "I'm not sure", set: { example: "I'm not sure.", exampleTranslation: 'No estoy seguro.' } },
+    { word: 'talking points', set: { example: 'Use your Talking Points as a guide.', exampleTranslation: 'Usa tus apuntes como guía.' } },
+    { word: 'comparative adjective', set: { example: 'Use comparative adjectives.', exampleTranslation: 'Usa adjetivos comparativos.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_4', id,
+    quitarGramatica: ["Articles: 'A' vs 'The' with Singular Nouns"],
+    quitarEjercicios: [
+      'At what age do children USUALLY leave home in most English-speaking countries?',
+      'My sister needs to ___ home because she got a job in another city. She starts working there next month.'],
+    cambios: [
+      ["In English, we form questions in the present simple with 'do' or 'does' before the subject. Unlike Spanish where you can make questions by changing intonation (¿Vives aquí?), English requires the auxiliary: 'Do you live here?' Use 'do' with I/you/we/they and 'does' with he/she/it. The main verb stays in base form after do/does.",
+       'Para preguntar en presente simple: do / does + sujeto + verbo sin -s. Do you know anyone who lives in a multi-generational household? Con una palabra de pregunta, esa va primero: At what age do children usually leave home?'],
+      ["Colombian students often forget 'do/does' and try to form questions like Spanish by changing word order or intonation: 'You know anyone?' instead of 'Do you know anyone?' Remember: English needs the auxiliary.",
+       "En español preguntamos con la entonación ('¿Conoces a alguien…?'), y por eso sale 'You know anyone…?'. En inglés hace falta do / does: 'Do you know anyone who lives in a multi-generational household?'."],
+      ["Frequency adverbs (usually, always, often, never) typically go BEFORE the main verb in English, but AFTER the verb 'to be'. This is different from Spanish where adverbs are more flexible. Degree adverbs like 'extremely' modify adjectives and go BEFORE the adjective they describe.",
+       "Los adverbios de frecuencia (usually, always, often, never) van antes del verbo principal y después de be: At what age do children usually leave home? Los de grado, como 'extremely', van antes del adjetivo: They're extremely unusual."],
+      ["Spanish speakers often put frequency adverbs at the end like in Spanish (Voy al gimnasio usualmente → I go to the gym usually). In English, it should be: 'I usually go to the gym.' Don't translate word-for-word.",
+       "En español 'usualmente' puede ir al final ('voy al gimnasio usualmente'), y así sale 'I go usually to school'. En inglés va antes del verbo ('I usually go') y después de be. Y 'extremely' va antes del adjetivo: 'extremely unusual'."],
+      ['Children usually leave home between 21 and 25.',
+       'At what age do children usually leave home?'],
+      ['Los niños usualmente se van de casa entre los 21 y 25 años.',
+       '¿A qué edad suelen irse los hijos de la casa?'],
+      ['Describe your household. How many people live with you? Who are they?',
+       'Complete the survey about the typical household in your country. Then compare responses with a partner.'],
+      ['At what age do young adults usually leave home in Colombia? What are the main reasons?',
+       'On your notepad, compare trends in family households in your country with those described on the radio program.'],
+      ['Compare a traditional household with a multi-generational household. What are the similarities and differences?',
+       'Imagine you are telling a visitor from North America about family trends in your country. Use your Talking Points as a guide. Use comparative adjectives.'],
+      ['Do you know anyone who lives in a single-parent household? Describe their situation.',
+       null],
+    ] });
+  quitarEjerciciosPorRespuesta(units, { unit: 'a2_4', id }, ['Do single-parent households depend on marital status?']);
+  quitarTemaU4(units, 47, 'Present Simple: Negative Statements', 40);
+  return true;
+}
+
+/* ── Unit 4: preguntas para las flashcards ──────────────────────────────────
+ * Primero las que el libro imprime, con la respuesta del libro; después las que
+ * la página practica. La de la portada (p. 37, que no se subió) va en la p. 42,
+ * la de los adjetivos de personalidad. */
+function addU4Questions(units, pagina, preguntas) {
+  return addPageExtras(units, 'a2_4', u4Lote(pagina), { preguntas });
+}
+
+function addU4P38Questions(units) {
+  return addU4Questions(units, 38, [
+    { q: "Who is Nina's nephew?", es: '¿Quién es el sobrino de Nina?', a: "Luke is Nina's nephew. Jake is her son." },
+    { q: "Who are Tom's in-laws?", es: '¿Quiénes son los suegros de Tom?', a: "Judy and Bill are Tom's in-laws." },
+    { q: "Who is Kim's husband?", es: '¿Quién es el esposo de Kim?', a: "Matt is Kim's husband." },
+    { q: "Who are Luke and Amy's grandparents?", es: '¿Quiénes son los abuelos de Luke y Amy?', a: 'Judy and Bill are their grandparents.' },
+  ]);
+}
+
+function addU4P39Questions(units) {
+  return addU4Questions(units, 39, [
+    { q: 'Do you have a lot of brothers and sisters?', es: '¿Tienes muchos hermanos?', a: "Actually, no. I'm an only child. But I've got tons of cousins." },
+    { q: 'Do you all keep in touch?', es: '¿Y todos se mantienen en contacto?', a: "It isn't easy. They're all over the world. Some of us like to do video calls." },
+    { q: 'Is it hard to really get together?', es: '¿Es difícil reunirse de verdad?', a: "Well, a bunch of us get together at my great-grandmother's place once every couple of years." },
+    { q: 'Do you come from a large family?', es: '¿Vienes de una familia grande?', a: "Yes, I do. / No, I don't." },
+    { q: 'How many cousins do you have?', es: '¿Cuántos primos tienes?', a: "I have twelve on my mother's side, and three on my father's." },
+    { q: "What's she like?", es: '¿Cómo es ella?', a: "She's super outgoing. Much more outgoing than me!" },
+  ]);
+}
+
+function addU4P40Questions(units) {
+  return addU4Questions(units, 40, [
+    { q: 'Do you have kids?', es: '¿Tienes hijos?', a: "Yes, I do. / No, I don't." },
+    { q: 'Does he have grandkids?', es: '¿Él tiene nietos?', a: "Yes, he does. / No, he doesn't." },
+    { q: 'Where do your in-laws live?', es: '¿Dónde viven tus suegros?', a: 'My in-laws live in Canada.' },
+    { q: 'What do your cousins do?', es: '¿Qué hacen tus primos?', a: "My cousins don't work now." },
+    { q: 'Is she married?', es: '¿Ella es casada?', a: "No, she isn't. She's single." },
+  ]);
+}
+
+function addU4P41Questions(units) {
+  return addU4Questions(units, 41, [
+    { q: 'Does your sister-in-law live in Miami?', es: '¿Tu cuñada vive en Miami?', a: "No, she doesn't. She lives in Atlanta." },
+    { q: 'What does your father-in-law do?', es: '¿A qué se dedica tu suegro?', a: "He's a bank manager. He works at Metro Bank on First Avenue." },
+    { q: 'How often do you visit your niece in London?', es: '¿Cada cuánto visitas a tu sobrina en Londres?', a: 'Oh, we visit her about once a year.' },
+    { q: 'What does she do?', es: '¿A qué se dedica ella?', a: "She's a sales manager. She works at a large international company." },
+    { q: 'How many nieces and nephews do you have?', es: '¿Cuántos sobrinos tienes?', a: 'Three. My brother and his wife have two girls. And my sister has a boy.' },
+  ]);
+}
+
+function addU4P42Questions(units) {
+  return addU4Questions(units, 42, [
+    { q: 'Which adjective describes your personality?', es: '¿Qué adjetivo describe tu personalidad?', a: "Me? I'm shy. But my brothers and sisters are pretty outgoing." },
+    { q: 'How about other members of your family?', es: '¿Y los otros miembros de tu familia?', a: 'My uncle Rick is really funny. Everybody loves his stories!' },
+    { q: 'Are you older than your two brothers?', es: '¿Eres mayor que tus dos hermanos?', a: "Yes, I am. / No, I'm not. I'm younger." },
+    { q: "What's your uncle like?", es: '¿Cómo es tu tío?', a: "He's really funny. Everybody loves his stories!" },
+  ]);
+}
+
+function addU4P43Questions(units) {
+  return addU4Questions(units, 43, [
+    { q: 'Is there someone you really admire?', es: '¿Hay alguien a quien admires mucho?', a: 'Let me think . . . Oh, yes. My brother Howard.' },
+    { q: "Why's that?", es: '¿Y eso por qué?', a: "Well, he's really hard-working. And he's super athletic." },
+    { q: 'Is he at all like you?', es: '¿Se parece en algo a ti?', a: "Not really. I'm not very hard-working. And Howard's definitely more athletic than I am." },
+    { q: 'Are you funny, too?', es: '¿Tú también eres chistoso?', a: "Yes, I am. But he's much funnier than I am." },
+  ]);
+}
+
+function addU4P44Questions(units) {
+  return addU4Questions(units, 44, [
+    { q: 'How are they different?', es: '¿En qué se diferencian?', a: "Paula and Rosie look exactly alike. Jonah and Brandon don't really look alike." },
+    { q: 'Are twins always alike?', es: '¿Los gemelos siempre se parecen?', a: 'No. Identical twins usually look alike, but fraternal twins often do not.' },
+    { q: 'Where do identical twins develop from?', es: '¿De dónde se forman los gemelos idénticos?', a: 'From the same egg. Fraternal twins develop from two different eggs.' },
+    { q: 'What do Jonah and Brandon both love?', es: '¿Qué les encanta a Jonah y a Brandon?', a: 'Both love red meat and potatoes, and neither twin eats fish.' },
+  ]);
+}
+
+function addU4P45Questions(units) {
+  return addU4Questions(units, 45, [
+    { q: 'Does she have any cousins?', es: '¿Ella tiene primos?', a: "Yes, she does. / No, she doesn't." },
+    { q: 'Does he live near you?', es: '¿Él vive cerca de ti?', a: "Yes, he does. / No, he doesn't." },
+    { q: 'Where does he live?', es: '¿Dónde vive él?', a: 'He lives nearby.' },
+    { q: "What's he like?", es: '¿Cómo es él?', a: "He's a little shy, very funny, and hard-working." },
+  ]);
+}
+
+function addU4P46Questions(units) {
+  return addU4Questions(units, 46, [
+    { q: 'What is a multi-generational household?', es: '¿Qué es un hogar multigeneracional?', a: 'A household where grandparents, parents, and children live together.' },
+    { q: 'What is a single parent?', es: '¿Qué es un "single parent"?', a: 'A mother or a father who has the kids without a husband or wife.' },
+    { q: 'Do many adult children come back home?', es: '¿Muchos hijos adultos vuelven a la casa?', a: 'Yes. Many adult children come back home and live with their parents.' },
+  ]);
+}
+
+function addU4P47Questions(units) {
+  return addU4Questions(units, 47, [
+    { q: 'At what age do children usually leave home?', es: '¿A qué edad suelen irse los hijos de la casa?', a: 'Between 21 and 25. / It depends on their marital status.' },
+    { q: 'What are the reasons adult children usually leave home?', es: '¿Por qué razones suelen irse de la casa los hijos adultos?', a: 'They get a job. They get married. They go away to study.' },
+    { q: 'Are single-parent households common in your country?', es: '¿Son comunes en tu país los hogares con solo papá o solo mamá?', a: "Yes. They're very common. / No. They're extremely unusual. / I'm not sure." },
+    { q: 'Do you know anyone who lives in a multi-generational household?', es: '¿Conoces a alguien que viva en un hogar multigeneracional?', a: "Yes. / No. / I'm not sure." },
+    { q: 'Are multi-generational households common in your country?', es: '¿Son comunes en tu país los hogares multigeneracionales?', a: "Yes. They're very common. / No. They're extremely unusual." },
+  ]);
 }
 
 /* ── Unit 7, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
@@ -24550,7 +25252,10 @@ function applyPageFixes(units) {
    fixU7P81, fixU7P82, fixU7P83, fixU7Phrasal,
    addU7P73Questions, addU7P74Questions, addU7P75Questions, addU7P76Questions, addU7P77Questions,
    addU7P78Questions, addU7P79Questions, addU7P80Questions, addU7P81Questions, addU7P82Questions,
-   addU7P83Questions]
+   addU7P83Questions,
+   fixU4Merge, fixU4P38, fixU4P39, fixU4P40, fixU4P41, fixU4P42, fixU4P43, fixU4P44, fixU4P45, fixU4P46, fixU4P47,
+   addU4P38Questions, addU4P39Questions, addU4P40Questions, addU4P41Questions, addU4P42Questions,
+   addU4P43Questions, addU4P44Questions, addU4P45Questions, addU4P46Questions, addU4P47Questions]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 

@@ -240,6 +240,16 @@ veces más de inmediato, y Vocabulary dibujaba todas las tarjetas de una vez
 (4,4 s en un celular). Ahora se guarda solo si cambió, la contabilidad de la
 nube espera al guardado normal, y Vocabulary va por tandas.
 
+`u4.test.js` — La Unit 4, revisada contra sus fotos (pp. 38-47). Cada página
+estaba dos veces: las de junio y una copia de las diez subida el 1 de julio.
+`fixU4Merge` junta cada copia con su página (sus tarjetas pasan con el
+progreso) y la anota en `deletedBatchIds`, porque si solo se quitara, la nube la
+devolvería. Además: ejemplos que contaban cosas de su vida que nadie le
+preguntó ("I have three siblings…"), opciones del audio de la p. 46 como
+hechos, trampas en inglés y temas repetidos. Las correcciones se generaron
+desde su respaldo, para copiar exactos los textos viejos. Lleva las preguntas
+de cada página; la de la portada (p. 37, que no se subió) va en la p. 42.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of
