@@ -992,6 +992,31 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  return 'gz1:' + b64;`,
     reemplazo: `  return texto;`,
   },
+  {
+    nombre: 'quitar las copias de la Unit 4 sin anotarlas como borradas (la nube las devolvería)',
+    buscar: `    if (st) st.deletedBatchIds = [...new Set([...(st.deletedBatchIds || []), copia.id])];\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'juntar la copia de la Unit 4 perdiendo las tarjetas que solo ella tenía',
+    buscar: `      ya.set(k, v.word);\n      b.vocab.push(v);`,
+    reemplazo: `      ya.set(k, v.word);`,
+  },
+  {
+    nombre: 'que la Unit 4 vuelva a decir que él tiene tres hermanos',
+    buscar: `    { word: 'sibling', set: { example: "Even though I'm the older sibling, he's a little taller than I am."`,
+    reemplazo: `    { word: 'sibling', set: { example: 'I have three siblings: two brothers and one sister.'`,
+  },
+  {
+    nombre: 'que la p. 46 vuelva a dar como hecho una opción del audio',
+    buscar: `    { word: 'multi-generational', set: { example: 'About (20% / 70% / 90%) of all households are multi-generational.'`,
+    reemplazo: `    { word: 'multi-generational', set: { example: 'About 70% of all households are multi-generational.'`,
+  },
+  {
+    nombre: 'correr las páginas de la Unit 4 antes de juntar las copias',
+    buscar: `  if (!merged._u4MergeV1 && fixU4Merge(merged.units, merged)) merged._u4MergeV1 = true;\n`,
+    reemplazo: ``,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
