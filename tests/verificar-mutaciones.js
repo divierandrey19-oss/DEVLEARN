@@ -1063,6 +1063,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que la Unit 3 vuelva a decir "My son has a runny nose"',
+    buscar: `    ['runny nose', 'My son has a runny nose because of allergies.', "I don't feel well. I have a runny nose.", 'No me siento bien. Tengo mocos.'],\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que "to her" se quede repetida en la p. 88',
+    buscar: `[['to her', 'her'], ['to the salesperson', 'salesperson']]`,
+    reemplazo: `[['to the salesperson', 'salesperson']]`,
+  },
+  {
+    nombre: 'que la Unit 9 no se ordene al arrancar',
+    buscar: `  fixU9Order(merged.units);   // sin bandera`,
+    reemplazo: `  // sin bandera`,
+  },
+  {
+    nombre: 'que la trampa de "should" de la p. 110 siga en inglés',
+    buscar: `"Después de 'should' va el verbo solo, sin 'to': 'You should change', no 'You should to change'. Como 'deberías cambiar' en español, que tampoco lleva nada en medio."],`,
+    reemplazo: `"Never add 'to' after 'should'."],`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

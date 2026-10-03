@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03d -->
+<!-- DEVLEARN_BUILD: 2026-10-03e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03d';
+const APP_BUILD = '2026-10-03e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6890,6 +6890,7 @@ function migrateState(s) {
   // Unit 9 completa, revisada contra las fotos. Primero los números de página:
   // las demás correcciones buscan la página por su número.
   if (!merged._u9PagesV1 && fixU9Pages(merged.units)) merged._u9PagesV1 = true;
+  fixU9Order(merged.units);   // sin bandera: la p. 104 salía después de la 106
   [['_u9P97V1', fixU9P97], ['_u9P98V1', fixU9P98], ['_u9P99V1', fixU9P99], ['_u9P100V1', fixU9P100],
    ['_u9P101V1', fixU9P101], ['_u9P102V1', fixU9P102], ['_u9P103V1', fixU9P103], ['_u9P104V1', fixU9P104],
    ['_u9P105V1', fixU9P105], ['_u9P106V1', fixU9P106], ['_u9P107V1', fixU9P107], ['_u9PhrasalV1', fixU9Phrasal]]
@@ -6952,6 +6953,13 @@ function migrateState(s) {
    ['_u6P69V1', fixU6P69], ['_u6P70V1', fixU6P70],
    ['_u6P61QV1', addU6P61Questions], ['_u6P62QV1', addU6P62Questions], ['_u6P63QV1', addU6P63Questions],
    ['_u6P64QV1', addU6P64Questions]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // La revisión de todas las unidades: ejemplos inventados sobre su familia
+  // (Unit 3 y p. 20), repetidas de la p. 88 y las trampas en inglés de la p. 110.
+  [['_u3P26EjV1', fixU3P26Ejemplos], ['_u3P29EjV1', fixU3P29Ejemplos], ['_u3P30EjV1', fixU3P30Ejemplos],
+   ['_u3P31EjV1', fixU3P31Ejemplos], ['_u3P32EjV1', fixU3P32Ejemplos], ['_u3P33EjV1', fixU3P33Ejemplos],
+   ['_u3P34EjV1', fixU3P34Ejemplos], ['_u3P35EjV1', fixU3P35Ejemplos], ['_u2P20EjV1', fixU2P20Ejemplo],
+   ['_u8P88DupesV1', fixU8P88Dupes], ['_u10P110TrapsV1', fixU10P110Traps]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
@@ -7901,6 +7909,120 @@ function fixU3P34(units) {
 function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
+  ] });
+}
+
+/* ── Revisión de todas las unidades (3 de octubre) ─────────────────────────
+ * Con su respaldo del 2 de octubre, después de corregir la Unit 6: lo que
+ * quedaba suelto en las demás. Cada ejemplo nuevo está impreso en su página. */
+
+/* Unit 3: las páginas de mayo tenían ejemplos inventados sobre su familia
+ * ("My sister can play the piano beautifully", "My son has a runny nose
+ * because of allergies") que nadie le preguntó; ahora, lo que la página
+ * imprime. Solo cambia el ejemplo: la tarjeta
+ * y su progreso se quedan. El de la p. 28 ("My brother? No way.") sí está en
+ * el libro. */
+function u3Ejemplos(units, pagina, cambios) {
+  return fixBookPage(units, { unit: 'a2_3', id: u3Lote(pagina), cambios: cambios.map(([word, viejo, example, exampleTranslation]) =>
+    ({ word, example: viejo, set: { example, exampleTranslation } })) });
+}
+
+function fixU3P26Ejemplos(units) {
+  return u3Ejemplos(units, 26, [
+    ['sing', "I can sing well, but my brother can't sing.", "I can sing. / I can't sing.", 'Sé cantar. / No sé cantar.'],
+    ['play the piano', 'My sister can play the piano beautifully.', "Well, I can't play the guitar, but I can play the piano.", 'Bueno, no sé tocar la guitarra, pero sé tocar el piano.'],
+    ['drive', "My father can drive, but my mother can't.", "I can drive. / I can't drive.", 'Sé manejar. / No sé manejar.'],
+    ['cook', 'My grandmother can cook delicious traditional food.', "I can cook. / I can't cook.", 'Sé cocinar. / No sé cocinar.'],
+  ]);
+}
+
+function fixU3P29Ejemplos(units) {
+  return u3Ejemplos(units, 29, [
+    ['piano', 'My sister can play the piano beautifully.', 'What instruments can you play? The piano and the guitar.', '¿Qué instrumentos sabes tocar? El piano y la guitarra.'],
+  ]);
+}
+
+function fixU3P30Ejemplos(units) {
+  return u3Ejemplos(units, 30, [
+    ['runny nose', 'My son has a runny nose because of allergies.', "I don't feel well. I have a runny nose.", 'No me siento bien. Tengo mocos.'],
+    ['toothache', 'My brother has a toothache and needs a dentist.', "I don't feel well. I have a toothache.", 'No me siento bien. Tengo dolor de muela.'],
+    ['backache', 'My father has a backache from working all day.', 'Right now I have a backache.', 'Ahora mismo tengo dolor de espalda.'],
+    ['advice', "My mother always gives me good advice when I'm sick.", "Give advice to someone who doesn't feel well", 'Darle consejos a alguien que no se siente bien'],
+  ]);
+}
+
+function fixU3P31Ejemplos(units) {
+  return u3Ejemplos(units, 31, [
+    ['make soup', "My grandmother makes soup when I'm sick.", "Give more advice, using should or shouldn't: go home, take a nap, make soup, rest",
+     'Da más consejos con should o shouldn\'t: irse a la casa, tomar una siesta, hacer sopa, descansar'],
+    ['go to work', 'My father goes to work at 7 am every morning.', "Give more advice, using should or shouldn't: go to class, exercise, go to work, go out",
+     'Da más consejos con should o shouldn\'t: (no) ir a clase, (no) hacer ejercicio, (no) ir a trabajar, (no) salir'],
+  ]);
+}
+
+function fixU3P32Ejemplos(units) {
+  return u3Ejemplos(units, 32, [
+    ['daughter', 'My daughter is 13 years old.', 'Answer Man, help! My 13-year-old daughter, Ruby, is on her school soccer team.',
+     '¡Answer Man, ayuda! Mi hija de 13 años, Ruby, está en el equipo de fútbol del colegio.'],
+  ]);
+}
+
+function fixU3P33Ejemplos(units) {
+  return u3Ejemplos(units, 33, [
+    ['city', 'My brother lives in a different city.', 'You get a new job in a different city. It starts next month.', 'Te sale un trabajo nuevo en otra ciudad. Empieza el próximo mes.'],
+  ]);
+}
+
+function fixU3P34Ejemplos(units) {
+  return u3Ejemplos(units, 34, [
+    ['old', 'My grandfather is 70 years old but still learns new things.', "You can't teach an old dog new tricks.",
+     'No se le pueden enseñar trucos nuevos a un perro viejo (loro viejo no aprende a hablar).'],
+  ]);
+}
+
+function fixU3P35Ejemplos(units) {
+  return u3Ejemplos(units, 35, [
+    ['musical instrument', 'My sister plays a musical instrument.', 'Ability: playing a musical instrument. Motivation: 40%. Practice: 50%. Natural ability: 10%.',
+     'Habilidad: tocar un instrumento musical. Motivación: 40 %. Práctica: 50 %. Habilidad natural: 10 %.'],
+  ]);
+}
+
+/* Unit 2, p. 20: "My brother loves hip-hop and rap" no está en la página;
+ * ahora, la lista de géneros que la página imprime. */
+function fixU2P20Ejemplo(units) {
+  return fixBookPage(units, { unit: 'a2_2', page: 20, cambios: [
+    { word: 'hip-hop / rap', example: 'My brother loves hip-hop and rap.', set: {
+      example: 'Musical genres: hip-hop / rap, jazz, classical, folk, pop, rock, heavy metal',
+      exampleTranslation: 'Géneros musicales: hip-hop / rap, jazz, música clásica, folk, pop, rock, heavy metal' } },
+  ] });
+}
+
+/* Unit 8, p. 88: "her" y "to her", "salesperson" (p. 87) y "to the
+ * salesperson" eran la misma palabra dos veces en Flashcards. Queda la del
+ * pronombre o la persona, y su progreso pasa a ella. */
+function fixU8P88Dupes(units) {
+  const ok = fixBookPage(units, { unit: 'a2_8', page: 88, cambios: [
+    { word: 'her', set: { translation: 'la, le, ella (después de un verbo o de una preposición)' } },
+  ] });
+  if (ok) unirEnLaUnidad(units, { unit: 'a2_8', page: 88 }, [['to her', 'her'], ['to the salesperson', 'salesperson']]);
+  return ok;
+}
+
+/* Unit 9: la p. 104 salía después de la 106 (la subió de último). Sin
+ * bandera, como la Unit 3: una copia vieja de la nube vuelve al orden. */
+function fixU9Order(units) {
+  return ordenarPorPagina(units, 'a2_9');
+}
+
+/* Unit 10, p. 110: tres trampas seguían en inglés. */
+function fixU10P110Traps(units) {
+  return fixPageContent(units, { unit: 'a2_10', page: 110, cambios: [
+    ["Colombian speakers often say 'For me' (Para mí) instead of 'In my opinion'. While 'For me' is grammatically possible, 'In my opinion' is more natural when expressing opinions in English.",
+     "En español decimos 'para mí' para dar una opinión, y traducido sale 'For me, ...'. No está mal, pero en inglés lo natural es 'In my opinion, ...' o 'I think ...'."],
+    ["Never add 'to' after 'should'. Spanish speakers often say 'you should to change' because in Spanish we say 'deberías cambiar', but in English it's always 'should change' without 'to'.",
+     "Después de 'should' va el verbo solo, sin 'to': 'You should change', no 'You should to change'. Como 'deberías cambiar' en español, que tampoco lleva nada en medio."],
+    ["Spanish uses different forms for negative commands (no hagas, no digas), but English always uses 'Don't' + base verb for all persons.",
+     "En español la orden negativa cambia el verbo según la persona (no hagas, no haga, no hagan). En inglés es siempre 'Don't' + el verbo en forma base, para todos: 'Don't let anyone tell you you can't succeed.'"],
   ] });
 }
 
@@ -26174,7 +26296,9 @@ function applyPageFixes(units) {
    fixU5Pages, fixU5P49, fixU5P50, fixU5P51, fixU5P52, fixU5P53, fixU5P54, fixU5P55, fixU5P56, fixU5P57, fixU5P58, fixU5P59,
    addU5P49Questions, addU5P50Questions, addU5P51Questions, addU5P52Questions, addU5P53Questions, addU5P54Questions, addU5P55Questions, addU5P56Questions, addU5P57Questions, addU5P58Questions, addU5P59Questions,
    fixU6Pages, fixU6Order, fixU6P61, fixU6P62, fixU6P63, fixU6P64, fixU6P65, fixU6P66, fixU6P67, fixU6P68, fixU6P69, fixU6P70,
-   addU6P61Questions, addU6P62Questions, addU6P63Questions, addU6P64Questions]
+   addU6P61Questions, addU6P62Questions, addU6P63Questions, addU6P64Questions,
+   fixU3P26Ejemplos, fixU3P29Ejemplos, fixU3P30Ejemplos, fixU3P31Ejemplos, fixU3P32Ejemplos, fixU3P33Ejemplos,
+   fixU3P34Ejemplos, fixU3P35Ejemplos, fixU2P20Ejemplo, fixU8P88Dupes, fixU9Order, fixU10P110Traps]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 
