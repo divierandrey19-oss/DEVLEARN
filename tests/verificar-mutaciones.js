@@ -1017,6 +1017,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  if (!merged._u4MergeV1 && fixU4Merge(merged.units, merged)) merged._u4MergeV1 = true;\n`,
     reemplazo: ``,
   },
+  {
+    nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
+    buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la Unit 5 vuelva a decir "I\'m a real treat"',
+    buscar: `    { word: 'real treat', set: { word: 'a meat and potatoes man',`,
+    reemplazo: `    { word: 'real treat', set: { word: 'real treat',`,
+  },
+  {
+    nombre: 'que la Unit 5 vuelva a dar por error "We have apples"',
+    buscar: `    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['We have apples.', 'Do you have some eggs?'].includes(e.wrong)));`,
+    reemplazo: `    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['Do you have some eggs?'].includes(e.wrong)));`,
+  },
+  {
+    nombre: 'que la Unit 5 no reciba sus preguntas al abrir la app',
+    buscar: `['_u5P58QV1', addU5P58Questions], ['_u5P59QV1', addU5P59Questions]]`,
+    reemplazo: `['_u5P58QV1', addU5P58Questions]]`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
