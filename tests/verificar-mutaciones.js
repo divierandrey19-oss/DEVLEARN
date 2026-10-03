@@ -1098,6 +1098,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `    cambios: [] });`,
   },
   {
+    nombre: 'que una unidad nueva restaurada (el B1) llegue sin su descripción',
+    buscar: `          if (!u.description && bu.description) u.description = bu.description;\n`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

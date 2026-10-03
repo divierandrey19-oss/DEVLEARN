@@ -114,6 +114,19 @@ Decirle qué salió bien y qué mal, **y preguntar** antes de corregir. Separar 
 que es del modelo de lo que causa el prompt: si una regla del prompt provoca el
 error, se arregla también el prompt, o se repite en cada página.
 
+**La otra forma: páginas hechas en el chat** (la pidió para comparar en el B1).
+Él manda las fotos al chat y Claude arma las páginas en un archivo con forma de
+respaldo, que él carga en Settings → "Restore missing pages from a backup"; si la
+unidad no existe (`b1_1`…), la restauración la crea. El archivo:
+`{ units: { b1_1: { lid: 'b1', uid: 1, key: 'b1_1', title, description, fcProgress: {},
+batches: [lote] } } }`, y cada lote como los del análisis: `id` único
+(`b_chat_…`), `pages: [n]`, `images: ['data:image/jpeg;base64,…']` (la foto que
+mandó, para que se pueda regenerar), `grammarVersion` = `GRAMMAR_VERSION`,
+`generatedAt`, `title`, `topics`, `vocab` (con las tarjetas `type: 'question'`),
+`grammar` (con `drillSentences`), `exercises` y `speakingPrompts`. Las mismas
+reglas del prompt de `_analyzeReal`; sin repetir palabras que la unidad ya tiene
+(`vocabKey`). Probarlo cargándolo en el navegador antes de dárselo.
+
 **Corregir a mano**, sin pagar otro análisis:
 - Vocabulario: `fixBookPage(units, { unit, page, marca, cambios, nuevas })`.
 - Gramática, ejercicios, speaking: `fixPageContent(units, { unit, page,

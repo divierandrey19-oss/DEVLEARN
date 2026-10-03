@@ -286,6 +286,12 @@ to help your dreams come true" es una frase que NO es la opinión del escritor, 
 inventaban en qué es bueno o qué le importa. p. 115: un ejercicio con dos
 respuestas incorrectas y "Change partners". p. 114: una explicación rara.
 
+`paginas-del-chat.test.js` — La segunda forma de subir páginas: él manda las
+fotos al chat, Claude arma las páginas en un archivo con forma de respaldo y
+"Restore missing pages from a backup" las agrega sin gastar la API. Para el B1
+la unidad no existe todavía: la restauración la crea con su título y su
+descripción, y el aviso dice el nivel.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of

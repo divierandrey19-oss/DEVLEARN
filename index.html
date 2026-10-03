@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03f -->
+<!-- DEVLEARN_BUILD: 2026-10-03g -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03f';
+const APP_BUILD = '2026-10-03g';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -26375,7 +26375,12 @@ function applyPageFixes(units) {
 /* Recuperar páginas perdidas desde un respaldo, sin tocar nada más. Importar
  * reemplaza todo el estado y se llevaría lo que hizo después del respaldo;
  * esto solo agrega las páginas que faltan, con su foto y su progreso. Nació
- * cuando la sincronización se llevó la p. 111. */
+ * cuando la sincronización se llevó la p. 111.
+ *
+ * También es la segunda forma de subir páginas: él manda las fotos al chat,
+ * Claude arma las páginas (vocabulario, gramática, ejercicios, preguntas) en un
+ * archivo con forma de respaldo, y aquí entran sin gastar la API. Una unidad
+ * que todavía no existe (el B1) la crea getUnit, con su título y descripción. */
 function restorePagesFromBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -26388,7 +26393,8 @@ function restorePagesFromBackup(event) {
     const faltan = missingBatchesFromBackup(state, backup);
     const nuevas = newerContentFromBackup(state, backup);
     if (!faltan.length && !nuevas.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
-    const nombre = f => `Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
+    // Con el nivel: un archivo de páginas hechas en el chat puede traer el B1.
+    const nombre = f => `${String(f.unit.lid || '').toUpperCase()} Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
     const partes = [];
     if (faltan.length) partes.push(`Pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises.`);
     if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${nuevas.map(nombre).join('\n• ')}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
@@ -26409,6 +26415,7 @@ function restorePagesFromBackup(event) {
           u.fcProgress = u.fcProgress || {};
           (copia.vocab || []).forEach(v => { if (v && prog[v.word] && !u.fcProgress[v.word]) u.fcProgress[v.word] = prog[v.word]; });
           if (!u.title && bu.title) u.title = bu.title;
+          if (!u.description && bu.description) u.description = bu.description;
         });
         nuevas.forEach(({ unitKey, batch }) => {
           // Se busca otra vez: si la nube llegó mientras el aviso estaba abierto,
