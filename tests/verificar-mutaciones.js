@@ -1083,6 +1083,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `"Never add 'to' after 'should'."],`,
   },
   {
+    nombre: 'que la p. 117 vuelva a dar como hecho "Positive thinking isn\'t going to help"',
+    buscar: `      example: "Positive thinking isn't going to help your dreams come true. (Not the writer's opinion: \\"Stay positive!\\")",`,
+    reemplazo: `      example: "Positive thinking isn't going to help your dreams come true.",`,
+  },
+  {
+    nombre: 'que se quede la pregunta que inventa en qué es bueno',
+    buscar: `  fixPageContent(units, { unit: 'a2_10', page: 116, quitarPalabras: ['What are you really good at?'] });\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que "Change partners" se quede en la p. 115',
+    buscar: `    cambios: [['CHANGE PARTNERS: Role-play the conversation again.', null]] });`,
+    reemplazo: `    cambios: [] });`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,
