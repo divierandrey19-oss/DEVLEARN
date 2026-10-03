@@ -1018,6 +1018,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que la Unit 4 se siga llamando como la nombró el análisis',
+    buscar: `  if (u.title === 'Family Relationships and Extended Family') u.title = 'Talking about People';\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la Unit 4 no reciba su nombre nuevo al arrancar',
+    buscar: `  if (!merged._u4TitleV1 && fixU4Title(merged.units)) merged._u4TitleV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

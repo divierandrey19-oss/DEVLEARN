@@ -207,3 +207,17 @@ test('el arranque y la restauración lo corren: primero juntar, después las pá
   assert.ok(migrar.indexOf('fixU4Merge(') < migrar.indexOf('fixU4P38]'));
   assert.ok(aplicar.indexOf('fixU4Merge') < aplicar.indexOf('fixU4P38'));
 });
+
+test('la unidad se llama como en el libro: "Talking about People"', () => {
+  const g = h.ejecutar(`${h.extraerFuncion('fixU4Title')} return { fixU4Title };`, {});
+  const units = { a2_4: { title: 'Family Relationships and Extended Family',
+    description: 'This lesson teaches vocabulary for immediate and extended family members, including in-laws and other relatives.' } };
+  assert.equal(g.fixU4Title(units), true);
+  assert.equal(units.a2_4.title, 'Talking about People');
+  assert.match(units.a2_4.description, /^This unit teaches how to talk about your family and other people/);
+  const suya = { a2_4: { title: 'Mi familia', description: 'La mía' } };
+  g.fixU4Title(suya);
+  assert.deepEqual(suya.a2_4, { title: 'Mi familia', description: 'La mía' }, 'un nombre que no es el viejo no se toca');
+  assert.equal(g.fixU4Title({}), false, 'sin la unidad, no se marca');
+  assert.match(h.extraerFuncion('migrateState'), /if \(!merged\._u4TitleV1 && fixU4Title\(merged\.units\)\) merged\._u4TitleV1 = true;/);
+});

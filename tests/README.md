@@ -257,6 +257,8 @@ preguntó ("I have three siblings…"), opciones del audio de la p. 46 como
 hechos, trampas en inglés y temas repetidos. Las correcciones se generaron
 desde su respaldo, para copiar exactos los textos viejos. Lleva las preguntas
 de cada página; la de la portada (p. 37, que no se subió) va en la p. 42.
+`fixU4Title` le pone el nombre del libro, "Talking about People", en vez del
+que puso el primer análisis; solo si el nombre es exactamente el viejo.
 
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
