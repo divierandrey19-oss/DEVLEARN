@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03a -->
+<!-- DEVLEARN_BUILD: 2026-10-03b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03a';
+const APP_BUILD = '2026-10-03b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6926,6 +6926,17 @@ function migrateState(s) {
    ['_u4P44QV1', addU4P44Questions], ['_u4P45QV1', addU4P45Questions], ['_u4P46QV1', addU4P46Questions],
    ['_u4P47QV1', addU4P47Questions]]
     .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
+  // Unit 5: números de página, cada página (los platos raros se quedan con la
+  // comida, sin el país) y sus preguntas.
+  if (!merged._u5PagesV1 && fixU5Pages(merged.units)) merged._u5PagesV1 = true;
+  [['_u5P49V1', fixU5P49], ['_u5P50V1', fixU5P50], ['_u5P51V1', fixU5P51], ['_u5P52V1', fixU5P52],
+   ['_u5P53V1', fixU5P53], ['_u5P54V1', fixU5P54], ['_u5P55V1', fixU5P55], ['_u5P56V1', fixU5P56],
+   ['_u5P57V1', fixU5P57], ['_u5P58V1', fixU5P58], ['_u5P59V1', fixU5P59],
+   ['_u5P49QV1', addU5P49Questions], ['_u5P50QV1', addU5P50Questions], ['_u5P51QV1', addU5P51Questions],
+   ['_u5P52QV1', addU5P52Questions], ['_u5P53QV1', addU5P53Questions], ['_u5P54QV1', addU5P54Questions],
+   ['_u5P55QV1', addU5P55Questions], ['_u5P56QV1', addU5P56Questions], ['_u5P57QV1', addU5P57Questions],
+   ['_u5P58QV1', addU5P58Questions], ['_u5P59QV1', addU5P59Questions]]
+    .forEach(([bandera, fix]) => { if (!merged[bandera] && fix(merged.units)) merged[bandera] = true; });
   return merged;
 }
 
@@ -7875,6 +7886,467 @@ function fixU3P35(units) {
   return fixBookPage(units, { unit: 'a2_3', id: u3Lote(35), cambios: [
     { word: 'cooking', example: 'I practice cooking every day.', set: { exampleTranslation: 'Practico la cocina todos los días.' } },
   ] });
+}
+
+/* ── Unit 5, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
+ * Once páginas, una por lote, subidas en julio sin foto ni número. Se analizó
+ * antes de las reglas de "las opciones no son hechos", "forma base" y "trampa
+ * en español". Además él pidió quitar los platos con nombres raros del menú
+ * (p. 50) y de la comida callejera (p. 59): cada tarjeta se queda con la
+ * comida, sin el país, y su progreso pasa a la que queda. */
+function u5Lote(pagina) {
+  return { 49: 'b_1784207325308_cf80rj', 50: 'b_1784243654183_om7x5a', 51: 'b_1784243822001_9lymsc',
+    52: 'b_1784314244248_nfnjt4', 53: 'b_1784655470872_huioyy', 54: 'b_1784657202156_flvzbi',
+    55: 'b_1784657475715_ox5dlp', 56: 'b_1784744048483_8mf7bl', 57: 'b_1784744299913_0d1shs',
+    58: 'b_1784744932580_ev0sfl', 59: 'b_1784745165601_aue3s0' }[pagina];
+}
+
+/* Los números de página. Uno que él ya puso no se toca. */
+function fixU5Pages(units) {
+  const u = units && units.a2_5;
+  if (!u) return false;
+  let alguna = false;
+  for (let p = 49; p <= 59; p++) {
+    const b = (u.batches || []).find(x => x && x.id === u5Lote(p));
+    if (!b) continue;
+    alguna = true;
+    if (!(b.pages || []).length) b.pages = [p];
+  }
+  return alguna;
+}
+
+/* Un tema que otra página enseña: se quita de esta solo si esa otra está en el
+ * aparato. */
+function quitarTemaU5(units, pagina, titulo, paginaQueLoEnsena) {
+  if (!hayLote(units, 'a2_5', u5Lote(paginaQueLoEnsena))) return;
+  fixPageContent(units, { unit: 'a2_5', id: u5Lote(pagina), quitarGramatica: [titulo] });
+}
+/* p. 49: "discuss" no es "discutir" (en Colombia es pelear); "eating" va en
+ * forma base; las trampas, en inglés (la de "look" decía que en español el
+ * artículo va en el adjetivo). Dos tareas de speaking eran el globo y la
+ * franja de lecciones. */
+function fixU5P49(units) {
+  const id = u5Lote(49);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'discuss', set: { translation: 'hablar de, conversar sobre', exampleTranslation: 'Hablar de formas de preparar la comida.' } },
+    { word: 'eating', set: { word: 'eat', translation: 'comer', phonetic: '/it/', example: 'Eating in Restaurants', exampleTranslation: 'Comer en restaurantes' } },
+    { word: 'mood', set: { translation: 'ánimo; (be in the mood for) tener ganas de, antojarse' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    cambios: [
+      ["En inglés, usamos 'look' (parecer, verse) seguido de un adjetivo para describir la apariencia de algo. Es diferente del español porque en inglés NO usamos el artículo antes del adjetivo. Decimos 'looks delicious', no 'looks a delicious'.",
+       "Para decir cómo se ve algo usamos 'look' + adjetivo, sin 'like': The meat looks delicious! Which dish looks delicious to you? Con he / she / it, 'looks'."],
+      ["Colombian Spanish speakers often add an article before the adjective ('looks a delicious') because in Spanish we say 'se ve delicioso/deliciosa' with the article in the adjective ending. In English, no article is used.",
+       "En español decimos 'se ve delicioso', y traducido sale 'looks like delicious'. Con un adjetivo va solo 'look': 'The meat looks delicious!'. 'Look like' es con un sustantivo: 'It looks like a sandwich'."],
+      ["In Spanish we might say 'es más de mi estilo' with 'de', but in English we don't use 'of' - we say 'more my style' directly.",
+       "En español decimos 'es más de mi estilo', con 'de', y por eso sale 'more of my style'. En inglés va sin 'of': 'The sandwich is more my style.'"],
+      ["Colombian Spanish speakers often forget the 'for' at the end because in Spanish we say '¿Qué se te antoja?' without a preposition at the end. In English, you must include 'for'.",
+       "En español preguntamos '¿Qué se te antoja?', sin nada al final. En inglés la pregunta termina en 'for': 'What are you in the mood for?'; sin 'for' queda incompleta."],
+      ['What are you in the mood for? Which dish looks delicious to you?',
+       'What are you in the mood for? Which dish looks delicious to you?'],
+      ['Do you agree about the restaurant and the food?',
+       null],
+      ['Talk about healthy and unhealthy foods. Describe food habits and tastes.',
+       null],
+    ] });
+  return true;
+}
+
+/* p. 50: él pidió quitar los platos con nombres raros: cada tarjeta queda con
+ * la comida y sin el país ("Peruvian grilled fish" → "grilled fish"), y su
+ * progreso pasa a la que queda. El tema de "nationality + food type"
+ * (mayúsculas en las nacionalidades) no es de la página, y uno de sus errores
+ * era igual a la frase buena. */
+function fixU5P50(units) {
+  const id = u5Lote(50);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  unirEnLaUnidad(units, { unit: 'a2_5', id }, [
+    ['Ecuadorean shrimp', 'shrimp'],
+    ['Brazilian cheese bread', 'cheese bread'],
+    ['Japanese noodle soup', 'noodle soup'],
+    ['American classic roast beef', 'roast beef'],
+    ['Peruvian grilled fish', 'grilled fish'],
+    ['Chinese-style sauteed vegetables with tofu', 'tofu']]);
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'Mexican grilled fish tacos', set: { word: 'fish tacos', translation: 'tacos de pescado', phonetic: '/fɪʃ ˈtɑkoʊz/', example: 'Mexican grilled fish tacos', exampleTranslation: 'Tacos de pescado a la parrilla (mexicanos)' } },
+    { word: 'French Canadian yellow split pea soup', set: { word: 'pea soup', translation: 'sopa de arveja', phonetic: '/pi sup/', example: 'French Canadian yellow split pea soup', exampleTranslation: 'Sopa de arveja amarilla (de Quebec, Canadá)' } },
+    { word: 'soup', set: { example: 'Soups and Salads', exampleTranslation: 'Sopas y ensaladas' } },
+    { word: 'try', set: { example: "Choose a food you'd like to try from each group.", exampleTranslation: 'Escoge una comida que te gustaría probar de cada grupo.' } },
+    { word: 'entrée', set: { translation: 'plato fuerte, plato principal', example: 'an entrée (a main course)', exampleTranslation: 'un plato fuerte (plato principal)' } },
+    { word: 'main course', set: { translation: 'plato fuerte, plato principal', example: 'an entrée (a main course)', exampleTranslation: 'un plato fuerte (plato principal)' } },
+    { word: 'regular', set: { translation: 'normal (con cafeína)', example: 'Coffee (regular or decaf)', exampleTranslation: 'Café (normal o descafeinado)' } },
+    { word: 'decaf', set: { example: 'Coffee (regular or decaf)', exampleTranslation: 'Café (normal o descafeinado)' } },
+    { word: 'still', set: { example: 'Bottled water (still or sparkling)', exampleTranslation: 'Agua embotellada (sin gas o con gas)' } },
+    { word: 'sparkling', set: { example: 'Bottled water (still or sparkling)', exampleTranslation: 'Agua embotellada (sin gas o con gas)' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarGramatica: ['Food nouns with modifiers (nationality + food type)'],
+    cambios: [
+      ["En inglés, usamos 'I'd like to' + verbo base para expresar lo que queremos hacer. Es una forma cortés de decir 'I want to' (quiero). A diferencia del español donde se usa 'me gustaría' + infinitivo, en inglés siempre sigue el verbo base sin 'to' entre 'like' y 'to'.",
+       "Para decir lo que quieres hacer, con cortesía: I'd like to + verbo (me gustaría…). 'I'd' es 'I would'. Choose a food you'd like to try from each group."],
+      ["Colombian Spanish speakers often forget the 'to' after 'like' or add an extra word, translating directly from 'me gustaría probar' as 'I'd like try' instead of 'I'd like to try'",
+       "En español decimos 'me gustaría probar', sin nada entre los dos verbos, y por eso sale 'I'd like try'. En inglés va 'to': 'I'd like to try the chocolate cake.'"],
+      ["Colombian Spanish speakers may put the adjective after the noun, saying 'coffee regular' instead of 'regular coffee', following Spanish word order 'café regular'",
+       "En español el adjetivo va después ('café descafeinado', 'agua con gas'), y por eso sale 'coffee decaf' o 'water sparkling'. En inglés va antes: 'decaf coffee', 'sparkling water'."],
+    ] });
+  return true;
+}
+
+/* p. 51: "I'm a real meat and potatoes man" salió como "I'm a real treat"
+ * ("soy un verdadero placer"). "Roast beef" no es carne asada (es rosbif);
+ * James dice "We'll take the check" y "for an appetizer". */
+function fixU5P51(units) {
+  const id = u5Lote(51);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'real treat', set: { word: 'a meat and potatoes man', translation: 'alguien que come carne y papas (comida sencilla)', phonetic: '/ə mit ənd pəˈteɪtoʊz mæn/', type: 'phrase', example: "I'm a real meat and potatoes man.", exampleTranslation: 'Yo soy de carne con papas.' } },
+    { word: 'roast beef', set: { translation: 'rosbif (carne de res al horno)', example: "Tonight's special is roast beef with fried potatoes.", exampleTranslation: 'El especial de esta noche es rosbif con papas fritas.' } },
+    { word: 'special', set: { exampleTranslation: 'El especial de esta noche es rosbif con papas fritas.' } },
+    { word: 'fried potatoes', set: { exampleTranslation: 'El especial de esta noche es rosbif con papas fritas.' } },
+    { word: 'check', set: { example: "No, thanks. We'll take the check, please.", exampleTranslation: 'No, gracias. Nos trae la cuenta, por favor.' } },
+    { word: 'green salad', set: { example: "And I'll have the green salad for an appetizer, and the roast beef special.", exampleTranslation: 'Y yo quiero la ensalada verde de entrada, y el especial de rosbif.' } },
+  ] });
+  return true;
+}
+
+/* p. 52: ejemplos mal copiados ("Can I have a tomato salad…", el libro dice
+ * "You can have…"; "on menu" sin "the"); "chicken rice" y "tomato potato" son
+ * sopas, no arroz con pollo. Un "error común" daba por mal "The chocolate cake
+ * sounds delicious", y un ejercicio de corregir no tenía error. */
+function fixU5P52(units) {
+  const id = u5Lote(52);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'green bean salad', set: { example: 'You can have a tomato salad or a green bean salad.', exampleTranslation: 'Puedes pedir una ensalada de tomate o una de habichuelas.' } },
+    { word: 'chicken rice', set: { translation: '(sopa de) pollo con arroz', example: 'There are two kinds of soup: chicken rice and tomato potato.', exampleTranslation: 'Hay dos sopas: de pollo con arroz y de tomate con papa.' } },
+    { word: 'tomato potato', set: { translation: '(sopa de) tomate con papa', example: 'There are two kinds of soup: chicken rice and tomato potato.', exampleTranslation: 'Hay dos sopas: de pollo con arroz y de tomate con papa.' } },
+    { word: 'hot peppers', set: { example: "Well, what about the Thai chicken? It has lots of hot peppers. I'm sure it's spicy.", exampleTranslation: 'Bueno, ¿y el pollo tailandés? Tiene mucho ají. Seguro es picante.' } },
+    { word: 'spicy', set: { example: "Well, what about the Thai chicken? It has lots of hot peppers. I'm sure it's spicy.", exampleTranslation: 'Bueno, ¿y el pollo tailandés? Tiene mucho ají. Seguro es picante.' } },
+    { word: 'roast chicken special', set: { example: "There's a nice roast chicken special on the menu tonight.", exampleTranslation: 'Esta noche hay un buen especial de pollo asado en el menú.' } },
+    { word: 'specific', set: { example: 'Use the definite article the with count and non-count nouns to name something specific.', exampleTranslation: 'Usa el artículo the con sustantivos contables y no contables para nombrar algo específico.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarEjercicios: [
+      "Find and correct the mistake: I'll have the tomato salad for my main course tonight."],
+    cambios: [
+      ['Can I have a tomato salad or a green bean salad.',
+       'You can have a tomato salad or a green bean salad.'],
+      ['¿Puedo tomar una ensalada de tomate o una ensalada de habichuelas?',
+       'Puedes pedir una ensalada de tomate o una de habichuelas.'],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, "Definite article 'the' for specific reference", t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['The chocolate cake sounds delicious.'].includes(e.wrong)));
+  });
+  return true;
+}
+
+/* p. 53: las palabras de PRONUNCIATION (the egg salad, the oil…) tenían
+ * ejemplos inventados; ahora, el sonido que enseña la página: "the" es /ði/
+ * antes de vocal y /ðə/ antes de consonante. El tema de artículos ya está en
+ * la p. 52. */
+function fixU5P53(units) {
+  const id = u5Lote(53);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'hot appetizer', set: { example: 'the hot appetizer → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'orange juice', set: { example: 'the orange juice → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'onion soup', set: { example: 'the onion soup → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'apple juice', set: { example: 'the apple juice → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'egg salad', set: { example: 'the egg salad → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'fish special', set: { example: 'the fish special → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'tomato soup', set: { example: 'the tomato soup → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'apple cake', set: { example: 'the apple cake → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'chocolate milk', set: { example: 'the chocolate milk → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'bean soup', set: { example: 'the bean soup → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'oil', set: { example: 'the oil → /ði/', exampleTranslation: '"the" antes de sonido de vocal se dice /ði/.' } },
+    { word: 'grilled beef', set: { example: 'the grilled beef → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+    { word: 'juice', set: { example: 'the juice → /ðə/', exampleTranslation: '"the" antes de sonido de consonante se dice /ðə/.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    cambios: [
+      ["Los colombianos tienden a traducir literalmente 'Me gustaría' como 'I would like' completo en lugar de usar la contracción 'I'd like', o a omitir el sujeto 'I' como se hace en español.",
+       "En español pedimos 'me trae el pollo' o solo 'el pollo, por favor', y traducido suena brusco ('The chicken, please', 'I want the soup'). En inglés se pide con 'I'll have the…', 'I'd like the…' o 'I'll start with the…'."],
+    ] });
+  quitarTemaU5(units, 53, "Articles with food and drinks: 'the' vs. no article", 52);
+  return true;
+}
+
+/* p. 54: la gramática de some / any daba por error frases correctas ("We have
+ * apples", "We don't have eggs", "Do you have some eggs?") y decía que en
+ * preguntas "any" es más natural; el libro dice que en preguntas no hay
+ * diferencia. Un ejercicio pedía corregir "We need milk and some bananas", que
+ * está bien. El speaking era inventado. */
+function fixU5P54(units) {
+  const id = u5Lote(54);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'bread', set: { example: 'Do we have any eggs or any bread?', exampleTranslation: '¿Tenemos huevos o pan?' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarEjercicios: [
+      'Find and correct the mistake: We need milk and some bananas.'],
+    ejercicios: [{ question: 'Which sentence is correct?', set: { options: ['We have some milk and any eggs.', 'We have some milk and some eggs.', 'We have any milk and some eggs.', 'We have a milk and some eggs.'] } }],
+    cambios: [
+      ["En español podemos decir '¿Tienes huevos?' sin cuantificador, pero en inglés debemos decir 'Do you have any eggs?' — el cuantificador es obligatorio.",
+       "En español decimos 'tenemos manzanas' o 'tenemos unas manzanas'. 'Some' y 'any' son como 'algo de / unos': dicen que no sabemos cuántos ni cuánto. Lo que no se cambia es cuál va: some en afirmativo, any en negativo."],
+      ["En español coloquial a veces omitimos 'algunos/algo de' ('Necesitamos huevos'), pero en inglés 'some' no se puede omitir cuando hablamos de cantidades indefinidas: 'We need some eggs'.",
+       "Por pensar en 'algún', sale 'any' en afirmativo: 'I'd like any water' ✗ → 'I'd like some water' ✓. Y con los no contables, sin 'a': 'I have a milk' ✗ → 'I have some milk' ✓."],
+      ["En español decimos 'No tengo huevos' (sin cuantificador), pero en inglés es 'I don't have any eggs' — el 'any' no se puede omitir en oraciones negativas.",
+       "En español decimos 'no queremos algo de queso', y por eso sale 'We don't want some cheese'. En negativo va 'any': 'We don't want any cheese'."],
+      ["Los colombianos tienden a usar siempre 'some' en preguntas porque traducen directamente 'algún/alguna', pero 'any' es más común y natural en inglés para preguntas generales.",
+       "Aquí no hay trampa: en preguntas, 'any' y 'some' significan lo mismo. 'Do you need any apples?' = 'Do you need some apples?'. El error es otro: olvidar 'do' ('Need you any milk?')."],
+      ['Discuss ways to prepare food using the adjectives learned',
+       null],
+      ['Talk about what food you have using some and any',
+       null],
+      ['Ask and answer questions about food preparation methods',
+       null],
+    ] });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, 'Some and any with indefinite amounts', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['We have apples.', 'Do you have some eggs?'].includes(e.wrong)));
+  });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, 'Some in affirmative statements', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['We need milk and eggs.'].includes(e.wrong)));
+  });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, 'Any in negative statements', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ["We don't have eggs."].includes(e.wrong)));
+  });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, 'Any or some in questions', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['Do you have eggs?'].includes(e.wrong)));
+  });
+  return true;
+}
+
+/* p. 55: some / any ya está en la p. 54 y el presente continuo no es de la
+ * página. El speaking tenía las ideas de KEEP TALKING, pero no la tarea. */
+function fixU5P55(units) {
+  const id = u5Lote(55);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarGramatica: ['Present Continuous for actions happening now'],
+    cambios: [
+      ['Say more about your tastes in food.',
+       'Role-play the conversation. Discuss the way you prefer foods to be prepared. Then change roles.'],
+      ['Talk about your favorite foods for breakfast, lunch, and dinner.',
+       'Say more about your tastes in food: [Fried food] is not for me. Talk about your favorite foods for breakfast, lunch, and dinner: [Steamed veggies] are more my style.'],
+    ] });
+  quitarTemaU5(units, 55, 'Some and Any with countable and uncountable nouns', 54);
+  return true;
+}
+
+/* p. 56: los ejemplos contaban qué come él ("I eat sausages for breakfast", "I
+ * eat lamb at dinner"); ahora, cada comida con su categoría. Un "error común"
+ * decía que los huevos son lácteos. */
+function fixU5P56(units) {
+  const id = u5Lote(56);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'lamb', set: { example: 'Lamb is meat.', exampleTranslation: 'El cordero es carne.' } },
+    { word: 'sausages', set: { example: 'Sausages are meat.', exampleTranslation: 'Las salchichas son carne.' } },
+    { word: 'shrimp', set: { example: 'Shrimp is seafood.', exampleTranslation: 'Los camarones son mariscos.' } },
+    { word: 'cake', set: { example: 'Cake is a sweet.', exampleTranslation: 'La torta es un dulce.' } },
+    { word: 'pasta', set: { example: 'Pasta and grains: bread, rice, pasta, noodles.', exampleTranslation: 'Pasta y granos: pan, arroz, pasta, fideos.' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarEjercicios: [
+      'I eat ___ for breakfast. It is a dairy product that I drink. It is white.'],
+    cambios: [
+      ['Eggs is a dairy product.',
+       'Eggs is good for you.'],
+      ['Eggs are a dairy product.',
+       'Eggs are good for you.'],
+    ] });
+  quitarTemaU5(units, 56, 'Count and non-count nouns with food vocabulary', 52);
+  return true;
+}
+
+/* p. 57: LISTEN FOR DETAILS pide encerrar la respuesta, y sus opciones
+ * quedaron como hechos ("The women eat sausages with fried potatoes", "She
+ * thinks sweets are a terrible food"); ahora, la pregunta con sus opciones.
+ * Fuera los ejercicios que daban una respuesta del audio y "Hot peppers
+ * contain a lot of salt", que es falso. "Pizza is an unhealthy food" está
+ * bien. */
+function fixU5P57(units) {
+  const id = u5Lote(57);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'something fried', set: { example: 'What looks good to Lisa on the menu? (something fried / something low-fat / fruits and veggies)', exampleTranslation: '¿Qué le provoca a Lisa del menú? (algo frito / algo bajo en grasa / frutas y verduras)' } },
+    { word: 'something low-fat', set: { example: 'What looks good to Lisa on the menu? (something fried / something low-fat / fruits and veggies)', exampleTranslation: '¿Qué le provoca a Lisa del menú? (algo frito / algo bajo en grasa / frutas y verduras)' } },
+    { word: 'fruits and veggies', set: { example: 'What looks good to Lisa on the menu? (something fried / something low-fat / fruits and veggies)', exampleTranslation: '¿Qué le provoca a Lisa del menú? (algo frito / algo bajo en grasa / frutas y verduras)' } },
+    { word: 'sausages with fried potatoes', set: { example: 'What kind of food do the women eat for dinner at home? (sausages with fried potatoes / healthy low-fat foods / fatty meats and seafood)', exampleTranslation: '¿Qué comen las mujeres en la casa? (salchichas con papas fritas / comida sana baja en grasa / carnes grasosas y mariscos)' } },
+    { word: 'healthy low-fat foods', set: { example: 'What kind of food do the women eat for dinner at home? (sausages with fried potatoes / healthy low-fat foods / fatty meats and seafood)', exampleTranslation: '¿Qué comen las mujeres en la casa? (salchichas con papas fritas / comida sana baja en grasa / carnes grasosas y mariscos)' } },
+    { word: 'fatty meats and seafood', set: { example: 'What kind of food do the women eat for dinner at home? (sausages with fried potatoes / healthy low-fat foods / fatty meats and seafood)', exampleTranslation: '¿Qué comen las mujeres en la casa? (salchichas con papas fritas / comida sana baja en grasa / carnes grasosas y mariscos)' } },
+    { word: 'high-fat', set: { example: 'fatty / high-fat = contains a lot of oil', exampleTranslation: 'grasoso / alto en grasa = tiene mucho aceite' } },
+    { word: 'low-fat', set: { example: "low-fat = doesn't contain a lot of oil", exampleTranslation: 'bajo en grasa = no tiene mucho aceite' } },
+    { word: 'contains a lot of oil', set: { example: 'Fatty / high-fat food contains a lot of oil.', exampleTranslation: 'La comida grasosa tiene mucho aceite.' } },
+    { word: 'terrible', set: { example: "What does Caroline's friend think about sweets? (She thinks sweets are a terrible food. / She doesn't think they're a healthy breakfast.)", exampleTranslation: '¿Qué piensa la amiga de Caroline de los dulces? (Que son una comida terrible. / Que no son un desayuno sano.)' } },
+    { word: 'calories', set: { example: "What's wrong with the Big Smack Burger? (It has a lot of calories. / It's high-fat. / It's low-fat.)", exampleTranslation: '¿Qué tiene de malo la Big Smack Burger? (Tiene muchas calorías. / Es alta en grasa. / Es baja en grasa.)' } },
+    { word: 'pasta with sauce', set: { example: 'Take the opinion survey: salad, hot peppers, pasta with sauce, rice, chicken . . .', exampleTranslation: 'Contesta la encuesta: ensalada, ají, pasta con salsa, arroz, pollo...' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarGramatica: ["Questions with 'What' about food (What looks good? What kind of food?)"],
+    quitarEjercicios: [
+      "Which food is mentioned as having 'a lot of calories'?",
+      'What does Lisa think looks good on the menu?',
+      'According to the conversation, what question does Harry have about the pasta?',
+      'Find and correct the mistake: Hot peppers contains a lot of salt.'],
+  });
+  fixGrammarTopic(units, { unit: 'a2_5', id }, 'Adjectives describing food (healthy, unhealthy, fatty, salty, sweet)', t => {
+    t.commonErrors = (t.commonErrors || []).filter(e => !(e && ['Pizza is an unhealthy food.'].includes(e.wrong)));
+  });
+  return true;
+}
+
+/* p. 58: "Traditional markets often have trucks / carts" es falso: los
+ * mercados tienen puestos y casetas; los carritos están en la calle. Los pies
+ * de foto, como están. El presente simple no es de la página. */
+function fixU5P58(units) {
+  const id = u5Lote(58);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'stand', set: { example: 'Traditional markets often have food stands or stalls.', exampleTranslation: 'Los mercados tradicionales muchas veces tienen puestos o casetas de comida.' } },
+    { word: 'stall', set: { example: 'Traditional markets often have food stands or stalls.', exampleTranslation: 'Los mercados tradicionales muchas veces tienen puestos o casetas de comida.' } },
+    { word: 'cart', set: { example: 'Elsewhere, people buy food from a cart on the street.', exampleTranslation: 'En otras partes, la gente compra comida en un carrito en la calle.' } },
+    { word: 'truck', set: { example: 'Workers can go out of their offices at lunchtime and buy something from the food trucks on the street.', exampleTranslation: 'Los trabajadores pueden salir de la oficina a la hora del almuerzo y comprar algo en los food trucks de la calle.' } },
+    { word: 'food stand', set: { example: 'Food stands in Singapore', exampleTranslation: 'Puestos de comida en Singapur' } },
+    { word: 'food cart', set: { example: 'A food cart in Istanbul, Turkey', exampleTranslation: 'Un carrito de comida en Estambul, Turquía' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarGramatica: ['Present Simple for general facts and habits'],
+  });
+  return true;
+}
+
+/* p. 59: los platos raros, como en la p. 50: cada tarjeta, con la comida
+ * ("fried green bananas" son patacones; "grilled corn", mazorca asada). Tres
+ * temas de gramática repetían los de las pp. 49, 50 y 55; las trampas, en
+ * inglés. Un ejercicio decía que él come empanadas de queso en las tres
+ * comidas. */
+function fixU5P59(units) {
+  const id = u5Lote(59);
+  if (!hayLote(units, 'a2_5', id)) return false;
+  fixBookPage(units, { unit: 'a2_5', id, cambios: [
+    { word: 'dumpling', set: { word: 'dumplings', translation: 'dumplings (empanaditas al vapor)', example: 'Chinese steamed shrimp dumplings', exampleTranslation: 'Dumplings de camarón al vapor (chinos)' } },
+    { word: 'corn', set: { word: 'grilled corn', translation: 'mazorca asada', phonetic: '/ɡrɪld kɔrn/', type: 'phrase', example: "I think the Mexican grilled corn looks delicious. We usually boil our corn, but now I'd like to try grilled corn.", exampleTranslation: 'Creo que la mazorca asada mexicana se ve deliciosa. Normalmente la cocinamos, pero ahora me gustaría probarla asada.' } },
+    { word: 'noodle soup', set: { example: 'Vietnamese beef noodle soup', exampleTranslation: 'Sopa de fideos con carne (vietnamita)' } },
+    { word: 'cheese pie', set: { word: 'cheese pies', translation: 'empanadas de queso', example: 'Ecuadorean fried cheese pies', exampleTranslation: 'Empanadas de queso fritas (ecuatorianas)' } },
+    { word: 'green', set: { word: 'fried green bananas', translation: 'patacones', phonetic: '/fraɪd ɡrin bəˈnænəz/', type: 'phrase', example: 'Cuban fried green bananas', exampleTranslation: 'Patacones (cubanos)' } },
+    { word: 'cheese bread', set: { example: 'Colombian baked cheese bread', exampleTranslation: 'Pandebono, pan de queso horneado (colombiano)' } },
+  ] });
+  fixPageContent(units, { unit: 'a2_5', id,
+    quitarEjercicios: [
+      'I eat fried cheese pies ___. I have them for breakfast, lunch, and dinner.'],
+    cambios: [
+      ["In Spanish, frequency words are flexible in position. In English, 'sometimes' and 'often' must come BEFORE the main verb (not after). 'Every day' goes at the END.",
+       "En español 'a veces' puede ir en cualquier lado ('como a veces comida callejera'), y así sale 'I eat sometimes street food'. En inglés 'sometimes' y 'often' van antes del verbo ('I sometimes eat street food'), y 'every day' va al final."],
+    ] });
+  quitarTemaU5(units, 59, "Using 'look' + adjective to describe appearance", 49);
+  quitarTemaU5(units, 59, 'Adjectives of food preparation (past participles as adjectives)', 55);
+  quitarTemaU5(units, 59, "Using 'would like to' + base verb for preferences", 50);
+  return true;
+}
+
+/* ── Unit 5: preguntas para las flashcards ──────────────────────────────────
+ * Primero las que el libro imprime, con la respuesta del libro; después las que
+ * la página practica. */
+function addU5Questions(units, pagina, preguntas) {
+  return addPageExtras(units, 'a2_5', u5Lote(pagina), { preguntas });
+}
+
+function addU5P49Questions(units) {
+  return addU5Questions(units, 49, [
+    { q: 'What are you in the mood for?', es: '¿Qué se te antoja?', a: 'The meat looks delicious!' },
+    { q: 'Which dish looks delicious to you?', es: '¿Qué plato se te ve delicioso?', a: 'Actually, the sandwich is more my style.' },
+    { q: 'The meat looks delicious! Do you agree?', es: '¡La carne se ve deliciosa! ¿Estás de acuerdo?', a: 'Actually, the sandwich is more my style.' },
+  ]);
+}
+
+function addU5P50Questions(units) {
+  return addU5Questions(units, 50, [
+    { q: "Which food would you like to try from each group?", es: '¿Qué comida te gustaría probar de cada grupo?', a: "I'd like to try the cheese bread, the Greek salad, the grilled fish, and the apple pie." },
+    { q: 'What is a dish from your country for each part of a meal?', es: '¿Qué plato de tu país hay para cada parte de una comida?',
+      a: 'An appetizer: patacones. A soup: ajiaco. An entrée: bandeja paisa. A dessert: arroz con leche. A beverage: fruit juice.' },
+    { q: 'Would you like regular or decaf coffee?', es: '¿Quiere café normal o descafeinado?', a: 'Decaf, please.' },
+  ]);
+}
+
+function addU5P51Questions(units) {
+  return addU5Questions(units, 51, [
+    { q: 'Is there any fish on the menu tonight?', es: '¿Hay pescado en el menú esta noche?', a: 'Oh yes, there is. And it comes with a tomato onion salad.' },
+    { q: 'So, are you ready to order?', es: '¿Entonces, ya está listo para pedir?', a: 'Totally. Excuse me!' },
+    { q: 'Would you like rice or peas with the fish?', es: '¿Quiere arroz o arvejas con el pescado?', a: "I'll have the peas." },
+    { q: 'Anything for dessert?', es: '¿Algo de postre?', a: "No, thanks. We'll take the check, please." },
+    { q: 'Do you accept the Ultra Card?', es: '¿Aceptan la tarjeta Ultra?', a: 'Of course.' },
+    { q: 'Is the tip included?', es: '¿La propina está incluida?', a: 'Yes, it is. Ten percent.' },
+    { q: 'Is the roast beef rare?', es: '¿El rosbif es poco asado?', a: 'Yes, it is.' },
+  ]);
+}
+
+function addU5P52Questions(units) {
+  return addU5Questions(units, 52, [
+    { q: 'What kinds of soup are there?', es: '¿Qué sopas hay?', a: 'There are two kinds of soup: chicken rice and tomato potato.' },
+    { q: 'What would you like for your main course?', es: '¿Qué quiere de plato fuerte?', a: "That sounds good. I'll have the roast chicken special." },
+    { q: 'What foods or beverages do you like?', es: '¿Qué comidas o bebidas te gustan?', a: 'I like rice, chicken, and tea.' },
+  ]);
+}
+
+function addU5P53Questions(units) {
+  return addU5Questions(units, 53, [
+    { q: 'What does that come with?', es: '¿Con qué viene?', a: 'It comes with rice or potatoes and a salad.' },
+    { q: 'What kind of salad is there?', es: '¿Qué ensalada hay?', a: "There's tomato salad or mixed green salad." },
+    { q: 'And to drink?', es: '¿Y de tomar?', a: 'Water, please. Sparkling.' },
+  ]);
+}
+
+function addU5P54Questions(units) {
+  return addU5Questions(units, 54, [
+    { q: 'Is there anything good on the menu?', es: '¿Hay algo bueno en el menú?', a: "There isn't anything. / Yes, the roasted chicken." },
+    { q: 'Do we have any eggs or any bread?', es: '¿Tenemos huevos o pan?', a: "We have some eggs, but we don't have any bread." },
+    { q: 'Do you need any apples or butter?', es: '¿Necesitas manzanas o mantequilla?', a: "I need some apples, but I don't need any butter." },
+  ]);
+}
+
+function addU5P55Questions(units) {
+  return addU5Questions(units, 55, [
+    { q: 'That fish looks so good. Is it roasted or fried?', es: 'Ese pescado se ve muy bueno. ¿Es asado o frito?', a: "It's roasted. I don't like fried foods." },
+    { q: 'So are those veggies grilled or steamed?', es: '¿Y esas verduras son a la plancha o al vapor?', a: "The veggies? I'm actually not sure. But they're delicious!" },
+    { q: 'So are you in the mood for dessert?', es: '¿Y se te antoja un postre?', a: "That depends. Is there anything good on the menu?" },
+  ]);
+}
+
+function addU5P56Questions(units) {
+  return addU5Questions(units, 56, [
+    { q: 'What foods are meat?', es: '¿Qué comidas son carne?', a: 'Lamb, chicken, sausages, and beef.' },
+    { q: 'What foods are seafood?', es: '¿Qué comidas son mariscos?', a: 'Squid, shrimp, fish, and clams.' },
+    { q: 'What are dairy products?', es: '¿Cuáles son los lácteos?', a: 'Milk, yogurt, butter, and cheese.' },
+  ]);
+}
+
+function addU5P57Questions(units) {
+  return addU5Questions(units, 57, [
+    { q: 'Do you think potato chips are healthy?', es: '¿Crees que las papas de paquete son sanas?', a: "I think potato chips are unhealthy. They're too fatty and salty." },
+    { q: 'Are hamburgers healthy?', es: '¿Las hamburguesas son sanas?', a: "I think they're unhealthy. But they're OK if you don't eat them every day." },
+    { q: 'What foods do you think are healthy?', es: '¿Qué comidas crees que son sanas?', a: 'I think salad, rice, and tofu are healthy.' },
+  ]);
+}
+
+function addU5P58Questions(units) {
+  return addU5Questions(units, 58, [
+    { q: 'What is street food?', es: '¿Qué es la comida callejera?', a: 'Ready-to-eat food that vendors sell in the street or in another public place, such as a market.' },
+    { q: 'Why do people like to eat on the street?', es: '¿Por qué a la gente le gusta comer en la calle?', a: "It's faster, it's almost always cheaper, and it's usually fresh." },
+    { q: 'What are some disadvantages of street food?', es: '¿Cuáles son algunas desventajas de la comida callejera?', a: "It's difficult to know if the food and dishes are clean." },
+  ]);
+}
+
+function addU5P59Questions(units) {
+  return addU5Questions(units, 59, [
+    { q: 'Do some people eat street food in your city?', es: '¿En tu ciudad la gente come en la calle?', a: 'Yes. People buy empanadas and arepas from food carts.' },
+    { q: 'Do you eat street food?', es: '¿Comes en la calle?', a: "Yes, sometimes. / No, I don't." },
+    { q: 'Which street foods would you like to try?', es: '¿Qué comidas callejeras te gustaría probar?',
+      a: "I think the Mexican grilled corn looks delicious. We usually boil our corn, but now I'd like to try grilled corn." },
+    { q: 'Do people often eat in restaurants in your country?', es: '¿En tu país la gente come mucho en restaurantes?', a: 'In my country, people love to eat out.' },
+  ]);
 }
 
 /* ── Unit 4, revisada contra sus fotos (respaldo del 2 de octubre) ─────────
@@ -25255,7 +25727,9 @@ function applyPageFixes(units) {
    addU7P83Questions,
    fixU4Merge, fixU4P38, fixU4P39, fixU4P40, fixU4P41, fixU4P42, fixU4P43, fixU4P44, fixU4P45, fixU4P46, fixU4P47,
    addU4P38Questions, addU4P39Questions, addU4P40Questions, addU4P41Questions, addU4P42Questions,
-   addU4P43Questions, addU4P44Questions, addU4P45Questions, addU4P46Questions, addU4P47Questions]
+   addU4P43Questions, addU4P44Questions, addU4P45Questions, addU4P46Questions, addU4P47Questions,
+   fixU5Pages, fixU5P49, fixU5P50, fixU5P51, fixU5P52, fixU5P53, fixU5P54, fixU5P55, fixU5P56, fixU5P57, fixU5P58, fixU5P59,
+   addU5P49Questions, addU5P50Questions, addU5P51Questions, addU5P52Questions, addU5P53Questions, addU5P54Questions, addU5P55Questions, addU5P56Questions, addU5P57Questions, addU5P58Questions, addU5P59Questions]
     .forEach(f => { try { f(units); } catch (e) { console.warn('Page fix failed:', e); } });
 }
 

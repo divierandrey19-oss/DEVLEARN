@@ -240,6 +240,14 @@ veces más de inmediato, y Vocabulary dibujaba todas las tarjetas de una vez
 (4,4 s en un celular). Ahora se guarda solo si cambió, la contabilidad de la
 nube espera al guardado normal, y Vocabulary va por tandas.
 
+`u5.test.js` — La Unit 5, revisada contra sus fotos (pp. 49-59). Él pidió quitar
+los platos con nombres raros del menú y de la comida callejera: cada tarjeta se
+queda con la comida, sin el país ("Peruvian grilled fish" → "grilled fish"), y el
+progreso la sigue. Además: "I'm a real meat and potatoes man" (había salido "a
+real treat"), some / any dando por error frases correctas ("We have apples"),
+opciones del audio como hechos y "Hot peppers contain a lot of salt". Lleva los
+números de página y las preguntas de cada página.
+
 `u4.test.js` — La Unit 4, revisada contra sus fotos (pp. 38-47). Cada página
 estaba dos veces: las de junio y una copia de las diez subida el 1 de julio.
 `fixU4Merge` junta cada copia con su página (sus tarjetas pasan con el
