@@ -223,6 +223,16 @@ gramática nueva solo marcan su bandera si la página ya está en v3 en ese apar
 subió antes de que el análisis las hiciera). Las impresas llevan la respuesta del
 libro; las de su vida, la de sus textos de My life.
 
+`respaldo-comprimido.test.js` — La guardia 3, comprimida. El respaldo diario
+era una segunda copia entera del estado y, con diez unidades, entre las dos
+llenaban el 97% de lo que Chrome deja guardar. Ahora va comprimido ("gz1:" +
+gzip en base64, ~23%), con la compresión del navegador, y se comprueba que sale
+idéntico antes de reemplazar el anterior. loadState() lo lee con un
+descompresor propio y síncrono (el arranque no puede esperar), probado contra
+zlib en todos sus niveles y contra CompressionStream. Uno roto levanta
+`__loadCorrupt`, como cualquier carga fallida. El respaldo viejo se comprime una
+vez después del arranque, salvo si la carga falló.
+
 `rendimiento.test.js` — La app se sentía lenta con sus datos reales (diez
 unidades, ~2900 palabras, 2,5 MB). Cada apertura guardaba el estado entero
 (setTheme y setLang guardaban sin cambios), cada sincronización lo escribía dos
