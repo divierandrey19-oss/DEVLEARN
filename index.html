@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03b -->
+<!-- DEVLEARN_BUILD: 2026-10-03c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4950,7 +4950,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03b';
+const APP_BUILD = '2026-10-03c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6918,6 +6918,7 @@ function migrateState(s) {
   // Unit 4: primero se junta cada copia de julio con su página (y se anota como
   // borrada, para que la nube no la devuelva), después cada página y sus preguntas.
   if (!merged._u4MergeV1 && fixU4Merge(merged.units, merged)) merged._u4MergeV1 = true;
+  if (!merged._u4TitleV1 && fixU4Title(merged.units)) merged._u4TitleV1 = true;
   [['_u4P38V1', fixU4P38], ['_u4P39V1', fixU4P39], ['_u4P40V1', fixU4P40], ['_u4P41V1', fixU4P41],
    ['_u4P42V1', fixU4P42], ['_u4P43V1', fixU4P43], ['_u4P44V1', fixU4P44], ['_u4P45V1', fixU4P45],
    ['_u4P46V1', fixU4P46], ['_u4P47V1', fixU4P47],
@@ -8371,6 +8372,19 @@ function u4Copia(pagina) {
     41: 'b_1782880095744_c30ief', 42: 'b_1782880204821_crk5cs', 43: 'b_1782880371180_u22v9v',
     44: 'b_1782880530878_3mexe5', 45: 'b_1782880666712_v22n2p', 46: 'b_1782880765171_76fsr0',
     47: 'b_1782880901145_k1c8el' }[pagina];
+}
+
+/* El nombre de la unidad lo puso el primer análisis; el libro la llama
+ * "Talking about People". Solo cambia el nombre que puso el análisis: la nube
+ * también pasa por migrateState, así que su copia vieja sale con el nuevo. */
+function fixU4Title(units) {
+  const u = units && units.a2_4;
+  if (!u) return false;
+  if (u.title === 'Family Relationships and Extended Family') u.title = 'Talking about People';
+  if (u.description === 'This lesson teaches vocabulary for immediate and extended family members, including in-laws and other relatives.') {
+    u.description = 'This unit teaches how to talk about your family and other people: relatives and in-laws, where they live and what they do, their personalities, and how people compare.';
+  }
+  return true;
 }
 
 /* Cada página recibe su número, y la copia de julio se junta con ella: sus
