@@ -899,8 +899,8 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'volver a forzar en el prompt la forma impresa ("I like a basketball game")',
-    buscar: `Otherwise write a short, natural \${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending)",`,
-    reemplazo: `Otherwise write a short \${levelName} sentence using ONLY words printed on these pages",`,
+    buscar: `Otherwise write a short, natural \${levelName} sentence built from words printed on these pages (their form may change: plural, verb ending),`,
+    reemplazo: `Otherwise write a short \${levelName} sentence using ONLY words printed on these pages,`,
   },
   {
     nombre: 'que la corrección de la p. 14 (Unit 2) no corra al arrancar',
@@ -1025,6 +1025,41 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   {
     nombre: 'que la Unit 4 no reciba su nombre nuevo al arrancar',
     buscar: `  if (!merged._u4TitleV1 && fixU4Title(merged.units)) merged._u4TitleV1 = true;\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la Unit 6 deje "for quarters" en vez de "for starters"',
+    buscar: `    { word: 'quarters', set: { word: 'for starters',`,
+    reemplazo: `    { word: 'quarters-no', set: { word: 'for starters',`,
+  },
+  {
+    nombre: 'que la Unit 6 una "once" antes de que nazca "once or twice a week"',
+    buscar: `  unirEnLaUnidad(units, { unit: 'a2_6', id }, [\n    ['once', 'once or twice a week'],`,
+    reemplazo: `  unirEnLaUnidad(units, { unit: 'a2_6', id }, [\n    ['once', 'once or twice a weak'],`,
+  },
+  {
+    nombre: 'que el ejercicio de unir de la p. 63 siga con las respuestas desordenadas',
+    buscar: `'up to date → uses new or recent technology', 'defective → has a problem'] } }`,
+    reemplazo: `"up to date → isn't working", 'defective → has a problem'] } }`,
+  },
+  {
+    nombre: 'que la respuesta inventada sobre su hermano se quede',
+    buscar: `    { word: 'Are you (or is someone you know) dependent on or addicted to a smart phone?', set: { example: 'Yes. / No.' } },\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el prompt vuelva a dejar inventar datos de él en los ejemplos',
+    buscar: `Never state a fact about the student, his family or his things`,
+    reemplazo: `Feel free to state a fact about the student, his family or his things`,
+  },
+  {
+    nombre: 'que la Unit 6 no se ordene por página al arrancar',
+    buscar: `  fixU6Order(merged.units);   // sin bandera`,
+    reemplazo: `  // sin bandera`,
+  },
+  {
+    nombre: 'que la Unit 6 no corra al arrancar',
+    buscar: `  if (!merged._u6PagesV1 && fixU6Pages(merged.units)) merged._u6PagesV1 = true;\n`,
     reemplazo: ``,
   },
   {
