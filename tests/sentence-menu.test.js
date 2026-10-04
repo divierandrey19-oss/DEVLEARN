@@ -61,3 +61,50 @@ test('el botón de cada frase abre el menú en vez de voltear de una', () => {
   assert.match(menu, /onclick="listenSentence\(\$\{si\}\)">🔊 Listen</);
   assert.match(menu, /flipSentence\(\$\{si\}\)/);
 });
+
+// ── "Flip" no debe desaparecer cuando la nube sincroniza con el texto abierto ──
+
+function abrirMenu(texto) {
+  let menu = null;
+  const f = h.ejecutar(`
+    ${h.extraerFuncion('splitSentences')}
+    ${h.extraerFuncion('frasesTraducidas')}
+    ${h.extraerFuncion('sentenceMenu')}
+    return { sentenceMenu, frasesTraducidas };
+  `, {
+    _txState: { flippedES: new Set() },
+    readerItem: () => texto,
+    closeSentenceMenu() {},
+    window: { innerWidth: 1366, innerHeight: 768 },
+    document: {
+      getElementById: id => (id === 'text-overlay' ? { appendChild: m => { menu = m; } } : null),
+      createElement: () => ({ style: {} }),
+    },
+  });
+  f.sentenceMenu(1, { getBoundingClientRect: () => ({ right: 400, bottom: 300, top: 280 }) });
+  return { html: menu && menu.innerHTML, frasesTraducidas: f.frasesTraducidas };
+}
+
+test('la copia que llega de la nube (sin la traducción dividida) sigue ofreciendo Flip', () => {
+  // Así queda el texto después de sincronizar: trae `trans`, pero no la lista
+  // por frases que se armaba solo al abrirlo. En el computador pasaba al
+  // volver a la ventana (4 de octubre).
+  const deLaNube = { body: 'First sentence. Second sentence.', trans: 'Primera frase. Segunda frase.' };
+  const { html, frasesTraducidas } = abrirMenu(deLaNube);
+  assert.match(html, /🔊 Listen/);
+  assert.match(html, /🔄 Flip to Spanish/);
+  assert.deepEqual(frasesTraducidas(deLaNube), ['Primera frase.', 'Segunda frase.']);
+  assert.deepEqual(frasesTraducidas({ translation: ['vieja'] }), ['vieja'], 'sin trans, la que haya');
+  assert.deepEqual(frasesTraducidas(null), []);
+});
+
+test('sin traducción, solo Listen', () => {
+  assert.doesNotMatch(abrirMenu({ body: 'One. Two.' }).html, /Flip/);
+});
+
+test('el lector tampoco depende de la traducción guardada al abrir', () => {
+  const lector = h.extraerFuncion('renderTextReader');
+  assert.match(lector, /const traduccion = frasesTraducidas\(t\);/);
+  assert.doesNotMatch(lector, /t\.translation/);
+  assert.doesNotMatch(h.extraerFuncion('sentenceMenu'), /t\.translation/);
+});
