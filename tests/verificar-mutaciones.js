@@ -1115,6 +1115,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  filas.forEach(f => out.push(...f));`,
   },
   {
+    nombre: 'que el repaso siga enfocado después del speaking test',
+    buscar: `  const examen = COURSE_SYLLABUS.find(c => c.exam && !hechas.has(c.id) && !(sched[c.id] && sched[c.id] < hoy));`,
+    reemplazo: `  const examen = COURSE_SYLLABUS.find(c => c.exam && !hechas.has(c.id));`,
+  },
+  {
+    nombre: 'que el repaso no se enfoque en las unidades del speaking test',
+    buscar: `  const session = SRS.buildDailySession(state.units, 20, foco && foco.keys);`,
+    reemplazo: `  const session = SRS.buildDailySession(state.units, 20);`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

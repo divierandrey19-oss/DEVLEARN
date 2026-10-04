@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-04b -->
+<!-- DEVLEARN_BUILD: 2026-10-04c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4880,7 +4880,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-04b';
+const APP_BUILD = '2026-10-04c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -19749,6 +19749,26 @@ function intercalarUnidades(items) {
   return out;
 }
 
+/* Las unidades del próximo examen del curso, si las dice ("SPEAKING TEST /
+ * Units 9-10"), mientras no haya pasado su fecha ni esté marcado como hecho.
+ * El repaso diario se enfoca en ellas; después del examen vuelve solo a
+ * mezclar todas. Lo pidió él para el speaking test del 13 de octubre; lee su
+ * calendario, así que si cambia la fecha o el examen, se ajusta solo. */
+function focoDelRepaso(st = state, hoy = todayLocal()) {
+  const hechas = new Set((st && st.classesDone) || []);
+  const sched = (st && st.classSchedule) || {};
+  // El próximo examen: sin marcar y sin fecha pasada (uno viejo que quedó sin
+  // marcar no se cuenta).
+  const examen = COURSE_SYLLABUS.find(c => c.exam && !hechas.has(c.id) && !(sched[c.id] && sched[c.id] < hoy));
+  const m = examen && String(examen.title).match(/Units?\s+(\d+)\s*-\s*(\d+)/i);
+  if (!m) return null;
+  const fecha = sched[examen.id];
+  const nivel = String((COURSE_SYLLABUS.find(c => c.unit) || {}).unit || 'a2_1').split('_')[0];
+  const keys = new Set();
+  for (let n = Number(m[1]); n <= Number(m[2]); n++) keys.add(`${nivel}_${n}`);
+  return { keys, titulo: examen.title, fecha: fecha || null, unidades: `Units ${m[1]}-${m[2]}` };
+}
+
 const SRS = {
   // Default ease factor
   DEFAULT_EASE: 2.5,
@@ -20141,15 +20161,16 @@ const SRS = {
    * Build a smart daily session (max N cards, balanced mix)
    * Leeches (lapses >= 3) are always prioritized — they need the most attention.
    */
-  buildDailySession(units, maxCards = 20) {
+  buildDailySession(units, maxCards = 20, foco = null) {
     const due = this.getDueCards(units);
     const session = [];
+    const overdue = due.overdue.sort((a,b) => a.card.dueDate.localeCompare(b.card.dueDate));
 
     // Deduplicate by word (leeches already appear in overdue/learning)
     const addedWords = new Set();
-    const push = (items) => {
+    const push = (items, limite) => {
       for (const item of items) {
-        if (session.length >= maxCards) break;
+        if (session.length >= limite) break;
         if (!addedWords.has(item.word.word)) {
           addedWords.add(item.word.word);
           session.push(item);
@@ -20162,12 +20183,29 @@ const SRS = {
     // Dentro de cada grupo, por turnos entre unidades (intercalarUnidades): las
     // palabras que estudió el mismo día vencen el mismo día, y las 20 más
     // atrasadas salían todas de una misma unidad.
-    push(intercalarUnidades(due.leeches));
-    push(intercalarUnidades(due.overdue.sort((a,b) => a.card.dueDate.localeCompare(b.card.dueDate))));
-    push(intercalarUnidades(due.learning));
-    push(intercalarUnidades(due.due));
-    push(intercalarUnidades(due.new).slice(0, 5)); // max 5 new per day
+    const llenar = (filtro, limite, nuevas, preguntasPrimero) => {
+      push(intercalarUnidades(due.leeches.filter(filtro)), limite);
+      push(intercalarUnidades(overdue.filter(filtro)), limite);
+      push(intercalarUnidades(due.learning.filter(filtro)), limite);
+      push(intercalarUnidades(due.due.filter(filtro)), limite);
+      let nuevasL = intercalarUnidades(due.new.filter(filtro));
+      // Para el speaking test: primero las tarjetas de preguntas (su punto flojo).
+      if (preguntasPrimero) nuevasL = [...nuevasL.filter(x => x.word.type === 'question'), ...nuevasL.filter(x => x.word.type !== 'question')];
+      push(nuevasL.slice(0, nuevas), limite);
+    };
 
+    if (!foco || !foco.size) {
+      llenar(() => true, maxCards, 5, false); // max 5 new per day
+      return session;
+    }
+    /* Antes de un speaking test: 14 de 20 de sus unidades (hasta 6 nuevas, las
+     * preguntas primero) y el resto, las más atrasadas de las demás, para no
+     * olvidarlas. Si alguna parte no alcanza, la otra completa las 20. */
+    const enFoco = x => foco.has(x.unit.key || `${x.unit.lid}_${x.unit.uid}`);
+    llenar(enFoco, Math.round(maxCards * 0.7), 6, true);
+    llenar(x => !enFoco(x), maxCards, 0, false);
+    llenar(enFoco, maxCards, 6, true);
+    llenar(() => true, maxCards, 5, false);
     return session;
   },
 
@@ -20213,7 +20251,8 @@ const SRS = {
    DAILY REVIEW — global cross-unit session
    ============================================================ */
 function openDailyReview() {
-  const session = SRS.buildDailySession(state.units, 20);
+  const foco = focoDelRepaso();
+  const session = SRS.buildDailySession(state.units, 20, foco && foco.keys);
   if (!session.length) {
     toast('✦ No reviews due today — come back tomorrow!');
     return;
@@ -20258,6 +20297,7 @@ function openDailyReview() {
     <div class="fc-prep-icon">🧠</div>
     <div class="fc-prep-title" style="color:var(--accent);">Daily Review</div>
     <div class="fc-prep-sub">Your memory system scheduled these cards for today</div>
+    ${foco ? `<div class="fc-prep-sub" style="color:var(--amber, #d29922);font-weight:600;">🎯 Focus: ${escapeHtml(foco.unidades)} (${escapeHtml(foco.titulo.split('/')[0].trim().toLowerCase())}${foco.fecha ? ' · ' + new Date(foco.fecha + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''})</div>` : ''}
     <div class="fc-prep-meta">
       <div class="fc-prep-stat">
         <div class="fc-prep-stat-val" style="--lvl-color:var(--red)">${due.overdue.length + due.learning.length}</div>
