@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-04a -->
+<!-- DEVLEARN_BUILD: 2026-10-04b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4880,7 +4880,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-04a';
+const APP_BUILD = '2026-10-04b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -19730,6 +19730,25 @@ function nextFc() {
    - mastered: very stable (interval > 90 days, ease > 2.8)
    ============================================================ */
 
+/* Por turnos entre unidades, sin perder la prioridad: una de cada unidad, luego
+ * la segunda de cada una… Las unidades van en el orden de su primera tarjeta
+ * (la más urgente primero) y cada una conserva su orden. Él pidió el repaso
+ * revuelto (4 de octubre): su examen final cubre todas las unidades, y mezclar
+ * temas obliga a reconocer cada palabra por sí misma. */
+function intercalarUnidades(items) {
+  const grupos = new Map();
+  (items || []).forEach(it => {
+    const u = it && it.unit;
+    const k = u ? (u.key || `${u.lid}_${u.uid}`) : '';
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(it);
+  });
+  const filas = [...grupos.values()];
+  const out = [];
+  for (let n = 0; out.length < (items || []).length; n++) filas.forEach(f => { if (n < f.length) out.push(f[n]); });
+  return out;
+}
+
 const SRS = {
   // Default ease factor
   DEFAULT_EASE: 2.5,
@@ -20139,12 +20158,15 @@ const SRS = {
     };
 
     // Priority order: leeches first (most urgent memory failures),
-    // then overdue, then learning, then due today, then new
-    push(due.leeches);
-    push(due.overdue.sort((a,b) => a.card.dueDate.localeCompare(b.card.dueDate)));
-    push(due.learning);
-    push(due.due);
-    push(due.new.slice(0, 5)); // max 5 new per day
+    // then overdue, then learning, then due today, then new.
+    // Dentro de cada grupo, por turnos entre unidades (intercalarUnidades): las
+    // palabras que estudió el mismo día vencen el mismo día, y las 20 más
+    // atrasadas salían todas de una misma unidad.
+    push(intercalarUnidades(due.leeches));
+    push(intercalarUnidades(due.overdue.sort((a,b) => a.card.dueDate.localeCompare(b.card.dueDate))));
+    push(intercalarUnidades(due.learning));
+    push(intercalarUnidades(due.due));
+    push(intercalarUnidades(due.new).slice(0, 5)); // max 5 new per day
 
     return session;
   },

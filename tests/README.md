@@ -296,6 +296,11 @@ número), manda el respaldo, y el archivo de Claude las llena por su id
 (`emptyBatchesToFill`): número de página con hora, tarjetas, gramática; luego
 quedan en el orden del libro. Una página que ya tiene tarjetas no se toca.
 
+`repaso-mezclado.test.js` — El repaso diario de Flashcards toma 20 tarjetas por
+prioridad (las que más falla, las más atrasadas…). Las palabras estudiadas el
+mismo día vencen el mismo día, y las 20 salían de una sola unidad; ahora van por
+turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of

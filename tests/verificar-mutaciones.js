@@ -1110,6 +1110,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que el repaso diario vuelva a sacar las atrasadas de una sola unidad',
+    buscar: `  for (let n = 0; out.length < (items || []).length; n++) filas.forEach(f => { if (n < f.length) out.push(f[n]); });`,
+    reemplazo: `  filas.forEach(f => out.push(...f));`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,
