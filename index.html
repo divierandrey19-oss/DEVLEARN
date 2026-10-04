@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03g -->
+<!-- DEVLEARN_BUILD: 2026-10-03h -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4134,6 +4134,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
               <button class="btn btn-ghost btn-sm" onclick="openResetModal()" title="Reset unit data">🗑 Reset unit</button>
               <button class="btn btn-ghost btn-sm" onclick="deleteUnitImages()" title="Delete images to free space">🗜️ Free space</button>
               <button class="btn btn-primary" onclick="document.getElementById('unit-upload').click()">📷 Upload pages</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('unit-upload-claude').click()" title="Save the photos without analyzing them (no API). Then export the backup and send it to Claude, who builds the pages.">🖼️ Photos only (for Claude)</button>
+              <input type="file" id="unit-upload-claude" accept="image/*" multiple style="display:none;" onchange="handlePhotosForClaude(event)"/>
             </div>
           </div>
           <div class="upload-zone" id="upload-zone" onclick="document.getElementById('unit-upload').click()">
@@ -4950,7 +4952,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03g';
+const APP_BUILD = '2026-10-03h';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -15576,6 +15578,49 @@ function handleUnitUpload(event) {
   });
 }
 
+/* Subir fotos SIN analizarlas: la otra forma de crear páginas. Cada foto queda
+ * como su propia página, vacía, sin número y sin gastar la API (paraClaude).
+ * Él exporta el respaldo y se lo manda a Claude, que lee las fotos, les pone
+ * número y orden, arma vocabulario, gramática, ejercicios y preguntas, y le
+ * devuelve un archivo; "Restore missing pages from a backup" llena esas
+ * páginas (emptyBatchesToFill). No hace falta subirlas en orden. */
+function handlePhotosForClaude(event) {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!files.length) return;
+  if (files.length > 20) { toast('⚠️ Max 20 photos at a time'); return; }
+  const u = getUnit(current.lid, current.uid);
+  toast('📥 Saving photos…');
+  const leer = f => new Promise(res => {
+    if (f.size > 10 * 1024 * 1024) { res(null); return; }
+    const r = new FileReader();
+    r.onload = ev => res(ev.target.result);
+    r.onerror = () => res(null);
+    r.readAsDataURL(f);
+  });
+  Promise.all(files.map(leer)).then(async crudas => {
+    const fotos = await Promise.all(crudas.filter(Boolean).map(img => compressImage(img)));
+    if (!fotos.length) { toast('❌ Could not read any images'); return; }
+    const nuevas = fotos.map((img, n) => ({
+      id: 'b_' + Date.now() + '_' + n + '_' + Math.random().toString(36).slice(2, 8),
+      images: [img], vocab: [], grammar: [], exercises: [], speakingPrompts: [],
+      title: '', description: '', topics: [], createdAt: Date.now() + n,
+      grammarVersion: GRAMMAR_VERSION, paraClaude: true,
+    }));
+    nuevas.forEach(b => u.batches.push(b));
+    nuevas.forEach(b => ImageStore.put(b.id, b.images).catch(e => console.warn('Image save failed:', e)));
+    if (!writeState()) {
+      u.batches = u.batches.filter(b => !nuevas.includes(b));
+      nuevas.forEach(b => ImageStore.delete(b.id));
+      toast('⚠️ Could not save — free up space and try again');
+      return;
+    }
+    renderImagePreviews(getUnitImages(u));
+    if (window._syncToFirestore) window._syncToFirestore();
+    toast(`🖼️ ${nuevas.length} photo${nuevas.length !== 1 ? 's' : ''} saved. Export the backup in Settings and send it to Claude.`);
+  }).catch(err => { console.error('Photos for Claude failed:', err); toast('❌ Could not save the photos'); });
+}
+
 function renderImagePreviews(images) {
   const grid = document.getElementById('img-grid');
   if (!grid) return;
@@ -15611,7 +15656,9 @@ function renderImagePreviews(images) {
       <span style="color:var(--text-3);">Add photo · 🃏 ${(b.vocab || []).length}</span>
     </div>`;
     const n = batchId && u ? batchVocab(u, batchId).length : 0;
-    const libro = batchId && u ? bookPageLabel((u.batches || []).find(x => x.id === batchId)) : '';
+    const lote = batchId && u ? (u.batches || []).find(x => x.id === batchId) : null;
+    // Una foto subida "para Claude" espera su contenido: se ve que falta.
+    const libro = lote && lote.paraClaude && !n ? '⏳ for Claude' : (lote ? bookPageLabel(lote) : '');
     return `
     <div class="img-thumb" ${batchId ? `data-batch="${escapeHtml(batchId)}"` : ''}>
       <img src="${src}" alt="${libro || `page ${i + 1}`}" ${batchId ? `onclick="openPageSheet('${escapeStr(batchId)}')"` : ''}/>
@@ -26311,6 +26358,37 @@ function missingBatchesFromBackup(cur, backup) {
   return faltan;
 }
 
+/* Páginas que aquí están vacías (subidas "para Claude": la foto sin analizar)
+ * y que el archivo de Claude trae llenas, con el mismo id. Vacía es sin
+ * tarjetas, sin gramática y sin ejercicios: no hay progreso que dañar, así que
+ * entra todo, también las tarjetas y el número de página. */
+function emptyBatchesToFill(cur, backup) {
+  const out = [];
+  Object.entries((backup && backup.units) || {}).forEach(([key, bu]) => {
+    const aqui = new Map((((cur.units || {})[key] || {}).batches || []).filter(Boolean).map(b => [b.id, b]));
+    ((bu && bu.batches) || []).forEach(b => {
+      const mia = b && aqui.get(b.id);
+      const vacia = mia && !(mia.vocab || []).length && !(mia.grammar || []).length && !(mia.exercises || []).length;
+      const llena = b && ((b.vocab || []).length || (b.grammar || []).length);
+      if (vacia && llena && !mia.analyzing) out.push({ unitKey: key, unit: bu, batch: b });
+    });
+  });
+  return out;
+}
+
+/* Llena una página vacía con lo que trae el archivo. La foto se queda la de
+ * aquí (el archivo puede no traerla); el número lleva hora (pagesAt), para que
+ * la copia vacía de la nube no se lo quite al sincronizar. */
+function fillEmptyBatch(aqui, llena) {
+  ['vocab', 'grammar', 'exercises', 'speakingPrompts', 'title', 'description', 'topics', 'grammarVersion', 'generatedAt']
+    .forEach(k => { if (llena[k] !== undefined) aqui[k] = JSON.parse(JSON.stringify(llena[k])); });
+  if ((llena.pages || []).length) { aqui.pages = llena.pages.slice(); aqui.pagesAt = Date.now(); }
+  if (!aqui.generatedAt) aqui.generatedAt = Date.now();
+  if (!(aqui.images || []).length && (llena.images || []).length) aqui.images = llena.images.slice();
+  delete aqui.paraClaude;
+  return aqui;
+}
+
 /* Lo que el análisis genera en una página (no las tarjetas, las fotos ni el
  * número): lo que la nube o un respaldo pueden traer más nuevo. Una función y
  * no una constante, porque la unión con la nube corre desde el arranque. */
@@ -26391,14 +26469,17 @@ function restorePagesFromBackup(event) {
     try { backup = JSON.parse(e.target.result); } catch (err) { backup = null; }
     if (!backup || !backup.units) { toast('Invalid backup file'); return; }
     const faltan = missingBatchesFromBackup(state, backup);
-    const nuevas = newerContentFromBackup(state, backup);
-    if (!faltan.length && !nuevas.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
+    const llenar = emptyBatchesToFill(state, backup);
+    const porLlenar = new Set(llenar.map(f => f.batch.id));
+    const nuevas = newerContentFromBackup(state, backup).filter(f => !porLlenar.has(f.batch.id));
+    if (!faltan.length && !nuevas.length && !llenar.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
     // Con el nivel: un archivo de páginas hechas en el chat puede traer el B1.
     const nombre = f => `${String(f.unit.lid || '').toUpperCase()} Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
     const partes = [];
     if (faltan.length) partes.push(`Pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises.`);
+    if (llenar.length) partes.push(`Photos waiting for Claude that get their content:\n\n• ${llenar.map(nombre).join('\n• ')}\n\nThey get their page number, words, grammar, exercises and questions.`);
     if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${nuevas.map(nombre).join('\n• ')}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
-    const total = faltan.length + nuevas.length;
+    const total = faltan.length + nuevas.length + llenar.length;
     confirmAction({
       title: `Restore ${total} page${total !== 1 ? 's' : ''}?`,
       message: `${partes.join('\n\n')}\n\nNothing else changes.`,
@@ -26417,6 +26498,18 @@ function restorePagesFromBackup(event) {
           if (!u.title && bu.title) u.title = bu.title;
           if (!u.description && bu.description) u.description = bu.description;
         });
+        const ordenar = new Set(faltan.map(f => f.unit.key || `${f.unit.lid}_${f.unit.uid}`));
+        llenar.forEach(({ unitKey, unit: bu, batch }) => {
+          const aqui = (((state.units || {})[unitKey] || {}).batches || []).find(b => b && b.id === batch.id);
+          if (!aqui) return;
+          fillEmptyBatch(aqui, batch);
+          const u = state.units[unitKey];
+          if (!u.title && bu.title) u.title = bu.title;
+          if (!u.description && bu.description) u.description = bu.description;
+          ordenar.add(unitKey);
+        });
+        // En el orden del libro: él las subió sin orden y sin número.
+        ordenar.forEach(k => ordenarPorPagina(state.units, k));
         nuevas.forEach(({ unitKey, batch }) => {
           // Se busca otra vez: si la nube llegó mientras el aviso estaba abierto,
           // la página es otro objeto.
@@ -26431,7 +26524,7 @@ function restorePagesFromBackup(event) {
         if (current.lid && current.uid && document.getElementById('page-unit')?.classList.contains('active')) loadUnitContent();
         updateNavBadges();
         if (window._syncToFirestore) window._syncToFirestore();
-        toast(`✅ Restored: ${[...faltan, ...nuevas].map(nombre).join(', ')}`);
+        toast(`✅ Restored: ${[...faltan, ...llenar, ...nuevas].map(nombre).join(', ')}`);
       },
     });
   };
