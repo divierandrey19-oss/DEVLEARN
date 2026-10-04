@@ -81,3 +81,14 @@ test('Vocabulary dibuja por tandas, y el buscador busca en todas', () => {
   f.appendVocabChunk(grid, 2900 - 10);
   assert.equal(tarjetas.length, 2 * tanda + 10, 'la última tanda llega hasta la última palabra');
 });
+
+// Un punto por palabra: con 359 palabras, la columna ocupaba toda la pantalla
+// del celular (él lo pidió, 4 de octubre). Ahora es una barra delgada.
+test('el progreso de la unidad es una barra, no un punto por palabra', () => {
+  const vocab = h.extraerFuncion('renderVocabulary');
+  assert.match(vocab, /class="mastery-track"/);
+  assert.doesNotMatch(vocab, /word-dot|vocab-mastery-dots/);
+  const tarjeta = h.extraerFuncion('renderFcUnitCard');
+  assert.match(tarjeta, /class="mastery-track"/);
+  assert.doesNotMatch(tarjeta, /word-dot|word-constellation/);
+});
