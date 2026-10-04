@@ -642,11 +642,7 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `          if (lt > ct || (!lt && !ct`,
     reemplazo: `          if (lt || (!lt && !ct`,
   },
-  {
-    nombre: 'que cambiar el número de página no lleve la hora',
-    buscar: `  b.pagesAt = Date.now();\n`,
-    reemplazo: ``,
-  },
+
   {
     nombre: 'que una foto con número no lleve la hora',
     buscar: `    if (pagina.length) { b.pagesByHand = true; b.pagesAt = Date.now(); }`,
@@ -842,11 +838,7 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `          if (lt > ct || (!lt && !ct && lb.pagesByHand && (lb.pages || []).length && !cb.pagesByHand)) {`,
     reemplazo: `          if (false) {`,
   },
-  {
-    nombre: 'que cambiar el número de página no lo marque como escrito por él',
-    buscar: `  if (pagina.length) { b.pages = pagina; b.pagesByHand = true; }\n  else { delete b.pages; delete b.pagesByHand; }`,
-    reemplazo: `  if (pagina.length) { b.pages = pagina; }\n  else { delete b.pages; delete b.pagesByHand; }`,
-  },
+
   {
     nombre: 'que la pantalla no baje sola al arrastrar hacia el borde',
     buscar: `      st.scroller = contenedor();\n      st.raf = requestAnimationFrame(bordes);\n`,

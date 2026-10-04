@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-03h -->
+<!-- DEVLEARN_BUILD: 2026-10-04a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -2671,19 +2671,6 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   margin-top: 2px;
   text-align: right;
 }
-.fc-unit-progress {
-  height: 4px;
-  background: var(--surface-3);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 18px;
-}
-.fc-unit-progress-fill {
-  height: 100%;
-  border-radius: 99px;
-  background: var(--lvl-color, var(--accent));
-  transition: width 0.8s var(--ease-out-quart);
-}
 .fc-unit-meta {
   display: flex; gap: 14px;
   font-size: var(--fs-caption);
@@ -2694,71 +2681,9 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
 .fc-unit-meta span { display: flex; align-items: center; gap: 5px; }
 .fc-unit-actions { display: flex; gap: 8px; }
 
-/* ── Word constellation ───────────────────────────────────── */
-.word-constellation {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 16px;
-  padding: 14px;
-  background: var(--surface-2);
-  border-radius: 12px;
-  min-height: 52px;
-  align-items: center;
-}
-.word-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease);
-  cursor: default;
-  position: relative;
-}
-.word-dot.mastered {
-  background: var(--lvl-color, var(--accent));
-  box-shadow: 0 0 6px var(--lvl-color, var(--accent));
-  animation: dotPulse 3s ease-in-out infinite;
-}
-.word-dot.seen {
-  background: var(--surface-3);
-  border: 1.5px solid var(--lvl-color, var(--accent));
-  opacity: 0.7;
-}
-.word-dot.unseen {
-  background: var(--surface-3);
-  opacity: 0.25;
-}
-@keyframes dotPulse {
-  0%, 100% { box-shadow: 0 0 4px var(--lvl-color, var(--accent)); }
-  50%       { box-shadow: 0 0 10px var(--lvl-color, var(--accent)); }
-}
-.word-dot:hover {
-  transform: scale(2.2);
-  z-index: 10;
-}
-/* tooltip on hover via title — enhanced with CSS */
-.word-dot[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 160%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--surface-solid);
-  color: var(--text);
-  font-size: 0.65rem;
-  font-weight: 500;
-  padding: 3px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  border: 1px solid var(--border);
-  pointer-events: none;
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Also used inside unit vocab tab */
 .vocab-mastery-bar {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; gap: 8px;
   margin-bottom: 16px;
   padding: 12px 16px;
   background: var(--surface-2);
@@ -2771,9 +2696,12 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   font-weight: var(--fw-medium);
   white-space: nowrap;
 }
-.vocab-mastery-dots {
-  display: flex; flex-wrap: wrap; gap: 4px; flex: 1;
+/* Barra de progreso por estados (reemplaza los puntos, uno por palabra). */
+.mastery-track {
+  display: flex; height: 8px; border-radius: 999px; overflow: hidden;
+  background: var(--surface);
 }
+.mastery-track > span { display: block; height: 100%; }
 
 /* ── Flashcard study overlay ──────────────────────────────── */
 .fc-study-overlay {
@@ -4952,7 +4880,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-03h';
+const APP_BUILD = '2026-10-04a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -15951,11 +15879,6 @@ function openPageSheet(batchId) {
           <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
         </label>` : ''}
       ${(b.images || []).length && !String(b.id || '').startsWith('pv_') ? `
-        <div style="display:flex;gap:8px;align-items:center;margin:-2px 0 8px;">
-          <input id="ps-page-edit" type="number" inputmode="numeric" min="1" max="999" placeholder="Page in the book" value="${escapeHtml(String((b.pages || [])[0] || ''))}"
-            style="flex:1;min-width:0;padding:9px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;">
-          <button class="btn btn-ghost" style="flex-shrink:0;" onclick="setPageNumber('${escapeStr(batchId)}')">✏️ Save page</button>
-        </div>
         <label style="display:block;text-align:center;font-size:0.75rem;color:var(--text-3);margin:-4px 0 10px;cursor:pointer;">🔄 Wrong photo? Change it (your cards stay the same)
           <input type="file" accept="image/*" multiple style="display:none;" onchange="attachPagePhoto('${escapeStr(batchId)}', this)">
         </label>` : ''}
@@ -16037,34 +15960,6 @@ function removeUnitImage(i) {
   });
 }
 
-/* Cambiar el número de página de una página que ya tiene foto: él había
- * escrito "10" en una foto que en el libro dice "UNIT 1 · 7". El número que
- * él pone es el de la foto (pagesByHand): viaja con ella si la intercambia.
- * Vacío, quita el número. */
-function setPageNumber(batchId) {
-  const u = getUnit(current.lid, current.uid);
-  const b = (u?.batches || []).find(x => x.id === batchId);
-  if (!b) return false;
-  const campo = document.getElementById('ps-page-edit');
-  const crudo = String((campo && campo.value) || '').trim();
-  const pagina = sanitizePageNumbers([crudo]);
-  if (crudo && !pagina.length) { toast('Write only the page number, e.g. 7'); return false; }
-  const antes = { pages: b.pages, pagesByHand: b.pagesByHand, pagesAt: b.pagesAt };
-  if (pagina.length) { b.pages = pagina; b.pagesByHand = true; }
-  else { delete b.pages; delete b.pagesByHand; }
-  b.pagesAt = Date.now();
-  if (!writeState()) {
-    if (antes.pages) b.pages = antes.pages; else delete b.pages;
-    if (antes.pagesByHand) b.pagesByHand = true; else delete b.pagesByHand;
-    if (antes.pagesAt) b.pagesAt = antes.pagesAt; else delete b.pagesAt;
-    toast('⚠️ Could not save — free up space and try again');
-    return false;
-  }
-  renderImagePreviews(getUnitImages(u));
-  openPageSheet(batchId);
-  toast(pagina.length ? `✏️ Saved as p. ${pagina[0]}` : 'Page number removed');
-  return true;
-}
 
 /* Quita la foto de una página sin tocar sus tarjetas, gramática ni progreso.
  * Si el número de página lo escribió él al agregar la foto, también se va:
@@ -16762,31 +16657,32 @@ function renderVocabulary(vocab, unit) {
     return;
   }
 
-  // Build mastery constellation for this unit
+  /* Cuánto lleva de la unidad: una barra delgada (dominadas · en progreso ·
+   * nuevas). Antes era un punto por palabra; con 359 palabras la columna
+   * ocupaba toda la pantalla. */
   const progress  = unit ? (unit.fcProgress || {}) : {};
-  const mastered  = Object.values(progress).filter(p => p.score === 2).length;
-  const seen      = Object.values(progress).filter(p => p.attempts > 0 && p.score !== 2).length;
   const lvl       = unit ? LEVELS.find(l => l.id === unit.lid) : null;
   const lvlColor  = lvl ? lvl.color : 'var(--accent)';
+  const mastered  = vocab.filter(v => progress[v.word] && progress[v.word].score === 2).length;
+  const seen      = vocab.filter(v => progress[v.word] && progress[v.word].attempts > 0 && progress[v.word].score !== 2).length;
   const mastPct   = vocab.length > 0 ? Math.round((mastered / vocab.length) * 100) : 0;
+  const seenPct   = vocab.length > 0 ? (seen / vocab.length) * 100 : 0;
 
   const masteryLabel = mastered === vocab.length && vocab.length > 0
     ? `✦ All ${vocab.length} words mastered`
-    : mastered > 0
+    : mastered + seen > 0
     ? `${mastered} mastered · ${seen} in progress · ${vocab.length - mastered - seen} new`
     : `${vocab.length} words to learn`;
 
-  const dots = vocab.map(v => {
-    const p  = progress[v.word];
-    const st = !p ? 'unseen' : p.score === 2 ? 'mastered' : 'seen';
-    return `<div class="word-dot ${st}" title="${v.word}" style="--lvl-color:${lvlColor}"></div>`;
-  }).join('');
-
   const masteryBar = `
     <div class="vocab-mastery-bar">
-      <div class="vocab-mastery-label">${masteryLabel}</div>
-      <div class="vocab-mastery-dots" style="--lvl-color:${lvlColor}">${dots}</div>
-      ${mastPct > 0 ? `<span style="font-size:var(--fs-caption);font-weight:700;color:${lvlColor};white-space:nowrap;">${mastPct}%</span>` : ''}
+      <div style="display:flex;justify-content:space-between;gap:8px;">
+        <div class="vocab-mastery-label">${masteryLabel}</div>
+        ${mastPct > 0 ? `<span style="font-size:var(--fs-caption);font-weight:700;color:${lvlColor};white-space:nowrap;">${mastPct}%</span>` : ''}
+      </div>
+      <div class="mastery-track">
+        <span style="width:${mastPct}%;background:${lvlColor};"></span><span style="width:${seenPct}%;background:${lvlColor};opacity:0.4;"></span>
+      </div>
     </div>`;
 
   const header = `
@@ -24367,7 +24263,8 @@ function renderFcUnitCard(u, lvl) {
   const learned  = byState.mature + byState.mastered;
   const pct      = count > 0 ? Math.round((learned / count) * 100) : 0;
 
-  // Constellation dots — leeches shown in red with pulsing indicator
+  /* Una barra por estados, con los colores de la leyenda. Antes era un punto
+   * por palabra: con 359 palabras, cada unidad ocupaba media pantalla. */
   const stateColor = {
     new:      '#555',
     learning: 'var(--amber)',
@@ -24375,13 +24272,9 @@ function renderFcUnitCard(u, lvl) {
     mature:   'var(--green)',
     mastered: 'var(--purple)',
   };
-  const dots = vocab.map(v => {
-    const card = SRS.readCard(progress, v.word, v.difficulty);
-    const isLeech = card.lapses >= 3;
-    const col  = isLeech ? 'var(--red)' : (stateColor[card.state] || '#555');
-    const tip  = `${v.word} · ${isLeech ? '⚠ Leech (' + card.lapses + ' lapses) · ' : ''}${SRS.stateLabel(card.state).label}${card.dueDate ? ' · ' + SRS.nextReviewLabel(card) : ''}`;
-    return `<div class="word-dot" title="${tip}" style="background:${col};--lvl-color:${col};${card.state==='new'?'opacity:0.25;':''}${isLeech?'box-shadow:0 0 5px var(--red);animation:dotPulse 1.5s ease-in-out infinite;':card.state==='mastered'?'box-shadow:0 0 6px '+col+';':''}" ></div>`;
-  }).join('');
+  const barra = count === 0 ? '' : ['mastered', 'mature', 'review', 'learning']
+    .filter(st => byState[st] > 0)
+    .map(st => `<span style="width:${(byState[st] / count) * 100}%;background:${stateColor[st]};"></span>`).join('');
 
   /* Las vistas que todavía no están firmes (estado "review", puntos azules) no
    * entraban en la cuenta: la Unit 1 decía "291 words to start" con varias ya
@@ -24413,10 +24306,9 @@ function renderFcUnitCard(u, lvl) {
         </div>
       </div>
 
-      <!-- SRS constellation — colors show memory state -->
-      <div class="word-constellation" style="--lvl-color:${lvl.color}" title="Colors: grey=new · amber=learning · blue=seen · green=mature · purple=mastered">
-        ${dots || `<span style="font-size:0.75rem;color:var(--text-3);">No words yet</span>`}
-      </div>
+      <!-- Estado de las palabras: una barra con los colores de la leyenda -->
+      ${count ? `<div class="mastery-track" style="margin-bottom:10px;" title="grey=new · amber=learning · blue=seen · green=mature · purple=mastered">${barra}</div>`
+              : `<div style="font-size:0.75rem;color:var(--text-3);margin-bottom:10px;">No words yet</div>`}
 
       <!-- SRS state summary -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -24434,10 +24326,6 @@ function renderFcUnitCard(u, lvl) {
         ).join('')}
       </div>
 
-      <!-- Progress bar -->
-      <div class="fc-unit-progress" style="margin-bottom:16px;">
-        <div class="fc-unit-progress-fill" style="width:${pct}%"></div>
-      </div>
 
       <div class="fc-unit-actions">
         <button class="btn btn-primary" style="flex:1;background:${dueNow > 0 ? 'var(--accent)' : lvl.color};" onclick="openFcStudy('${u.lid}','${u.uid}')">

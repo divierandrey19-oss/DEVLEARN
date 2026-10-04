@@ -226,46 +226,15 @@ test('agregar: si la nube llegó mientras se comprimía la foto, se guarda en la
   assert.deepEqual(vieja.images, [], 'no en la copia vieja');
 });
 
-// Él había escrito "10" en una foto que en el libro dice "UNIT 1 · 7", y la
-// hoja de una página con foto no dejaba cambiar el número.
+// La hoja de una página con foto tenía un campo para cambiarle el número y un
+// botón "Save page". Él lo quitó (4 de octubre): ocupaba espacio, y el número
+// lo pone el análisis o Claude, que también ordena las páginas.
 
-function montarNumero(valor, { guarda = true } = {}) {
-  const u = { batches: [{ id: 'b1', images: ['F'], pages: [10], pagesByHand: true, vocab: [{ word: 'accent' }] },
-                        { id: 'b2', images: ['G'], pages: [97], vocab: [] }] };
-  const hecho = { toasts: [], hojas: [] };
-  const f = h.ejecutar(`${['setPageNumber', 'sanitizePageNumbers'].map(n => h.extraerFuncion(n)).join('\n')}; return setPageNumber;`, {
-    current: { lid: 'a2', uid: 1 }, getUnit: () => u,
-    document: { getElementById: id => (id === 'ps-page-edit' ? { value: valor } : null) },
-    writeState: () => guarda, renderImagePreviews: () => {}, getUnitImages: () => [],
-    openPageSheet: id => hecho.hojas.push(id), toast: m => hecho.toasts.push(m),
-  });
-  return { u, f, hecho };
-}
-
-test('cambiar el número de una página con foto', () => {
-  const { u, f, hecho } = montarNumero('7');
-  assert.equal(f('b1'), true);
-  assert.deepEqual([u.batches[0].pages, u.batches[0].pagesByHand], [[7], true]);
-  assert.ok(u.batches[0].pagesAt > 0, 'lleva la hora, para que la copia vieja de la nube no lo pise');
-  assert.deepEqual(u.batches[0].vocab, [{ word: 'accent' }]);
-  assert.match(hecho.toasts[0], /p\. 7/);
-  // Una página analizada también: el número que él pone es el de su foto.
-  const otra = montarNumero('98');
-  otra.f('b2');
-  assert.deepEqual([otra.u.batches[1].pages, otra.u.batches[1].pagesByHand], [[98], true]);
-});
-
-test('vacío quita el número; basura no cambia nada; si no guarda, vuelve como estaba', () => {
-  const vacio = montarNumero('');
-  vacio.f('b1');
-  assert.equal(vacio.u.batches[0].pages, undefined);
-  const basura = montarNumero('p7a');
-  assert.equal(basura.f('b1'), false);
-  assert.deepEqual(basura.u.batches[0].pages, [10]);
-  const falla = montarNumero('7', { guarda: false });
-  assert.equal(falla.f('b1'), false);
-  assert.deepEqual([falla.u.batches[0].pages, falla.u.batches[0].pagesByHand, falla.u.batches[0].pagesAt], [[10], true, undefined]);
-  assert.match(h.extraerFuncion('openPageSheet'), /onclick="setPageNumber\('\$\{escapeStr\(batchId\)\}'\)">✏️ Save page<\/button>/);
+test('la hoja de una página con foto no ofrece editar el número', () => {
+  const hoja = h.extraerFuncion('openPageSheet');
+  assert.doesNotMatch(hoja, /ps-page-edit|setPageNumber|Save page/);
+  assert.match(hoja, /🔄 Wrong photo\? Change it/, 'cambiar la foto sí queda');
+  assert.equal(h.fuente().includes('function setPageNumber'), false);
 });
 
 // Los puestos de la cuadrícula son páginas fijas, en el orden del libro.
