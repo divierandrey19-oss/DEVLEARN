@@ -1099,7 +1099,22 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'que una unidad nueva restaurada (el B1) llegue sin su descripción',
-    buscar: `          if (!u.description && bu.description) u.description = bu.description;\n`,
+    buscar: `          if (!u.description && bu.description) u.description = bu.description;\n        });`,
+    reemplazo: `        });`,
+  },
+  {
+    nombre: 'que llenar una foto "para Claude" pise una página que ya tiene tarjetas',
+    buscar: `      const vacia = mia && !(mia.vocab || []).length && !(mia.grammar || []).length && !(mia.exercises || []).length;`,
+    reemplazo: `      const vacia = !!mia;`,
+  },
+  {
+    nombre: 'que la página llenada pierda su número al sincronizar (sin pagesAt)',
+    buscar: `  if ((llena.pages || []).length) { aqui.pages = llena.pages.slice(); aqui.pagesAt = Date.now(); }`,
+    reemplazo: `  if ((llena.pages || []).length) { aqui.pages = llena.pages.slice(); }`,
+  },
+  {
+    nombre: 'que las fotos "para Claude" queden en el orden en que las subió',
+    buscar: `        ordenar.forEach(k => ordenarPorPagina(state.units, k));`,
     reemplazo: ``,
   },
   {

@@ -290,7 +290,11 @@ respuestas incorrectas y "Change partners". p. 114: una explicación rara.
 fotos al chat, Claude arma las páginas en un archivo con forma de respaldo y
 "Restore missing pages from a backup" las agrega sin gastar la API. Para el B1
 la unidad no existe todavía: la restauración la crea con su título y su
-descripción, y el aviso dice el nivel.
+descripción, y el aviso dice el nivel. Y la variante que él prefiere: sube las
+fotos con "Photos only (for Claude)" (cada foto, su página, vacía, sin API ni
+número), manda el respaldo, y el archivo de Claude las llena por su id
+(`emptyBatchesToFill`): número de página con hora, tarjetas, gramática; luego
+quedan en el orden del libro. Una página que ya tiene tarjetas no se toca.
 
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM

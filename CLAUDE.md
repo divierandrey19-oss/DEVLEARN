@@ -127,6 +127,15 @@ mandó, para que se pueda regenerar), `grammarVersion` = `GRAMMAR_VERSION`,
 reglas del prompt de `_analyzeReal`; sin repetir palabras que la unidad ya tiene
 (`vocabKey`). Probarlo cargándolo en el navegador antes de dárselo.
 
+Lo más cómodo para él (lo pidió así): sube las fotos en la unidad con el botón
+**"Photos only (for Claude)"** — cada foto queda como su propia página, vacía,
+sin número, sin orden y sin gastar la API (`paraClaude: true`) — y manda el
+respaldo. Claude saca las fotos, lee cada una, decide su número de página y arma
+el contenido, y devuelve el archivo con **los mismos `id`** de esas páginas (sin
+las fotos: ya están en su aparato). Al restaurar, `emptyBatchesToFill` llena las
+que siguen vacías (con su número y `pagesAt`) y la unidad queda en el orden del
+libro. Si una foto trae dos páginas, `pages: [n, n+1]`.
+
 **Corregir a mano**, sin pagar otro análisis:
 - Vocabulario: `fixBookPage(units, { unit, page, marca, cambios, nuevas })`.
 - Gramática, ejercicios, speaking: `fixPageContent(units, { unit, page,

@@ -259,7 +259,8 @@ test('el respaldo devuelve la gramática regenerada, sin tocar tarjetas ni progr
   assert.deepEqual(r.map(x => [x.unitKey, x.batch.id]), [['a2_3', 'p26']], 'solo la que aquí está y allá es más nueva');
   assert.deepEqual(newerContentFromBackup(respaldo, aqui), [], 'un respaldo más viejo no devuelve nada');
   const restaurar = h.extraerFuncion('restorePagesFromBackup');
-  assert.match(restaurar, /const nuevas = newerContentFromBackup\(state, backup\);/);
+  // Sin las fotos "para Claude" que se van a llenar: esas entran enteras.
+  assert.match(restaurar, /const nuevas = newerContentFromBackup\(state, backup\)(\.filter\(f => !porLlenar\.has\(f\.batch\.id\)\))?;/);
   assert.match(restaurar, /generatedFields\(\)\.forEach\(k => \{ if \(copia\[k\] !== undefined\) aqui\[k\] = copia\[k\]; else delete aqui\[k\]; \}\);/);
   assert.match(restaurar, /const aqui = \(\(\(state\.units \|\| \{\}\)\[unitKey\] \|\| \{\}\)\.batches \|\| \[\]\)\.find\(b => b && b\.id === batch\.id\);/,
     'se busca la página al confirmar, no al leer el archivo');
