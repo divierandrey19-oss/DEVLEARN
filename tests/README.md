@@ -300,6 +300,10 @@ quedan en el orden del libro. Una página que ya tiene tarjetas no se toca.
 prioridad (las que más falla, las más atrasadas…). Las palabras estudiadas el
 mismo día vencen el mismo día, y las 20 salían de una sola unidad; ahora van por
 turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
+Antes de un speaking test se enfoca en sus unidades (`focoDelRepaso` lee el
+próximo examen del calendario del curso, "SPEAKING TEST / Units 9-10", hasta su
+fecha): 14 de 20 de esas unidades, con las preguntas primero entre las nuevas, y
+6 del resto. Pasada la fecha o marcado como hecho, vuelve a mezclar todo.
 
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
