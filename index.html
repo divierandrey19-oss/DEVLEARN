@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-04d -->
+<!-- DEVLEARN_BUILD: 2026-10-04e -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-04d';
+const APP_BUILD = '2026-10-04e';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17165,6 +17165,16 @@ function splitSentences(text) {
 /* The reader serves two sources now: his own texts and podcast transcripts.
  * They differ in purpose — a text is memorised, a transcript is understood —
  * so the reader adapts rather than being copied. */
+/* La traducción de un texto, frase por frase, sacada siempre de `trans`.
+ * Guardarla en el texto al abrirlo no bastaba: si la nube sincroniza con el
+ * lector abierto (en el computador pasa al volver a la ventana), el texto pasa
+ * a ser la copia de la nube, sin ella, y el menú de la frase dejaba solo
+ * "Listen", sin "Flip to Spanish" (4 de octubre). */
+function frasesTraducidas(t) {
+  if (!t) return [];
+  return t.trans ? splitSentences(t.trans) : (t.translation || []);
+}
+
 function readerItem() {
   if (!_txState) return null;
   return _txState.kind === 'podcast'
@@ -17320,7 +17330,7 @@ function sentenceMenu(si, btn) {
   if (!st || !ov) return;
   closeSentenceMenu();
   const t = readerItem();
-  const tieneES = !!(t && (t.translation || [])[si]);
+  const tieneES = !!frasesTraducidas(t)[si];
   const volteada = st.flippedES && st.flippedES.has(si);
   const r = btn.getBoundingClientRect();
   const ancho = 200;
@@ -17365,6 +17375,7 @@ function renderTextReader() {
   if (!st) return;
   const t = readerItem();
   if (!t) return;
+  const traduccion = frasesTraducidas(t);
 
   document.getElementById('text-overlay')?.remove();
   const ov = document.createElement('div');
@@ -17378,7 +17389,7 @@ function renderTextReader() {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
-        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${(t.translation || []).length ? ' · 🔄 listen to or flip a sentence' : ' · 🔊 listen to a sentence'}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${traduccion.length ? ' · 🔄 listen to or flip a sentence' : ' · 🔊 listen to a sentence'}</div>
       </div>
       <button class="btn btn-sm" id="tx-speak-toggle" onclick="toggleSpeakMode()"
         title="Count this time as speaking practice"
@@ -17392,11 +17403,11 @@ function renderTextReader() {
 
     ${st.mismatch ? `
       <div style="flex-shrink:0;background:var(--amber-glow, #d2992222);border-bottom:1px solid var(--amber, #d29922);color:var(--amber, #d29922);padding:8px 16px;font-size:0.74rem;line-height:1.4;">
-        ⚠ Your translation has ${(t.translation || []).length} sentences and the text has ${st.sentences.length}. Some may not match — check it with ✏️.
+        ⚠ Your translation has ${traduccion.length} sentences and the text has ${st.sentences.length}. Some may not match — check it with ✏️.
       </div>` : ''}
     <div id="tx-body" style="flex:1;overflow-y:auto;padding:16px;font-size:1.05rem;line-height:2.1;">
       ${st.sentences.map((sent, si) => {
-        const es = (t.translation || [])[si];
+        const es = traduccion[si];
         const flipped = st.flippedES && st.flippedES.has(si);
         /* Only the tapped sentence swaps. Showing English and Spanish together
          * is precisely the crutch he is trying to drop — the eye goes to the

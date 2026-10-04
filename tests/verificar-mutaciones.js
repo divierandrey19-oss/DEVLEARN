@@ -1159,6 +1159,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `      <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="\${escapeHtml(v.word)}" title="Hear it">🔊</button>\n`,
     reemplazo: ``,
   },
+  {
+    nombre: 'que el menú de la frase vuelva a usar la traducción guardada al abrir (Flip desaparece tras sincronizar)',
+    buscar: `  const tieneES = !!frasesTraducidas(t)[si];`,
+    reemplazo: `  const tieneES = !!(t && (t.translation || [])[si]);`,
+  },
+  {
+    nombre: 'que la traducción por frases no salga de trans',
+    buscar: `  return t.trans ? splitSentences(t.trans) : (t.translation || []);`,
+    reemplazo: `  return t.translation || [];`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

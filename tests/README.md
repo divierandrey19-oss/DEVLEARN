@@ -169,7 +169,10 @@ con la lista del curso arrancando en las próximas 3 clases.
 `sentence-menu.test.js` — Escuchar una sola frase del texto: el botón 🔄 de
 cada frase abre un menú con 🔊 Listen (solo esa frase, y el cursor queda ahí
 para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había que
-escuchar el texto entero.
+escuchar el texto entero. La traducción por frases sale siempre de `trans`
+(`frasesTraducidas`): en el computador, la nube sincronizaba con el texto
+abierto, el texto pasaba a ser la copia de la nube sin la lista armada al
+abrirlo, y el menú quedaba solo con Listen.
 
 `text-review.test.js` — El repaso espaciado de los textos aprendidos, para que
 no se le olviden los de la unidad anterior: al marcar ✅ vuelve mañana; si se lo
