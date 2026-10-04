@@ -305,6 +305,11 @@ próximo examen del calendario del curso, "SPEAKING TEST / Units 9-10", hasta su
 fecha): 14 de 20 de esas unidades, con las preguntas primero entre las nuevas, y
 6 del resto. Pasada la fecha o marcado como hecho, vuelve a mezclar todo.
 
+`palabras-dificiles.test.js` — Al final de Flashcards, "Words you miss most":
+las palabras falladas 2 veces o más (`palabrasDificiles`), la que más falla
+primero, con 🔊, pronunciación, traducción y unidad; las de 3 fallos o más, en
+ámbar. Él la pidió para inventarles una asociación a las que más le cuestan.
+
 `u7.test.js` — La Unit 7, revisada contra sus fotos (respaldo del 2 de
 octubre). Las opciones de LISTEN FOR DETAILS (p. 80) y de UNDERSTAND FROM
 CONTEXT (p. 83) habían quedado de ejemplo como hechos, varias falsas ("out of

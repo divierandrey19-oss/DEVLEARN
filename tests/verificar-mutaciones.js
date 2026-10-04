@@ -1144,6 +1144,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `['_u5P58QV1', addU5P58Questions], ['_u5P59QV1', addU5P59Questions]]`,
     reemplazo: `['_u5P58QV1', addU5P58Questions]]`,
   },
+  {
+    nombre: 'que la lista de las que más falla no salga en Flashcards',
+    buscar: `  html += renderPalabrasDificiles(palabrasDificiles(state.units));\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la lista de las que más falla salga desordenada',
+    buscar: `    .sort((a, b) => b.lapses - a.lapses || String(a.unit.lid).localeCompare(String(b.unit.lid)) || a.unit.uid - b.unit.uid)\n`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la lista de las que más falla pierda el sonido',
+    buscar: `      <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="\${escapeHtml(v.word)}" title="Hear it">🔊</button>\n`,
+    reemplazo: ``,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

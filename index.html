@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-04c -->
+<!-- DEVLEARN_BUILD: 2026-10-04d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -2602,6 +2602,20 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
   letter-spacing: -0.011em;
 }
 
+/* Las que más falla, al final de Flashcards: palabra, sonido y traducción. */
+.fc-hard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px 20px; margin-bottom: 28px; }
+.fc-hard-title { font-size: 0.92rem; font-weight: var(--fw-semibold); margin-bottom: 2px; }
+.fc-hard-sub { font-size: 0.75rem; color: var(--text-3); margin-bottom: 10px; }
+.fc-hard-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); }
+.fc-hard-row .audio-btn { flex-shrink: 0; }
+.fc-hard-main { flex: 1; min-width: 0; }
+.fc-hard-word { font-weight: 600; overflow-wrap: anywhere; }
+.fc-hard-ipa { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 400; color: var(--text-3); margin-left: 6px; }
+.fc-hard-tr { font-size: 0.82rem; color: var(--text-2); }
+.fc-hard-miss { flex-shrink: 0; text-align: right; font-size: 0.7rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.fc-hard-miss b { display: block; font-size: 0.85rem; color: var(--text-2); }
+.fc-hard-row.leech .fc-hard-miss b { color: var(--amber); }
+
 /* ===========================================================
    FLASHCARD DASHBOARD — unit cards
    =========================================================== */
@@ -4880,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-04c';
+const APP_BUILD = '2026-10-04d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -24300,7 +24314,48 @@ function renderAllFlashcards() {
     `;
   });
 
+  html += renderPalabrasDificiles(palabrasDificiles(state.units));
+
   c.innerHTML = html;
+}
+
+/* Las palabras que más falla (4 de octubre): él quiere verlas en lista, con la
+ * traducción y cómo suenan, para inventarles una asociación. Desde 2 fallos —
+ * con 3 ya son "difficult" y salen en ámbar. La que más falla, primero. */
+function palabrasDificiles(units, minimo = 2, maximo = 30) {
+  const lista = [];
+  Object.values(units || {}).forEach(u => {
+    const prog = u.fcProgress || {};
+    const vistas = new Set();
+    getUnitVocab(u).forEach(v => {
+      const card = prog[v.word];
+      if (!card || (card.lapses || 0) < minimo || vistas.has(v.word)) return;
+      vistas.add(v.word);
+      lista.push({ word: v, unit: u, lapses: card.lapses });
+    });
+  });
+  return lista
+    .sort((a, b) => b.lapses - a.lapses || String(a.unit.lid).localeCompare(String(b.unit.lid)) || a.unit.uid - b.unit.uid)
+    .slice(0, maximo);
+}
+
+function renderPalabrasDificiles(lista) {
+  if (!lista.length) return '';
+  const filas = lista.map(({ word: v, unit: u, lapses }) => `
+    <div class="fc-hard-row${lapses >= 3 ? ' leech' : ''}">
+      <button class="audio-btn" onclick="speak(this.dataset.say)" data-say="${escapeHtml(v.word)}" title="Hear it">🔊</button>
+      <div class="fc-hard-main">
+        <div class="fc-hard-word">${escapeHtml(v.word)}${v.phonetic ? `<span class="fc-hard-ipa">${escapeHtml(v.phonetic)}</span>` : ''}</div>
+        <div class="fc-hard-tr">${escapeHtml(v.translation || '')}</div>
+      </div>
+      <div class="fc-hard-miss"><b>✗ ${lapses}</b>Unit ${escapeHtml(u.uid)}</div>
+    </div>`).join('');
+  return `
+    <div class="fc-hard">
+      <div class="fc-hard-title">🧩 Words you miss most</div>
+      <div class="fc-hard-sub">Missed 2+ times. Picture something crazy for each one — it sticks.</div>
+      ${filas}
+    </div>`;
 }
 
 function renderFcUnitCard(u, lvl) {
