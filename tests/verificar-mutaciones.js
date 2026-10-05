@@ -1169,6 +1169,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  return t.trans ? splitSentences(t.trans) : (t.translation || []);`,
     reemplazo: `  return t.translation || [];`,
   },
+  {
+    nombre: 'que una cita que cierra la frase ya no la corte ("I\'d be happy to." Finally… en una sola)',
+    buscar: `    .split(/(?<=[.!?])\\s+|(?<=[.!?]["”])\\s+(?=["“¿¡]?[A-ZÁÉÍÓÚÑ])/)`,
+    reemplazo: `    .split(/(?<=[.!?])\\s+/)`,
+  },
+  {
+    nombre: 'que "23rd" vuelva a buscar la palabra "rd"',
+    buscar: `            if (ordinal) return`,
+    reemplazo: `            if (false) return`,
+  },
+  {
+    nombre: 'que "23rd" se diga "twenty-three" y no "twenty-third"',
+    buscar: `  const words = /\\d(?:st|nd|rd|th)$/i.test(String(raw)) ? ordinalEnglish(numberToEnglish(n)) : numberToEnglish(n);`,
+    reemplazo: `  const words = numberToEnglish(n);`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

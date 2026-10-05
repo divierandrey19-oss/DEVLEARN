@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-05a -->
+<!-- DEVLEARN_BUILD: 2026-10-05b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-05a';
+const APP_BUILD = '2026-10-05b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17163,9 +17163,13 @@ let _txState = null;
 
 /** Split into sentences for shadowing: whole-text playback gives nothing to
  *  repeat after, and a sentence is the unit a learner can actually hold. */
+/* También corta después de una cita que cierra una frase: en las pp. 114-115,
+ * '"I'd be happy to." Finally, …' salía como una sola frase, sin su 🔄. Solo
+ * si lo que sigue empieza en mayúscula: '…decorations?" and I said' sigue
+ * siendo una frase, y su traducción ('…decoración?", y yo') también. */
 function splitSentences(text) {
   return String(text || '')
-    .split(/(?<=[.!?])\s+/)
+    .split(/(?<=[.!?])\s+|(?<=[.!?]["”])\s+(?=["“¿¡]?[A-ZÁÉÍÓÚÑ])/)
     .map(s => s.trim())
     .filter(Boolean);
 }
@@ -17426,6 +17430,9 @@ function renderTextReader() {
         return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
           sent.split(/(\s+)/).map(tok => {
             if (!/\S/.test(tok)) return tok;
+            // "23rd" es un número, no la palabra "rd" (5 de octubre).
+            const ordinal = tok.match(/\d+(?:st|nd|rd|th)\b/i);
+            if (ordinal) return `<span onclick="sayNumber(this,'${escapeStr(ordinal[0])}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
             const clean = tok.replace(/[^A-Za-z'’-]/g, '');
             if (!clean) {
               // Digits get their own handler: how to say them, not a translation.
@@ -18070,9 +18077,18 @@ function numberToEnglish(n) {
   return under1000(th) + ' thousand' + (rest ? ' ' + under1000(rest) : '');
 }
 
+/* "twenty-three" → "twenty-third": se cambia solo la última palabra. */
+function ordinalEnglish(words) {
+  if (!words) return '';
+  const m = words.match(/^(.*?)([a-z]+)$/);
+  const raros = { one: 'first', two: 'second', three: 'third', five: 'fifth', eight: 'eighth', nine: 'ninth', twelve: 'twelfth' };
+  const ult = m[2];
+  return m[1] + (raros[ult] || (ult.endsWith('y') ? ult.slice(0, -1) + 'ieth' : ult + 'th'));
+}
+
 function sayNumber(el, raw) {
   const n = String(raw).replace(/[^\d]/g, '');
-  const words = numberToEnglish(n);
+  const words = /\d(?:st|nd|rd|th)$/i.test(String(raw)) ? ordinalEnglish(numberToEnglish(n)) : numberToEnglish(n);
   const box = document.getElementById('tx-word');
   if (box) {
     box.innerHTML = `

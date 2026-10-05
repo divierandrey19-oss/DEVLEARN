@@ -84,4 +84,5 @@ test('pp. 114-115: la fiesta de su sobrina, con lo que él contó', () => {
   // Cada frase con su traducción: si no cuadran, el lector avisa y Flip falla.
   const { splitSentences } = h.ejecutar(`${h.extraerFuncion('splitSentences')} return { splitSentences };`, {});
   assert.equal(splitSentences(t.trans).length, splitSentences(t.body).length);
+  assert.equal(splitSentences(t.body).length, 13, '"I\'d be happy to." y "Finally…" van por separado');
 });
