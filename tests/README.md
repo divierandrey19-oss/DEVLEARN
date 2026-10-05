@@ -157,9 +157,11 @@ conversación, y "to have kids" de la p. 109 fuera porque la p. 113 tiene "have
 kids" — con `vocabKey()`, que ahora reconoce esas repetidas al analizar.
 
 `texts-u10.test.js` — Los textos de la Unit 10 que él memoriza: en la semilla,
-con traducción, máximo 150 palabras (lo pidió), con lo que él contó de su vida
+con traducción, máximo 170 palabras (lo pidió), con lo que él contó de su vida
 (no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
-`SEED_VERSION`.
+`SEED_VERSION`. El de las pp. 114-115 cuenta los 15 de su sobrina (23 de
+octubre, Cartagena) y tiene tantas frases como su traducción, para que Flip
+cuadre.
 
 `dashboard-layout.test.js` — El Dashboard en el orden que él eligió (hoy, el
 curso, el progreso, los accesos), sin lo que se quitó por repetido, sin que
