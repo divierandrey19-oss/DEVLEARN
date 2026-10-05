@@ -370,8 +370,8 @@ const MUTACIONES = [
   },
   {
     nombre: 'Textos U10: no subir SEED_VERSION (nunca le llegarían)',
-    buscar: `  const SEED_VERSION = 14;`,
-    reemplazo: `  const SEED_VERSION = 13;`,
+    buscar: `  const SEED_VERSION = 15;`,
+    reemplazo: `  const SEED_VERSION = 14;`,
   },
   {
     nombre: 'Página del libro: que el número leído no se guarde',

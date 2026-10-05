@@ -21,7 +21,7 @@ const texto = id => semilla.find(t => t.id === id);
 const palabras = s => s.trim().split(/\s+/).length;
 
 test('los textos de la Unit 10 están en la semilla, con traducción', () => {
-  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111'], ['txt_u10_p112113', 'U10 · pág 112 - 113']]) {
+  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111'], ['txt_u10_p112113', 'U10 · pág 112 - 113'], ['txt_u10_p114115', 'U10 · pág 114 - 115']]) {
     const t = texto(id);
     assert.ok(t, `falta ${id}`);
     assert.equal(t.title, titulo, 'el título agrupa por unidad ("U10 · …")');
@@ -30,7 +30,7 @@ test('los textos de la Unit 10 están en la semilla, con traducción', () => {
 });
 
 test('máximo 170 palabras, como él pidió', () => {
-  for (const id of ['txt_u10_p109', 'txt_u10_p110111', 'txt_u10_p112113']) {
+  for (const id of ['txt_u10_p109', 'txt_u10_p110111', 'txt_u10_p112113', 'txt_u10_p114115']) {
     assert.ok(palabras(texto(id).body) <= 170, `${id} tiene ${palabras(texto(id).body)} palabras`);
   }
 });
@@ -47,7 +47,7 @@ test('dicen lo que él contó de su vida, no lo que se supuso', () => {
 
 test('se entregan subiendo SEED_VERSION', () => {
   const m = fuente.match(/const SEED_VERSION = (\d+);/);
-  assert.ok(m && Number(m[1]) >= 14, 'con 13, quien ya abrió la app no recibe el texto de las pp. 112-113');
+  assert.ok(m && Number(m[1]) >= 15, 'con 14, quien ya abrió la app no recibe el texto de las pp. 114-115');
 });
 
 test('pp. 112-113: sus deseos con would like, lo que él contó', () => {
@@ -60,4 +60,28 @@ test('pp. 112-113: sus deseos con would like, lo que él contó', () => {
   assert.match(t, /I wouldn't like to get married/);
   // Termina preguntando, como el Conversation Model: él es flojo para preguntar.
   assert.match(t, /What would you like to do in the next few years\?$/);
+});
+
+test('pp. 114-115: la fiesta de su sobrina, con lo que él contó', () => {
+  const t = texto('txt_u10_p114115');
+  // Él: los 15 de su sobrina, hija de su hermana, el 23 de octubre, en Cartagena
+  // al lado del mar, adonde viaja la familia; la organiza con su hermano; pastel y mucha comida; le
+  // gusta organizar fiestas cuando es para alguien especial.
+  assert.match(t.body, /My niece, my sister's daughter, is turning fifteen/);
+  assert.match(t.body, /on October 23rd/);
+  assert.match(t.body, /in Cartagena, next to the sea, so all my family is traveling there/);
+  // Limpiar después: él lo confirmó.
+  assert.match(t.body, /we're going to clean up afterwards/);
+  assert.match(t.body, /My brother and I are going to organize it together/);
+  assert.match(t.body, /order the cake and a lot of food/);
+  assert.match(t.body, /I like to organize parties when it's for someone special/);
+  // Lo que enseña la página: be going to, el presente continuo para planes,
+  // y pedir un favor con Could you possibly…? / I'd be happy to.
+  assert.match(t.body, /we're having a big party/);
+  assert.match(t.body, /Could you possibly help out/);
+  assert.match(t.body, /I'd be happy to/);
+  assert.match(t.body, /Are you going to have a party soon\?$/);
+  // Cada frase con su traducción: si no cuadran, el lector avisa y Flip falla.
+  const { splitSentences } = h.ejecutar(`${h.extraerFuncion('splitSentences')} return { splitSentences };`, {});
+  assert.equal(splitSentences(t.trans).length, splitSentences(t.body).length);
 });
