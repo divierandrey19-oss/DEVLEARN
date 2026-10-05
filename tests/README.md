@@ -84,7 +84,9 @@ se reconozca igual, y que sin tipo conocido no salga una etiqueta equivocada.
 
 `speakable.test.js` — Lo que lee la voz: que las contracciones (I've, we're,
 I'll) conserven su apóstrofo y que las comillas alrededor de una palabra se
-sigan quitando.
+sigan quitando. Y "live": sola, la voz decía "láiv" (en vivo); ahora sola es el
+verbo ("liv"), y en el lector deciden las palabras de al lado (`comoSuenaEnLaFrase`):
+"animals that live on" → "liv", "live music" → "live music", "she lives" → "livs".
 
 `fc-unit-card.test.js` — La tarjeta de cada unidad en Flashcards: que cuente
 las palabras ya vistas (azules) en vez de decir "291 words to start" con varias
