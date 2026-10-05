@@ -64,12 +64,14 @@ test('pp. 112-113: sus deseos con would like, lo que él contó', () => {
 
 test('pp. 114-115: la fiesta de su sobrina, con lo que él contó', () => {
   const t = texto('txt_u10_p114115');
-  // Él: los 15 de su sobrina, el 23 de octubre, en Cartagena al lado del mar,
-  // con su familia; la organiza con su hermano; pastel y mucha comida; le
+  // Él: los 15 de su sobrina, hija de su hermana, el 23 de octubre, en Cartagena
+  // al lado del mar, adonde viaja la familia; la organiza con su hermano; pastel y mucha comida; le
   // gusta organizar fiestas cuando es para alguien especial.
-  assert.match(t.body, /My niece is turning fifteen/);
+  assert.match(t.body, /My niece, my sister's daughter, is turning fifteen/);
   assert.match(t.body, /on October 23rd/);
-  assert.match(t.body, /in Cartagena, next to the sea, and all my family is coming/);
+  assert.match(t.body, /in Cartagena, next to the sea, so all my family is traveling there/);
+  // Limpiar después: él lo confirmó.
+  assert.match(t.body, /we're going to clean up afterwards/);
   assert.match(t.body, /My brother and I are going to organize it together/);
   assert.match(t.body, /order the cake and a lot of food/);
   assert.match(t.body, /I like to organize parties when it's for someone special/);
