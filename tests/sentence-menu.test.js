@@ -108,3 +108,31 @@ test('el lector tampoco depende de la traducción guardada al abrir', () => {
   assert.doesNotMatch(lector, /t\.translation/);
   assert.doesNotMatch(h.extraerFuncion('sentenceMenu'), /t\.translation/);
 });
+
+// ── Lo que vio en el texto de las pp. 114-115 (5 de octubre) ───────────────
+
+const lector = h.ejecutar(`
+  ${h.extraerFuncion('splitSentences')}
+  ${h.extraerFuncion('numberToEnglish')}
+  ${h.extraerFuncion('ordinalEnglish')}
+  return { splitSentences, numberToEnglish, ordinalEnglish };`, {});
+
+test('una cita que cierra la frase también la corta, cada una con su 🔄', () => {
+  const en = 'My brother asked me, "Could you possibly help out with the decorations?" and I said, "I\'d be happy to." Finally, we\'re going to clean up afterwards, too.';
+  const es = 'Mi hermano me preguntó: "¿Será que podrías ayudar con la decoración?", y yo le dije: "Con mucho gusto." Por último, también vamos a limpiar después.';
+  assert.deepEqual(lector.splitSentences(en), [
+    'My brother asked me, "Could you possibly help out with the decorations?" and I said, "I\'d be happy to."',
+    "Finally, we're going to clean up afterwards, too."]);
+  assert.equal(lector.splitSentences(es).length, 2, 'la traducción se corta igual: Flip cuadra');
+  // Lo de antes no cambia: corta tras el punto, aunque siga minúscula.
+  assert.deepEqual(lector.splitSentences('It was 9 a.m. and late. ok then'), ['It was 9 a.m.', 'and late.', 'ok then']);
+});
+
+test('"23rd" es un número: se dice "twenty-third", no se busca "rd"', () => {
+  const o = n => lector.ordinalEnglish(lector.numberToEnglish(n));
+  assert.deepEqual([1, 2, 3, 5, 8, 9, 12, 15, 20, 21, 23, 31].map(o),
+    ['first', 'second', 'third', 'fifth', 'eighth', 'ninth', 'twelfth', 'fifteenth', 'twentieth', 'twenty-first', 'twenty-third', 'thirty-first']);
+  const lectorTexto = h.extraerFuncion('renderTextReader');
+  assert.match(lectorTexto, /const ordinal = tok\.match\(\/\\d\+\(\?:st\|nd\|rd\|th\)\\b\/i\);\n\s*if \(ordinal\) return `<span onclick="sayNumber/);
+  assert.match(h.extraerFuncion('sayNumber'), /\? ordinalEnglish\(numberToEnglish\(n\)\) : numberToEnglish\(n\)/);
+});

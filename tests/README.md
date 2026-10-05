@@ -174,7 +174,9 @@ para ◀ y 🔁) o 🔄 Flip. Antes solo volteaba, y para oír una frase había 
 escuchar el texto entero. La traducción por frases sale siempre de `trans`
 (`frasesTraducidas`): en el computador, la nube sincronizaba con el texto
 abierto, el texto pasaba a ser la copia de la nube sin la lista armada al
-abrirlo, y el menú quedaba solo con Listen.
+abrirlo, y el menú quedaba solo con Listen. Una cita que cierra la frase
+también la corta ('"I'd be happy to." Finally…' eran una sola), si lo que
+sigue va en mayúscula; y "23rd" se dice "twenty-third" en vez de buscar "rd".
 
 `text-review.test.js` — El repaso espaciado de los textos aprendidos, para que
 no se le olviden los de la unidad anterior: al marcar ✅ vuelve mañana; si se lo
