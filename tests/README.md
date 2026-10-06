@@ -185,7 +185,9 @@ no se le olviden los de la unidad anterior: al marcar ✅ vuelve mañana; si se 
 sabe, cada vez más espaciado (3, 7, 14, 30, 60 días); si se le olvidaron partes,
 mañana otra vez. Solo las Units 9 y 10, las que más le sirven para el speaking
 (lo pidió él). Los que ya tenía aprendidos se reparten uno por día, de la última
-página hacia atrás, sin mover nada ya programado.
+página hacia atrás, sin mover nada ya programado. Lo que marcó "I remembered
+it" hoy queda a la vista en la tarjeta, con ▶ Open y ↩ I forgot parts: el 6 de
+octubre lo tocó por error y no sabía cuál texto había sido.
 
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de

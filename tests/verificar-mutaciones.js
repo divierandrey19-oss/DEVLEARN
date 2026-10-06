@@ -1199,6 +1199,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  const decir = palabraParaDecir(el, word);`,
     reemplazo: `  const decir = word;`,
   },
+  {
+    nombre: 'que el texto marcado hoy por error deje de verse',
+    buscar: `  return (texts || []).filter(t => textReviewDue(t) && t.review.last === hoy && t.review.step > 0);`,
+    reemplazo: `  return [];`,
+  },
+  {
+    nombre: 'que "I forgot parts" también salga como recordado hoy',
+    buscar: `t.review.last === hoy && t.review.step > 0);`,
+    reemplazo: `t.review.last === hoy);`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
