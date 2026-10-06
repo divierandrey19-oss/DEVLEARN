@@ -33,8 +33,9 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('textReviewWhen')}
     ${h.extraerFuncion('toggleTextMastered')}
     ${h.extraerFuncion('markTextReview')}
+    ${h.extraerFuncion('textosRecordadosHoy')}
     return { addDaysLocal, scheduleTextReview, seedTextReviews, textReviewsDue,
-             textReviewWhen, toggleTextMastered, markTextReview };
+             textReviewWhen, toggleTextMastered, markTextReview, textosRecordadosHoy };
   `, { state, todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, toast() {} });
   return { ...f, state };
 }
@@ -187,4 +188,29 @@ test('el Dashboard muestra el texto que toca hoy', () => {
   const tarjeta = h.extraerFuncion('renderTextReview');
   assert.match(tarjeta, /markTextReview\('\$\{t\.id\}', true\)/);
   assert.match(tarjeta, /markTextReview\('\$\{t\.id\}', false\)/);
+});
+
+// ── Tocó "I remembered it" por error (6 de octubre) ────────────────────────
+
+test('el que marcó "I remembered it" hoy queda a la vista, y se puede cambiar a "I forgot parts"', () => {
+  const t = { id: 'a', title: 'U10 · pág 112 - 113', mastered: true, review: { step: 1, due: HOY, last: '2026-09-27' } };
+  const otro = { id: 'b', title: 'U9 · pág 100 - 101', mastered: true, review: { step: 0, due: HOY, last: null } };
+  const m = montar({ texts: [t, otro] });
+  assert.deepEqual(m.textosRecordadosHoy(m.state.texts, HOY), []);
+  m.markTextReview('a', true);
+  assert.deepEqual(m.textosRecordadosHoy(m.state.texts, HOY).map(x => x.title), ['U10 · pág 112 - 113'], 'ya sabe cuál fue');
+  m.markTextReview('a', false);
+  assert.equal(t.review.due, '2026-10-01', 'vuelve mañana');
+  assert.equal(t.review.step, 0);
+  assert.deepEqual(m.textosRecordadosHoy(m.state.texts, HOY), [], 'corregido, ya no sale');
+  m.markTextReview('b', false);
+  assert.deepEqual(m.textosRecordadosHoy(m.state.texts, HOY), [], '"I forgot parts" no sale: no hay nada que corregir');
+});
+
+test('la tarjeta del Dashboard muestra los de hoy con Open e I forgot parts, haya o no algo pendiente', () => {
+  const tarjeta = h.extraerFuncion('renderTextReview');
+  assert.match(tarjeta, /const marcados = textosRecordadosHoy\(state\.texts, hoy\)/);
+  assert.match(tarjeta, /onclick="markTextReview\('\$\{m\.id\}', false\)">↩ I forgot parts</);
+  assert.match(tarjeta, /onclick="openText\('\$\{m\.id\}'\)">▶ Open</);
+  assert.equal(tarjeta.split('${marcados}').length - 1, 2, 'con algo pendiente y sin nada pendiente');
 });
