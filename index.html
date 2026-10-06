@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-05b -->
+<!-- DEVLEARN_BUILD: 2026-10-05c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-05b';
+const APP_BUILD = '2026-10-05c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -18108,12 +18108,51 @@ function sayNumber(el, raw) {
   if (words) speak(words);
 }
 
+/* "live" tiene dos sonidos: el verbo (vivir) es /lɪv/ y el adjetivo (en vivo)
+ * /laɪv/. Sola, la voz escoge "láiv"; en la frase la dice bien. Él lo notó al
+ * tocar la palabra en el texto (5 de octubre). Aquí se decide por las palabras
+ * de al lado qué decir: el verbo se escribe como suena ("liv"), y el adjetivo
+ * se dice con la palabra que acompaña ("live music"), para que la voz acierte.
+ * "lives" igual: "she lives" es /lɪvz/, "their lives" es /laɪvz/. */
+function comoSuenaEnLaFrase(word, antes = [], despues = '') {
+  const w = String(word || '').toLowerCase();
+  const prev = antes.map(x => String(x).toLowerCase());
+  const next = String(despues || '').toLowerCase();
+  if (w === 'live') {
+    const enVivo = ['music', 'show', 'shows', 'concert', 'concerts', 'performance', 'band', 'bands',
+      'broadcast', 'event', 'events', 'audience', 'sports', 'match', 'game', 'tv', 'stream', 'streaming', 'animals'];
+    if (enVivo.includes(next)) return `live ${next}`;
+    const ver = Math.max(...['see', 'saw', 'seen', 'watch', 'watched', 'hear', 'heard'].map(v => prev.lastIndexOf(v)));
+    if (ver >= 0) return [...prev.slice(ver), 'live'].join(' ');
+    return 'liv';
+  }
+  if (w === 'lives') {
+    const deAlguien = ['my', 'your', 'his', 'her', 'our', 'their', 'its', 'many', 'the', 'these', 'those',
+      'whose', "people's", 'save', 'saved', 'saves', 'change', 'changed', 'two', 'three', 'nine'];
+    return deAlguien.includes(prev[prev.length - 1]) ? 'lives' : 'livs';
+  }
+  return word;
+}
+
+/* La palabra tocada en el lector, con sus vecinas de la misma frase. */
+function palabraParaDecir(el, word) {
+  const w = String(word || '').toLowerCase();
+  if (w !== 'live' && w !== 'lives') return word;
+  const frase = el && el.closest ? el.closest('.tx-sent') : null;
+  const todas = frase ? [...frase.querySelectorAll('[data-w]')] : [];
+  const i = todas.indexOf(el);
+  if (i < 0) return comoSuenaEnLaFrase(word);
+  return comoSuenaEnLaFrase(word, todas.slice(Math.max(0, i - 3), i).map(x => x.dataset.w),
+    todas[i + 1] ? todas[i + 1].dataset.w : '');
+}
+
 async function lookupWord(el, word) {
   const st = _txState;
   if (!st) return;
   const t = readerItem();
   if (!t) return;
   const key = word.toLowerCase();
+  const decir = palabraParaDecir(el, word);
   t.lookups = t.lookups || {};
 
   const show = (data, source) => {
@@ -18130,7 +18169,7 @@ async function lookupWord(el, word) {
             <div style="font-size:0.86rem;color:var(--text-2);">${escapeHtml(data.translation || '…')}</div>
             ${source ? `<div style="font-size:0.66rem;color:var(--text-3);margin-top:2px;">${source}</div>` : ''}
           </div>
-          <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(word)}">🔊</button>
+          <button class="audio-btn" style="flex-shrink:0;" onclick="speak(this.dataset.say)" data-say="${escapeStr(decir)}">🔊</button>
           <button class="btn btn-ghost btn-sm" style="flex-shrink:0;font-size:0.66rem;" onclick="document.getElementById('tx-word').innerHTML=''">✕</button>
         </div>
         ${_txState && _txState.kind === 'podcast' && data.translation && !/buscando|No pude/.test(data.translation) ? `
@@ -18141,14 +18180,14 @@ async function lookupWord(el, word) {
       </div>`;
   };
 
-  if (t.lookups[key]) { show(t.lookups[key], ''); speak(word); return; }
+  if (t.lookups[key]) { show(t.lookups[key], ''); speak(decir); return; }
 
   const known = typeof findExistingWord === 'function' ? findExistingWord(word) : null;
   if (known && known.translation && known.phonetic) {
     const data = { translation: known.translation, phonetic: known.phonetic, emoji: known.emoji || '📗' };
     t.lookups[key] = data; save();
     show(data, `already in ${known.where}`);
-    speak(word);
+    speak(decir);
     return;
   }
 
@@ -18156,7 +18195,7 @@ async function lookupWord(el, word) {
   // the meaning is never delayed, then fill in the pronunciation — leaving it
   // blank defeats the whole point of tapping the word.
   show({ translation: (known && known.translation) || 'looking up…', emoji: (known && known.emoji) || '🔎' }, known ? `already in ${known.where}` : '');
-  speak(word);
+  speak(decir);
   try {
     const data = await enrichWords([word]);
     const d = (data && data[0]) || {};
@@ -19270,7 +19309,10 @@ function speakableText(text) {
     .replace(/[,\s]*,[,\s]*/g, ', ')       // collapse doubled pauses
     .replace(/\s+/g, ' ')
     .replace(/^[\s,]+|[\s,]+$/g, '')       // trim stray leading/trailing pauses
-    .trim();
+    .trim()
+    // "live" sola es casi siempre el verbo (sus tarjetas, la lista de las que
+    // más falla): la voz decía "láiv". Ver comoSuenaEnLaFrase.
+    .replace(/^live([.!?]?)$/i, 'liv$1');
 }
 
 /* Android was free to pick a *network* voice, which fetches audio before it

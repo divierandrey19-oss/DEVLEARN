@@ -1184,6 +1184,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  const words = /\\d(?:st|nd|rd|th)$/i.test(String(raw)) ? ordinalEnglish(numberToEnglish(n)) : numberToEnglish(n);`,
     reemplazo: `  const words = numberToEnglish(n);`,
   },
+  {
+    nombre: 'que "live" sola vuelva a sonar "láiv"',
+    buscar: `    .replace(/^live([.!?]?)$/i, 'liv$1');`,
+    reemplazo: `;`,
+  },
+  {
+    nombre: 'que "live music" se diga "liv"',
+    buscar: `    if (enVivo.includes(next)) return \`live \${next}\`;`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que el lector vuelva a decir la palabra sola',
+    buscar: `  const decir = palabraParaDecir(el, word);`,
+    reemplazo: `  const decir = word;`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
