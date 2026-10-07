@@ -21,7 +21,7 @@ const texto = id => semilla.find(t => t.id === id);
 const palabras = s => s.trim().split(/\s+/).length;
 
 test('los textos de la Unit 10 están en la semilla, con traducción', () => {
-  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111'], ['txt_u10_p112113', 'U10 · pág 112 - 113'], ['txt_u10_p114115', 'U10 · pág 114 - 115']]) {
+  for (const [id, titulo] of [['txt_u10_p109', 'U10 · pág 109'], ['txt_u10_p110111', 'U10 · pág 110 - 111'], ['txt_u10_p112113', 'U10 · pág 112 - 113'], ['txt_u10_p114115', 'U10 · pág 114 - 115'], ['txt_u10_p116117', 'U10 · pág 116 - 117']]) {
     const t = texto(id);
     assert.ok(t, `falta ${id}`);
     assert.equal(t.title, titulo, 'el título agrupa por unidad ("U10 · …")');
@@ -30,7 +30,7 @@ test('los textos de la Unit 10 están en la semilla, con traducción', () => {
 });
 
 test('máximo 170 palabras, como él pidió', () => {
-  for (const id of ['txt_u10_p109', 'txt_u10_p110111', 'txt_u10_p112113', 'txt_u10_p114115']) {
+  for (const id of ['txt_u10_p109', 'txt_u10_p110111', 'txt_u10_p112113', 'txt_u10_p114115', 'txt_u10_p116117']) {
     assert.ok(palabras(texto(id).body) <= 170, `${id} tiene ${palabras(texto(id).body)} palabras`);
   }
 });
@@ -47,7 +47,7 @@ test('dicen lo que él contó de su vida, no lo que se supuso', () => {
 
 test('se entregan subiendo SEED_VERSION', () => {
   const m = fuente.match(/const SEED_VERSION = (\d+);/);
-  assert.ok(m && Number(m[1]) >= 15, 'con 14, quien ya abrió la app no recibe el texto de las pp. 114-115');
+  assert.ok(m && Number(m[1]) >= 16, 'con 15, quien ya abrió la app no recibe el texto de las pp. 116-117');
 });
 
 test('pp. 112-113: sus deseos con would like, lo que él contó', () => {
@@ -85,4 +85,22 @@ test('pp. 114-115: la fiesta de su sobrina, con lo que él contó', () => {
   const { splitSentences } = h.ejecutar(`${h.extraerFuncion('splitSentences')} return { splitSentences };`, {});
   assert.equal(splitSentences(t.trans).length, splitSentences(t.body).length);
   assert.equal(splitSentences(t.body).length, 13, '"I\'d be happy to." y "Finally…" van por separado');
+});
+
+test('pp. 116-117: sus sueños, fortalezas y debilidades, con lo que él contó', () => {
+  const t = texto('txt_u10_p116117');
+  // Sus sueños (pp. 112-113) y lo que dijo el 7 de octubre: trabajador,
+  // disciplinado y constante; necesita fluidez y ahorrar más.
+  assert.match(t.body, /My dream is to graduate from my English course with a C1 level next year/);
+  assert.match(t.body, /I'm hard-working, disciplined and consistent/);
+  assert.match(t.body, /I could be more fluent in English/);
+  assert.match(t.body, /I need to save more money/);
+  assert.match(t.body, /I don't always have time for exercise/);
+  assert.doesNotMatch(t.body, /I could be more disciplined/, 'él dice que es disciplinado');
+  // Lo que enseña la página: My dream is to…, I need to…, dream about + -ing, un consejo del artículo.
+  assert.match(t.body, /I also dream about working abroad/);
+  assert.match(t.body, /"Target your weaknesses,"/);
+  assert.match(t.body, /What's your dream for the future\?$/);
+  const { splitSentences } = h.ejecutar(`${h.extraerFuncion('splitSentences')} return { splitSentences };`, {});
+  assert.equal(splitSentences(t.trans).length, splitSentences(t.body).length);
 });

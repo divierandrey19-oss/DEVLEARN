@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-07a -->
+<!-- DEVLEARN_BUILD: 2026-10-07b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-07a';
+const APP_BUILD = '2026-10-07b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6530,7 +6530,10 @@ function migrateState(s) {
   // possibly…? / I'd be happy to): los 15 de su sobrina (hija de su hermana),
   // el 23 de octubre en Cartagena, adonde viaja la familia; los organiza con
   // su hermano.
-  const SEED_VERSION = 15;
+  // 16: el de las pp. 116-117 (sueños, fortalezas y debilidades): sus sueños de
+  // los textos anteriores; fortalezas y debilidades, las que él dijo. El consejo
+  // del artículo lo escogí yo, como él pidió ("busca uno que vaya con lo mío").
+  const SEED_VERSION = 16;
   if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
@@ -6684,6 +6687,10 @@ function migrateState(s) {
         wh: [],
         body: "Let me tell you about a very special event. My niece, my sister's daughter, is turning fifteen, and in Colombia, the fifteenth birthday is very important for girls. So we're having a big party for her on October 23rd. It's going to be in Cartagena, next to the sea, so all my family is traveling there. My brother and I are going to organize it together. First, we're going to send out the invitations. Then, we're going to order the cake and a lot of food, because a lot of people are coming. My brother asked me, \"Could you possibly help out with the decorations?\" and I said, \"I'd be happy to.\" Finally, we're going to clean up afterwards, too. To be honest, I like to organize parties when it's for someone special, and my niece is very special to me. So I want everything to be perfect. What about you? Are you going to have a party soon?",
         trans: "Déjame contarte de un evento muy especial. Mi sobrina, la hija de mi hermana, va a cumplir quince años, y en Colombia los quince son muy importantes para las niñas. Así que le vamos a hacer una fiesta grande el 23 de octubre. Va a ser en Cartagena, al lado del mar, así que toda mi familia va a viajar allá. Mi hermano y yo la vamos a organizar juntos. Primero, vamos a mandar las invitaciones. Luego, vamos a pedir el pastel y mucha comida, porque va a ir mucha gente. Mi hermano me preguntó: \"¿Será que podrías ayudar con la decoración?\", y yo le dije: \"Con mucho gusto.\" Por último, también vamos a limpiar después. La verdad, me gusta organizar fiestas cuando se trata de alguien especial, y mi sobrina es muy especial para mí. Así que quiero que todo salga perfecto. ¿Y tú? ¿Vas a hacer una fiesta pronto?" },
+      { id: 'txt_u10_p116117', title: 'U10 · pág 116 - 117',
+        wh: [],
+        body: "Let me tell you about my dreams for the future. My dream is to graduate from my English course with a C1 level next year. I also dream about working abroad and getting rich, so I can help my family and the animals that live on the street. To make my dreams come true, I study English every morning. I think my strengths are that I'm hard-working, disciplined and consistent. For example, I study every day, even when the shop is super busy. But I also have some weaknesses. First, I could be more fluent in English, so I need to practice speaking more. Second, I need to save more money. And I don't always have time for exercise. That's why the most helpful tip for me is \"Target your weaknesses,\" because if I know my weaknesses, I can change the way I do things. So I'm going to start with one small step: practice speaking every day. What about you? What's your dream for the future?",
+        trans: "Déjame contarte mis sueños para el futuro. Mi sueño es graduarme de mi curso de inglés con nivel C1 el próximo año. También sueño con trabajar en el exterior y hacerme rico, para poder ayudar a mi familia y a los animales que viven en la calle. Para hacer realidad mis sueños, estudio inglés todas las mañanas. Creo que mis fortalezas son que soy trabajador, disciplinado y constante. Por ejemplo, estudio todos los días, aunque la tienda esté súper ocupada. Pero también tengo algunas debilidades. Primero, podría tener más fluidez en inglés, así que necesito practicar más el speaking. Segundo, necesito ahorrar más plata. Y no siempre tengo tiempo para hacer ejercicio. Por eso el consejo más útil para mí es \"Enfócate en tus debilidades\", porque si conozco mis debilidades, puedo cambiar la forma en que hago las cosas. Así que voy a empezar con un paso pequeño: practicar speaking todos los días. ¿Y tú? ¿Cuál es tu sueño para el futuro?" },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);

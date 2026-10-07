@@ -163,7 +163,8 @@ con traducción, máximo 170 palabras (lo pidió), con lo que él contó de su v
 (no lo que se supuso: "nunca nos quedamos hasta tarde") y entregados subiendo
 `SEED_VERSION`. El de las pp. 114-115 cuenta los 15 de su sobrina (23 de
 octubre, Cartagena) y tiene tantas frases como su traducción, para que Flip
-cuadre.
+cuadre. El de las pp. 116-117: sus sueños, y las fortalezas y debilidades que él dijo
+(trabajador, disciplinado, constante; fluidez y ahorrar).
 
 `dashboard-layout.test.js` — El Dashboard en el orden que él eligió (hoy, el
 curso, el progreso, los accesos), sin lo que se quitó por repetido, sin que
