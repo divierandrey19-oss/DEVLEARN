@@ -1209,6 +1209,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `t.review.last === hoy && t.review.step > 0);`,
     reemplazo: `t.review.last === hoy);`,
   },
+  {
+    nombre: 'que "I remembered it" vuelva a marcar sin preguntar',
+    buscar: `  if (!confirm(\`Are you sure you remembered "\${t.title || 'this text'}"?`,
+    reemplazo: `  if (!true || !(\`Are you sure you remembered "\${t.title || 'this text'}"?`,
+  },
+  {
+    nombre: 'que cancelar la confirmación igual marque el texto',
+    buscar: `If not, tap Cancel and choose "I forgot parts".\`)) return;`,
+    reemplazo: `If not, tap Cancel and choose "I forgot parts".\`));`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
