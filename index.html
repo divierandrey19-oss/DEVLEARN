@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-06a -->
+<!-- DEVLEARN_BUILD: 2026-10-07a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-06a';
+const APP_BUILD = '2026-10-07a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -16856,7 +16856,7 @@ function renderTexts() {
             </button>
             ${textReviewDue(t) && t.review.due <= hoy ? `
               <div style="display:flex;gap:8px;margin-top:8px;">
-                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', true)">✅ I remembered it</button>
+                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="confirmarRecordado('${t.id}')">✅ I remembered it</button>
                 <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', false)">🔁 I forgot parts</button>
               </div>` : ''}
           </div>`).join('') : ''}
@@ -17025,6 +17025,16 @@ function textReviewWhen(due, hoy) {
   return n === 1 ? 'tomorrow' : `in ${n} days`;
 }
 
+/* "I remembered it" pregunta antes: él se equivoca seguido de botón (7 de
+ * octubre), y marcarlo por error lo manda días lejos sin habérselo sabido.
+ * "I forgot parts" no pregunta: equivocarse ahí solo lo trae mañana. */
+function confirmarRecordado(id) {
+  const t = (state.texts || []).find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Are you sure you remembered "${t.title || 'this text'}"?\n\nTap OK only if you said it from memory, without looking. If not, tap Cancel and choose "I forgot parts".`)) return;
+  markTextReview(id, true);
+}
+
 function markTextReview(id, recordado) {
   const t = (state.texts || []).find(x => x.id === id);
   if (!textReviewDue(t)) return;
@@ -17091,7 +17101,7 @@ function renderTextReview() {
         <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="openText('${t.id}')">▶ Open</button>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', true)">✅ I remembered it</button>
+        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="confirmarRecordado('${t.id}')">✅ I remembered it</button>
         <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="markTextReview('${t.id}', false)">🔁 I forgot parts</button>
       </div>
       ${resto ? `<div style="font-size:0.7rem;color:var(--text-3);margin-top:8px;">+${resto} more due today</div>` : ''}

@@ -186,7 +186,7 @@ test('el Dashboard muestra el texto que toca hoy', () => {
   assert.match(fuente, /<div id="text-review"><\/div>/);
   assert.match(h.extraerFuncion('renderDashboard'), /\n  renderTextReview\(\);\n/);
   const tarjeta = h.extraerFuncion('renderTextReview');
-  assert.match(tarjeta, /markTextReview\('\$\{t\.id\}', true\)/);
+  assert.match(tarjeta, /confirmarRecordado\('\$\{t\.id\}'\)/, 'recordado: pregunta antes y luego marca');
   assert.match(tarjeta, /markTextReview\('\$\{t\.id\}', false\)/);
 });
 
@@ -213,4 +213,28 @@ test('la tarjeta del Dashboard muestra los de hoy con Open e I forgot parts, hay
   assert.match(tarjeta, /onclick="markTextReview\('\$\{m\.id\}', false\)">↩ I forgot parts</);
   assert.match(tarjeta, /onclick="openText\('\$\{m\.id\}'\)">▶ Open</);
   assert.equal(tarjeta.split('${marcados}').length - 1, 2, 'con algo pendiente y sin nada pendiente');
+});
+
+// ── "I remembered it" pregunta antes (7 de octubre) ───────────────────────
+
+test('"I remembered it" pide confirmación; si cancela, no se marca nada', () => {
+  const t = { id: 'a', title: 'U9 · pág 100 - 101', mastered: true, review: { step: 0, due: HOY, last: null } };
+  const state = { texts: [t] };
+  const marcados = [], preguntas = [];
+  let respuesta = false;
+  const { confirmarRecordado } = h.ejecutar(`${h.extraerFuncion('confirmarRecordado')} return { confirmarRecordado };`, {
+    state, confirm: m => { preguntas.push(m); return respuesta; }, markTextReview: (id, r) => marcados.push([id, r]) });
+  confirmarRecordado('a');
+  assert.deepEqual(marcados, [], 'canceló: no se marca');
+  assert.match(preguntas[0] || '', /U9 · pág 100 - 101/, 'dice cuál texto');
+  respuesta = true;
+  confirmarRecordado('a');
+  assert.deepEqual(marcados, [['a', true]]);
+});
+
+test('"I remembered it" confirma en el Dashboard y en My texts; "I forgot parts" no pregunta', () => {
+  const fuente = h.fuente();
+  assert.equal(fuente.split(`onclick="confirmarRecordado('\${t.id}')">✅ I remembered it`).length - 1, 2);
+  assert.doesNotMatch(fuente, /markTextReview\('\$\{t\.id\}', true\)/);
+  assert.match(h.extraerFuncion('renderTextReview'), /onclick="markTextReview\('\$\{t\.id\}', false\)">🔁 I forgot parts/);
 });
