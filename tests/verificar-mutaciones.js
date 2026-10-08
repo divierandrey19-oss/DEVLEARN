@@ -1219,6 +1219,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `If not, tap Cancel and choose "I forgot parts".\`)) return;`,
     reemplazo: `If not, tap Cancel and choose "I forgot parts".\`));`,
   },
+  {
+    nombre: 'que el aviso de restaurar vuelva a listar las 112 páginas una por una',
+    buscar: `  if (items.length <= maximo) return items.map(nombre);`,
+    reemplazo: `  return items.map(nombre);`,
+  },
+  {
+    nombre: 'que el aviso no se pueda desplazar (el botón Restore queda fuera)',
+    buscar: `margin-bottom:24px;max-height:55vh;overflow-y:auto;">`,
+    reemplazo: `margin-bottom:24px;">`,
+  },
+  {
+    nombre: 'que los phrasal verbs vuelvan a entrar dos veces',
+    buscar: `(b.title === PV[key].title || b.id === 'pv_' + key)`,
+    reemplazo: `(b.title === PV[key].title)`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

@@ -385,3 +385,9 @@ CLAUDE.md lleva la lista de lo que costó caro; lo que siga sin cubrir de ahí e
 el mejor sitio para empezar. Y toda prueba nueva merece su mutación en
 `verificar-mutaciones.js`: si no puedes escribir una que la ponga roja, la
 prueba probablemente no examina nada.
+
+`compartir-a2.test.js` — Compartir el A2 con una compañera: un archivo con las
+112 páginas (sin progreso ni fotos) que ella carga con "Restore missing pages
+from a backup". El aviso agrupa por unidad cuando son muchas (`listaDePaginas`) y
+se puede desplazar: antes el botón Restore quedaba fuera de la pantalla. Y los
+phrasal verbs de las Units 7-9 ya no entran dos veces al recargar.
