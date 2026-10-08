@@ -390,4 +390,6 @@ prueba probablemente no examina nada.
 112 páginas (sin progreso ni fotos) que ella carga con "Restore missing pages
 from a backup". El aviso agrupa por unidad cuando son muchas (`listaDePaginas`) y
 se puede desplazar: antes el botón Restore quedaba fuera de la pantalla. Y los
-phrasal verbs de las Units 7-9 ya no entran dos veces al recargar.
+phrasal verbs de las Units 7-9 ya no entran dos veces al recargar. Sus textos
+de memorizar solo se siembran en un aparato suyo (el que ya los tenía): ella no
+los ve, y un aparato nuevo de él los trae de su nube con la bandera.

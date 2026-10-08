@@ -1234,6 +1234,11 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `(b.title === PV[key].title || b.id === 'pv_' + key)`,
     reemplazo: `(b.title === PV[key].title)`,
   },
+  {
+    nombre: 'que sus textos vuelvan a aparecer en el aparato de otra persona',
+    buscar: `  if (aparatoSuyo && (merged._u7SeedVersion || 0) < SEED_VERSION) {`,
+    reemplazo: `  if ((merged._u7SeedVersion || 0) < SEED_VERSION) {`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
