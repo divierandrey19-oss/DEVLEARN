@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-07b -->
+<!-- DEVLEARN_BUILD: 2026-10-08a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4264,7 +4264,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       <div id="confirm-icon" style="width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:var(--red-bg);color:var(--red);">⚠️</div>
       <div id="confirm-title" style="font-size:1.15rem;font-weight:600;letter-spacing:-0.02em;">Are you sure?</div>
     </div>
-    <div id="confirm-message" style="font-size:0.92rem;color:var(--text-2);line-height:1.6;white-space:pre-line;margin-bottom:24px;">This action cannot be undone.</div>
+    <div id="confirm-message" style="font-size:0.92rem;color:var(--text-2);line-height:1.6;white-space:pre-line;margin-bottom:24px;max-height:55vh;overflow-y:auto;">This action cannot be undone.</div>
     <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
       <button class="btn btn-ghost" onclick="closeConfirm(false)">Cancel</button>
       <button class="btn btn-ghost" id="confirm-alt-btn" style="display:none;" onclick="closeConfirm('alt')"></button>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-07b';
+const APP_BUILD = '2026-10-08a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6486,8 +6486,10 @@ function migrateState(s) {
       const u = merged.units && merged.units[key];
       if (!u) return;                       // la unidad no existe todavía: se salta
       u.batches = u.batches || [];
-      // No duplicar si ya está
-      if (u.batches.some(b => b && b.title === PV[key].title)) return;
+      // No duplicar si ya está: por título o por id. El de la Unit 9 se renombró
+      // ("Phrasal verbs & expressions…"), y a quien restauraba el A2 de un
+      // respaldo le entraba otra vez, con 59 tarjetas repetidas (8 de octubre).
+      if (u.batches.some(b => b && (b.title === PV[key].title || b.id === 'pv_' + key))) return;
       u.batches.push({
         id: 'pv_' + key,
         images: [],
@@ -26575,6 +26577,19 @@ function applyPageFixes(units) {
  * Claude arma las páginas (vocabulario, gramática, ejercicios, preguntas) en un
  * archivo con forma de respaldo, y aquí entran sin gastar la API. Una unidad
  * que todavía no existe (el B1) la crea getUnit, con su título y descripción. */
+/* Las páginas del aviso, una por línea; si son muchas, por unidad. El A2
+ * entero para su compañera son 112 páginas: el aviso no cabía en la pantalla y
+ * el botón "Restore" quedaba fuera, sin forma de llegar a él (8 de octubre). */
+function listaDePaginas(items, nombre, maximo = 12) {
+  if (items.length <= maximo) return items.map(nombre);
+  const porUnidad = new Map();
+  items.forEach(f => {
+    const k = `${String(f.unit.lid || '').toUpperCase()} Unit ${f.unit.uid}`;
+    porUnidad.set(k, (porUnidad.get(k) || 0) + 1);
+  });
+  return [...porUnidad].map(([k, n]) => `${k} — ${n} page${n !== 1 ? 's' : ''}`);
+}
+
 function restorePagesFromBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -26591,10 +26606,11 @@ function restorePagesFromBackup(event) {
     if (!faltan.length && !nuevas.length && !llenar.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
     // Con el nivel: un archivo de páginas hechas en el chat puede traer el B1.
     const nombre = f => `${String(f.unit.lid || '').toUpperCase()} Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
+    const lista = items => listaDePaginas(items, nombre).join('\n• ');
     const partes = [];
-    if (faltan.length) partes.push(`Pages that are not on this device:\n\n• ${faltan.map(nombre).join('\n• ')}\n\nThey come back with their photo, words, grammar and exercises.`);
-    if (llenar.length) partes.push(`Photos waiting for Claude that get their content:\n\n• ${llenar.map(nombre).join('\n• ')}\n\nThey get their page number, words, grammar, exercises and questions.`);
-    if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${nuevas.map(nombre).join('\n• ')}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
+    if (faltan.length) partes.push(`Pages that are not on this device:\n\n• ${lista(faltan)}\n\nThey come back with their photo, words, grammar and exercises.`);
+    if (llenar.length) partes.push(`Photos waiting for Claude that get their content:\n\n• ${lista(llenar)}\n\nThey get their page number, words, grammar, exercises and questions.`);
+    if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${lista(nuevas)}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
     const total = faltan.length + nuevas.length + llenar.length;
     confirmAction({
       title: `Restore ${total} page${total !== 1 ? 's' : ''}?`,
@@ -26640,7 +26656,7 @@ function restorePagesFromBackup(event) {
         if (current.lid && current.uid && document.getElementById('page-unit')?.classList.contains('active')) loadUnitContent();
         updateNavBadges();
         if (window._syncToFirestore) window._syncToFirestore();
-        toast(`✅ Restored: ${[...faltan, ...llenar, ...nuevas].map(nombre).join(', ')}`);
+        toast(`✅ Restored: ${listaDePaginas([...faltan, ...llenar, ...nuevas], nombre).join(', ')}`);
       },
     });
   };
