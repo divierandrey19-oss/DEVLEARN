@@ -189,6 +189,9 @@ libro. Si una foto trae dos páginas, `pages: [n, n+1]`.
 Se escriben de a poco, solo los de las páginas de la clase siguiente, y se
 entregan subiendo `SEED_VERSION`.
 
+- Solo llegan a **sus** aparatos: la semilla corre únicamente donde ya hubo
+  textos (`aparatoSuyo`). Él comparte la app con una compañera y no quiere que
+  ella los vea; un aparato nuevo suyo los trae de la nube al entrar con Google.
 - Máximo 170 palabras (antes eran 150; él lo subió el 1 de octubre).
 - **Preguntarle antes** lo de su vida que el texto va a contar. No suponer
   nada ("nunca nos quedamos hasta tarde" salió de una suposición).

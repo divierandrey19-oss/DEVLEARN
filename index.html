@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-08a -->
+<!-- DEVLEARN_BUILD: 2026-10-08b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4894,7 +4894,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-08a';
+const APP_BUILD = '2026-10-08b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6536,7 +6536,13 @@ function migrateState(s) {
   // los textos anteriores; fortalezas y debilidades, las que él dijo. El consejo
   // del artículo lo escogí yo, como él pidió ("busca uno que vaya con lo mío").
   const SEED_VERSION = 16;
-  if ((merged._u7SeedVersion || 0) < SEED_VERSION) {
+  /* Sus textos cuentan su vida: solo entran en un aparato suyo, el que ya los
+   * había recibido antes. El 8 de octubre compartió la app con una compañera y
+   * no quiere que ella los vea. Un aparato nuevo suyo los trae de su nube al
+   * entrar con Google, con la bandera incluida, y desde ahí recibe los nuevos;
+   * el de otra persona empieza sin ellos. */
+  const aparatoSuyo = (merged._u7SeedVersion || 0) > 0 || merged._u7TextsSeeded === true;
+  if (aparatoSuyo && (merged._u7SeedVersion || 0) < SEED_VERSION) {
     merged._u7SeedVersion = SEED_VERSION;
     merged._u7TextsSeeded = true;   // se mantiene por si alguna versión vieja lo mira
     const already = new Set(merged.texts.map(t => t && t.id));

@@ -37,3 +37,19 @@ test('el aviso se puede desplazar, y la restauración usa la lista agrupada', ()
 test('los phrasal verbs no entran dos veces: se reconocen por título o por id', () => {
   assert.match(h.extraerFuncion('migrateState'), /u\.batches\.some\(b => b && \(b\.title === PV\[key\]\.title \|\| b\.id === 'pv_' \+ key\)\)/);
 });
+
+// ── Sus textos, solo en sus aparatos (8 de octubre) ───────────────────────
+
+test('los textos que él memoriza solo se siembran en un aparato que ya los tenía', () => {
+  const migrar = h.extraerFuncion('migrateState');
+  assert.match(migrar, /const aparatoSuyo = \(merged\._u7SeedVersion \|\| 0\) > 0 \|\| merged\._u7TextsSeeded === true;/);
+  assert.match(migrar, /if \(aparatoSuyo && \(merged\._u7SeedVersion \|\| 0\) < SEED_VERSION\) \{/);
+});
+
+test('un aparato suyo nuevo trae la bandera de la nube, con todo lo de arriba', () => {
+  // La unión con la nube copia los campos de arriba (entre ellos _u7SeedVersion)
+  // y junta los textos: así su aparato nuevo sigue recibiendo los textos nuevos.
+  const fuente = h.fuente();
+  assert.match(fuente, /Object\.keys\(imported\)\.forEach\(function\(k\) \{ state\[k\] = imported\[k\]; \}\);/);
+  assert.match(fuente, /state\.texts = mergeTexts\(localTexts, imported\.texts\);/);
+});
