@@ -1239,6 +1239,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `  if (aparatoSuyo && (merged._u7SeedVersion || 0) < SEED_VERSION) {`,
     reemplazo: `  if ((merged._u7SeedVersion || 0) < SEED_VERSION) {`,
   },
+  {
+    nombre: 'que la nube vuelva a ganar siempre las fechas de las clases',
+    buscar: `    const fuente = a > b ? local : b > a ? nube : (nube[id] !== undefined ? nube : local);`,
+    reemplazo: `    const fuente = nube[id] !== undefined ? nube : local;`,
+  },
+  {
+    nombre: 'que cambiar la fecha de una clase no guarde la hora del cambio',
+    buscar: `  sched[id + '_t'] = time || '06:00';\n  marcarFechasDeClase([id]);`,
+    reemplazo: `  sched[id + '_t'] = time || '06:00';`,
+  },
+  {
+    nombre: 'que el final no quede el lunes 19',
+    buscar: `    merged.classSchedule[89] = '2026-10-19';`,
+    reemplazo: ``,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));

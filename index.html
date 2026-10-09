@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-08b -->
+<!-- DEVLEARN_BUILD: 2026-10-09a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4726,6 +4726,7 @@ window._mergeCloudState = function(cloud) {
     const localClasses   = [...(state.classesDone || [])];
     const localRecDays   = [...(state.recDays || [])];
     const localSchedule  = { ...(state.classSchedule || {}) };
+    const localScheduleAt = { ...(state.classScheduleAt || {}) };
     const localMistakes  = [...(state.mistakeLog || [])];
     const localExamDate  = state.examDate;
     const localExamLabel = state.examLabel;
@@ -4861,7 +4862,11 @@ window._mergeCloudState = function(cloud) {
     }
     state.classesDone = [...new Set([...(localClasses), ...(imported.classesDone || [])])];
     state.recDays = [...new Set([...localRecDays, ...(imported.recDays || [])])].sort();
-    state.classSchedule = { ...localSchedule, ...(imported.classSchedule || {}) };
+    {
+      const f = unirFechasDeClase(localSchedule, localScheduleAt, imported.classSchedule, imported.classScheduleAt);
+      state.classSchedule = f.sched;
+      state.classScheduleAt = f.at;
+    }
     state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
       m => `${m && m.source}|${(m && m.wrong || '').toLowerCase()}|${(m && m.right || '').toLowerCase()}`);
     if (!state.examDate && localExamDate) { state.examDate = localExamDate; state.examLabel = state.examLabel || localExamLabel; }
@@ -4894,7 +4899,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-08b';
+const APP_BUILD = '2026-10-09a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6339,6 +6344,16 @@ function migrateState(s) {
   merged.recDays = Array.isArray(merged.recDays) ? [...new Set(merged.recDays)] : [];
   merged.deletedBatchIds = Array.isArray(merged.deletedBatchIds) ? [...new Set(merged.deletedBatchIds)] : [];
   merged.classSchedule = merged.classSchedule || {};
+  /* El 9 de octubre él confirmó: speaking test (clase 87) el viernes 16 y examen
+   * final (clase 89) el lunes 19. Un aparato con las fechas viejas (13 y 16) las
+   * había vuelto a subir a la nube. Solo donde están exactamente esas dos, una
+   * vez, y con la hora del cambio para que gane al juntar con la nube. */
+  if (!merged._fechasExamenesV1 && merged.classSchedule[87] === '2026-10-13' && merged.classSchedule[89] === '2026-10-16') {
+    merged.classSchedule[87] = '2026-10-16';
+    merged.classSchedule[89] = '2026-10-19';
+    merged.classScheduleAt = { ...(merged.classScheduleAt || {}), 87: Date.now(), 89: Date.now() };
+    merged._fechasExamenesV1 = true;
+  }
   merged.podcastLog = Array.isArray(merged.podcastLog) ? merged.podcastLog : [];
   merged.texts = Array.isArray(merged.texts) ? merged.texts : [];
   merged.studyLog = (merged.studyLog && typeof merged.studyLog === 'object') ? merged.studyLog : {};
@@ -14050,11 +14065,39 @@ function previewClear() {
     : 'Ese rango no tiene fechas';
 }
 
+/* Cuándo tocó él la fecha de cada clase. Al juntar con la nube ganaba siempre
+ * la nube, clase por clase: el 9 de octubre el computador, con las fechas
+ * viejas, pisó las que él había cambiado en el celular (el speaking test del 16
+ * y el final del 19 volvieron a quedar el 13 y el 16), y el repaso enfocado se
+ * iba a apagar tres días antes del examen. Con la hora, gana el cambio más
+ * nuevo, venga del aparato que venga. */
+function marcarFechasDeClase(ids, cuando = Date.now()) {
+  const at = state.classScheduleAt = state.classScheduleAt || {};
+  ids.forEach(id => { at[id] = cuando; });
+}
+
+function unirFechasDeClase(local, localAt, nube, nubeAt) {
+  local = local || {}; nube = nube || {}; localAt = localAt || {}; nubeAt = nubeAt || {};
+  const sched = {}, at = {};
+  const ids = new Set([local, nube, localAt, nubeAt].flatMap(o => Object.keys(o)).map(k => k.replace(/_t$/, '')));
+  ids.forEach(id => {
+    const a = localAt[id] || 0, b = nubeAt[id] || 0;
+    // Sin hora en ninguno (fechas de antes) o la misma: como siempre, la de la
+    // nube; y la que la nube todavía no tiene, se queda.
+    const fuente = a > b ? local : b > a ? nube : (nube[id] !== undefined ? nube : local);
+    if (fuente[id] !== undefined) sched[id] = fuente[id];
+    if (fuente[id + '_t'] !== undefined) sched[id + '_t'] = fuente[id + '_t'];
+    if (a || b) at[id] = Math.max(a, b);
+  });
+  return { sched, at };
+}
+
 function applyClearDates() {
   const ids = clearRangeIds();
   if (!ids.length) { toast('That range has no dates'); return; }
   const sched = state.classSchedule = state.classSchedule || {};
   ids.forEach(id => { delete sched[id]; delete sched[id + '_t']; });
+  marcarFechasDeClase(ids);
   save();
   document.getElementById('clear-overlay')?.remove();
   renderCourseTracker();
@@ -14168,6 +14211,7 @@ function applyBulkSchedule() {
     sched[c.id] = dates[i];
     sched[c.id + '_t'] = time;
   });
+  marcarFechasDeClase(pending.filter((c, i) => dates[i]).map(c => c.id));
   state.bulkDays = days;
   state.bulkTime = time;
   save();
@@ -14217,6 +14261,7 @@ function applyBulkTime() {
   COURSE_SYLLABUS.forEach(c => {
     if (done.has(c.id) || !sched[c.id]) return;   // sin fecha o ya vista: no se toca
     sched[c.id + '_t'] = time;
+    marcarFechasDeClase([c.id]);
     n++;
   });
   save();
@@ -14302,6 +14347,7 @@ function saveClassSchedule(id) {
   const sched = state.classSchedule = state.classSchedule || {};
   sched[id] = date;
   sched[id + '_t'] = time || '06:00';
+  marcarFechasDeClase([id]);
   save();
   document.getElementById('sched-overlay')?.remove();
   renderCourseTracker();
@@ -14312,6 +14358,7 @@ function clearClassSchedule(id) {
   const sched = state.classSchedule = state.classSchedule || {};
   delete sched[id];
   delete sched[id + '_t'];
+  marcarFechasDeClase([id]);
   save();
   document.getElementById('sched-overlay')?.remove();
   renderCourseTracker();
