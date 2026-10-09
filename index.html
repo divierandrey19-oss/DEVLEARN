@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-09a -->
+<!-- DEVLEARN_BUILD: 2026-10-09b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4463,6 +4463,9 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
         <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(event)"/>
       </div>
       <div style="margin-top:10px;">
+        <button class="btn btn-ghost" style="width:100%;font-size:0.82rem;margin-bottom:8px;" onclick="cargarA2Compartido()">
+          📚 Load the A2 book (Units 1-10)
+        </button>
         <button class="btn btn-ghost" style="width:100%;font-size:0.82rem;" onclick="document.getElementById('restore-file-input').click()">
           ↺ Restore missing pages from a backup
         </button>
@@ -4879,18 +4882,7 @@ window._mergeCloudState = function(cloud) {
     saveNow();
     if (typeof updateNavBadges === 'function') updateNavBadges();
     // Refresh current page view silently (no sound, no scroll)
-    try {
-      const activePage = document.querySelector('.page.active');
-      if (activePage) {
-        const pageId = activePage.id;
-        if (pageId === 'page-dashboard' && typeof renderDashboard === 'function') renderDashboard();
-        else if (pageId === 'page-flashcards-all' && typeof renderAllFlashcards === 'function') renderAllFlashcards();
-        else if (pageId === 'page-vocab-all' && typeof renderAllVocab === 'function') renderAllVocab();
-        else if (pageId === 'page-progress' && typeof renderProgressPage === 'function') renderProgressPage();
-        // Pages uploaded on the other device show up without reopening the unit.
-        else if (pageId === 'page-unit' && current.lid && current.uid && typeof loadUnitContent === 'function') loadUnitContent();
-      }
-    } catch(e) {}
+    refrescarPaginaActual();
     // Silent sync — no toast
   } catch(e) { console.warn('Merge error:', e); }
 };
@@ -4899,7 +4891,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-09a';
+const APP_BUILD = '2026-10-09b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -14880,7 +14872,8 @@ function renderDashboard() {
     document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Browse levels →</button>`;
   } else {
     // Primera vez: el saludo grande ya no está, así que el botón para empezar va aquí.
-    document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Get started →</button>`;
+    document.getElementById('cc-actions').innerHTML = `<button class="btn btn-primary" onclick="navigate('levels')">Get started →</button>
+      <button class="btn btn-ghost" onclick="cargarA2Compartido()">📚 Load the A2 book (Units 1-10)</button>`;
   }
 
   // ── Smart quick cards ─────────────────────────────────────────
@@ -24371,6 +24364,7 @@ function renderAllFlashcards() {
         <div class="empty-title">No flashcards yet</div>
         <div class="empty-sub">Upload book pages in any unit to generate vocabulary flashcards.</div>
         <button class="btn btn-primary" onclick="navigate('levels')">Start studying</button>
+        <button class="btn btn-ghost" style="margin-top:8px;" onclick="cargarA2Compartido()">📚 Load the A2 book (Units 1-10)</button>
       </div>`;
     return;
   }
@@ -26630,6 +26624,43 @@ function applyPageFixes(units) {
  * Claude arma las páginas (vocabulario, gramática, ejercicios, preguntas) en un
  * archivo con forma de respaldo, y aquí entran sin gastar la API. Una unidad
  * que todavía no existe (el B1) la crea getUnit, con su título y descripción. */
+/* Vuelve a dibujar la página abierta, sin sonido ni salto: tras juntar con la
+ * nube y tras restaurar páginas. Al cargar el A2 desde Flashcards vacío, la
+ * pantalla seguía diciendo "No flashcards yet" hasta recargar (9 de octubre). */
+function refrescarPaginaActual() {
+  try {
+    const activePage = document.querySelector('.page.active');
+    if (!activePage) return;
+    const pageId = activePage.id;
+    if (pageId === 'page-dashboard' && typeof renderDashboard === 'function') renderDashboard();
+    else if (pageId === 'page-flashcards-all' && typeof renderAllFlashcards === 'function') renderAllFlashcards();
+    else if (pageId === 'page-vocab-all' && typeof renderAllVocab === 'function') renderAllVocab();
+    else if (pageId === 'page-progress' && typeof renderProgressPage === 'function') renderProgressPage();
+    // Pages uploaded on the other device show up without reopening the unit.
+    else if (pageId === 'page-unit' && current.lid && current.uid && typeof loadUnitContent === 'function') loadUnitContent();
+  } catch (e) {}
+}
+
+/* El A2 compartido (9 de octubre): él quiso que su compañera tuviera las Units
+ * 1-10 sin pasar un archivo por WhatsApp (no se podía descargar). a2.json está
+ * junto a la app, en la misma página: vocabulario, gramática, ejercicios y
+ * speaking, sin progreso, fotos ni textos suyos. Entra por la misma puerta que
+ * "Restore missing pages": solo agrega lo que falta, y en su aparato no cambia
+ * nada. Es público, como el código; él lo aceptó. */
+async function cargarA2Compartido() {
+  let texto;
+  try {
+    const r = await fetch('a2.json', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    texto = await r.text();
+  } catch (e) {
+    toast('Could not load the A2 — check your internet connection');
+    return;
+  }
+  const archivo = new File([texto], 'a2.json', { type: 'application/json' });
+  restorePagesFromBackup({ target: { files: [archivo], value: '' } });
+}
+
 /* Las páginas del aviso, una por línea; si son muchas, por unidad. El A2
  * entero para su compañera son 112 páginas: el aviso no cabía en la pantalla y
  * el botón "Restore" quedaba fuera, sin forma de llegar a él (8 de octubre). */
@@ -26706,7 +26737,7 @@ function restorePagesFromBackup(event) {
         applyPageFixes(state.units);
         state.stats.wordsLearned = countTotalWords();
         saveNow();
-        if (current.lid && current.uid && document.getElementById('page-unit')?.classList.contains('active')) loadUnitContent();
+        refrescarPaginaActual();
         updateNavBadges();
         if (window._syncToFirestore) window._syncToFirestore();
         toast(`✅ Restored: ${listaDePaginas([...faltan, ...llenar, ...nuevas], nombre).join(', ')}`);

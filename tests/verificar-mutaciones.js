@@ -1254,6 +1254,16 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     buscar: `    merged.classSchedule[89] = '2026-10-19';`,
     reemplazo: ``,
   },
+  {
+    nombre: 'que el botón del A2 busque un archivo que no existe',
+    buscar: `    const r = await fetch('a2.json', { cache: 'no-store' });`,
+    reemplazo: `    const r = await fetch('a2-compartido.json', { cache: 'no-store' });`,
+  },
+  {
+    nombre: 'que tras restaurar la pantalla siga en "No flashcards yet"',
+    buscar: `        refrescarPaginaActual();\n        updateNavBadges();`,
+    reemplazo: `        updateNavBadges();`,
+  },
 ];
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'devlearn-mut-'));
