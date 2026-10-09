@@ -392,7 +392,9 @@ from a backup". El aviso agrupa por unidad cuando son muchas (`listaDePaginas`) 
 se puede desplazar: antes el botón Restore quedaba fuera de la pantalla. Y los
 phrasal verbs de las Units 7-9 ya no entran dos veces al recargar. Sus textos
 de memorizar solo se siembran en un aparato suyo (el que ya los tenía): ella no
-los ve, y un aparato nuevo de él los trae de su nube con la bandera.
+los ve, y un aparato nuevo de él los trae de su nube con la bandera. Y el A2 viene dentro de la app: `a2.json`
+(las 10 unidades, sin progreso, fotos ni textos suyos) y el botón "📚 Load the A2
+book" (`cargarA2Compartido`), porque por WhatsApp el archivo no se descargaba.
 
 `fechas-clases.test.js` — Las fechas de las clases entre aparatos: cada cambio
 guarda su hora (`classScheduleAt`) y al juntar con la nube gana el más nuevo

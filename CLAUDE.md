@@ -165,6 +165,18 @@ libro. Si una foto trae dos páginas, `pages: [n, n+1]`.
 
 ---
 
+## El A2 compartido (`a2.json`)
+
+Él comparte la app con una compañera. `a2.json`, junto a `index.html`, trae las
+Units 1-10 (vocabulario, gramática, ejercicios, speaking) **sin progreso, fotos
+ni textos suyos**; el botón "📚 Load the A2 book" (`cargarA2Compartido`) lo carga
+por la misma puerta que "Restore missing pages". Es público, como el código: él lo
+aceptó el 9 de octubre (incluye unos 30 ejemplos con su vida). Se arma desde su
+respaldo **después** de que la app lo migra (para que salga con las correcciones),
+quitando `images`, `fcProgress` y todo lo de la unidad que no sea contenido.
+
+---
+
 ## Antes de publicar
 
 - Revisar la sintaxis de **los dos** bloques `<script>`, no solo el grande.

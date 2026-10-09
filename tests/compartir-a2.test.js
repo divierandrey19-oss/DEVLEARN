@@ -53,3 +53,45 @@ test('un aparato suyo nuevo trae la bandera de la nube, con todo lo de arriba', 
   assert.match(fuente, /Object\.keys\(imported\)\.forEach\(function\(k\) \{ state\[k\] = imported\[k\]; \}\);/);
   assert.match(fuente, /state\.texts = mergeTexts\(localTexts, imported\.texts\);/);
 });
+
+// ── El A2 dentro de la app: a2.json y el botón (9 de octubre) ──────────────
+// Por WhatsApp el archivo no se pudo descargar. Ahora la app trae el A2 de su
+// misma página, con un botón. Es público, como el código: él lo aceptó.
+
+const fs = require('node:fs');
+const path = require('node:path');
+
+test('a2.json: las 10 unidades del A2, sin progreso, fotos, textos ni nada suyo', () => {
+  const a2 = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'a2.json'), 'utf8'));
+  assert.deepEqual(Object.keys(a2).sort(), ['compartido', 'units']);
+  const claves = Object.keys(a2.units);
+  assert.deepEqual(claves, Array.from({ length: 10 }, (_, i) => `a2_${i + 1}`));
+  let tarjetas = 0;
+  for (const u of Object.values(a2.units)) {
+    assert.deepEqual(Object.keys(u).sort(), ['batches', 'description', 'fcProgress', 'key', 'lid', 'title', 'uid'], u.key);
+    assert.deepEqual(u.fcProgress, {}, `${u.key}: sin progreso`);
+    for (const b of u.batches) {
+      assert.equal(b.images, undefined, `${u.key}: sin fotos`);
+      assert.ok(b.id && (b.vocab || []).length + (b.grammar || []).length > 0, `${u.key}: página con contenido`);
+      tarjetas += b.vocab.length;
+    }
+  }
+  assert.ok(tarjetas > 3000, `${tarjetas} tarjetas`);
+  const texto = JSON.stringify(a2);
+  assert.doesNotMatch(texto, /sk-ant|@gmail|divier/i);
+  // Frases que solo están en sus textos de memorizar (los ejemplos del libro
+  // sí traen "niece": "My sister's children are my niece and nephew").
+  assert.doesNotMatch(texto, /txt_u|is turning fifteen|Let me tell you about my dreams|Let me tell you about my wishes/i, 'sin sus textos de memorizar');
+});
+
+test('el botón trae a2.json de la misma página y entra por la restauración', () => {
+  const cargar = h.extraerFuncion('cargarA2Compartido');
+  assert.match(cargar, /fetch\('a2\.json', \{ cache: 'no-store' \}\)/);
+  assert.match(cargar, /restorePagesFromBackup\(\{ target: \{ files: \[archivo\], value: '' \} \}\);/);
+  assert.equal(h.fuente().split('onclick="cargarA2Compartido()"').length - 1, 3, 'en Settings, en el Dashboard la primera vez y en Flashcards vacío');
+});
+
+test('al restaurar, la página abierta se vuelve a dibujar (no seguía en "No flashcards yet")', () => {
+  assert.match(h.extraerFuncion('restorePagesFromBackup'), /refrescarPaginaActual\(\);\n\s*updateNavBadges\(\);/);
+  assert.match(h.extraerFuncion('refrescarPaginaActual'), /pageId === 'page-flashcards-all' && typeof renderAllFlashcards === 'function'\) renderAllFlashcards\(\);/);
+});
