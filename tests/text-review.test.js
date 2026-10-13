@@ -26,6 +26,8 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('startTextReview')}
     ${h.extraerFuncion('textInReview')}
     ${h.extraerFuncion('textReviewDue')}
+    ${h.extraerFuncion('planDeRepaso')}
+    ${h.extraerFuncion('textoTocaEl')}
     ${h.extraerFuncion('scheduleTextReview')}
     ${h.extraerFuncion('textReviewOrder')}
     ${h.extraerFuncion('seedTextReviews')}
@@ -34,7 +36,7 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('toggleTextMastered')}
     ${h.extraerFuncion('markTextReview')}
     ${h.extraerFuncion('textosRecordadosHoy')}
-    return { addDaysLocal, scheduleTextReview, seedTextReviews, textReviewsDue,
+    return { addDaysLocal, scheduleTextReview, seedTextReviews, textReviewsDue, textoTocaEl,
              textReviewWhen, toggleTextMastered, markTextReview, textosRecordadosHoy };
   `, { state, todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, toast() {} });
   return { ...f, state };
@@ -237,4 +239,88 @@ test('"I remembered it" confirma en el Dashboard y en My texts; "I forgot parts"
   assert.equal(fuente.split(`onclick="confirmarRecordado('\${t.id}')">✅ I remembered it`).length - 1, 2);
   assert.doesNotMatch(fuente, /markTextReview\('\$\{t\.id\}', true\)/);
   assert.match(h.extraerFuncion('renderTextReview'), /onclick="markTextReview\('\$\{t\.id\}', false\)">🔁 I forgot parts/);
+});
+
+// ── El plan para el speaking del 16 de octubre (pedido el 13) ─────────────
+// "¿Y si me ayudas de aquí al jueves a repasar todos los textos de nuevo?
+// No contemos con el viernes." Martes la Unit 9, miércoles la Unit 10 y el
+// jueves todos, aunque su fecha de repaso sea más adelante.
+
+const MAR = '2026-10-13', MIE = '2026-10-14', JUE = '2026-10-15', VIE = '2026-10-16';
+
+function susOnce() {
+  const r = (due, last) => ({ step: 2, due, last });
+  return [
+    texto('97', 'U9 · pág 97', { review: r('2026-10-20', '2026-10-10') }),
+    texto('98', 'U9 · pág 98 - 99', { review: r('2026-10-18', '2026-10-11') }),
+    texto('100', 'U9 · pág 100 - 101', { review: r('2026-10-19', '2026-10-12') }),
+    texto('102', 'U9 · pág 102 - 103', { review: r('2026-10-22', '2026-10-08') }),
+    texto('104', 'U9 · pág 104 - 105', { review: r('2026-10-21', '2026-10-07') }),
+    texto('106', 'U9 · pág 106 - 107', { review: r('2026-10-17', '2026-10-10') }),
+    texto('109', 'U10 · pág 109', { review: r('2026-10-19', '2026-10-12') }),
+    texto('110', 'U10 · pág 110 - 111', { review: r('2026-10-18', '2026-10-11') }),
+    texto('112', 'U10 · pág 112 - 113', { review: r('2026-10-20', '2026-10-13') }),
+    texto('114', 'U10 · pág 114 - 115', { review: { step: 0, due: MAR, last: '2026-10-12' } }),
+    texto('116', 'U10 · pág 116 - 117', { review: { step: 1, due: JUE, last: '2026-10-12' } }),
+    texto('85', 'U8 · pág 85', { review: r('2026-10-20', '2026-10-01') }),
+  ];
+}
+const ids = lista => lista.map(t => t.id).sort();
+
+test('el martes salen los 6 de la Unit 9, más el que ya le tocaba por su fecha', () => {
+  const { textReviewsDue } = montar({ hoy: MAR });
+  assert.deepEqual(ids(textReviewsDue(susOnce(), MAR)), ['100', '102', '104', '106', '114', '97', '98']);
+});
+
+test('el miércoles los de la Unit 10, y los de la 9 ya repasados el martes no vuelven', () => {
+  const m = montar({ texts: susOnce(), hoy: MAR });
+  ['97', '98', '100', '102', '104', '106'].forEach(id => m.markTextReview(id, true));
+  m.markTextReview('114', true);
+  const { textReviewsDue } = montar({ hoy: MIE });
+  assert.deepEqual(ids(textReviewsDue(m.state.texts, MIE)), ['109', '110', '112', '114', '116'],
+    'el 112 se repasó el 13 por su fecha, pero el plan lo pide el 14');
+});
+
+test('el que no repasó el martes sigue saliendo el miércoles, como los atrasados', () => {
+  const m = montar({ texts: susOnce(), hoy: MAR });
+  ['97', '98', '100', '102', '104'].forEach(id => m.markTextReview(id, true));
+  const { textReviewsDue } = montar({ hoy: MIE });
+  assert.ok(ids(textReviewsDue(m.state.texts, MIE)).includes('106'));
+  assert.ok(!ids(textReviewsDue(m.state.texts, MIE)).includes('97'));
+});
+
+test('el jueves salen los 11 otra vez, y el que ya repasó el jueves se va', () => {
+  const m = montar({ texts: susOnce(), hoy: MAR });
+  ['97', '98', '100', '102', '104', '106', '114'].forEach(id => m.markTextReview(id, true));
+  const jue = montar({ texts: m.state.texts, hoy: JUE });
+  assert.deepEqual(ids(jue.textReviewsDue(jue.state.texts, JUE)),
+    ['100', '102', '104', '106', '109', '110', '112', '114', '116', '97', '98'], 'nunca la Unit 8');
+  jue.markTextReview('97', true);
+  assert.ok(!ids(jue.textReviewsDue(jue.state.texts, JUE)).includes('97'));
+  assert.equal(jue.textReviewsDue(jue.state.texts, JUE).length, 10);
+});
+
+test('después del jueves vuelve a mandar solo su fecha', () => {
+  const { textReviewsDue } = montar({ hoy: VIE });
+  assert.deepEqual(ids(textReviewsDue(susOnce(), VIE)), ['114', '116'], 'los dos ya vencidos por su fecha');
+});
+
+test('"Next review" dice el día del plan si llega antes que su fecha', () => {
+  const { textoTocaEl } = montar({ hoy: MAR });
+  const [, , , , , , t109, , , , t116, t85] = susOnce();
+  assert.equal(textoTocaEl(t109, MAR), MIE, 'Unit 10: mañana');
+  assert.equal(textoTocaEl(t116, MAR), MIE);
+  assert.equal(textoTocaEl(t85, MAR), null, 'la Unit 8 no está en el repaso');
+  assert.equal(textoTocaEl({ ...t109, mastered: false }, MAR), null, 'sin ✅ no está en el repaso');
+});
+
+test('My texts y el Dashboard usan el día del plan, no solo la fecha del repaso', () => {
+  const textos = h.extraerFuncion('renderTexts');
+  assert.match(textos, /const toca = textoTocaEl\(t, hoy\);/);
+  assert.match(textos, /\$\{toca && toca <= hoy \? `/, 'los botones salen en los del plan');
+  assert.match(textos, /Next review \$\{textReviewWhen\(toca, hoy\)\}/);
+  assert.doesNotMatch(textos, /t\.review\.due <= hoy/);
+  const tarjeta = h.extraerFuncion('renderTextReview');
+  assert.match(tarjeta, /const due = textReviewsDue\(state\.texts, hoy\);/);
+  assert.match(tarjeta, /textReviewWhen\(toca\(next\), hoy\)/);
 });
