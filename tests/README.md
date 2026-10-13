@@ -190,7 +190,10 @@ página hacia atrás, sin mover nada ya programado. Lo que marcó "I remembered
 it" hoy queda a la vista en la tarjeta, con ▶ Open y ↩ I forgot parts: el 6 de
 octubre lo tocó por error y no sabía cuál texto había sido. Y "I remembered it"
 pregunta antes de marcar (`confirmarRecordado`), en el Dashboard y en My texts:
-se equivoca seguido de botón.
+se equivoca seguido de botón. Para el speaking del 16 de octubre siguen el plan
+que pidió (`planDeRepaso`): el martes 13 los de la Unit 9, el miércoles los de
+la 10 y el jueves todos, aunque su fecha sea más adelante; el que no repasó ese
+día sigue saliendo, y pasado el jueves vuelve a mandar solo su fecha.
 
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de

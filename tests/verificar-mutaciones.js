@@ -1215,6 +1215,26 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  if (!true || !(\`Are you sure you remembered "\${t.title || 'this text'}"?`,
   },
   {
+    nombre: 'que el plan del speaking no adelante ningún texto',
+    buscar: `  return pendiente && pendiente < due ? pendiente : due;`,
+    reemplazo: `  return due;`,
+  },
+  {
+    nombre: 'que el plan vuelva a pedir lo que ya repasó ese día',
+    buscar: `plan[d].includes(unidad) && (t.review.last || '') < d);`,
+    reemplazo: `plan[d].includes(unidad));`,
+  },
+  {
+    nombre: 'que el plan siga mandando después del jueves',
+    buscar: `  if (!dias.length || hoy > dias[dias.length - 1]) return due;`,
+    reemplazo: `  if (!dias.length) return due;`,
+  },
+  {
+    nombre: 'que My texts no muestre los botones en los textos del plan',
+    buscar: `            \${toca && toca <= hoy ? \``,
+    reemplazo: `            \${textReviewDue(t) && t.review.due <= hoy ? \``,
+  },
+  {
     nombre: 'que cancelar la confirmación igual marque el texto',
     buscar: `If not, tap Cancel and choose "I forgot parts".\`)) return;`,
     reemplazo: `If not, tap Cancel and choose "I forgot parts".\`));`,
