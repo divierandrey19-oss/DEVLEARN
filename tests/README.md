@@ -193,7 +193,9 @@ pregunta antes de marcar (`confirmarRecordado`), en el Dashboard y en My texts:
 se equivoca seguido de botón. Para el speaking del 16 de octubre siguen el plan
 que pidió (`planDeRepaso`): el martes 13 los de la Unit 9, el miércoles los de
 la 10 y el jueves todos, aunque su fecha sea más adelante; el que no repasó ese
-día sigue saliendo, y pasado el jueves vuelve a mandar solo su fecha.
+día sigue saliendo, también el viernes del examen (el 16 en la mañana quería
+repasar los que le faltaron y ya no aparecían), y pasado el viernes vuelve a
+mandar solo su fecha.
 
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de
