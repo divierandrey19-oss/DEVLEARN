@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-13a -->
+<!-- DEVLEARN_BUILD: 2026-10-16a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4891,7 +4891,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-13a';
+const APP_BUILD = '2026-10-16a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17018,10 +17018,13 @@ function textReviewDue(t) {
  * vez todos los textos antes del jueves ("no contemos con el viernes"): el
  * martes los de la Unit 9, el miércoles los de la Unit 10 y el jueves todos.
  * Un texto del plan que no repasó ese día sigue saliendo los días siguientes,
- * como los atrasados. Pasado el jueves vuelve a mandar solo su fecha. Es una
- * función y no una constante por el orden del arranque (ver CLAUDE.md). */
+ * como los atrasados. El viernes, día del examen, no trae nada nuevo, pero lo
+ * que no alcanzó el jueves sigue saliendo (el 16 en la mañana quería repasar
+ * los que le faltaron y ya no aparecían). Pasado el viernes vuelve a mandar
+ * solo su fecha. Es una función y no una constante por el orden del arranque
+ * (ver CLAUDE.md). */
 function planDeRepaso() {
-  return { '2026-10-13': [9], '2026-10-14': [10], '2026-10-15': [9, 10] };
+  return { '2026-10-13': [9], '2026-10-14': [10], '2026-10-15': [9, 10], '2026-10-16': [] };
 }
 
 // El día que le toca: su fecha de repaso o, si es antes, el día del plan que

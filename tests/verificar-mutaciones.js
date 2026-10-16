@@ -1225,9 +1225,14 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `plan[d].includes(unidad));`,
   },
   {
-    nombre: 'que el plan siga mandando después del jueves',
+    nombre: 'que el plan siga mandando después del viernes',
     buscar: `  if (!dias.length || hoy > dias[dias.length - 1]) return due;`,
     reemplazo: `  if (!dias.length) return due;`,
+  },
+  {
+    nombre: 'que el día del examen ya no salga lo que faltó el jueves',
+    buscar: `'2026-10-15': [9, 10], '2026-10-16': [] };`,
+    reemplazo: `'2026-10-15': [9, 10] };`,
   },
   {
     nombre: 'que My texts no muestre los botones en los textos del plan',

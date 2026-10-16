@@ -300,9 +300,19 @@ test('el jueves salen los 11 otra vez, y el que ya repasó el jueves se va', () 
   assert.equal(jue.textReviewsDue(jue.state.texts, JUE).length, 10);
 });
 
-test('después del jueves vuelve a mandar solo su fecha', () => {
+// El 16 en la mañana: "quería repasar unos textos que me faltaron ayer, pero
+// ya hoy parecen todos completos".
+test('el viernes, día del examen, sigue saliendo lo que no repasó el jueves', () => {
+  const m = montar({ texts: susOnce(), hoy: JUE });
+  ['97', '98', '100', '102', '104', '109', '110', '114', '116'].forEach(id => m.markTextReview(id, true));
   const { textReviewsDue } = montar({ hoy: VIE });
-  assert.deepEqual(ids(textReviewsDue(susOnce(), VIE)), ['114', '116'], 'los dos ya vencidos por su fecha');
+  assert.deepEqual(ids(textReviewsDue(m.state.texts, VIE)), ['106', '112'], 'solo los dos que le faltaron');
+});
+
+test('después del viernes vuelve a mandar solo su fecha', () => {
+  const SAB = '2026-10-17';
+  const { textReviewsDue } = montar({ hoy: SAB });
+  assert.deepEqual(ids(textReviewsDue(susOnce(), SAB)), ['106', '114', '116'], 'los ya vencidos por su fecha');
 });
 
 test('"Next review" dice el día del plan si llega antes que su fecha', () => {
