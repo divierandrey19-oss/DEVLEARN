@@ -1121,8 +1121,33 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'que el repaso no se enfoque en las unidades del speaking test',
-    buscar: `  const session = SRS.buildDailySession(state.units, 20, foco && foco.keys);`,
+    buscar: `  const session = SRS.buildDailySession(state.units, 20, foco && foco.keys, !!(foco && foco.atrasadas));`,
     reemplazo: `  const session = SRS.buildDailySession(state.units, 20);`,
+  },
+  {
+    nombre: 'que pasado el speaking el repaso vuelva a quedar sin foco',
+    buscar: `  if (!m) return unidadesAtrasadas(st, nivel);`,
+    reemplazo: `  if (!m) return null;`,
+  },
+  {
+    nombre: 'que adelantar las unidades atrasadas no traiga palabras nuevas',
+    buscar: `    if (adelantar) {`,
+    reemplazo: `    if (false) {`,
+  },
+  {
+    nombre: 'que cuenten como atrasadas las unidades de otro nivel',
+    buscar: `    .filter(u => u && u.lid === nivel)`,
+    reemplazo: `    .filter(u => u)`,
+  },
+  {
+    nombre: 'que cuente como atrasada una unidad con pocas palabras sin ver',
+    buscar: `    .filter(f => f.sinVer >= 30)`,
+    reemplazo: `    .filter(f => f.sinVer >= 0)`,
+  },
+  {
+    nombre: 'que al adelantar salgan primero las preguntas del speaking',
+    buscar: `push(intercalarUnidades([...nuevas.filter(x => x.word.type !== 'question'), ...nuevas.filter(x => x.word.type === 'question')]), Math.round(maxCards * 0.5));`,
+    reemplazo: `push(intercalarUnidades(nuevas), Math.round(maxCards * 0.5));`,
   },
   {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
