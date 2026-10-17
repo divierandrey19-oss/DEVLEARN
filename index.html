@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-17b -->
+<!-- DEVLEARN_BUILD: 2026-10-17c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4733,6 +4733,8 @@ window._mergeCloudState = function(cloud) {
     const localMistakes  = [...(state.mistakeLog || [])];
     const localExamDate  = state.examDate;
     const localExamLabel = state.examLabel;
+    const localLastExport = state.lastExport;
+    const localSnoozed    = state.backupReminderSnoozed;
     /* Pages he deleted on purpose, from either side. A page missing from the
      * snapshot used to be read as "another device deleted it" — but a device
      * whose copy was simply old (the computer, open since before he uploaded
@@ -4873,6 +4875,12 @@ window._mergeCloudState = function(cloud) {
     state.mistakeLog = unionBy(localMistakes, imported.mistakeLog,
       m => `${m && m.source}|${(m && m.wrong || '').toLowerCase()}|${(m && m.right || '').toLowerCase()}`);
     if (!state.examDate && localExamDate) { state.examDate = localExamDate; state.examLabel = state.examLabel || localExamLabel; }
+    /* El día de la última copia descargada y el "Later" del aviso de respaldo:
+     * gana el más reciente de los dos lados. El aviso le salía todo el tiempo
+     * aunque descargara (17 de octubre): la nube traía su fecha vieja, el
+     * 2026-10-09, y la del día que acababa de descargar se perdía. */
+    state.lastExport = fechaMasReciente(localLastExport, imported.lastExport);
+    state.backupReminderSnoozed = fechaMasReciente(localSnoozed, imported.backupReminderSnoozed);
     healUnitTitles(state.units);
 
     // We have now reconciled with this snapshot: the cloud holds exactly these
@@ -4891,7 +4899,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-17b';
+const APP_BUILD = '2026-10-17c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12551,6 +12559,11 @@ function hideStorageBanner() {
  * the same event; a file in Downloads cannot. Deliberately quiet — it's a
  * reminder, not a failure: it sits at the bottom, dismisses, blocks nothing. */
 const BACKUP_REMINDER_DAYS = 7;
+// De dos fechas 'YYYY-MM-DD' (o ninguna), la más reciente.
+function fechaMasReciente(a, b) {
+  return [a, b].filter(Boolean).sort().pop();
+}
+
 function daysSinceExport() {
   if (!state.lastExport) return null;              // never exported
   const then = new Date(state.lastExport + 'T00:00:00');
