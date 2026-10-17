@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-17a -->
+<!-- DEVLEARN_BUILD: 2026-10-17b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4891,7 +4891,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-17a';
+const APP_BUILD = '2026-10-17b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -26716,7 +26716,7 @@ function refrescarPaginaActual() {
  * speaking, sin progreso, fotos ni textos suyos. Entra por la misma puerta que
  * "Restore missing pages": solo agrega lo que falta, y en su aparato no cambia
  * nada. Es público, como el código; él lo aceptó. */
-async function cargarA2Compartido() {
+async function cargarA2Compartido(alTerminar = null) {
   let texto;
   try {
     const r = await fetch('a2.json', { cache: 'no-store' });
@@ -26724,10 +26724,145 @@ async function cargarA2Compartido() {
     texto = await r.text();
   } catch (e) {
     toast('Could not load the A2 — check your internet connection');
+    if (alTerminar) alTerminar(false);
     return;
   }
   const archivo = new File([texto], 'a2.json', { type: 'application/json' });
-  restorePagesFromBackup({ target: { files: [archivo], value: '' } });
+  restorePagesFromBackup({ target: { files: [archivo], value: '' } }, alTerminar);
+}
+
+/* ── La bienvenida para otros estudiantes (17 de octubre) ──────────────────
+ * Él quiere que la app ayude a otros estudiantes a mejorar su inglés. En un
+ * aparato vacío pide entrar con Google (obligatorio, lo decidió él: así el
+ * progreso queda en la nube y no se pierde al cambiar de celular) y, si la
+ * cuenta no trae nada, el nombre y el nivel. Con el A2 el libro se carga solo,
+ * sin preguntar; los demás niveles dicen "Coming soon".
+ *
+ * En un aparato con páginas o textos (los suyos, el de su compañera) nunca
+ * sale. Si la cuenta ya tenía datos en la nube (él en un celular nuevo), los
+ * trae y no pregunta nada. Y nunca si la carga falló (__loadCorrupt): ahí
+ * manda el aviso de recuperación, no esto. */
+function necesitaBienvenida(st) {
+  if (!st) return false;
+  const conPaginas = Object.values(st.units || {}).some(u => u && (u.batches || []).length > 0);
+  return !conPaginas && !(st.texts || []).length && !st.profile;
+}
+
+// Por ahora solo el A2 tiene libro para cargar.
+function nivelDisponible(id) {
+  return id === 'a2';
+}
+
+function abrirBienvenida() {
+  if (document.getElementById('bienvenida')) return;
+  const ov = document.createElement('div');
+  ov.id = 'bienvenida';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9500;background:var(--bg, #0d1117);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
+  document.body.appendChild(ov);
+  if (window._fb && window._fb._user) pasoEsperandoNube();
+  else pasoGoogle();
+}
+
+function cerrarBienvenida() {
+  document.getElementById('bienvenida')?.remove();
+}
+
+function pasoBienvenida(html) {
+  const ov = document.getElementById('bienvenida');
+  if (!ov) return;
+  ov.innerHTML = `<div style="background:var(--bg-2, #161b22);border:1px solid var(--border);border-radius:20px;max-width:420px;width:100%;padding:28px 22px;text-align:center;margin:auto;">${html}</div>`;
+}
+
+function pasoGoogle(error) {
+  pasoBienvenida(`
+    <div style="font-size:2.6rem;margin-bottom:8px;">👋</div>
+    <div style="font-size:1.4rem;font-weight:800;margin-bottom:8px;">Welcome to DEV LEARN</div>
+    <div style="font-size:0.9rem;color:var(--text-3);line-height:1.5;margin-bottom:20px;">Your English book, flashcards and practice in one place. Sign in with Google so your progress is always saved.</div>
+    ${error ? `<div style="font-size:0.82rem;color:var(--red, #ff453a);margin-bottom:12px;">${escapeHtml(error)}</div>` : ''}
+    <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="entrarBienvenida()">Continue with Google</button>`);
+}
+
+async function entrarBienvenida() {
+  if (!window._fb || !window._fb.auth) { pasoGoogle('No connection. Connect to the internet and try again.'); return; }
+  try {
+    await window._fb.signInWithPopup(window._fb.auth, new window._fb.GoogleAuthProvider());
+  } catch (e) {
+    pasoGoogle(e && e.code === 'auth/popup-closed-by-user' ? 'Sign-in was cancelled. Try again.' : 'Could not sign in. Check your connection and try again.');
+    return;
+  }
+  pasoEsperandoNube();
+}
+
+function pasoEsperandoNube() {
+  pasoBienvenida(`
+    <div style="font-size:2.2rem;margin-bottom:8px;">⏳</div>
+    <div style="font-weight:700;">Getting your account ready…</div>`);
+  if (window.__nubeRevisada) { despuesDeLaNube(window.__nubeRevisada); return; }
+  window.addEventListener('devlearn:nube-revisada', e => despuesDeLaNube(e.detail), { once: true });
+}
+
+function despuesDeLaNube(r) {
+  if (!document.getElementById('bienvenida')) return;
+  // La cuenta ya tenía sus páginas en la nube: se quedan, sin preguntar nada.
+  if (!necesitaBienvenida(state)) {
+    cerrarBienvenida();
+    renderDashboard();
+    toast('☁️ Welcome back! Your progress is here');
+    return;
+  }
+  if (r && r.ok === false) {
+    pasoBienvenida(`
+      <div style="font-size:2.2rem;margin-bottom:8px;">📡</div>
+      <div style="font-weight:700;margin-bottom:8px;">Could not reach the cloud</div>
+      <div style="font-size:0.85rem;color:var(--text-3);margin-bottom:16px;">Check your internet connection and try again.</div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="window.__nubeRevisada = null; pasoEsperandoNube(); window._loadFromFirestore && window._loadFromFirestore();">Try again</button>`);
+    return;
+  }
+  pasoNombreNivel();
+}
+
+function pasoNombreNivel(error, nombre) {
+  const deGoogle = ((window._fb && window._fb._user && window._fb._user.displayName) || '').split(' ')[0];
+  pasoBienvenida(`
+    <div style="font-size:1.35rem;font-weight:800;margin-bottom:16px;">Tell us about you</div>
+    <label style="display:block;text-align:left;font-size:0.75rem;color:var(--text-3);margin-bottom:4px;">Your name</label>
+    <input type="text" id="bv-nombre" maxlength="40" autocomplete="given-name" value="${escapeHtml(nombre != null ? nombre : deGoogle)}"
+      style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:1rem;margin-bottom:16px;">
+    <label style="display:block;text-align:left;font-size:0.75rem;color:var(--text-3);margin-bottom:6px;">Your level</label>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${LEVELS.map(l => nivelDisponible(l.id)
+        ? `<button class="btn btn-ghost" data-nivel="${l.id}" aria-pressed="false" style="justify-content:space-between;padding:12px 14px;" onclick="escogerNivelBienvenida('${l.id}')"><span>${escapeHtml(l.full)}</span><span>○</span></button>`
+        : `<button class="btn btn-ghost" disabled style="justify-content:space-between;padding:12px 14px;opacity:0.45;"><span>${escapeHtml(l.full)}</span><span style="font-size:0.72rem;">Coming soon</span></button>`).join('')}
+    </div>
+    ${error ? `<div style="font-size:0.82rem;color:var(--red, #ff453a);margin-bottom:12px;">${escapeHtml(error)}</div>` : ''}
+    <button class="btn btn-primary" style="width:100%;padding:13px;" onclick="empezarBienvenida()">Start</button>`);
+}
+
+function escogerNivelBienvenida(id) {
+  document.querySelectorAll('#bienvenida [data-nivel]').forEach(b => {
+    const si = b.dataset.nivel === id;
+    b.setAttribute('aria-pressed', si ? 'true' : 'false');
+    b.style.borderColor = si ? 'var(--accent)' : '';
+    b.lastElementChild.textContent = si ? '●' : '○';
+  });
+}
+
+function empezarBienvenida() {
+  const nombre = (document.getElementById('bv-nombre')?.value || '').trim();
+  const nivel = document.querySelector('#bienvenida [data-nivel][aria-pressed="true"]')?.dataset.nivel;
+  if (!nombre) { toast('Write your name'); return; }
+  if (!nivel || !nivelDisponible(nivel)) { toast('Choose your level'); return; }
+  pasoBienvenida(`
+    <div style="font-size:2.2rem;margin-bottom:8px;">📚</div>
+    <div style="font-weight:700;">Loading your ${escapeHtml(nivel.toUpperCase())} book…</div>`);
+  cargarA2Compartido(ok => {
+    if (!ok) { pasoNombreNivel('Could not load the book. Check your connection and try again.', nombre); return; }
+    state.profile = { name: nombre, level: nivel, since: todayLocal() };
+    save();
+    cerrarBienvenida();
+    renderDashboard();
+    toast(`Welcome, ${nombre}! Your ${nivel.toUpperCase()} book is ready 📚`);
+  });
 }
 
 /* Las páginas del aviso, una por línea; si son muchas, por unidad. El A2
@@ -26743,7 +26878,8 @@ function listaDePaginas(items, nombre, maximo = 12) {
   return [...porUnidad].map(([k, n]) => `${k} — ${n} page${n !== 1 ? 's' : ''}`);
 }
 
-function restorePagesFromBackup(event) {
+/* Con alTerminar (la bienvenida) no pregunta: carga y avisa si salió bien. */
+function restorePagesFromBackup(event, alTerminar = null) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -26751,12 +26887,12 @@ function restorePagesFromBackup(event) {
     event.target.value = '';
     let backup;
     try { backup = JSON.parse(e.target.result); } catch (err) { backup = null; }
-    if (!backup || !backup.units) { toast('Invalid backup file'); return; }
+    if (!backup || !backup.units) { toast('Invalid backup file'); if (alTerminar) alTerminar(false); return; }
     const faltan = missingBatchesFromBackup(state, backup);
     const llenar = emptyBatchesToFill(state, backup);
     const porLlenar = new Set(llenar.map(f => f.batch.id));
     const nuevas = newerContentFromBackup(state, backup).filter(f => !porLlenar.has(f.batch.id));
-    if (!faltan.length && !nuevas.length && !llenar.length) { toast('✅ Nothing missing — every page in that backup is already here'); return; }
+    if (!faltan.length && !nuevas.length && !llenar.length) { toast('✅ Nothing missing — every page in that backup is already here'); if (alTerminar) alTerminar(true); return; }
     // Con el nivel: un archivo de páginas hechas en el chat puede traer el B1.
     const nombre = f => `${String(f.unit.lid || '').toUpperCase()} Unit ${f.unit.uid} · ${bookPageLabel(f.batch) || f.batch.title || 'page'}`;
     const lista = items => listaDePaginas(items, nombre).join('\n• ');
@@ -26765,7 +26901,8 @@ function restorePagesFromBackup(event) {
     if (llenar.length) partes.push(`Photos waiting for Claude that get their content:\n\n• ${lista(llenar)}\n\nThey get their page number, words, grammar, exercises and questions.`);
     if (nuevas.length) partes.push(`Pages whose grammar and exercises are newer in the backup:\n\n• ${lista(nuevas)}\n\nOnly their grammar, exercises and speaking come back. Your cards and progress stay as they are.`);
     const total = faltan.length + nuevas.length + llenar.length;
-    confirmAction({
+    const preguntar = alTerminar ? o => o.onConfirm() : confirmAction;
+    preguntar({
       title: `Restore ${total} page${total !== 1 ? 's' : ''}?`,
       message: `${partes.join('\n\n')}\n\nNothing else changes.`,
       confirmText: '↺ Restore',
@@ -26810,6 +26947,7 @@ function restorePagesFromBackup(event) {
         updateNavBadges();
         if (window._syncToFirestore) window._syncToFirestore();
         toast(`✅ Restored: ${listaDePaginas([...faltan, ...llenar, ...nuevas], nombre).join(', ')}`);
+        if (alTerminar) alTerminar(true);
       },
     });
   };
@@ -27209,6 +27347,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderDashboard();
   updateNavBadges();
+  // Un estudiante nuevo, en un aparato vacío: entrar con Google, nombre y nivel.
+  if (!window.__loadCorrupt && necesitaBienvenida(state)) abrirBienvenida();
 
   /* Last, and only if nothing more urgent is on screen: a corrupt-load or
    * blocked-save banner needs the spot more than a routine backup nudge, and
@@ -27651,6 +27791,13 @@ window._syncToFirestore = function() {
   }, 4000);
 };
 
+/* La bienvenida (abrirBienvenida) espera esto para saber si la cuenta trajo
+ * algo de la nube: si trajo, no pregunta nada; si no, pide el nombre y el
+ * nivel. Queda anotado por si la bienvenida se abre después del aviso. */
+function avisarNubeRevisada(ok) {
+  window.__nubeRevisada = { ok };
+  window.dispatchEvent(new CustomEvent('devlearn:nube-revisada', { detail: { ok } }));
+}
 window._loadFromFirestore = function(forceLoad) {
   if (!window._fb._user) return;
 
@@ -27667,6 +27814,7 @@ window._loadFromFirestore = function(forceLoad) {
       // Immediate: the status flips to 'synced' on the next line.
       if (window._syncToFirestoreNow) window._syncToFirestoreNow();
       window._updateSyncStatus && window._updateSyncStatus('synced');
+      avisarNubeRevisada(true);
       return;
     }
 
@@ -27694,9 +27842,11 @@ window._loadFromFirestore = function(forceLoad) {
       if (window._syncToFirestoreNow) window._syncToFirestoreNow();
     }
     window._updateSyncStatus && window._updateSyncStatus('synced');
+    avisarNubeRevisada(true);
   }).catch(function(e) {
     console.warn('Load error:', e);
     window._updateSyncStatus && window._updateSyncStatus('error');
+    avisarNubeRevisada(false);
   });
 
   // Keep listener only for status indicator (green dot), not for pulling data

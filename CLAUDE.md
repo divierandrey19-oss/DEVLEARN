@@ -175,6 +175,15 @@ aceptó el 9 de octubre (incluye unos 30 ejemplos con su vida). Se arma desde su
 respaldo **después** de que la app lo migra (para que salga con las correcciones),
 quitando `images`, `fcProgress` y todo lo de la unidad que no sea contenido.
 
+**La bienvenida** (17 de octubre: quiere que la app ayude a otros estudiantes).
+En un aparato vacío (`necesitaBienvenida`: sin páginas, sin textos, sin
+`profile`) pide entrar con Google (obligatorio, lo decidió él), el nombre y el
+nivel, y con el A2 carga `a2.json` sin el aviso de "Restore" (`alTerminar`).
+Los demás niveles dicen "Coming soon" hasta que tengan libro (`nivelDisponible`).
+Nunca sale en un aparato con datos ni si la carga falló (`__loadCorrupt`), y una
+cuenta que ya tiene datos en la nube los trae sin preguntar
+(`avisarNubeRevisada`). Sus ejemplos en el A2 se quedan (lo decidió él).
+
 ---
 
 ## Antes de publicar

@@ -1150,6 +1150,38 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `push(intercalarUnidades(nuevas), Math.round(maxCards * 0.5));`,
   },
   {
+    nombre: 'que la bienvenida salga aunque la carga haya fallado',
+    buscar: `  if (!window.__loadCorrupt && necesitaBienvenida(state)) abrirBienvenida();`,
+    reemplazo: `  if (necesitaBienvenida(state)) abrirBienvenida();`,
+  },
+  {
+    nombre: 'que la bienvenida salga en un aparato que solo tiene textos',
+    buscar: `  return !conPaginas && !(st.texts || []).length && !st.profile;`,
+    reemplazo: `  return !conPaginas && !st.profile;`,
+  },
+  {
+    nombre: 'que se puedan escoger niveles sin libro',
+    buscar: `  return id === 'a2';`,
+    reemplazo: `  return true;`,
+  },
+  {
+    nombre: 'que el botón Restore de siempre deje de preguntar',
+    buscar: `    const preguntar = alTerminar ? o => o.onConfirm() : confirmAction;`,
+    reemplazo: `    const preguntar = o => o.onConfirm();`,
+  },
+  {
+    nombre: 'que una cuenta con datos en la nube igual pase por el nombre y el nivel',
+    buscar: `  if (!necesitaBienvenida(state)) {
+    cerrarBienvenida();`,
+    reemplazo: `  if (false) {
+    cerrarBienvenida();`,
+  },
+  {
+    nombre: 'que la bienvenida se quede esperando si la nube no responde',
+    buscar: `    avisarNubeRevisada(false);`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

@@ -322,7 +322,11 @@ turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
 Antes de un speaking test se enfoca en sus unidades (`focoDelRepaso` lee el
 próximo examen del calendario del curso, "SPEAKING TEST / Units 9-10", hasta su
 fecha): 14 de 20 de esas unidades, con las preguntas primero entre las nuevas, y
-6 del resto. Pasada la fecha o marcado como hecho, vuelve a mezclar todo.
+6 del resto. Pasado el speaking (17 de octubre, él lo pidió), sin un examen de
+unidades por delante, el foco son las 3 unidades con más palabras sin ver
+(`unidadesAtrasadas`, 30 o más): la mitad de la sesión son nuevas de ellas, por
+turnos desde la primera página, y la otra mitad el repaso de siempre. Pruebas
+con la sesión real del SRS de la app.
 
 `palabras-dificiles.test.js` — Al final de Flashcards, "Words you miss most":
 las palabras falladas 2 veces o más (`palabrasDificiles`), la que más falla
@@ -400,6 +404,13 @@ de memorizar solo se siembran en un aparato suyo (el que ya los tenía): ella no
 los ve, y un aparato nuevo de él los trae de su nube con la bandera. Y el A2 viene dentro de la app: `a2.json`
 (las 10 unidades, sin progreso, fotos ni textos suyos) y el botón "📚 Load the A2
 book" (`cargarA2Compartido`), porque por WhatsApp el archivo no se descargaba.
+
+`bienvenida.test.js` — La bienvenida para otros estudiantes (17 de octubre): en
+un aparato vacío pide entrar con Google, el nombre y el nivel, y con el A2 carga
+el libro sin preguntar. Que nunca salga donde hay páginas, textos o perfil (ni
+con su respaldo real, si está), ni si la carga falló; que una cuenta con datos
+en la nube no pase por las preguntas; que solo el A2 se pueda escoger; y que el
+botón "Restore" de siempre siga preguntando.
 
 `fechas-clases.test.js` — Las fechas de las clases entre aparatos: cada cambio
 guarda su hora (`classScheduleAt`) y al juntar con la nube gana el más nuevo

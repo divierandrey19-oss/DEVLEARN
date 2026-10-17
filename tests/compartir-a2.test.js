@@ -87,7 +87,7 @@ test('a2.json: las 10 unidades del A2, sin progreso, fotos, textos ni nada suyo'
 test('el botón trae a2.json de la misma página y entra por la restauración', () => {
   const cargar = h.extraerFuncion('cargarA2Compartido');
   assert.match(cargar, /fetch\('a2\.json', \{ cache: 'no-store' \}\)/);
-  assert.match(cargar, /restorePagesFromBackup\(\{ target: \{ files: \[archivo\], value: '' \} \}\);/);
+  assert.match(cargar, /restorePagesFromBackup\(\{ target: \{ files: \[archivo\], value: '' \} \}, alTerminar\);/);
   assert.equal(h.fuente().split('onclick="cargarA2Compartido()"').length - 1, 3, 'en Settings, en el Dashboard la primera vez y en Flashcards vacío');
 });
 
