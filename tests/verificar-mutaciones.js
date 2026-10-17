@@ -1182,6 +1182,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: ``,
   },
   {
+    nombre: 'que la nube vuelva a borrar el día de la copia descargada',
+    buscar: `    state.lastExport = fechaMasReciente(localLastExport, imported.lastExport);`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que la nube vuelva a borrar el "Later" del aviso de respaldo',
+    buscar: `    state.backupReminderSnoozed = fechaMasReciente(localSnoozed, imported.backupReminderSnoozed);`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que gane la fecha más vieja del respaldo',
+    buscar: `  return [a, b].filter(Boolean).sort().pop();`,
+    reemplazo: `  return [a, b].filter(Boolean).sort().shift();`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,

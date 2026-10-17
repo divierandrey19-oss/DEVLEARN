@@ -36,6 +36,8 @@ function unir(local, nube) {
     ${h.extraerFuncion('mergeFcProgress')}
     ${h.extraerFuncion('mergeTextCopy')}
     ${h.extraerFuncion('mergeTexts')}
+    ${h.extraerFuncion('unirFechasDeClase')}
+    ${h.extraerFuncion('fechaMasReciente')}
     ${funcionDeVentana('_mergeCloudState')}
     window._mergeCloudState(nube);
   `, {
@@ -265,4 +267,28 @@ test('el respaldo devuelve la gramática regenerada, sin tocar tarjetas ni progr
   assert.match(restaurar, /const aqui = \(\(\(state\.units \|\| \{\}\)\[unitKey\] \|\| \{\}\)\.batches \|\| \[\]\)\.find\(b => b && b\.id === batch\.id\);/,
     'se busca la página al confirmar, no al leer el archivo');
   assert.doesNotMatch(h.extraerFuncion('generatedFields'), /vocab|images|pages/);
+});
+
+// ---------------------------------------------------------------------------
+// El aviso de respaldo (17 de octubre): "me está apareciendo todo el tiempo así
+// lo descargue". Descargar anota el día (lastExport) y "Later" también
+// (backupReminderSnoozed), pero la unión copiaba los campos de arriba de la
+// nube, y la nube traía el 2026-10-09: el día que él acababa de descargar se
+// perdía. Sus respaldos del 9 y del 16 tienen el "Later" pegado en el 9.
+// ---------------------------------------------------------------------------
+
+const unidad = { units: { a2_10: { batches: [lote('p109')] } } };
+
+test('la copia que acaba de descargar aquí no la borra la fecha vieja de la nube', () => {
+  const r = unir({ ...unidad, lastExport: '2026-10-17', backupReminderSnoozed: '2026-10-17' },
+                 { ...unidad, lastExport: '2026-10-09', backupReminderSnoozed: '2026-10-09' });
+  assert.equal(r.lastExport, '2026-10-17');
+  assert.equal(r.backupReminderSnoozed, '2026-10-17');
+});
+
+test('si la descargó en el otro aparato, esa fecha llega aquí', () => {
+  const r = unir({ ...unidad, lastExport: '2026-10-09' }, { ...unidad, lastExport: '2026-10-16' });
+  assert.equal(r.lastExport, '2026-10-16');
+  const nunca = unir({ ...unidad }, { ...unidad });
+  assert.equal(nunca.lastExport, undefined, 'si nunca descargó, sigue sin fecha');
 });
