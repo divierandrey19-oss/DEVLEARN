@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-17c -->
+<!-- DEVLEARN_BUILD: 2026-10-18a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4481,6 +4481,12 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
       </div>
       <div id="import-export-status" style="margin-top:10px;font-size:0.75rem;"></div>
 
+      <!-- Quién estudia con la app: solo sale si Firebase deja leer la lista (él) -->
+      <div id="people-section" style="display:none;margin-top:18px;">
+        <div style="font-size:0.85rem;font-weight:600;margin-bottom:6px;">👥 People studying</div>
+        <div id="people-list" style="font-size:0.8rem;"></div>
+      </div>
+
       <!-- Storage usage -->
       <div id="storage-usage" style="margin-top:14px;padding:10px 12px;background:var(--card);border-radius:10px;font-size:0.75rem;color:var(--text-3);line-height:1.6;">
         Calculating space…
@@ -4899,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-17c';
+const APP_BUILD = '2026-10-18a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -26761,6 +26767,35 @@ function necesitaBienvenida(st) {
   return !conPaginas && !(st.texts || []).length && !st.profile;
 }
 
+/* "Today 6:41 AM", "Yesterday 9:10 PM", "3 days ago": cuándo abrió la app
+ * cada estudiante, en la lista de Settings. */
+function cuandoAbrio(ms, ahora = Date.now()) {
+  if (!ms) return 'never';
+  const hora = new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dia = t => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  const dias = Math.round((dia(ahora) - dia(ms)) / 86400000);
+  if (dias <= 0) return `Today ${hora}`;
+  if (dias === 1) return `Yesterday ${hora}`;
+  return `${dias} days ago`;
+}
+
+// La lista se pide al abrir Settings. Sale solo si Firebase deja leerla.
+async function mostrarEstudiantes() {
+  const sec = document.getElementById('people-section');
+  const lista = document.getElementById('people-list');
+  if (!sec || !lista || !window._leerEstudiantes) return;
+  let gente;
+  try { gente = await window._leerEstudiantes(); } catch (e) { gente = null; }
+  if (!gente) { sec.style.display = 'none'; return; }
+  gente.sort((a, b) => (b.lastOpen || 0) - (a.lastOpen || 0));
+  lista.innerHTML = gente.length
+    ? gente.map(p => `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-weight:600;">${escapeHtml(p.name)}</span>
+        <span style="color:var(--text-3);">${escapeHtml(cuandoAbrio(p.lastOpen))}</span></div>`).join('')
+    : '<div style="color:var(--text-3);">Nobody yet.</div>';
+  sec.style.display = '';
+}
+
 // Por ahora solo el A2 tiene libro para cargar.
 function nivelDisponible(id) {
   return id === 'a2';
@@ -27124,6 +27159,7 @@ async function renderStorageUsage() {
 function openSettings() {
   const modal = document.getElementById('settings-modal');
   modal.classList.add('open');
+  mostrarEstudiantes();
   // Ask GitHub what's actually deployed vs what this device is running
   checkDeployStatus();
   renderStorageUsage();
@@ -27650,7 +27686,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, getDocs } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
 
 const firebaseConfig = {
@@ -27666,7 +27702,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, serverTimestamp, GoogleAuthProvider, signInWithPopup, signOut };
+window._fb = { db, auth, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, getDocs, GoogleAuthProvider, signInWithPopup, signOut };
 
 /* Sin las fotos. Antes era una copia completa (convertir todo a texto y de
  * vuelta) solo para quitarlas, y después se convertía a texto otra vez para
@@ -27810,7 +27846,42 @@ window._syncToFirestore = function() {
 function avisarNubeRevisada(ok) {
   window.__nubeRevisada = { ok };
   window.dispatchEvent(new CustomEvent('devlearn:nube-revisada', { detail: { ok } }));
+  if (ok) anotarVisita();
 }
+
+/* La lista de quién estudia con la app (18 de octubre): él quiere ver el
+ * nombre de cada uno y la última vez que la abrió (el nivel no le importa).
+ * Cada aparato anota solo eso en students/{uid}: nada de su progreso, sus
+ * textos ni su correo. Como mucho una vez cada 30 minutos. Las reglas de
+ * Firebase dejan que cada uno escriba el suyo y que solo él lea la lista; si
+ * todavía no están puestas, la escritura falla en silencio y nada más cambia. */
+function anotarVisita() {
+  const user = window._fb && window._fb._user;
+  if (!user || !window._fb.db) return;
+  try {
+    const antes = Number(sessionStorage.getItem('devlearn_visita') || 0);
+    if (Date.now() - antes < 30 * 60 * 1000) return;
+    sessionStorage.setItem('devlearn_visita', String(Date.now()));
+  } catch (e) {}
+  const perfil = (window._appState ? window._appState() : {}).profile || {};
+  const name = String(perfil.name || user.displayName || 'Student').slice(0, 60);
+  window._fb.setDoc(window._fb.doc(window._fb.db, 'students', user.uid),
+    { name, lastOpen: window._fb.serverTimestamp() }, { merge: true }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') anotarVisita();
+});
+
+// La lista para Settings. Si las reglas no lo dejan (cualquiera que no sea
+// él), lanza el error y la sección sigue escondida.
+window._leerEstudiantes = async function() {
+  if (!window._fb || !window._fb._user || !window._fb.db) return null;
+  const snap = await window._fb.getDocs(window._fb.collection(window._fb.db, 'students'));
+  return snap.docs.map(d => {
+    const x = d.data() || {};
+    return { name: x.name || 'Student', lastOpen: x.lastOpen && x.lastOpen.toMillis ? x.lastOpen.toMillis() : null };
+  });
+};
 window._loadFromFirestore = function(forceLoad) {
   if (!window._fb._user) return;
 

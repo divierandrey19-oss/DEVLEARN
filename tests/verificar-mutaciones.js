@@ -1197,6 +1197,21 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  return [a, b].filter(Boolean).sort().shift();`,
   },
   {
+    nombre: 'que la lista de estudiantes salga aunque Firebase no deje leerla',
+    buscar: `  if (!gente) { sec.style.display = 'none'; return; }`,
+    reemplazo: `  if (!gente) gente = [];`,
+  },
+  {
+    nombre: 'que cada visita se anote sin límite de tiempo',
+    buscar: `    if (Date.now() - antes < 30 * 60 * 1000) return;`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'que "Yesterday" diga otra cosa',
+    buscar: `  if (dias === 1) return \`Yesterday \${hora}\`;`,
+    reemplazo: `  if (dias === 2) return \`Yesterday \${hora}\`;`,
+  },
+  {
     nombre: 'que la Unit 5 vuelva a dejar los platos raros con su país',
     buscar: `    ['Peruvian grilled fish', 'grilled fish'],`,
     reemplazo: ``,
