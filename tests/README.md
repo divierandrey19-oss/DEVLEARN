@@ -412,6 +412,11 @@ con su respaldo real, si está), ni si la carga falló; que una cuenta con datos
 en la nube no pase por las preguntas; que solo el A2 se pueda escoger; y que el
 botón "Restore" de siempre siga preguntando.
 
+`estudiantes.test.js` — La lista de quién estudia con la app (18 de octubre):
+cada aparato anota solo el nombre y la hora (`anotarVisita`, sin progreso ni
+correo, como mucho cada 30 minutos); en Settings la lista sale solo si Firebase
+deja leerla, la más reciente primero, y un nombre con < o > no se vuelve HTML.
+
 `fechas-clases.test.js` — Las fechas de las clases entre aparatos: cada cambio
 guarda su hora (`classScheduleAt`) y al juntar con la nube gana el más nuevo
 (`unirFechasDeClase`); antes ganaba siempre la nube, y el computador viejo devolvió

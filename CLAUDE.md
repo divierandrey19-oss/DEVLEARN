@@ -184,6 +184,13 @@ Nunca sale en un aparato con datos ni si la carga falló (`__loadCorrupt`), y un
 cuenta que ya tiene datos en la nube los trae sin preguntar
 (`avisarNubeRevisada`). Sus ejemplos en el A2 se quedan (lo decidió él).
 
+**La lista de estudiantes** (18 de octubre: "nombre y la última vez", el nivel no
+le importa). Cada aparato con sesión anota en `students/{uid}` solo
+`{ name, lastOpen }` (`anotarVisita`, como mucho cada 30 minutos): nada de su
+progreso, sus textos ni su correo. Settings → "People studying" sale solo si
+Firebase deja leer la colección; quién puede leerla lo deciden las reglas de
+Firestore (su `uid`), no el código.
+
 ---
 
 ## Antes de publicar
