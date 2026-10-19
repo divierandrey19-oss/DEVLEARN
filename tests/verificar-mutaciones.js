@@ -399,6 +399,21 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Viaje: que el grupo de Cartagena desaparezca de My life',
+    buscar: `    { titulo: '✈️ My trip to Cartagena', fams: TRIP_FAMILIES },`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Viaje: que las tarjetas del viaje no encuentren su frase del frente',
+    buscar: `function lifeFamilies() { return SHOP_FAMILIES.concat(HOME_FAMILIES, PHRASE_FAMILIES, TRIP_FAMILIES); }`,
+    reemplazo: `function lifeFamilies() { return SHOP_FAMILIES.concat(HOME_FAMILIES, PHRASE_FAMILIES); }`,
+  },
+  {
+    nombre: 'Viaje: que tocar un grupo del viaje no abra nada',
+    buscar: `  return VERB_FAMILIES.concat([vbBookFam(), vbShopAllFam(), vbHomeAllFam()], SHOP_FAMILIES, HOME_FAMILIES, PHRASE_FAMILIES, TRIP_FAMILIES);`,
+    reemplazo: `  return VERB_FAMILIES.concat([vbBookFam(), vbShopAllFam(), vbHomeAllFam()], SHOP_FAMILIES, HOME_FAMILIES, PHRASE_FAMILIES);`,
+  },
+  {
     nombre: 'Etiqueta: dejar de reconocer phrasal verbs que la IA marcó como verb',
     buscar: `  if ((type === 'verb' || type === 'phrase') && partes.length > 1 && partes.slice(1).some(p => PHRASAL_PARTICLES.has(p))) {`,
     reemplazo: '  if (false) {',
