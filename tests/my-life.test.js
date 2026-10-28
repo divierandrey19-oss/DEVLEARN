@@ -25,10 +25,11 @@ function constanteJSON(nombre) {
 const SHOP_FAMILIES = constanteJSON('SHOP_FAMILIES');
 const HOME_FAMILIES = constanteJSON('HOME_FAMILIES');
 const PHRASE_FAMILIES = constanteJSON('PHRASE_FAMILIES');
+const TRIP_FAMILIES = constanteJSON('TRIP_FAMILIES');
 const LIFE_NOW = constanteJSON('LIFE_NOW');
 
 const clave = (f, v) => (f.keyPrefix ? f.keyPrefix + ':' : '') + v[0];
-const tarjetas = SHOP_FAMILIES.concat(HOME_FAMILIES, PHRASE_FAMILIES).flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
+const tarjetas = SHOP_FAMILIES.concat(HOME_FAMILIES, PHRASE_FAMILIES, TRIP_FAMILIES).flatMap(f => f.verbs.map(v => ({ f, v, k: clave(f, v) })));
 
 // ---------------------------------------------------------------------------
 // El contenido.
@@ -131,6 +132,39 @@ test('las frases de podcasts salen en su sección', () => {
   for (const f of PHRASE_FAMILIES) assert.equal(f.keyPrefix, 'phrase', `${f.id} sin prefijo`);
   assert.match(h.extraerFuncion('renderLife'), /fams: PHRASE_FAMILIES/);
   assert.match(h.extraerFuncion('lifeFamilies'), /PHRASE_FAMILIES/);
+});
+
+test('el viaje a Cartagena: lo que él contó, cada cosa en su grupo', () => {
+  // 19 de octubre: avión, hotel, playa, centro histórico, islas en lancha,
+  // restaurantes y los 15 de su sobrina. Más las frases para pedir y comentar.
+  assert.deepEqual(TRIP_FAMILIES.map(f => f.id), [
+    'trip_airport', 'trip_hotel', 'trip_beach', 'trip_oldcity', 'trip_islands',
+    'trip_food', 'trip_party', 'trip_ask', 'trip_now',
+  ]);
+  for (const f of TRIP_FAMILIES) {
+    assert.equal(f.keyPrefix, 'trip', `${f.id}: sin el prefijo, "swim" u "order" compartirían tarjeta con otro grupo`);
+    assert.ok(f.verbs.length >= 8, `${f.id}: muy pocas tarjetas`);
+  }
+});
+
+test('el frente del viaje dice lo que está pasando en ese momento', () => {
+  // Él quiere decir lo que pasa mientras pasa: el frente de cada verbo va en
+  // presente continuo, y el pasado queda atrás para contarlo al volver.
+  const verbos = TRIP_FAMILIES.flatMap(f => f.verbs.filter(v => v[1]).map(v => LIFE_NOW['trip:' + v[0]]));
+  assert.ok(verbos.length > 20);
+  for (const n of verbos) {
+    const en = n.en.replace(/<[^>]*>/g, '');
+    assert.match(en, /(?:\b(?:am|is|are)|'m|'re|'s) (?:\w+ )?\w+ing\b/, `"${en}" no está en presente continuo`);
+  }
+});
+
+test('el viaje sale primero en My life y se puede abrir', () => {
+  const pagina = h.extraerFuncion('renderLife');
+  assert.match(pagina, /const secciones = \[\n\s*\{ titulo: '✈️ My trip to Cartagena', fams: TRIP_FAMILIES \},/);
+  // lifeNow busca el prefijo en lifeFamilies: sin el viaje ahí, el frente
+  // caería al ejemplo en pasado. vbStart busca la familia en vbAllFams.
+  assert.match(h.extraerFuncion('lifeFamilies'), /PHRASE_FAMILIES, TRIP_FAMILIES\)/);
+  assert.match(h.extraerFuncion('vbAllFams'), /PHRASE_FAMILIES, TRIP_FAMILIES\);/);
 });
 
 // ---------------------------------------------------------------------------

@@ -375,6 +375,10 @@ iguales en español, que la casa no comparta tarjeta con el local, que Verbs ya
 no lleve el local y que cada globito cuente lo suyo. Las frases que él manda de
 podcasts van ahí, en "Phrases I heard", una familia por lote (las del 1 de
 octubre son "From a podcast · 2"), y la pista del frente no regala la respuesta.
+El viaje a Cartagena (19 de octubre) va primero, con su propio prefijo "trip",
+un grupo por cada cosa que él contó (avión, hotel, playa, centro histórico,
+islas, comida, los 15 y las frases), y el frente de cada verbo en presente
+continuo: lo que está pasando en ese momento.
 
 ## verificar-mutaciones.js
 
