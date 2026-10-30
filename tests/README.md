@@ -327,6 +327,13 @@ unidades por delante, el foco son las 3 unidades con más palabras sin ver
 (`unidadesAtrasadas`, 30 o más): la mitad de la sesión son nuevas de ellas, por
 turnos desde la primera página, y la otra mitad el repaso de siempre. Pruebas
 con la sesión real del SRS de la app.
+Ponerse al día (30 de octubre): volvió del viaje con 1423 pendientes y cada
+ronda traía 10 nuevas, así que la pila no bajaba. Con 100 pendientes o más
+(`SRS.ATRASO`) no entra ninguna nueva, ni por el foco de las atrasadas ni por
+el de un examen. La meta del día son 100 (`SRS.META_DIARIA`, 5 rondas de 20):
+`repasadasHoy` cuenta las tarjetas calificadas hoy, una vez cada una, y Memory
+Review, la preparación y el final de cada ronda muestran cuánto lleva, con
+"Next round →" mientras falte.
 
 `palabras-dificiles.test.js` — Al final de Flashcards, "Words you miss most":
 las palabras falladas 2 veces o más (`palabrasDificiles`), la que más falla

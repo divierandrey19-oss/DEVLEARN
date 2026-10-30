@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-19a -->
+<!-- DEVLEARN_BUILD: 2026-10-30a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-19a';
+const APP_BUILD = '2026-10-30a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -14919,7 +14919,10 @@ function renderDashboard() {
       dailySub.innerHTML = `<span style="color:var(--accent)">${dueCount} due</span> · <span style="color:var(--amber)">⚠ ${leechCount} difficult</span>`;
       dailySub.style.color = '';
     } else if (dueCount > 0) {
-      dailySub.textContent = `${dueCount} due · ${Math.min(5, newCount)} new`;
+      // Con la pila alta no hay nuevas (SRS.ATRASO): lo útil es la meta del día.
+      dailySub.textContent = dueCount >= SRS.ATRASO
+        ? `${dueCount} waiting · today ${repasadasHoy(state.units)}/${SRS.META_DIARIA}`
+        : `${dueCount} due · ${Math.min(5, newCount)} new`;
       dailySub.style.color = 'var(--accent)';
     } else if (newCount > 0) {
       dailySub.textContent = `${Math.min(5, newCount)} new words ready`;
@@ -20029,6 +20032,18 @@ function focoDelRepaso(st = state, hoy = todayLocal()) {
   return { keys, titulo: examen.title, fecha: fecha || null, unidades: `Units ${m[1]}-${m[2]}` };
 }
 
+/* Cuántas tarjetas calificó hoy en modo memoria (el repaso diario y Classic).
+ * Cada calificación deja su fecha en el historial de la tarjeta, que viaja con
+ * fcProgress entre aparatos. Cuenta tarjetas, no calificaciones: una que
+ * volvió por "Again" cuenta una vez. */
+function repasadasHoy(units, hoy = todayLocal()) {
+  let n = 0;
+  Object.values(units || {}).forEach(u => Object.values((u && u.fcProgress) || {}).forEach(c => {
+    if (c && (c.history || []).some(x => x && x.date === hoy)) n++;
+  }));
+  return n;
+}
+
 const SRS = {
   // Default ease factor
   DEFAULT_EASE: 2.5,
@@ -20040,6 +20055,12 @@ const SRS = {
   GRADUATING_INTERVAL: 1,
   // Easy interval (days) — when rated Easy on first try
   EASY_INTERVAL: 4,
+  // Ponerse al día (30 de octubre): con tantas pendientes, el repaso diario no
+  // trae palabras nuevas. Volvió del viaje con 1423 y cada ronda traía 10
+  // nuevas y solo 10 pendientes: la pila no bajaba nunca.
+  ATRASO: 100,
+  // Su meta del día: 5 rondas de 20 (la escogió él).
+  META_DIARIA: 100,
 
   /**
    * Get or initialize a card's SRS state
@@ -20425,6 +20446,9 @@ const SRS = {
     const due = this.getDueCards(units);
     const session = [];
     const overdue = due.overdue.sort((a,b) => a.card.dueDate.localeCompare(b.card.dueDate));
+    // Con ATRASO pendientes o más no entran nuevas: cada nueva es una pendiente
+    // más en unos días, y la pila no bajaba.
+    const alDia = due.overdue.length + due.learning.length + due.due.length < this.ATRASO;
 
     // Deduplicate by word (leeches already appear in overdue/learning)
     const addedWords = new Set();
@@ -20451,10 +20475,12 @@ const SRS = {
       let nuevasL = intercalarUnidades(due.new.filter(filtro));
       // Para el speaking test: primero las tarjetas de preguntas (su punto flojo).
       if (preguntasPrimero) nuevasL = [...nuevasL.filter(x => x.word.type === 'question'), ...nuevasL.filter(x => x.word.type !== 'question')];
-      push(nuevasL.slice(0, nuevas), limite);
+      push(nuevasL.slice(0, alDia ? nuevas : 0), limite);
     };
 
-    if (!foco || !foco.size) {
+    // Sin foco, o con el de las unidades atrasadas mientras la pila está alta:
+    // las 20 son pendientes, de la más vencida a la más nueva.
+    if (!foco || !foco.size || (adelantar && !alDia)) {
       llenar(() => true, maxCards, 5, false); // max 5 new per day
       return session;
     }
@@ -20564,13 +20590,18 @@ function openDailyReview() {
 
   // Show prep screen
   const due    = SRS.getDueCards(state.units);
+  const pendientes = due.overdue.length + due.learning.length + due.due.length;
+  const alDia  = pendientes < SRS.ATRASO;
+  const hechas = repasadasHoy(state.units);
   const prepEl = document.getElementById('fc-prep');
   document.getElementById('fc-prep-inner').innerHTML = `
     <div class="fc-prep-icon">🧠</div>
     <div class="fc-prep-title" style="color:var(--accent);">Daily Review</div>
     <div class="fc-prep-sub">Your memory system scheduled these cards for today</div>
-    ${foco && foco.atrasadas ? `<div class="fc-prep-sub" style="color:var(--amber, #d29922);font-weight:600;">🚀 Catch up: ${escapeHtml(foco.unidades)} · ${foco.faltan} words you haven't studied yet</div>` : ''}
+    ${!alDia ? `<div class="fc-prep-sub" style="color:var(--amber, #d29922);font-weight:600;">🧹 Catching up: ${pendientes} cards waiting · no new words until you're under ${SRS.ATRASO}</div>` : ''}
+    ${foco && foco.atrasadas && alDia ? `<div class="fc-prep-sub" style="color:var(--amber, #d29922);font-weight:600;">🚀 Catch up: ${escapeHtml(foco.unidades)} · ${foco.faltan} words you haven't studied yet</div>` : ''}
     ${foco && !foco.atrasadas ? `<div class="fc-prep-sub" style="color:var(--amber, #d29922);font-weight:600;">🎯 Focus: ${escapeHtml(foco.unidades)} (${escapeHtml(foco.titulo.split('/')[0].trim().toLowerCase())}${foco.fecha ? ' · ' + new Date(foco.fecha + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''})</div>` : ''}
+    <div class="fc-prep-sub" style="font-weight:600;">🎯 Today: ${hechas} / ${SRS.META_DIARIA} cards</div>
     <div class="fc-prep-meta">
       <div class="fc-prep-stat">
         <div class="fc-prep-stat-val" style="--lvl-color:var(--red)">${due.overdue.length + due.learning.length}</div>
@@ -20581,7 +20612,7 @@ function openDailyReview() {
         <div class="fc-prep-stat-lbl">Scheduled</div>
       </div>
       <div class="fc-prep-stat">
-        <div class="fc-prep-stat-val" style="--lvl-color:var(--text-3)">${Math.min(5, due.new.length)}</div>
+        <div class="fc-prep-stat-val" style="--lvl-color:var(--text-3)">${session.filter(x => x.card.state === 'new').length}</div>
         <div class="fc-prep-stat-lbl">New</div>
       </div>
     </div>
@@ -24505,8 +24536,14 @@ function renderAllFlashcards() {
     { val: totalStable,      lbl: 'Stable',     color: 'var(--green)',   show: totalStable > 0 },
   ].filter(s => s.show);
 
+  /* La meta del día (SRS.META_DIARIA). "1423 cards to review today" no se
+   * podía cumplir y lo desanimaba: ahora dice cuántas esperan, cuánto lleva
+   * hoy y qué ronda sigue. */
+  const hechasHoy = repasadasHoy(state.units, today);
+  const meta      = SRS.META_DIARIA;
+  const rondas    = Math.ceil(meta / 20);
   const heroMsg = totalDue > 0
-    ? `<span style="color:var(--accent);font-weight:600;">${totalDue} card${totalDue !== 1 ? 's' : ''} to review today</span>`
+    ? `<span style="color:var(--accent);font-weight:600;">${totalDue} card${totalDue !== 1 ? 's' : ''} waiting</span>`
     : totalStable === totalWords && totalWords > 0
     ? `<span style="color:var(--green);">All ${totalWords} words stable in memory ✦</span>`
     : `<span style="color:var(--text-3);">Nothing due today — memory is on schedule</span>`;
@@ -24514,7 +24551,12 @@ function renderAllFlashcards() {
   let html = `
     <div style="margin-bottom:24px;">
       <div style="font-size:1.4rem;font-weight:700;letter-spacing:-0.025em;margin-bottom:4px;">Memory Review</div>
-      <div style="font-size:0.88rem;margin-bottom:20px;">${heroMsg}</div>
+      <div style="font-size:0.88rem;margin-bottom:${totalDue > 0 || hechasHoy > 0 ? 10 : 20}px;">${heroMsg}</div>
+      ${totalDue > 0 || hechasHoy > 0 ? `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:0.8rem;font-weight:600;color:var(--text-2);margin-bottom:6px;">🎯 Today's goal: ${hechasHoy} / ${meta}${hechasHoy >= meta ? ' ✅' : ''}</div>
+        <div style="height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden;max-width:320px;"><div style="height:100%;width:${Math.min(100, Math.round(hechasHoy / meta * 100))}%;background:var(--green);"></div></div>
+      </div>` : ''}
 
       <!-- Memory state overview -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;margin-bottom:16px;">
@@ -24546,7 +24588,7 @@ function renderAllFlashcards() {
 
       ${totalDue > 0 ? `
       <button class="btn btn-primary" style="width:100%;margin-bottom:20px;" onclick="openDailyReview()">
-        🧠 Start today's review — ${totalDue} card${totalDue !== 1 ? 's' : ''}
+        ${hechasHoy >= meta ? '✅ Goal done — one more round?' : `🧠 Start round ${Math.min(rondas, Math.floor(hechasHoy / 20) + 1)} of ${rondas}`}
       </button>` : ''}
     </div>
   `;
@@ -25168,6 +25210,10 @@ function showFcResult() {
   // Next session estimate
   const srsdue    = SRS.getDueCards(state.units);
   const dueCount  = srsdue.overdue.length + srsdue.learning.length + srsdue.due.length;
+  // En el repaso diario: cuánto lleva de la meta y, si falta, la ronda
+  // siguiente de una vez (antes había que cerrar y volver a entrar).
+  const hechasHoy = isDailyRev ? repasadasHoy(state.units) : 0;
+  const otraRonda = isDailyRev && dueCount > 0 && hechasHoy < SRS.META_DIARIA;
   const nextLabel = dueCount > 0
     ? `${dueCount} card${dueCount !== 1 ? 's' : ''} due for next review`
     : stillLearning > 0
@@ -25228,6 +25274,9 @@ function showFcResult() {
         </div>
       </div>
 
+      ${isDailyRev ? `
+      <div style="font-size:0.9rem;font-weight:600;color:${hechasHoy >= SRS.META_DIARIA ? 'var(--green)' : 'var(--text-2)'};margin-bottom:8px;">🎯 Today's goal: ${hechasHoy} / ${SRS.META_DIARIA}${hechasHoy >= SRS.META_DIARIA ? ' — done! ✅' : ''}</div>` : ''}
+
       <!-- Next review info — forward-looking, not completion pressure -->
       <div style="font-size:0.78rem;color:var(--text-3);margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:6px;">
         <span>🗓</span> <span>${nextLabel}</span>
@@ -25235,6 +25284,7 @@ function showFcResult() {
 
       <!-- Actions -->
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        ${otraRonda ? `<button class="btn btn-primary" onclick="closeFcStudy(); openDailyReview()">Next round →</button>` : ''}
         <button class="btn btn-ghost" onclick="closeFcStudy()">Done for today</button>
         ${difficult > 0 ? `<button class="btn btn-ghost btn-sm" onclick="startFcSession()">Review again</button>` : ''}
       </div>

@@ -399,6 +399,31 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Ponerse al día: que con 1423 pendientes cada ronda vuelva a traer nuevas',
+    buscar: `    const alDia = due.overdue.length + due.learning.length + due.due.length < this.ATRASO;`,
+    reemplazo: `    const alDia = true;`,
+  },
+  {
+    nombre: 'Ponerse al día: que el foco de las unidades atrasadas siga adelantando con la pila alta',
+    buscar: `    if (!foco || !foco.size || (adelantar && !alDia)) {`,
+    reemplazo: `    if (!foco || !foco.size) {`,
+  },
+  {
+    nombre: 'Ponerse al día: que el foco de un examen meta nuevas con la pila alta',
+    buscar: `      push(nuevasL.slice(0, alDia ? nuevas : 0), limite);`,
+    reemplazo: `      push(nuevasL.slice(0, nuevas), limite);`,
+  },
+  {
+    nombre: 'Meta del día: contar calificaciones en vez de tarjetas',
+    buscar: `    if (c && (c.history || []).some(x => x && x.date === hoy)) n++;`,
+    reemplazo: `    n += ((c && c.history) || []).filter(x => x && x.date === hoy).length;`,
+  },
+  {
+    nombre: 'Meta del día: que al terminar una ronda no ofrezca la siguiente',
+    buscar: `  const otraRonda = isDailyRev && dueCount > 0 && hechasHoy < SRS.META_DIARIA;`,
+    reemplazo: `  const otraRonda = false;`,
+  },
+  {
     nombre: 'Viaje: que el grupo de Cartagena desaparezca de My life',
     buscar: `    { titulo: '✈️ My trip to Cartagena', fams: TRIP_FAMILIES },`,
     reemplazo: '',

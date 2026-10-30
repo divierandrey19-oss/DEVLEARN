@@ -155,3 +155,67 @@ test('el repaso diario adelanta cuando el foco es de unidades atrasadas, y lo di
   const abrir = h.extraerFuncion('openDailyReview');
   assert.match(abrir, /🚀 Catch up: \$\{escapeHtml\(foco\.unidades\)\} · \$\{foco\.faltan\} words you haven't studied yet/);
 });
+
+// ── Ponerse al día (30 de octubre) ─────────────────────────────────────────
+// Volvió de Cartagena con 1423 pendientes y 1384 nuevas: "siento que avanzo
+// muy poco". Cada ronda traía 10 nuevas y solo 10 pendientes, así que la pila
+// no bajaba. Él escogió: solo pendientes mientras haya 100 o más, y una meta de
+// 100 al día (5 rondas de 20).
+
+function conPila(n) {
+  const v = palabras(n, 'p_');
+  const units = suCurso();
+  units.a2_7 = unidad(7, v, vistas(v, { state: 'review', dueDate: '2026-10-01', interval: 7, lapses: 0 }));
+  delete units.a2_9;
+  return units;
+}
+
+test('con 100 pendientes o más, la ronda no trae ninguna nueva', () => {
+  const s = sesion(conPila(120), new Set(['a2_1', 'a2_2', 'a2_6']), true);
+  assert.equal(s.length, 20);
+  assert.ok(s.every(w => w.startsWith('p_')), 'las 20 son pendientes');
+  // Con 99 vuelve a adelantar: 10 nuevas de las unidades atrasadas.
+  const al = sesion(conPila(99), new Set(['a2_1', 'a2_2', 'a2_6']), true);
+  assert.equal(al.filter(w => /^u[126]_/.test(w)).length, 10);
+});
+
+test('con la pila alta, ni el foco de un examen mete nuevas', () => {
+  // La Unit 1 solo tiene nuevas: antes entraban 6 aunque hubiera 120 pendientes.
+  const s = sesion(conPila(120), new Set(['a2_1']), false);
+  assert.equal(s.length, 20);
+  assert.ok(!s.some(w => w.startsWith('u1_')));
+});
+
+const { repasadasHoy } = h.ejecutar(`${h.extraerFuncion('repasadasHoy')} return { repasadasHoy };`, { todayLocal: () => '2026-10-30' });
+
+test('la meta cuenta las tarjetas calificadas hoy, una vez cada una', () => {
+  const units = {
+    a2_7: { fcProgress: {
+      hoy: { history: [{ date: '2026-10-29', rating: 2 }, { date: '2026-10-30', rating: 0 }, { date: '2026-10-30', rating: 2 }] },
+      ayer: { history: [{ date: '2026-10-29', rating: 2 }] },
+      nueva: { state: 'new', history: [] },
+      vieja: { score: 2 }, // formato viejo, sin historial
+    } },
+    a2_9: { fcProgress: { otra: { history: [{ date: '2026-10-30', rating: 3 }] } } },
+    vacia: {},
+  };
+  assert.equal(repasadasHoy(units), 2);
+  assert.equal(repasadasHoy(units, '2026-10-29'), 2);
+});
+
+test('la meta y la ronda se ven en Memory Review, al empezar y al terminar', () => {
+  const fuente = h.fuente();
+  assert.match(fuente, /ATRASO: 100,/);
+  assert.match(fuente, /META_DIARIA: 100,/);
+  const lista = h.extraerFuncion('renderAllFlashcards');
+  assert.match(lista, /\$\{totalDue\} card\$\{totalDue !== 1 \? 's' : ''\} waiting/);
+  assert.doesNotMatch(lista, /to review today<\/span>/, 'mil y pico "para hoy" no se podía cumplir');
+  assert.match(lista, /🎯 Today's goal: \$\{hechasHoy\} \/ \$\{meta\}/);
+  assert.match(lista, /🧠 Start round \$\{Math\.min\(rondas, Math\.floor\(hechasHoy \/ 20\) \+ 1\)\} of \$\{rondas\}/);
+  const abrir = h.extraerFuncion('openDailyReview');
+  assert.match(abrir, /\$\{!alDia \? `<div class="fc-prep-sub"[^`]*🧹 Catching up: \$\{pendientes\} cards waiting/);
+  assert.match(abrir, /\$\{foco && foco\.atrasadas && alDia \?/, 'el aviso de Catch up solo cuando sí trae nuevas');
+  assert.match(abrir, /session\.filter\(x => x\.card\.state === 'new'\)\.length/, 'las nuevas que de verdad trae la ronda');
+  assert.match(fuente, /const otraRonda = isDailyRev && dueCount > 0 && hechasHoy < SRS\.META_DIARIA;/);
+  assert.match(fuente, /\$\{otraRonda \? `<button class="btn btn-primary" onclick="closeFcStudy\(\); openDailyReview\(\)">Next round →<\/button>` : ''\}/);
+});
