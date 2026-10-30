@@ -126,11 +126,15 @@ expresiones completas, "That's just the way it is" agregada una sola vez, todo
 ejemplo nuevo impreso en la página, y la bandera marcada solo si la página estaba
 en el aparato. Usa `fixBookPage()`, el mismo mecanismo que las páginas siguientes.
 
-`analysis-model.test.js` — Leer las páginas usa Opus 5.5 (lo eligió él; el resto
-de la app sigue en Sonnet 4.5). La respuesta se lee por tipo de bloque, porque
-Opus empieza pensando y leer solo el primer bloque daba vacío; un rechazo del
-filtro de seguridad es el error `REFUSAL`, y `effort` / `fallbacks` solo van en
-la llamada que los pide.
+`analysis-model.test.js` — Leer las páginas usa Opus 5.5 (lo eligió él). El resto
+de la app pasó de Sonnet 4.5, que se retira el 30 de noviembre de 2026, a
+Sonnet 5.5 con `thinking: { type: 'between_tools' }`: sin pensar, como trabajaba
+Sonnet 4.5, para que lo que piensa no se coma los topes cortos de las
+correcciones (`disabled` es un 400 en ese modelo, y Opus no acepta
+`between_tools`). La respuesta se lee por tipo de bloque, porque Opus empieza
+pensando y leer solo el primer bloque daba vacío; un rechazo del filtro de
+seguridad es el error `REFUSAL`, y `effort` / `fallbacks` solo van en la llamada
+que los pide.
 
 `sync-merge.test.js` — Celular y computador sin perder páginas. El 29 de
 septiembre el computador, abierto desde antes, subió su copia vieja y la unión
