@@ -319,6 +319,16 @@ número), manda el respaldo, y el archivo de Claude las llena por su id
 (`emptyBatchesToFill`): número de página con hora, tarjetas, gramática; luego
 quedan en el orden del libro. Una página que ya tiene tarjetas no se toca.
 
+`plan-hoy.test.js` — El plan de hoy, lo primero del Dashboard (5 de noviembre: "que
+me recuerde qué me toca, ordenadamente, así hago cosas que mayormente no hago"):
+100 flashcards, gramática y ejercicios de una unidad, textos del día (solo si
+tiene textos en repaso), 15 minutos de listening y una ronda de My life. La
+unidad se queda hasta terminarla (`planDiario`) y al otro día sigue la próxima;
+con páginas del B1, es la de la última clase de páginas que marcó. Se marca solo
+lo que se puede medir (repasadasHoy, textos sin repasar, 5 respuestas de la
+unidad hoy, 15 minutos de podcast, 5 tarjetas de My life); lo demás, él con el
+círculo (`planHoy`, de hoy y de esa unidad).
+
 `curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
 123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen
 marcadas y con fecha en sus datos (y se unen entre aparatos), y reusar esos
