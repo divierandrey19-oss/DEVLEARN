@@ -325,9 +325,13 @@ me recuerde qué me toca, ordenadamente, así hago cosas que mayormente no hago"
 tiene textos en repaso), 15 minutos de listening y una ronda de My life. La
 unidad se queda hasta terminarla (`planDiario`) y al otro día sigue la próxima;
 con páginas del B1, es la de la última clase de páginas que marcó. Se marca solo
-lo que se puede medir (repasadasHoy, textos sin repasar, 5 respuestas de la
-unidad hoy, 15 minutos de podcast, 5 tarjetas de My life); lo demás, él con el
-círculo (`planHoy`, de hoy y de esa unidad).
+lo que se puede medir (repasadasHoy, textos sin repasar, 15 minutos de podcast,
+5 tarjetas de My life); lo demás, él con el círculo (`planHoy`, de hoy y de esa
+unidad). Gramática y ejercicios cuentan **toda** la unidad ("¿por qué 5?"): una
+dosis de 40 ejercicios y 20 de gramática al día, y la unidad cambia cuando
+están todos respondidos desde que empezó con ella (`avanceDeUnidad`, con las
+mismas claves con que la app guarda cada respuesta, y `planDiario.desde`). Lo
+que respondió antes (en el A2) se borra solo si él dice que sí al abrirla.
 
 `curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
 123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen
