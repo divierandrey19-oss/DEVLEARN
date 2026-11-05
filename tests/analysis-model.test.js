@@ -3,7 +3,9 @@
  *
  * Él eligió Opus 5.5 para leer las páginas (con Sonnet 4.5 la letra pequeña
  * del diálogo de la p. 111 salió mal leída), sabiendo que cuesta cerca del
- * doble por página. El resto de la app sigue en Sonnet 4.5.
+ * doble por página. El resto de la app usaba Sonnet 4.5, que se retira el 30
+ * de noviembre de 2026; desde el 30 de octubre usa Sonnet 5.5, sin pensar,
+ * como trabajaba Sonnet 4.5.
  *
  * Opus 5.5 piensa antes de responder: su respuesta puede empezar con bloques
  * "thinking" vacíos. La app leía solo el primer bloque, así que con Opus
@@ -81,7 +83,18 @@ test('leer las páginas usa Opus 5.5, con espacio y tiempo para pensar', () => {
   assert.match(analisis, /model: 'claude-opus-5-5',\s*effort: 'medium',\s*fallback: true,\s*maxTokens: 48000,\s*isJSON: true,\s*timeoutMs: 600000,/);
 });
 
-test('el resto de la app sigue en Sonnet 4.5', () => {
-  assert.match(fuente, /timeoutMs = 120000, model = 'claude-sonnet-4-5', effort = null, fallback = false \}\)/);
+test('el resto de la app usa Sonnet 5.5, sin pensar, como trabajaba Sonnet 4.5', async () => {
+  assert.match(fuente, /timeoutMs = 120000, model = 'claude-sonnet-5-5', effort = null, fallback = false \}\)/);
+  assert.doesNotMatch(fuente, /claude-sonnet-4-5/, 'ni una llamada al modelo que se retira');
   assert.equal(fuente.split("model: 'claude-opus-5-5'").length - 1, 1, 'solo el análisis de páginas');
+  // Lo que piensa cuenta en max_tokens: con un tope de 150, una corrección en
+  // JSON podía salir cortada. "disabled" es un 400 en Sonnet 5.5.
+  const a = servicio({ content: [{ type: 'text', text: 'OK' }] });
+  await a.svc._callClaude({ messages: msgs, maxTokens: 150 });
+  assert.equal(a.enviado.body.model, 'claude-sonnet-5-5');
+  assert.deepEqual(a.enviado.body.thinking, { type: 'between_tools' });
+  // Solo Sonnet 5.5 acepta between_tools: Opus sigue pensando al leer páginas.
+  const b = servicio({ content: [] });
+  await b.svc._callClaude({ messages: msgs, model: 'claude-opus-5-5', effort: 'medium', fallback: true });
+  assert.equal(b.enviado.body.thinking, undefined);
 });

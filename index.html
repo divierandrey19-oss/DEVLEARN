@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-30a -->
+<!-- DEVLEARN_BUILD: 2026-10-30b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4424,7 +4424,7 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
           <div>
             <div style="font-size:0.88rem;font-weight:var(--fw-medium);">claude-opus-5-5</div>
             <div style="font-size:var(--fs-caption);color:var(--text-3);margin-top:1px;">Reads your book pages</div>
-            <div style="font-size:0.88rem;font-weight:var(--fw-medium);margin-top:8px;">claude-sonnet-4-5</div>
+            <div style="font-size:0.88rem;font-weight:var(--fw-medium);margin-top:8px;">claude-sonnet-5-5</div>
             <div style="font-size:var(--fs-caption);color:var(--text-3);margin-top:1px;">Tutor, role play and practice</div>
           </div>
         </div>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-30a';
+const APP_BUILD = '2026-10-30b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -5002,7 +5002,7 @@ const AIService = {
   _delay(ms) { return new Promise(r => setTimeout(r, ms)); },
 
   /* ── Core Claude API call ────────────────────────────────── */
-  async _callClaude({ messages, maxTokens = 1000, isJSON = false, systemPrompt = null, timeoutMs = 120000, model = 'claude-sonnet-4-5', effort = null, fallback = false }) {
+  async _callClaude({ messages, maxTokens = 1000, isJSON = false, systemPrompt = null, timeoutMs = 120000, model = 'claude-sonnet-5-5', effort = null, fallback = false }) {
     const key = this.getKey();
     if (!key) throw new Error('NO_KEY');
 
@@ -5013,6 +5013,13 @@ const AIService = {
     };
     // Cuánto piensa el modelo antes de responder (solo los modelos nuevos).
     if (effort) body.output_config = { effort };
+    /* Sonnet 5.5 (30 de octubre: Sonnet 4.5 se retira el 30 de noviembre)
+     * piensa por defecto, y lo que piensa cuenta en max_tokens: con los topes
+     * cortos de la app (120 a 600) una corrección en JSON podía salir cortada,
+     * y el tutor tardaría más en contestar. Sonnet 4.5 no pensaba;
+     * between_tools lo deja igual. Es la forma de apagarlo: "disabled" es un
+     * 400 en este modelo, y between_tools solo lo acepta Sonnet 5.5. */
+    if (model === 'claude-sonnet-5-5') body.thinking = { type: 'between_tools' };
     // Si el filtro de seguridad rechaza por error una página del libro, la API
     // la reintenta sola con otro modelo en vez de devolver nada.
     if (fallback) body.fallbacks = 'default';
@@ -6132,7 +6139,7 @@ Reply with your character's turn and nothing else.`;
       messages: history.map(m => ({ role: m.role, content: m.content })),
       systemPrompt,
       maxTokens: 300,
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       timeoutMs: 45000,
     });
     return { reply: raw.trim() };
@@ -6171,7 +6178,7 @@ RULES:
       messages: [{ role: 'user', content: `Transcript:\n\n${transcript}` }],
       systemPrompt,
       maxTokens: 600,
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       timeoutMs: 45000,
     });
     return { reply: raw.trim(), corrections: this._extractCorrections(raw) };

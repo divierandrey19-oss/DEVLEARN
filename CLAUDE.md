@@ -94,8 +94,9 @@ que no debe mostrarse como desactualizado ni ofrecer el botón.
 ## Revisar una página que él sube
 
 Él sube la foto del libro; `_analyzeReal` la manda a **Opus 5.5** (el resto de
-la app usa Sonnet 4.5) y guarda vocabulario, gramática, ejercicios y speaking
-en un lote (`units.a2_N.batches[]`, con `pages: [112]`). Luego exporta el
+la app usa Sonnet 5.5 sin pensar, desde que se retiró Sonnet 4.5) y guarda
+vocabulario, gramática, ejercicios y speaking en un lote
+(`units.a2_N.batches[]`, con `pages: [112]`). Luego exporta el
 respaldo desde Settings (`devlearn_backup_*.json`) y lo manda. El respaldo es
 el estado completo **con las fotos** en base64.
 

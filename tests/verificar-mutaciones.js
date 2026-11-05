@@ -289,6 +289,21 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Sonnet 5.5: que vuelva a pensar y se coma el tope de las correcciones cortas',
+    buscar: `    if (model === 'claude-sonnet-5-5') body.thinking = { type: 'between_tools' };`,
+    reemplazo: '',
+  },
+  {
+    nombre: 'Sonnet 5.5: mandar between_tools también a Opus, que lo rechaza',
+    buscar: `    if (model === 'claude-sonnet-5-5') body.thinking = { type: 'between_tools' };`,
+    reemplazo: `    body.thinking = { type: 'between_tools' };`,
+  },
+  {
+    nombre: 'Sonnet 5.5: que el tutor y las correcciones sigan en Sonnet 4.5, que se retira',
+    buscar: `timeoutMs = 120000, model = 'claude-sonnet-5-5', effort = null`,
+    reemplazo: `timeoutMs = 120000, model = 'claude-sonnet-4-5', effort = null`,
+  },
+  {
     nombre: 'Análisis: volver a Sonnet 4.5',
     buscar: `      model: 'claude-opus-5-5',\n      effort: 'medium',`,
     reemplazo: `      model: 'claude-sonnet-4-5',\n      effort: 'medium',`,
