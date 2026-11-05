@@ -38,7 +38,7 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('textosRecordadosHoy')}
     return { addDaysLocal, scheduleTextReview, seedTextReviews, textReviewsDue, textoTocaEl,
              textReviewWhen, toggleTextMastered, markTextReview, textosRecordadosHoy };
-  `, { state, todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, toast() {} });
+  `, { state, todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, renderPlanHoy() {}, toast() {} });
   return { ...f, state };
 }
 
