@@ -314,6 +314,11 @@ const MUTACIONES = [
     reemplazo: ``,
   },
   {
+    nombre: 'Plan de hoy: quitar el botón "Open" de cada renglón',
+    buscar: `onclick="abrirDelPlan('\${i.id}')">Open →</button>`,
+    reemplazo: `onclick="abrirDelPlan('\${i.id}')"></button>`,
+  },
+  {
     nombre: 'Plan de hoy: que no salga en el Dashboard',
     buscar: `function renderDashboard() {
   renderPlanHoy();`,

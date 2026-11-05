@@ -15013,6 +15013,8 @@ function renderPlanHoy() {
             <div style="font-size:0.88rem;font-weight:600;${i.hecho ? 'color:var(--text-3);text-decoration:line-through;' : ''}">${i.icono} ${escapeHtml(i.titulo)}</div>
             <div style="font-size:0.72rem;color:var(--text-3);">${escapeHtml(i.detalle)}</div>
           </button>
+          <!-- Él pidió un botón a la vista: tocar el renglón también abre, pero no se notaba. -->
+          <button class="btn ${i.hecho ? 'btn-ghost' : 'btn-primary'} btn-sm" style="flex-shrink:0;font-size:0.72rem;padding:5px 10px;" onclick="abrirDelPlan('${i.id}')">Open →</button>
         </div>`).join('')}
     </div>`;
 }
