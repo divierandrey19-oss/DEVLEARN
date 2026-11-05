@@ -289,6 +289,31 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Curso B1: reusar los números del A2, que ya están marcados como vistos',
+    buscar: `  { id: 1014, n: 14, title: 'SPEAKING TEST 1 / Unit 1',`,
+    reemplazo: `  { id: 14, n: 14, title: 'SPEAKING TEST 1 / Unit 1',`,
+  },
+  {
+    nombre: 'Curso B1: que el repaso no se enfoque en las unidades del examen',
+    buscar: `  const r = examen && examen.units;`,
+    reemplazo: `  const r = null;`,
+  },
+  {
+    nombre: 'Curso B1: decir "Units 1-1" para un speaking de una unidad',
+    buscar: "unidades: r[0] === r[1] ? `Unit ${r[0]}` : `Units ${r[0]}-${r[1]}` };",
+    reemplazo: "unidades: `Units ${r[0]}-${r[1]}` };",
+  },
+  {
+    nombre: 'Curso B1: mostrarle el id (1014) en vez del número de BLOCKS (14)',
+    buscar: `function numClase(c) { return c.n || c.id; }`,
+    reemplazo: `function numClase(c) { return c.id; }`,
+  },
+  {
+    nombre: 'Curso B1: borrar fechas por id, no por el número que él escribe',
+    buscar: `sched[c.id] && numClase(c) >= lo && numClase(c) <= hi).map(c => c.id);`,
+    reemplazo: `sched[c.id] && c.id >= lo && c.id <= hi).map(c => c.id);`,
+  },
+  {
     nombre: 'Sonnet 5.5: que vuelva a pensar y se coma el tope de las correcciones cortas',
     buscar: `    if (model === 'claude-sonnet-5-5') body.thinking = { type: 'between_tools' };`,
     reemplazo: '',
@@ -1180,9 +1205,9 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
     reemplazo: `  const session = SRS.buildDailySession(state.units, 20);`,
   },
   {
-    nombre: 'que pasado el speaking el repaso vuelva a quedar sin foco',
-    buscar: `  if (!m) return unidadesAtrasadas(st, nivel);`,
-    reemplazo: `  if (!m) return null;`,
+    nombre: 'que sin examen de unidades por delante el repaso vuelva a quedar sin foco',
+    buscar: `  if (!r) return unidadesAtrasadas(st, nivel);`,
+    reemplazo: `  if (!r) return null;`,
   },
   {
     nombre: 'que adelantar las unidades atrasadas no traiga palabras nuevas',

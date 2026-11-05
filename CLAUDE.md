@@ -234,7 +234,11 @@ entregan subiendo `SEED_VERSION`.
 
 ## Contexto del usuario
 
-- Estudia A2, va por la Unit 10. Examen final de nivel: 16 de octubre.
+- Pasó el A2 (nota 3.96; final internacional 64/100). Empieza el B1 con
+  el libro *Intermediary B1* (Pearson). El calendario de BLOCKS está en
+  `COURSE_SYLLABUS`, con id = 1000 + el número de la clase (las 37-89 del A2
+  siguen marcadas en sus datos). En el B1 quiere preparar el final (listening y
+  reading, 30% de la nota) desde la Unit 1, no al final.
 - Su punto más flojo en los speaking tests es la **coherencia** — por eso
   los textos llevan muchos conectores.
 - Tiene una tienda de mascotas con su hermano. Los ejemplos del
