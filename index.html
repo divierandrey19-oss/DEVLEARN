@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-05a -->
+<!-- DEVLEARN_BUILD: 2026-11-05b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -3951,6 +3951,8 @@ input, textarea, select { font-family: inherit; outline: none; -webkit-appearanc
            repetía "continuar Unit 10" y el quiz y Focus de los accesos. -->
 
       <div class="section-title dash-section">Today</div>
+      <!-- Lo que le toca hoy, en orden — renderPlanHoy() -->
+      <div id="plan-hoy"></div>
       <!-- Repaso espaciado de los textos aprendidos — renderTextReview() -->
       <div id="text-review"></div>
       <!-- Reto de 20 días grabándose — renderRecChallenge() -->
@@ -4905,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-05a';
+const APP_BUILD = '2026-11-05b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -14888,7 +14890,157 @@ function renderRecChallenge() {
     </div>`;
 }
 
+/* ── PLAN DE HOY (5 de noviembre) ─────────────────────────────────
+ * "Quiero que en el día de hoy me recuerde qué me toca, ordenadamente: 100
+ * flashcards, repasar gramática de la Unit 1 del A2, ejercicios, textos del
+ * día; así hago realmente cosas que mayormente no hago." Él escogió que la
+ * unidad se quede hasta terminarla (gramática y ejercicios hechos), y sumó
+ * 15 minutos de listening y una ronda de My life.
+ * Lo que la app puede medir se marca solo: las flashcards (repasadasHoy), los
+ * textos (no queda ninguno por repasar), 5 ejercicios de gramática o de la
+ * unidad respondidos hoy, 15 minutos de podcasts anotados hoy, 5 tarjetas de
+ * My life. Lo demás lo marca él con el círculo: repasar las reglas no deja
+ * rastro, y lo que ya respondió en el A2 sigue respondido.
+ * Con páginas del B1, la unidad es la de la última clase de páginas que marcó. */
+function tieneTareas(u) {
+  return !!u && (getUnitGrammar(u).length > 0 || getUnitExercises(u).length > 0);
+}
+
+function unidadDelPlan(st, hoy) {
+  const units = st.units || {};
+  const vistas = new Set(st.classesDone || []);
+  const b1 = [...COURSE_SYLLABUS].reverse().find(c => c.unit && vistas.has(c.id) && tieneTareas(units[c.unit]));
+  if (b1) return { key: b1.unit, b1: true };
+  const orden = Object.values(units)
+    .filter(u => u && u.lid === 'a2' && tieneTareas(u))
+    .sort((a, b) => a.uid - b.uid)
+    .map(u => u.key || `${u.lid}_${u.uid}`);
+  if (!orden.length) return null;
+  const p = st.planDiario || {};
+  let i = orden.indexOf(p.unidad);
+  if (i < 0) i = 0;
+  // La terminó otro día: hoy toca la siguiente (después de la 10, la 1).
+  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;
+  return { key: orden[i], b1: false };
+}
+
+function hechasHoyEn(respuestas, hoy) {
+  return Object.values(respuestas || {}).filter(x => x && x.date === hoy).length;
+}
+
+function minutosDeListening(st, hoy) {
+  return (st.podcastLog || []).filter(p => p && p.date === hoy).reduce((a, p) => a + (Number(p.minutes) || 0), 0);
+}
+
+function vidaHoy(hoy) {
+  return lifeFamilies().reduce((n, f) => n + f.verbs.filter(v => (vbCard(f, v).history || []).some(x => x && x.date === hoy)).length, 0);
+}
+
+function planDeHoy(st, hoy, c) {
+  const marcas = (st.planHoy && st.planHoy.fecha === hoy && st.planHoy.hechos) || {};
+  const meta = SRS.META_DIARIA;
+  const items = [
+    { id: 'flash', icono: '🧠', titulo: `${meta} flashcards`, detalle: `${c.flashcards} / ${meta}`, hecho: c.flashcards >= meta },
+  ];
+  if (c.unidad) {
+    const [lid, uid] = c.unidad.key.split('_');
+    const cual = `Unit ${uid} (${lid.toUpperCase()})`;
+    // La marca va con la unidad: si la unidad cambia, no se lleva la de la otra.
+    const g = `grammar:${c.unidad.key}`, e = `exercises:${c.unidad.key}`;
+    items.push({ id: 'grammar', marca: g, icono: '📐', titulo: `Grammar · ${cual}`,
+      detalle: c.gramatica ? `${c.gramatica} answered today` : 'Review the rules and do the drills',
+      hecho: !!marcas[g] || c.gramatica >= 5 });
+    items.push({ id: 'exercises', marca: e, icono: '✏️', titulo: `Exercises · ${cual}`,
+      detalle: c.ejercicios ? `${c.ejercicios} answered today` : 'Do the unit exercises',
+      hecho: !!marcas[e] || c.ejercicios >= 5 });
+  }
+  if (c.textosEnRepaso) {
+    items.push({ id: 'texts', icono: '📝', titulo: 'Texts of the day',
+      detalle: c.textos ? `${c.textos} to review` : 'Nothing left for today', hecho: c.textos === 0 });
+  }
+  items.push({ id: 'listening', marca: 'listening', icono: '🎧', titulo: 'Listening · 15 min',
+    detalle: c.listening ? `${c.listening} min today` : 'A podcast, or a dictation in My texts',
+    hecho: !!marcas.listening || c.listening >= 15 });
+  items.push({ id: 'life', marca: 'life', icono: '🏠', titulo: 'My life · one round',
+    detalle: c.vida ? `${c.vida} cards today` : 'Your shop and your home',
+    hecho: !!marcas.life || c.vida >= 5 });
+  return items;
+}
+
+function renderPlanHoy() {
+  const el = document.getElementById('plan-hoy');
+  if (!el) return;
+  const hoy = todayLocal();
+  const unidad = unidadDelPlan(state, hoy);
+  // La unidad avanza aquí, no al calcularla, para que se guarde una sola vez.
+  if (unidad && !unidad.b1 && (state.planDiario || {}).unidad !== unidad.key) {
+    state.planDiario = { unidad: unidad.key, terminada: null };
+    save();
+  }
+  const u = unidad ? state.units[unidad.key] : null;
+  const items = planDeHoy(state, hoy, {
+    unidad,
+    flashcards: repasadasHoy(state.units, hoy),
+    gramatica: u ? hechasHoyEn(u.drillState, hoy) : 0,
+    ejercicios: u ? hechasHoyEn(u.exerciseState, hoy) : 0,
+    textos: textReviewsDue(state.texts, hoy).length,
+    textosEnRepaso: (state.texts || []).some(t => t && t.mastered && textInReview(t)),
+    listening: minutosDeListening(state, hoy),
+    vida: vidaHoy(hoy),
+  });
+  // Gramática y ejercicios hechos: mañana, la unidad siguiente.
+  if (unidad && !unidad.b1) {
+    const lista = items.filter(i => i.id === 'grammar' || i.id === 'exercises').every(i => i.hecho);
+    const p = state.planDiario;
+    if (lista && p.terminada !== hoy) { p.terminada = hoy; save(); }
+    else if (!lista && p.terminada === hoy) { p.terminada = null; save(); }
+  }
+
+  const hechos = items.filter(i => i.hecho).length;
+  const todo = hechos === items.length;
+  el.innerHTML = `
+    <div style="border:1px solid ${todo ? 'var(--green)' : 'var(--border)'};background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-weight:700;">${todo ? '🎉 All done for today!' : '📋 Today\'s plan'}</div>
+        <div style="font-size:0.72rem;color:var(--text-3);font-weight:700;">${hechos} / ${items.length}</div>
+      </div>
+      <div style="height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-bottom:6px;"><div style="height:100%;width:${Math.round(hechos / items.length * 100)}%;background:var(--green);"></div></div>
+      ${items.map(i => `
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <button class="btn btn-ghost btn-sm" style="width:30px;min-width:30px;height:30px;padding:0;border-radius:50%;flex-shrink:0;color:${i.hecho ? 'var(--green)' : 'var(--text-3)'};"
+            ${i.marca ? `onclick="marcarPlan('${i.marca}')" title="Mark as done"` : 'disabled title="It checks itself"'}>${i.hecho ? '✓' : '○'}</button>
+          <button style="flex:1;text-align:left;background:none;border:0;padding:0;color:inherit;cursor:pointer;" onclick="abrirDelPlan('${i.id}')">
+            <div style="font-size:0.88rem;font-weight:600;${i.hecho ? 'color:var(--text-3);text-decoration:line-through;' : ''}">${i.icono} ${escapeHtml(i.titulo)}</div>
+            <div style="font-size:0.72rem;color:var(--text-3);">${escapeHtml(i.detalle)}</div>
+          </button>
+        </div>`).join('')}
+    </div>`;
+}
+
+function marcarPlan(marca) {
+  const hoy = todayLocal();
+  if (!state.planHoy || state.planHoy.fecha !== hoy) state.planHoy = { fecha: hoy, hechos: {} };
+  state.planHoy.hechos[marca] = !state.planHoy.hechos[marca];
+  save();
+  renderPlanHoy();
+}
+
+function abrirDelPlan(id) {
+  if (id === 'flash') return openDailyReview();
+  if (id === 'grammar' || id === 'exercises') {
+    const unidad = unidadDelPlan(state, todayLocal());
+    if (!unidad) return;
+    const [lid, uid] = unidad.key.split('_');
+    openUnit(lid, Number(uid));
+    return showUnitTab(id);
+  }
+  if (id === 'texts') return document.getElementById('text-review')?.scrollIntoView({ behavior: 'smooth' });
+  if (id === 'listening') return navigate('podcasts');
+  if (id === 'life') return navigate('life');
+}
+
 function renderDashboard() {
+  renderPlanHoy();
   renderStudyTimer();
   renderExamCountdown();
   renderRecChallenge();

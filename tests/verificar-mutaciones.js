@@ -289,6 +289,37 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Plan de hoy: pasar de unidad el mismo día en que la termina',
+    buscar: `  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
+    reemplazo: `  else if (p.terminada && p.terminada <= hoy) i = (i + 1) % orden.length;`,
+  },
+  {
+    nombre: 'Plan de hoy: seguir en el A2 aunque ya tenga páginas del B1 vistas',
+    buscar: `  if (b1) return { key: b1.unit, b1: true };`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'Plan de hoy: dar por hecha la gramática con un solo ejercicio',
+    buscar: `      hecho: !!marcas[g] || c.gramatica >= 5 });`,
+    reemplazo: `      hecho: !!marcas[g] || c.gramatica >= 1 });`,
+  },
+  {
+    nombre: 'Plan de hoy: que la marca de una unidad marque también la siguiente',
+    buscar: "    const g = `grammar:${c.unidad.key}`, e = `exercises:${c.unidad.key}`;",
+    reemplazo: "    const g = 'grammar', e = 'exercises';",
+  },
+  {
+    nombre: 'Plan de hoy: no anotar la unidad terminada, y nunca pasar a la siguiente',
+    buscar: `    if (lista && p.terminada !== hoy) { p.terminada = hoy; save(); }`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'Plan de hoy: que no salga en el Dashboard',
+    buscar: `function renderDashboard() {
+  renderPlanHoy();`,
+    reemplazo: `function renderDashboard() {`,
+  },
+  {
     nombre: 'Curso B1: reusar los números del A2, que ya están marcados como vistos',
     buscar: `  { id: 1014, n: 14, title: 'SPEAKING TEST 1 / Unit 1',`,
     reemplazo: `  { id: 14, n: 14, title: 'SPEAKING TEST 1 / Unit 1',`,
