@@ -325,7 +325,9 @@ marcadas y con fecha en sus datos (y se unen entre aparatos), y reusar esos
 números habría dado por vistas las del B1. Él ve el número de BLOCKS
 (`numClase`) en la lista, los avisos, el texto para copiar y al borrar fechas por
 rango. Cada clase de páginas trae sus páginas y su unidad, y cada examen las
-unidades que entran ("REVIEW TEST 1 / Unit 5" son las 1-5).
+unidades que entran ("REVIEW TEST 1 / Unit 5" son las 1-5). Solo las clases que
+él ve, 96: sin las virtuales (video, vocabulary and writing, communicative
+skills) ni el autonomous work, que con "📆 All" se comían días de clase.
 
 `repaso-mezclado.test.js` — El repaso diario de Flashcards toma 20 tarjetas por
 prioridad (las que más falla, las más atrasadas…). Las palabras estudiadas el

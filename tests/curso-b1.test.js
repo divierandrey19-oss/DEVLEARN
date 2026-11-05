@@ -20,8 +20,12 @@ const { COURSE_SYLLABUS, numClase, numDeId } = h.ejecutar(`${sintaxis}
   ${h.extraerFuncion('numDeId')}
   return { COURSE_SYLLABUS, numClase, numDeId };`, {});
 
+// Las que no son clases: las virtuales y el autonomous work (horas en MyEnglishLab).
+const NO_SON_CLASES = [15, 17, 26, 27, 29, 38, 40, 48, 49, 51, 59, 61, 71, 72, 74, 83, 85, 93, 94, 97, 106, 108, 116, 117, 120, 122];
+
 test('de la clase 2 a la 123, en el orden de BLOCKS, sin chocar con las del A2', () => {
-  assert.deepEqual(COURSE_SYLLABUS.map(c => c.n), Array.from({ length: 122 }, (_, i) => i + 2));
+  const clases = Array.from({ length: 122 }, (_, i) => i + 2).filter(n => !NO_SON_CLASES.includes(n));
+  assert.deepEqual(COURSE_SYLLABUS.map(c => c.n), clases);
   for (const c of COURSE_SYLLABUS) assert.equal(c.id, 1000 + c.n);
   assert.ok(COURSE_SYLLABUS.every(c => c.id > 89), 'los ids del A2 (37-89) siguen en sus datos');
   assert.equal(COURSE_SYLLABUS.at(-1).title, 'INTERNATIONAL FINAL EXAM / B1 / 1h 40m');
@@ -51,7 +55,20 @@ test('los exámenes, con las unidades que entran en cada uno', () => {
     [119, [6, 10]], [121, [9, 10]],
     [123, null],       // el final
   ]);
-  assert.ok(!COURSE_SYLLABUS.find(c => c.n === 122).exam, 'el autonomous work no es un examen');
+});
+
+test('solo las clases que él ve: 96, sin las virtuales ni el autonomous work', () => {
+  // "El virtual video no se ve, ni virtual vocabulario, ni virtual skills:
+  // necesito saber cuántas clases realmente voy a ver." Con "📆 All" se comían
+  // días de clase.
+  assert.equal(COURSE_SYLLABUS.length, 96);
+  assert.ok(!COURSE_SYLLABUS.some(c => /virtual|autonomous/i.test(c.title)));
+  const tipo = re => COURSE_SYLLABUS.filter(c => re.test(c.title)).length;
+  assert.equal(COURSE_SYLLABUS.filter(c => c.pages).length, 50);
+  assert.equal(tipo(/^Conversation time/), 18);
+  assert.equal(tipo(/^We Talk/), 10);
+  assert.equal(tipo(/^Readiness check/), 4);
+  assert.equal(COURSE_SYLLABUS.filter(c => c.exam).length, 14);
 });
 
 test('él ve el número de BLOCKS, no el id', () => {
