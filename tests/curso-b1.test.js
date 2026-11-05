@@ -20,8 +20,9 @@ const { COURSE_SYLLABUS, numClase, numDeId } = h.ejecutar(`${sintaxis}
   ${h.extraerFuncion('numDeId')}
   return { COURSE_SYLLABUS, numClase, numDeId };`, {});
 
-// Las que no son clases: las virtuales y el autonomous work (horas en MyEnglishLab).
-const NO_SON_CLASES = [15, 17, 26, 27, 29, 38, 40, 48, 49, 51, 59, 61, 71, 72, 74, 83, 85, 93, 94, 97, 106, 108, 116, 117, 120, 122];
+// Las que no son clases que él vea: las virtuales, los review tests (62, 119) y
+// el autonomous work (122, horas en MyEnglishLab).
+const NO_SON_CLASES = [15, 17, 26, 27, 29, 38, 40, 48, 49, 51, 59, 61, 62, 71, 72, 74, 83, 85, 93, 94, 97, 106, 108, 116, 117, 119, 120, 122];
 
 test('de la clase 2 a la 123, en el orden de BLOCKS, sin chocar con las del A2', () => {
   const clases = Array.from({ length: 122 }, (_, i) => i + 2).filter(n => !NO_SON_CLASES.includes(n));
@@ -49,26 +50,25 @@ test('los exámenes, con las unidades que entran en cada uno', () => {
     [6, null],         // Speaking test check 0
     [14, [1, 1]], [25, [2, 2]], [37, [3, 3]],
     [47, null],        // Oral presentation 1: de todo
-    [62, [1, 5]],      // Review test 1: Units 1-5, como en el A2
     [63, [4, 5]], [70, [6, 6]], [82, [7, 7]], [96, [8, 8]],
     [105, null],       // Oral presentation 2
-    [119, [6, 10]], [121, [9, 10]],
+    [121, [9, 10]],
     [123, null],       // el final
   ]);
 });
 
-test('solo las clases que él ve: 96, sin las virtuales ni el autonomous work', () => {
+test('solo las clases que él ve: 94, sin las virtuales, el autonomous work ni los review tests', () => {
   // "El virtual video no se ve, ni virtual vocabulario, ni virtual skills:
-  // necesito saber cuántas clases realmente voy a ver." Con "📆 All" se comían
-  // días de clase.
-  assert.equal(COURSE_SYLLABUS.length, 96);
-  assert.ok(!COURSE_SYLLABUS.some(c => /virtual|autonomous/i.test(c.title)));
+  // necesito saber cuántas clases realmente voy a ver." Y luego: "autonomous
+  // work tampoco, ni los review test". Con "📆 All" se comían días de clase.
+  assert.equal(COURSE_SYLLABUS.length, 94);
+  assert.ok(!COURSE_SYLLABUS.some(c => /virtual|autonomous|review test/i.test(c.title)));
   const tipo = re => COURSE_SYLLABUS.filter(c => re.test(c.title)).length;
   assert.equal(COURSE_SYLLABUS.filter(c => c.pages).length, 50);
   assert.equal(tipo(/^Conversation time/), 18);
   assert.equal(tipo(/^We Talk/), 10);
   assert.equal(tipo(/^Readiness check/), 4);
-  assert.equal(COURSE_SYLLABUS.filter(c => c.exam).length, 14);
+  assert.equal(COURSE_SYLLABUS.filter(c => c.exam).length, 12, '9 speaking tests, 2 presentaciones orales y el final');
 });
 
 test('él ve el número de BLOCKS, no el id', () => {

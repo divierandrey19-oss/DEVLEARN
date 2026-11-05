@@ -70,11 +70,10 @@ test('el próximo examen con unidades da el foco, hasta su fecha', () => {
 });
 
 test('los exámenes de varias unidades enfocan todas', () => {
-  const antesDelReview = focoDelRepaso({ classesDone: hasta(61) }, '2027-01-10');
-  assert.deepEqual([...antesDelReview.keys], ['b1_1', 'b1_2', 'b1_3', 'b1_4', 'b1_5'], '"REVIEW TEST 1 / Unit 5" son las Units 1-5');
-  assert.equal(antesDelReview.unidades, 'Units 1-5');
   const dos = focoDelRepaso({ classesDone: hasta(62) }, '2027-01-10');
   assert.deepEqual([...dos.keys], ['b1_4', 'b1_5'], '"SPEAKING TEST 4, 5"');
+  assert.equal(dos.unidades, 'Units 4-5');
+  assert.deepEqual([...focoDelRepaso({ classesDone: hasta(120) }, '2027-04-10').keys], ['b1_9', 'b1_10']);
   // Una presentación oral es de todo: sin unidades, como el final.
   assert.equal(focoDelRepaso({ classesDone: hasta(46), units: {} }, '2027-01-10'), null);
 });
