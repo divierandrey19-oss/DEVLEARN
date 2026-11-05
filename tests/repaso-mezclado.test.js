@@ -50,27 +50,38 @@ test('el repaso diario intercala cada grupo, y las atrasadas siguen de la más v
 const sintaxis = h.fuente().match(/const COURSE_SYLLABUS = \[[\s\S]*?\n\];/)[0];
 const { focoDelRepaso } = h.ejecutar(`${sintaxis}\n${h.extraerFuncion('unidadesAtrasadas')}\n${h.extraerFuncion('focoDelRepaso')} return { focoDelRepaso };`,
   { todayLocal: () => '2026-10-04', getUnitVocab: u => u.vocab || [], SRS: { readCard: (prog, w) => prog[w] || { state: 'new' } } });
+// El curso es el del B1 (5 de noviembre): id = 1000 + el número de BLOCKS.
 const ids = t => sintaxisIds(t);
-function sintaxisIds(titulo) { const m = sintaxis.match(new RegExp(`\\{ id: (\\d+), title: '${titulo.replace(/[/]/g, '\\/')}`)); return m && Number(m[1]); }
+function sintaxisIds(titulo) { const m = sintaxis.match(new RegExp(`\\{ id: (\\d+), n: \\d+, title: '${titulo.replace(/[/]/g, '\\/')}'`)); return m && Number(m[1]); }
+const hasta = n => Array.from({ length: n - 1 }, (_, i) => 1002 + i); // vistas las clases 2..n
 
 test('el próximo examen con unidades da el foco, hasta su fecha', () => {
-  const hechas = Array.from({ length: 86 }, (_, i) => i + 1); // todo hasta el Review Test 2
-  const st = { classesDone: hechas, classSchedule: { [ids('SPEAKING TEST / Units 9-10')]: '2026-10-13' } };
-  const f = focoDelRepaso(st, '2026-10-04');
-  assert.deepEqual([...f.keys], ['a2_9', 'a2_10']);
-  assert.equal(f.unidades, 'Units 9-10');
-  assert.equal(f.fecha, '2026-10-13');
-  assert.ok(focoDelRepaso(st, '2026-10-13'), 'el mismo día del examen, todavía');
-  assert.equal(focoDelRepaso(st, '2026-10-14'), null, 'pasada la fecha, vuelve a mezclar todo');
-  const despues = { ...st, classesDone: [...hechas, ids('SPEAKING TEST / Units 9-10')] };
-  assert.equal(focoDelRepaso(despues, '2026-10-10'), null, 'marcado como hecho: el próximo es el final, sin unidades');
-  assert.ok(focoDelRepaso({ classesDone: hechas }, '2026-10-04'), 'sin fecha en el calendario, mientras sea el próximo');
+  const hechas = hasta(13); // todo antes del Speaking Test 1
+  const st = { classesDone: hechas, classSchedule: { [ids('SPEAKING TEST 1 / Unit 1')]: '2026-11-20' } };
+  const f = focoDelRepaso(st, '2026-11-15');
+  assert.deepEqual([...f.keys], ['b1_1']);
+  assert.equal(f.unidades, 'Unit 1', 'una sola unidad, no "Units 1-1"');
+  assert.equal(f.fecha, '2026-11-20');
+  assert.equal(focoDelRepaso(st, '2026-11-20').unidades, 'Unit 1', 'el mismo día del examen, todavía');
+  assert.equal(focoDelRepaso(st, '2026-11-21').unidades, 'Unit 2', 'pasada la fecha, el siguiente examen');
+  const despues = { ...st, classesDone: [...hechas, ids('SPEAKING TEST 1 / Unit 1')] };
+  assert.equal(focoDelRepaso(despues, '2026-11-18').unidades, 'Unit 2', 'marcado como hecho: el siguiente');
+  assert.equal(focoDelRepaso({ classesDone: hechas }, '2026-11-15').unidades, 'Unit 1', 'sin fecha en el calendario, mientras sea el próximo');
+});
+
+test('los exámenes de varias unidades enfocan todas', () => {
+  const dos = focoDelRepaso({ classesDone: hasta(62) }, '2027-01-10');
+  assert.deepEqual([...dos.keys], ['b1_4', 'b1_5'], '"SPEAKING TEST 4, 5"');
+  assert.equal(dos.unidades, 'Units 4-5');
+  assert.deepEqual([...focoDelRepaso({ classesDone: hasta(120) }, '2027-04-10').keys], ['b1_9', 'b1_10']);
+  // Una presentación oral es de todo: sin unidades, como el final.
+  assert.equal(focoDelRepaso({ classesDone: hasta(46), units: {} }, '2027-01-10'), null);
 });
 
 test('un examen viejo sin marcar, con su fecha pasada, no se cuenta', () => {
-  const hechas = Array.from({ length: 86 }, (_, i) => i + 1).filter(n => n !== ids('SPEAKING TEST / Units 7-8'));
-  const st = { classesDone: hechas, classSchedule: { [ids('SPEAKING TEST / Units 7-8')]: '2026-09-01', [ids('SPEAKING TEST / Units 9-10')]: '2026-10-13' } };
-  assert.equal(focoDelRepaso(st, '2026-10-04').unidades, 'Units 9-10');
+  const hechas = hasta(24).filter(n => n !== ids('SPEAKING TEST 1 / Unit 1'));
+  const st = { classesDone: hechas, classSchedule: { [ids('SPEAKING TEST 1 / Unit 1')]: '2026-11-20', [ids('SPEAKING TEST 2 / Unit 2')]: '2026-12-10' } };
+  assert.equal(focoDelRepaso(st, '2026-12-01').unidades, 'Unit 2');
 });
 
 test('con foco: 14 de las unidades del examen (preguntas primero entre las nuevas) y el resto mezclado', () => {
@@ -105,25 +116,37 @@ function suCurso() {
     b1_1: { ...unidad(1, palabras(90, 'b1_')), key: 'b1_1', lid: 'b1' }, // otro nivel: no cuenta
   };
 }
-const hechasTodo = Array.from({ length: 87 }, (_, i) => i + 1); // hasta el speaking de las Units 9-10
+// Con el B1, el foco sin examen de unidades son las del B1 (el nivel del curso).
+const unidadB1 = (n, vocab, prog) => ({ ...unidad(n, vocab, prog), key: `b1_${n}`, lid: 'b1' });
+function suB1() {
+  const v4 = palabras(40, 'b4_'), v5 = palabras(35, 'b5_');
+  return {
+    b1_1: unidadB1(1, palabras(60, 'b1_')),
+    b1_2: unidadB1(2, palabras(50, 'b2_')),
+    b1_3: unidadB1(3, [...palabras(3, 'b3q_', { type: 'question' }), ...palabras(55, 'b3_')]),
+    b1_4: unidadB1(4, v4, vistas(v4, { state: 'review', dueDate: '2026-12-01', interval: 7, lapses: 0 })),
+    b1_5: unidadB1(5, [...v5, ...palabras(10, 'b5n_')], vistas(v5, { state: 'review', dueDate: '2026-12-02', interval: 7, lapses: 0 })),
+    a2_1: unidad(1, palabras(90, 'u1_')), // otro nivel: no cuenta
+  };
+}
+const antesDeLaPresentacion = hasta(46); // el próximo examen, la Oral Presentation 1, no tiene unidades
 
-test('pasado el speaking, el foco son las 3 unidades con más palabras sin ver', () => {
-  const f = focoDelRepaso({ classesDone: hechasTodo, units: suCurso() }, '2026-10-17');
+test('sin examen de unidades por delante, el foco son las 3 unidades del nivel con más palabras sin ver', () => {
+  const f = focoDelRepaso({ classesDone: antesDeLaPresentacion, units: suB1() }, '2026-12-10');
   assert.equal(f.atrasadas, true);
-  assert.deepEqual([...f.keys].sort(), ['a2_1', 'a2_2', 'a2_6']);
-  assert.equal(f.unidades, 'Units 1, 2, 6', 'en orden de unidad');
+  assert.deepEqual([...f.keys].sort(), ['b1_1', 'b1_2', 'b1_3']);
+  assert.equal(f.unidades, 'Units 1, 2, 3', 'en orden de unidad');
   assert.equal(f.faltan, 60 + 50 + 58);
-  // La 9 tiene 10 sin ver: menos de 30 ya no cuenta, aunque haya cupo.
-  const pocas = suCurso(); delete pocas.a2_1; delete pocas.a2_2;
-  assert.deepEqual([...focoDelRepaso({ classesDone: hechasTodo, units: pocas }, '2026-10-17').keys], ['a2_6']);
+  // La 5 tiene 10 sin ver: menos de 30 ya no cuenta, aunque haya cupo.
+  const pocas = suB1(); delete pocas.b1_1; delete pocas.b1_2;
+  assert.deepEqual([...focoDelRepaso({ classesDone: antesDeLaPresentacion, units: pocas }, '2026-12-10').keys], ['b1_3']);
   // Con todo estudiado no hay foco: el repaso mezcla todo, como antes.
-  assert.equal(focoDelRepaso({ classesDone: hechasTodo, units: { a2_7: suCurso().a2_7 } }, '2026-10-17'), null);
+  assert.equal(focoDelRepaso({ classesDone: antesDeLaPresentacion, units: { b1_4: suB1().b1_4 } }, '2026-12-10'), null);
 });
 
-test('antes del speaking, el foco sigue siendo el de sus unidades', () => {
-  const hechas = Array.from({ length: 86 }, (_, i) => i + 1);
-  const f = focoDelRepaso({ classesDone: hechas, units: suCurso(), classSchedule: { [ids('SPEAKING TEST / Units 9-10')]: '2026-10-16' } }, '2026-10-15');
-  assert.equal(f.unidades, 'Units 9-10');
+test('antes de un speaking, el foco sigue siendo el de sus unidades', () => {
+  const f = focoDelRepaso({ classesDone: hasta(13), units: suB1(), classSchedule: { [ids('SPEAKING TEST 1 / Unit 1')]: '2026-11-20' } }, '2026-11-19');
+  assert.equal(f.unidades, 'Unit 1');
   assert.ok(!f.atrasadas);
 });
 

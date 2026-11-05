@@ -319,16 +319,28 @@ número), manda el respaldo, y el archivo de Claude las llena por su id
 (`emptyBatchesToFill`): número de página con hora, tarjetas, gramática; luego
 quedan en el orden del libro. Una página que ya tiene tarjetas no se toca.
 
+`curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
+123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen
+marcadas y con fecha en sus datos (y se unen entre aparatos), y reusar esos
+números habría dado por vistas las del B1. Él ve el número de BLOCKS
+(`numClase`) en la lista, los avisos, el texto para copiar y al borrar fechas por
+rango. Cada clase de páginas trae sus páginas y su unidad, y cada examen las
+unidades que entran ("SPEAKING TEST 4, 5" son las 4 y 5). Solo las clases que
+él ve, 94: sin las virtuales (video, vocabulary and writing, communicative
+skills), el autonomous work ni los review tests, que con "📆 All" se comían días
+de clase.
+
 `repaso-mezclado.test.js` — El repaso diario de Flashcards toma 20 tarjetas por
 prioridad (las que más falla, las más atrasadas…). Las palabras estudiadas el
 mismo día vencen el mismo día, y las 20 salían de una sola unidad; ahora van por
 turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
 Antes de un speaking test se enfoca en sus unidades (`focoDelRepaso` lee el
-próximo examen del calendario del curso, "SPEAKING TEST / Units 9-10", hasta su
-fecha): 14 de 20 de esas unidades, con las preguntas primero entre las nuevas, y
-6 del resto. Pasado el speaking (17 de octubre, él lo pidió), sin un examen de
-unidades por delante, el foco son las 3 unidades con más palabras sin ver
-(`unidadesAtrasadas`, 30 o más): la mitad de la sesión son nuevas de ellas, por
+próximo examen del calendario del curso y sus `units`, hasta su fecha: "SPEAKING
+TEST 1 / Unit 1" es la Unit 1, "SPEAKING TEST 4, 5" las 4 y 5): 14 de 20 de esas
+unidades, con las preguntas primero entre las nuevas, y 6 del resto. Sin un
+examen de unidades por delante (una presentación oral, el final; en el A2, pasado
+el speaking del 16 de octubre, él lo pidió), el foco son las 3 unidades del
+nivel con más palabras sin ver (`unidadesAtrasadas`, 30 o más): la mitad de la sesión son nuevas de ellas, por
 turnos desde la primera página, y la otra mitad el repaso de siempre. Pruebas
 con la sesión real del SRS de la app.
 Ponerse al día (30 de octubre): volvió del viaje con 1423 pendientes y cada

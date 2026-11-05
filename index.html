@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-10-30b -->
+<!-- DEVLEARN_BUILD: 2026-11-05a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4905,7 +4905,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-10-30b';
+const APP_BUILD = '2026-11-05a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -13779,67 +13779,123 @@ function setLang(lang) {
  */
 /* ── COURSE TRACKER ──────────────────────────────────────────────
  * His academy's own syllabus, remaining classes only (he asked to start at
- * the first "pendiente", #37). Each content class names the exact book pages
+ * the first "pendiente"). Each content class names the exact book pages
  * — the same pairs he uploads to the app — so marking a class done can nudge
  * the missing upload. Completions live in state.classesDone (an id array,
  * which merges as a union across devices unlike a counter — the streak
  * lesson). Zero tokens, all local.
+ *
+ * El B1 (5 de noviembre), de la clase 2 en adelante: la 1 (inducción) ya la
+ * vio. Cada clase tiene id = 1000 + su número en BLOCKS, y `n` es el número
+ * que él ve. Los ids 37-89 del A2 siguen en classesDone y classSchedule, y se
+ * unen entre aparatos: reusar 1-123 habría dado por vistas las clases 37-89
+ * del B1. `units` dice qué unidades entran en cada examen (el repaso se
+ * enfoca en ellas).
+ * Solo las clases que él ve ("necesito saber cuántas clases realmente voy a
+ * ver"): sin las virtuales (video, vocabulary and writing, communicative
+ * skills), el autonomous work (horas en MyEnglishLab) ni los review tests. Con
+ * "📆 All" se comían días de clase. Quedan 94.
  */
 const COURSE_SYLLABUS = [
-  { id: 37, title: '52-53 / Unit 5',                              pages: '52-53', unit: 'a2_5' },
-  { id: 38, title: '54-55 / Unit 5',                              pages: '54-55', unit: 'a2_5' },
-  { id: 39, title: '56-57 / Unit 5',                              pages: '56-57', unit: 'a2_5' },
-  { id: 40, title: '58-59 / Unit 5',                              pages: '58-59', unit: 'a2_5' },
-  { id: 41, title: 'Virtual vocabulary-writing / Unit 5' },
-  { id: 42, title: 'We Talk activity' },
-  { id: 43, title: 'REVIEW TEST 1 / Units 1-5',                   exam: true },
-  { id: 44, title: '61-62-63 / Unit 6',                           pages: '61-63', unit: 'a2_6' },
-  { id: 45, title: '64-65 / Unit 6',                              pages: '64-65', unit: 'a2_6' },
-  { id: 46, title: '66-67 / Unit 6',                              pages: '66-67', unit: 'a2_6' },
-  { id: 47, title: '68-69 / Unit 6',                              pages: '68-69', unit: 'a2_6' },
-  { id: 48, title: 'E-book practice 70-71 / Unit 6',              pages: '70-71', unit: 'a2_6' },
-  { id: 49, title: 'SPEAKING TEST / Units 5-6',                   exam: true },
-  { id: 50, title: 'Virtual video / online practice / Units 5-6' },
-  { id: 51, title: 'We Talk activity' },
-  { id: 52, title: 'Virtual communicative skills / Units 5-6' },
-  { id: 53, title: 'Virtual vocabulary and writing / Unit 6' },
-  { id: 54, title: '73-74-75 / Unit 7',                           pages: '73-75', unit: 'a2_7' },
-  { id: 55, title: '76-77 / Unit 7',                              pages: '76-77', unit: 'a2_7' },
-  { id: 56, title: '78-79 / Unit 7',                              pages: '78-79', unit: 'a2_7' },
-  { id: 57, title: '80-81 / Unit 7',                              pages: '80-81', unit: 'a2_7' },
-  { id: 58, title: '82-83 / Unit 7',                              pages: '82-83', unit: 'a2_7' },
-  { id: 59, title: 'We Talk activity' },
-  { id: 60, title: 'Virtual vocabulary-writing / Unit 7' },
-  { id: 61, title: '85-86-87 / Unit 8',                           pages: '85-87', unit: 'a2_8' },
-  { id: 62, title: '88-89 / Unit 8',                              pages: '88-89', unit: 'a2_8' },
-  { id: 63, title: '90-91 / Unit 8',                              pages: '90-91', unit: 'a2_8' },
-  { id: 64, title: '92-93 / Unit 8',                              pages: '92-93', unit: 'a2_8' },
-  { id: 65, title: '94-95 / Unit 8',                              pages: '94-95', unit: 'a2_8' },
-  { id: 66, title: 'SPEAKING TEST / Units 7-8',                   exam: true },
-  { id: 67, title: 'Virtual video / online practice / Units 7-8' },
-  { id: 68, title: 'We Talk activity' },
-  { id: 69, title: 'Virtual communicative skills / Units 7-8' },
-  { id: 70, title: 'Virtual vocabulary and writing / Unit 8' },
-  { id: 71, title: '97-98-99 / Unit 9',                           pages: '97-99', unit: 'a2_9' },
-  { id: 72, title: '100-101 / Unit 9',                            pages: '100-101', unit: 'a2_9' },
-  { id: 73, title: '102-103 / Unit 9',                            pages: '102-103', unit: 'a2_9' },
-  { id: 74, title: '104-105 / Unit 9',                            pages: '104-105', unit: 'a2_9' },
-  { id: 75, title: '106-107 / Unit 9',                            pages: '106-107', unit: 'a2_9' },
-  { id: 76, title: 'We Talk activity' },
-  { id: 77, title: 'Virtual vocabulary-writing / Unit 9' },
-  { id: 78, title: '109-110-111 / Unit 10',                       pages: '109-111', unit: 'a2_10' },
-  { id: 79, title: '112-113 / Unit 10',                           pages: '112-113', unit: 'a2_10' },
-  { id: 80, title: '114-115 / Unit 10',                           pages: '114-115', unit: 'a2_10' },
-  { id: 81, title: '116-117 / Unit 10',                           pages: '116-117', unit: 'a2_10' },
-  { id: 82, title: 'E-book practice 118-119 / Unit 10',           pages: '118-119', unit: 'a2_10' },
-  { id: 83, title: 'Virtual video / practice / Units 9-10' },
-  { id: 84, title: 'Virtual communicative skills / Units 9-10' },
-  { id: 85, title: 'We Talk activity' },
-  { id: 86, title: 'REVIEW TEST 2 / Units 6-10',                  exam: true },
-  { id: 87, title: 'SPEAKING TEST / Units 9-10',                  exam: true },
-  { id: 88, title: 'AUTONOMOUS WORK / all units' },
-  { id: 89, title: 'INTERNATIONAL FINAL EXAM / A2 / 1h 40m',      exam: true },
+  { id: 1002, n: 2, title: 'Readiness check 1 / Unit 1' },
+  { id: 1003, n: 3, title: 'Readiness check 2 / Unit 1' },
+  { id: 1004, n: 4, title: 'Readiness check 3 / Unit 1' },
+  { id: 1005, n: 5, title: 'Readiness check 4 / Unit 1' },
+  { id: 1006, n: 6, title: 'SPEAKING TEST CHECK 0 / Unit 1',             exam: true },
+  { id: 1007, n: 7, title: '1-2-3 / Unit 1',                             pages: '1-3', unit: 'b1_1' },
+  { id: 1008, n: 8, title: '4-5 / Unit 1',                               pages: '4-5', unit: 'b1_1' },
+  { id: 1009, n: 9, title: 'Conversation time 1.1 / Unit 1' },
+  { id: 1010, n: 10, title: '6-7 / Unit 1',                              pages: '6-7', unit: 'b1_1' },
+  { id: 1011, n: 11, title: 'Conversation time 1.2 / Unit 1' },
+  { id: 1012, n: 12, title: '8-9 / Unit 1',                              pages: '8-9', unit: 'b1_1' },
+  { id: 1013, n: 13, title: '10-11 / Unit 1',                            pages: '10-11', unit: 'b1_1' },
+  { id: 1014, n: 14, title: 'SPEAKING TEST 1 / Unit 1',                  exam: true, units: [1, 1] },
+  { id: 1016, n: 16, title: 'We Talk activity' },
+  { id: 1018, n: 18, title: '13-14-15 / Unit 2',                         pages: '13-15', unit: 'b1_2' },
+  { id: 1019, n: 19, title: '16-17 / Unit 2',                            pages: '16-17', unit: 'b1_2' },
+  { id: 1020, n: 20, title: 'Conversation time 2.1 / Unit 2' },
+  { id: 1021, n: 21, title: '18-19 / Unit 2',                            pages: '18-19', unit: 'b1_2' },
+  { id: 1022, n: 22, title: 'Conversation time 2.2 / Unit 2' },
+  { id: 1023, n: 23, title: '20-21 / Unit 2',                            pages: '20-21', unit: 'b1_2' },
+  { id: 1024, n: 24, title: '22-23 / Unit 2',                            pages: '22-23', unit: 'b1_2' },
+  { id: 1025, n: 25, title: 'SPEAKING TEST 2 / Unit 2',                  exam: true, units: [2, 2] },
+  { id: 1028, n: 28, title: 'We Talk activity' },
+  { id: 1030, n: 30, title: '25-26-27 / Unit 3',                         pages: '25-27', unit: 'b1_3' },
+  { id: 1031, n: 31, title: '28-29 / Unit 3',                            pages: '28-29', unit: 'b1_3' },
+  { id: 1032, n: 32, title: 'Conversation time 3.1 / Unit 3' },
+  { id: 1033, n: 33, title: '30-31 / Unit 3',                            pages: '30-31', unit: 'b1_3' },
+  { id: 1034, n: 34, title: 'Conversation time 3.2 / Unit 3' },
+  { id: 1035, n: 35, title: '32-33 / Unit 3',                            pages: '32-33', unit: 'b1_3' },
+  { id: 1036, n: 36, title: '34-35 / Unit 3',                            pages: '34-35', unit: 'b1_3' },
+  { id: 1037, n: 37, title: 'SPEAKING TEST 3 / Unit 3',                  exam: true, units: [3, 3] },
+  { id: 1039, n: 39, title: 'We Talk activity / Unit 3' },
+  { id: 1041, n: 41, title: '37-38-39 / Unit 4',                         pages: '37-39', unit: 'b1_4' },
+  { id: 1042, n: 42, title: '40-41 / Unit 4',                            pages: '40-41', unit: 'b1_4' },
+  { id: 1043, n: 43, title: 'Conversation time 4.1 / Unit 4' },
+  { id: 1044, n: 44, title: '42-43 / Unit 4',                            pages: '42-43', unit: 'b1_4' },
+  { id: 1045, n: 45, title: '44-45 / Unit 4',                            pages: '44-45', unit: 'b1_4' },
+  { id: 1046, n: 46, title: '46-47 / Unit 4',                            pages: '46-47', unit: 'b1_4' },
+  { id: 1047, n: 47, title: 'ORAL PRESENTATION 1 / All units',           exam: true },
+  { id: 1050, n: 50, title: 'We Talk activity' },
+  { id: 1052, n: 52, title: '49-50-51 / Unit 5',                         pages: '49-51', unit: 'b1_5' },
+  { id: 1053, n: 53, title: '52-53 / Unit 5',                            pages: '52-53', unit: 'b1_5' },
+  { id: 1054, n: 54, title: 'Conversation time 5.1 / Unit 5' },
+  { id: 1055, n: 55, title: '54-55 / Unit 5',                            pages: '54-55', unit: 'b1_5' },
+  { id: 1056, n: 56, title: 'Conversation time 5.2 / Unit 5' },
+  { id: 1057, n: 57, title: '56-57 / Unit 5',                            pages: '56-57', unit: 'b1_5' },
+  { id: 1058, n: 58, title: '58-59 / Unit 5',                            pages: '58-59', unit: 'b1_5' },
+  { id: 1060, n: 60, title: 'We Talk activity' },
+  { id: 1063, n: 63, title: 'SPEAKING TEST 4, 5 / Unit 5',               exam: true, units: [4, 5] },
+  { id: 1064, n: 64, title: '61-62-63 / Unit 6',                         pages: '61-63', unit: 'b1_6' },
+  { id: 1065, n: 65, title: '64-65 / Unit 6',                            pages: '64-65', unit: 'b1_6' },
+  { id: 1066, n: 66, title: '66-67 / Unit 6',                            pages: '66-67', unit: 'b1_6' },
+  { id: 1067, n: 67, title: 'Conversation time 6.2 / Unit 6' },
+  { id: 1068, n: 68, title: '68-69 / Unit 6',                            pages: '68-69', unit: 'b1_6' },
+  { id: 1069, n: 69, title: '70-71 / Unit 6',                            pages: '70-71', unit: 'b1_6' },
+  { id: 1070, n: 70, title: 'SPEAKING TEST 6 / Unit 6',                  exam: true, units: [6, 6] },
+  { id: 1073, n: 73, title: 'We Talk activity' },
+  { id: 1075, n: 75, title: '73-74-75 / Unit 7',                         pages: '73-75', unit: 'b1_7' },
+  { id: 1076, n: 76, title: '76-77 / Unit 7',                            pages: '76-77', unit: 'b1_7' },
+  { id: 1077, n: 77, title: 'Conversation time 7.1 / Unit 7' },
+  { id: 1078, n: 78, title: '78-79 / Unit 7',                            pages: '78-79', unit: 'b1_7' },
+  { id: 1079, n: 79, title: 'Conversation time 7.2 / Unit 7' },
+  { id: 1080, n: 80, title: '80-81 / Unit 7',                            pages: '80-81', unit: 'b1_7' },
+  { id: 1081, n: 81, title: '82-83 / Unit 7',                            pages: '82-83', unit: 'b1_7' },
+  { id: 1082, n: 82, title: 'SPEAKING TEST 7 / Unit 7',                  exam: true, units: [7, 7] },
+  { id: 1084, n: 84, title: 'We Talk activity' },
+  { id: 1086, n: 86, title: '85-86-87 / Unit 8',                         pages: '85-87', unit: 'b1_8' },
+  { id: 1087, n: 87, title: '88-89 / Unit 8',                            pages: '88-89', unit: 'b1_8' },
+  { id: 1088, n: 88, title: 'Conversation time 8.1 / Unit 8' },
+  { id: 1089, n: 89, title: '90-91 / Unit 8',                            pages: '90-91', unit: 'b1_8' },
+  { id: 1090, n: 90, title: 'Conversation time 8.2 / Unit 8' },
+  { id: 1091, n: 91, title: '92-93 / Unit 8',                            pages: '92-93', unit: 'b1_8' },
+  { id: 1092, n: 92, title: '94-95 / Unit 8',                            pages: '94-95', unit: 'b1_8' },
+  { id: 1095, n: 95, title: 'We Talk activity' },
+  { id: 1096, n: 96, title: 'SPEAKING TEST / Unit 8',                    exam: true, units: [8, 8] },
+  { id: 1098, n: 98, title: '97-98-99 / Unit 9',                         pages: '97-99', unit: 'b1_9' },
+  { id: 1099, n: 99, title: '100-101 / Unit 9',                          pages: '100-101', unit: 'b1_9' },
+  { id: 1100, n: 100, title: 'Conversation time 9.1 / Unit 9' },
+  { id: 1101, n: 101, title: '102-103 / Unit 9',                         pages: '102-103', unit: 'b1_9' },
+  { id: 1102, n: 102, title: 'Conversation time 9.2 / Unit 9' },
+  { id: 1103, n: 103, title: '104-105 / Unit 9',                         pages: '104-105', unit: 'b1_9' },
+  { id: 1104, n: 104, title: '106-107 / Unit 9',                         pages: '106-107', unit: 'b1_9' },
+  { id: 1105, n: 105, title: 'ORAL PRESENTATION 2 / All units',          exam: true },
+  { id: 1107, n: 107, title: 'We Talk activity' },
+  { id: 1109, n: 109, title: '109-110-111 / Unit 10',                    pages: '109-111', unit: 'b1_10' },
+  { id: 1110, n: 110, title: '112-113 / Unit 10',                        pages: '112-113', unit: 'b1_10' },
+  { id: 1111, n: 111, title: 'Conversation time 10.1 / Unit 10' },
+  { id: 1112, n: 112, title: '114-115 / Unit 10',                        pages: '114-115', unit: 'b1_10' },
+  { id: 1113, n: 113, title: 'Conversation time 10.2 / Unit 10' },
+  { id: 1114, n: 114, title: '116-117 / Unit 10',                        pages: '116-117', unit: 'b1_10' },
+  { id: 1115, n: 115, title: '118-119 / Unit 10',                        pages: '118-119', unit: 'b1_10' },
+  { id: 1118, n: 118, title: 'We Talk activity' },
+  { id: 1121, n: 121, title: 'SPEAKING TEST / Units 9-10',               exam: true, units: [9, 10] },
+  { id: 1123, n: 123, title: 'INTERNATIONAL FINAL EXAM / B1 / 1h 40m',   exam: true },
 ];
+
+// El número de la clase como sale en BLOCKS (los del A2 no traen `n`).
+function numClase(c) { return c.n || c.id; }
+function numDeId(id) { return numClase(COURSE_SYLLABUS.find(c => c.id === id) || { id }); }
 
 function renderCourseTracker() {
   const el = document.getElementById('course-tracker');
@@ -13909,7 +13965,7 @@ function renderCourseTracker() {
       })()}
       ${todayClass ? `
         <div style="font-size:0.78rem;color:var(--green);font-weight:700;margin-bottom:8px;">
-          🕕 Today: class ${todayClass.id} · ${escapeHtml(todayClass.title)} · ${(sched[todayClass.id + '_t']) || '06:00'}
+          🕕 Today: class ${numClase(todayClass)} · ${escapeHtml(todayClass.title)} · ${(sched[todayClass.id + '_t']) || '06:00'}
         </div>` : ''}
       ${nextExam && classesToExam !== null ? `
         <div style="font-size:0.74rem;color:var(--amber, #d29922);margin-bottom:8px;">
@@ -13922,7 +13978,7 @@ function renderCourseTracker() {
             <button class="btn btn-ghost btn-sm" style="padding:3px 9px;font-size:0.78rem;flex-shrink:0;"
               onclick="markClassDone(${c.id})" title="Mark as done">○</button>
             <div style="flex:1;min-width:0;font-size:0.8rem;${c.exam ? 'font-weight:700;color:var(--amber, #d29922);' : ''}">
-              <span style="color:var(--text-3);font-size:0.7rem;">${c.id}</span> · ${escapeHtml(c.title)}
+              <span style="color:var(--text-3);font-size:0.7rem;">${numClase(c)}</span> · ${escapeHtml(c.title)}
               ${fmtSched(c.id) ? '<br>' + fmtSched(c.id) : ''}
             </div>
             <button class="btn btn-ghost btn-sm" style="padding:3px 7px;font-size:0.68rem;flex-shrink:0;"
@@ -13946,7 +14002,7 @@ function renderCourseTracker() {
             <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);opacity:0.7;">
               <span style="color:var(--green);flex-shrink:0;">✓</span>
               <div style="flex:1;min-width:0;font-size:0.78rem;text-decoration:line-through;">
-                <span style="font-size:0.68rem;">${c.id}</span> · ${escapeHtml(c.title)}
+                <span style="font-size:0.68rem;">${numClase(c)}</span> · ${escapeHtml(c.title)}
               </div>
               <button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:0.64rem;flex-shrink:0;"
                 onclick="unmarkClass(${c.id})" title="Unmark — I marked it by mistake">↩︎</button>
@@ -14036,7 +14092,8 @@ function openClearDates() {
   const dated = COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id]);
 
   if (!dated.length) { toast('No scheduled dates'); return; }
-  const first = dated[0].id, last = dated[dated.length - 1].id;
+  const first = numClase(dated[0]), last = numClase(dated[dated.length - 1]);
+  const tope = Math.max(...COURSE_SYLLABUS.map(numClase));
 
   const ov = document.createElement('div');
   ov.id = 'clear-overlay';
@@ -14055,12 +14112,12 @@ function openClearDates() {
       <div style="display:flex;gap:10px;margin-bottom:8px;">
         <div style="flex:1;">
           <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">From class</label>
-          <input type="number" id="clear-from" value="${first}" min="1" max="89" inputmode="numeric" onchange="previewClear()"
+          <input type="number" id="clear-from" value="${first}" min="1" max="${tope}" inputmode="numeric" onchange="previewClear()"
             style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;">
         </div>
         <div style="flex:1;">
           <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">To</label>
-          <input type="number" id="clear-to" value="${last}" min="1" max="89" inputmode="numeric" onchange="previewClear()"
+          <input type="number" id="clear-to" value="${last}" min="1" max="${tope}" inputmode="numeric" onchange="previewClear()"
             style="width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text-1);font-size:0.95rem;">
         </div>
       </div>
@@ -14083,7 +14140,7 @@ function clearRangeIds() {
   const lo = Math.min(from, to), hi = Math.max(from, to);
   const sched = state.classSchedule || {};
   const done = new Set(state.classesDone || []);
-  return COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id] && c.id >= lo && c.id <= hi).map(c => c.id);
+  return COURSE_SYLLABUS.filter(c => !done.has(c.id) && sched[c.id] && numClase(c) >= lo && numClase(c) <= hi).map(c => c.id);
 }
 
 function previewClear() {
@@ -14091,7 +14148,7 @@ function previewClear() {
   if (!box) return;
   const ids = clearRangeIds();
   box.textContent = ids.length
-    ? `${ids.length} date${ids.length !== 1 ? 's' : ''} will be deleted (classes ${ids[0]}–${ids[ids.length - 1]})`
+    ? `${ids.length} date${ids.length !== 1 ? 's' : ''} will be deleted (classes ${numDeId(ids[0])}–${numDeId(ids[ids.length - 1])})`
     : 'Ese rango no tiene fechas';
 }
 
@@ -14307,10 +14364,10 @@ function copyScheduleText() {
   const done = new Set(state.classesDone || []);
   const clave = c => (sched[c.id] || '9999') + (sched[c.id + '_t'] || '');
   const linea = c => {
-    if (!sched[c.id]) return `${c.id} · (no date) · ${c.title}`;
+    if (!sched[c.id]) return `${numClase(c)} · (no date) · ${c.title}`;
     const d = new Date(sched[c.id] + 'T00:00:00');
     const dia = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    return `${c.id} · ${dia} ${sched[c.id + '_t'] || ''} · ${c.title}`;
+    return `${numClase(c)} · ${dia} ${sched[c.id + '_t'] || ''} · ${c.title}`;
   };
 
   const vistas = COURSE_SYLLABUS.filter(c => done.has(c.id)).sort((a, b) => clave(a).localeCompare(clave(b)));
@@ -14353,7 +14410,7 @@ function scheduleClass(id) {
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sched-overlay').remove()">✕</button>
       </div>
       <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:16px;">
-        <span style="font-size:0.7rem;">${cls.id}</span> · ${escapeHtml(cls.title)}
+        <span style="font-size:0.7rem;">${numClase(cls)}</span> · ${escapeHtml(cls.title)}
       </div>
       <label style="display:block;font-size:0.72rem;color:var(--text-3);margin-bottom:4px;">Day</label>
       <input type="date" id="sched-date" value="${sched[id] || todayLocal()}"
@@ -14381,7 +14438,7 @@ function saveClassSchedule(id) {
   save();
   document.getElementById('sched-overlay')?.remove();
   renderCourseTracker();
-  toast(`📆 Class ${id} scheduled`);
+  toast(`📆 Class ${numDeId(id)} scheduled`);
 }
 
 function clearClassSchedule(id) {
@@ -14392,7 +14449,7 @@ function clearClassSchedule(id) {
   save();
   document.getElementById('sched-overlay')?.remove();
   renderCourseTracker();
-  toast(`Class ${id} has no date now`);
+  toast(`Class ${numDeId(id)} has no date now`);
 }
 
 function unmarkClass(id) {
@@ -14411,7 +14468,7 @@ function unmarkClass(id) {
   }
   save();
   renderCourseTracker();
-  toast(`↩︎ Class ${id} is pending again`);
+  toast(`↩︎ Class ${numDeId(id)} is pending again`);
 }
 
 /* ── ⏱ TIEMPO DE ESTUDIO ─────────────────────────────────────────
@@ -14718,9 +14775,9 @@ function markClassDone(id) {
   renderCourseTracker();
   const cls = COURSE_SYLLABUS.find(c => c.id === id);
   if (cls?.pages && cls.unit && !(state.units[cls.unit]?.batches || []).length) {
-    toast(`✓ Class ${id} · Did you upload pages ${cls.pages}?`);
+    toast(`✓ Class ${numClase(cls)} · Did you upload pages ${cls.pages}?`);
   } else {
-    toast(`✓ Class ${id} marked`);
+    toast(`✓ Class ${numDeId(id)} marked`);
   }
 }
 
@@ -20030,13 +20087,15 @@ function focoDelRepaso(st = state, hoy = todayLocal()) {
   // El próximo examen: sin marcar y sin fecha pasada (uno viejo que quedó sin
   // marcar no se cuenta).
   const examen = COURSE_SYLLABUS.find(c => c.exam && !hechas.has(c.id) && !(sched[c.id] && sched[c.id] < hoy));
-  const m = examen && String(examen.title).match(/Units?\s+(\d+)\s*-\s*(\d+)/i);
+  // Las unidades del examen vienen en `units`: en el B1 casi todos los
+  // speaking son de una sola unidad ("SPEAKING TEST 1 / Unit 1").
+  const r = examen && examen.units;
   const nivel = String((COURSE_SYLLABUS.find(c => c.unit) || {}).unit || 'a2_1').split('_')[0];
-  if (!m) return unidadesAtrasadas(st, nivel);
+  if (!r) return unidadesAtrasadas(st, nivel);
   const fecha = sched[examen.id];
   const keys = new Set();
-  for (let n = Number(m[1]); n <= Number(m[2]); n++) keys.add(`${nivel}_${n}`);
-  return { keys, titulo: examen.title, fecha: fecha || null, unidades: `Units ${m[1]}-${m[2]}` };
+  for (let n = r[0]; n <= r[1]; n++) keys.add(`${nivel}_${n}`);
+  return { keys, titulo: examen.title, fecha: fecha || null, unidades: r[0] === r[1] ? `Unit ${r[0]}` : `Units ${r[0]}-${r[1]}` };
 }
 
 /* Cuántas tarjetas calificó hoy en modo memoria (el repaso diario y Classic).
