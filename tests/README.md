@@ -331,7 +331,9 @@ unidad). Gramática y ejercicios cuentan **toda** la unidad ("¿por qué 5?"): u
 dosis de 40 ejercicios y 20 de gramática al día, y la unidad cambia cuando
 están todos respondidos desde que empezó con ella (`avanceDeUnidad`, con las
 mismas claves con que la app guarda cada respuesta, y `planDiario.desde`). Lo
-que respondió antes (en el A2) se borra solo si él dice que sí al abrirla.
+que respondió antes (en el A2) se borra solo si él dice que sí al abrirla. La
+tarjeta de los textos ya no se repite debajo del plan: sale al tocar Open en
+ese renglón (`__textosAbiertos`) y se esconde al salir del Dashboard.
 
 `curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
 123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen

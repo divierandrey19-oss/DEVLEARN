@@ -339,6 +339,17 @@ const MUTACIONES = [
     reemplazo: `onclick="abrirDelPlan('\${i.id}')"></button>`,
   },
   {
+    nombre: 'Plan de hoy: la tarjeta de textos otra vez repetida debajo del plan',
+    buscar: `  if (!window.__textosAbiertos) { el.innerHTML = ''; return; }`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'Plan de hoy: que Open en los textos no muestre la tarjeta',
+    buscar: `    window.__textosAbiertos = true;
+    renderTextReview();`,
+    reemplazo: `    renderTextReview();`,
+  },
+  {
     nombre: 'Plan de hoy: que no salga en el Dashboard',
     buscar: `function renderDashboard() {
   renderPlanHoy();`,

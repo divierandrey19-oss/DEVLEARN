@@ -165,3 +165,25 @@ test('lo que respondió antes de empezar con la unidad se borra solo si él dice
   assert.match(abrir, /if \(viejas\.length && confirm\(`You answered \$\{viejas\.length\} of these before\. Clear them so you can do the whole unit again\?`\)\) \{/);
   assert.match(abrir, /const viejas = Object\.keys\(u\[campo\] \|\| \{\}\)\.filter\(k => !\(u\[campo\]\[k\] && u\[campo\]\[k\]\.date >= desde\)\);/, 'solo las de antes: lo de hoy se queda');
 });
+
+test('los textos no salen dos veces: la tarjeta aparece al tocar Open en el plan', () => {
+  // "Se debería dejar uno de los dos": el renglón del plan y la tarjeta de
+  // abajo decían lo mismo (8 to review).
+  const el = { innerHTML: 'vieja' };
+  const ventana = {};
+  const t = { id: 'a', title: 'U10 · pág 116 - 117', mastered: true, review: { due: HOY } };
+  const { renderTextReview } = h.ejecutar(`${h.extraerFuncion('renderTextReview')} return { renderTextReview };`, {
+    document: { getElementById: id => (id === 'text-review' ? el : null) }, window: ventana,
+    state: { texts: [t] }, todayLocal: () => HOY, textReviewDue: x => x.review.due, textoTocaEl: () => HOY,
+    textReviewsDue: () => [t], textosRecordadosHoy: () => [], escapeHtml: x => String(x),
+  });
+  renderTextReview();
+  assert.equal(el.innerHTML, '', 'cerrada hasta que él la abra, aunque haya un texto por repasar');
+  ventana.__textosAbiertos = true;
+  renderTextReview();
+  assert.match(el.innerHTML, /Text review · 1 due today/, 'al tocar Open, la tarjeta de siempre');
+  const abrir = h.extraerFuncion('abrirDelPlan');
+  assert.match(abrir, /if \(id === 'texts'\) \{\n\s*window\.__textosAbiertos = true;\n\s*renderTextReview\(\);/);
+  assert.match(h.extraerFuncion('navigate'), /if \(page !== 'dashboard'\) window\.__textosAbiertos = false;/, 'se cierra al salir del Dashboard');
+  assert.match(h.extraerFuncion('markTextReview'), /renderTextReview\(\);\n\s*renderPlanHoy\(\);/, 'el renglón baja con cada texto');
+});

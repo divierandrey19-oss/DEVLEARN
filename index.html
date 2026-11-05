@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-05c -->
+<!-- DEVLEARN_BUILD: 2026-11-05d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-05c';
+const APP_BUILD = '2026-11-05d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -12879,6 +12879,7 @@ function getUnitSpeakingPrompts(u) {
    ============================================================ */
 function navigate(page) {
   Sound.tap();
+  if (page !== 'dashboard') window.__textosAbiertos = false;   // ver renderTextReview
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const el = document.getElementById('page-' + page);
@@ -15101,7 +15102,11 @@ function abrirDelPlan(id) {
     }
     return;
   }
-  if (id === 'texts') return document.getElementById('text-review')?.scrollIntoView({ behavior: 'smooth' });
+  if (id === 'texts') {
+    window.__textosAbiertos = true;
+    renderTextReview();
+    return document.getElementById('text-review')?.scrollIntoView({ behavior: 'smooth' });
+  }
   if (id === 'listening') return navigate('podcasts');
   if (id === 'life') return navigate('life');
 }
@@ -17442,6 +17447,7 @@ function markTextReview(id, recordado) {
   save();
   renderTexts();
   renderTextReview();
+  renderPlanHoy();   // para que el renglón de los textos baje con cada uno
   toast(recordado
     ? `✅ Great! Next review in ${dias} day${dias === 1 ? '' : 's'}`
     : '🔁 No problem — it comes back tomorrow');
@@ -17457,6 +17463,11 @@ function textosRecordadosHoy(texts, hoy) {
 function renderTextReview() {
   const el = document.getElementById('text-review');
   if (!el) return;
+  /* El plan de hoy ya dice cuántos textos tocan, y la tarjeta repetía lo mismo
+   * justo debajo ("se debería dejar uno de los dos", 5 de noviembre). Sale
+   * solo cuando él toca Open en el renglón de los textos, y se esconde al
+   * salir del Dashboard. */
+  if (!window.__textosAbiertos) { el.innerHTML = ''; return; }
   const hoy = todayLocal();
   const conFecha = (state.texts || []).filter(textReviewDue);
   if (!conFecha.length) { el.innerHTML = ''; return; }
