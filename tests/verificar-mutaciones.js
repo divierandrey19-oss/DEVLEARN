@@ -299,14 +299,34 @@ const MUTACIONES = [
     reemplazo: ``,
   },
   {
-    nombre: 'Plan de hoy: dar por hecha la gramática con un solo ejercicio',
-    buscar: `      hecho: !!marcas[g] || c.gramatica >= 5 });`,
-    reemplazo: `      hecho: !!marcas[g] || c.gramatica >= 1 });`,
+    nombre: 'Plan de hoy: volver a la dosis de 5, que no era la unidad',
+    buscar: `  const dosis = { gramatica: 20, ejercicios: 40 };   // la escogió él, al día`,
+    reemplazo: `  const dosis = { gramatica: 5, ejercicios: 5 };`,
   },
   {
     nombre: 'Plan de hoy: que la marca de una unidad marque también la siguiente',
-    buscar: "    const g = `grammar:${c.unidad.key}`, e = `exercises:${c.unidad.key}`;",
-    reemplazo: "    const g = 'grammar', e = 'exercises';",
+    buscar: "        const marca = `${id}:${c.unidad.key}`;",
+    reemplazo: "        const marca = id;",
+  },
+  {
+    nombre: 'Plan de hoy: contar lo que respondió en el A2, antes de empezar con la unidad',
+    buscar: `    hechas: claves.filter(k => estado[k] && estado[k].date >= desde).length,`,
+    reemplazo: `    hechas: claves.filter(k => estado[k]).length,`,
+  },
+  {
+    nombre: 'Plan de hoy: no encontrar la gramática de las unidades de varias páginas',
+    buscar: "  if (lotes.length > 1) lotes.forEach((b, i) => reglas(b.grammar, `b${i}_`));",
+    reemplazo: "  if (false) lotes.forEach((b, i) => reglas(b.grammar, `b${i}_`));",
+  },
+  {
+    nombre: 'Plan de hoy: pedirle la dosis completa aunque ya terminó la unidad',
+    buscar: `      return { id, icono, titulo: \`\${nombre} · \${cual}\`, hecho: x.hoy >= dosis || falta <= 0,`,
+    reemplazo: `      return { id, icono, titulo: \`\${nombre} · \${cual}\`, hecho: x.hoy >= dosis,`,
+  },
+  {
+    nombre: 'Plan de hoy: borrar lo que respondió antes sin preguntarle',
+    buscar: "    if (viejas.length && confirm(`You answered ${viejas.length} of these before. Clear them so you can do the whole unit again?`)) {",
+    reemplazo: "    if (viejas.length) {",
   },
   {
     nombre: 'Plan de hoy: no anotar la unidad terminada, y nunca pasar a la siguiente',

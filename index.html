@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-05b -->
+<!-- DEVLEARN_BUILD: 2026-11-05c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-05b';
+const APP_BUILD = '2026-11-05c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -14897,10 +14897,14 @@ function renderRecChallenge() {
  * unidad se quede hasta terminarla (gramática y ejercicios hechos), y sumó
  * 15 minutos de listening y una ronda de My life.
  * Lo que la app puede medir se marca solo: las flashcards (repasadasHoy), los
- * textos (no queda ninguno por repasar), 5 ejercicios de gramática o de la
- * unidad respondidos hoy, 15 minutos de podcasts anotados hoy, 5 tarjetas de
- * My life. Lo demás lo marca él con el círculo: repasar las reglas no deja
- * rastro, y lo que ya respondió en el A2 sigue respondido.
+ * textos (no queda ninguno por repasar), 15 minutos de podcasts anotados hoy,
+ * 5 tarjetas de My life. El listening y My life también tienen el círculo (un
+ * dictado no deja rastro).
+ * Gramática y ejercicios: "¿por qué 5? Deberían ser todos los de una unidad
+ * completa". Una unidad son 140-200, así que él escogió una dosis de 40
+ * ejercicios y 20 de gramática al día, y la unidad cambia cuando están todos
+ * respondidos desde que empezó con ella (planDiario.desde). Una unidad sin
+ * práctica de gramática (solo reglas, como la Unit 1 del A2) se marca a mano.
  * Con páginas del B1, la unidad es la de la última clase de páginas que marcó. */
 function tieneTareas(u) {
   return !!u && (getUnitGrammar(u).length > 0 || getUnitExercises(u).length > 0);
@@ -14928,6 +14932,42 @@ function hechasHoyEn(respuestas, hoy) {
   return Object.values(respuestas || {}).filter(x => x && x.date === hoy).length;
 }
 
+/* Cuántos ejercicios tiene la unidad y cuántos lleva desde `desde` y hoy, con
+ * las mismas claves con que los guarda la app: los de gramática por lote y
+ * regla (renderGrammar), los demás por tipo y respuesta (renderExerciseItems:
+ * dos con la misma respuesta comparten clave; los de unir van por posición). */
+function avanceDeUnidad(u, desde, hoy) {
+  const ds = (u && u.drillState) || {}, es = (u && u.exerciseState) || {};
+  const cuenta = (claves, estado) => ({
+    total: claves.length,
+    hechas: claves.filter(k => estado[k] && estado[k].date >= desde).length,
+    hoy: claves.filter(k => estado[k] && estado[k].date === hoy).length,
+  });
+  const drills = [];
+  const lotes = (u && u.batches) || [];
+  const reglas = (grammar, pref) => (grammar || []).forEach((g, gi) =>
+    (g.drillSentences || []).forEach((d, di) => drills.push(`${pref}${gi}-${di}`)));
+  if (lotes.length > 1) lotes.forEach((b, i) => reglas(b.grammar, `b${i}_`));
+  else reglas(getUnitGrammar(u), '');
+  const claves = new Set();
+  let unir = 0;
+  getUnitExercises(u).forEach(ex => {
+    if (ex.type === 'matching') unir++;
+    else claves.add(`${ex.type}_${(ex.answer || '').toLowerCase().trim().substring(0, 30)}`);
+  });
+  const ejercicios = cuenta([...claves], es);
+  const unidos = Object.keys(es).filter(k => k.startsWith('matching_'));
+  ejercicios.total += unir;
+  ejercicios.hechas += Math.min(unir, unidos.filter(k => es[k].date >= desde).length);
+  ejercicios.hoy += Math.min(unir, unidos.filter(k => es[k].date === hoy).length);
+  return { gramatica: cuenta(drills, ds), ejercicios };
+}
+
+function unidadCompleta(a) {
+  const lista = x => x.total === 0 || x.hechas >= x.total;
+  return lista(a.gramatica) && lista(a.ejercicios);
+}
+
 function minutosDeListening(st, hoy) {
   return (st.podcastLog || []).filter(p => p && p.date === hoy).reduce((a, p) => a + (Number(p.minutes) || 0), 0);
 }
@@ -14939,20 +14979,27 @@ function vidaHoy(hoy) {
 function planDeHoy(st, hoy, c) {
   const marcas = (st.planHoy && st.planHoy.fecha === hoy && st.planHoy.hechos) || {};
   const meta = SRS.META_DIARIA;
+  const dosis = { gramatica: 20, ejercicios: 40 };   // la escogió él, al día
   const items = [
     { id: 'flash', icono: '🧠', titulo: `${meta} flashcards`, detalle: `${c.flashcards} / ${meta}`, hecho: c.flashcards >= meta },
   ];
   if (c.unidad) {
     const [lid, uid] = c.unidad.key.split('_');
     const cual = `Unit ${uid} (${lid.toUpperCase()})`;
-    // La marca va con la unidad: si la unidad cambia, no se lleva la de la otra.
-    const g = `grammar:${c.unidad.key}`, e = `exercises:${c.unidad.key}`;
-    items.push({ id: 'grammar', marca: g, icono: '📐', titulo: `Grammar · ${cual}`,
-      detalle: c.gramatica ? `${c.gramatica} answered today` : 'Review the rules and do the drills',
-      hecho: !!marcas[g] || c.gramatica >= 5 });
-    items.push({ id: 'exercises', marca: e, icono: '✏️', titulo: `Exercises · ${cual}`,
-      detalle: c.ejercicios ? `${c.ejercicios} answered today` : 'Do the unit exercises',
-      hecho: !!marcas[e] || c.ejercicios >= 5 });
+    // Se marca solo con la dosis del día, o cuando ya no queda nada en la
+    // unidad. Sin nada que medir (solo reglas), lo marca él, y la marca va con
+    // la unidad: si la unidad cambia, no se lleva la de la otra.
+    const renglon = (id, icono, nombre, x, dosis, vacio) => {
+      if (!x.total) {
+        const marca = `${id}:${c.unidad.key}`;
+        return { id, marca, icono, titulo: `${nombre} · ${cual}`, detalle: vacio, hecho: !!marcas[marca] };
+      }
+      const falta = x.total - x.hechas;
+      return { id, icono, titulo: `${nombre} · ${cual}`, hecho: x.hoy >= dosis || falta <= 0,
+        detalle: falta <= 0 ? `All ${x.total} done in this unit` : `${x.hoy} / ${Math.min(dosis, x.hoy + falta)} today · ${x.hechas} / ${x.total} in the unit` };
+    };
+    items.push(renglon('grammar', '📐', 'Grammar', c.gramatica, dosis.gramatica, 'No practice in this unit — review the rules'));
+    items.push(renglon('exercises', '✏️', 'Exercises', c.ejercicios, dosis.ejercicios, 'No exercises in this unit'));
   }
   if (c.textosEnRepaso) {
     items.push({ id: 'texts', icono: '📝', titulo: 'Texts of the day',
@@ -14973,24 +15020,29 @@ function renderPlanHoy() {
   const hoy = todayLocal();
   const unidad = unidadDelPlan(state, hoy);
   // La unidad avanza aquí, no al calcularla, para que se guarde una sola vez.
-  if (unidad && !unidad.b1 && (state.planDiario || {}).unidad !== unidad.key) {
-    state.planDiario = { unidad: unidad.key, terminada: null };
+  // `desde`: lo respondido antes de empezar con ella no cuenta.
+  if (unidad && (state.planDiario || {}).unidad !== unidad.key) {
+    state.planDiario = { unidad: unidad.key, desde: hoy, terminada: null };
+    save();
+  } else if (unidad && !state.planDiario.desde) {
+    state.planDiario.desde = hoy;
     save();
   }
   const u = unidad ? state.units[unidad.key] : null;
+  const avance = u ? avanceDeUnidad(u, state.planDiario.desde, hoy) : null;
   const items = planDeHoy(state, hoy, {
     unidad,
     flashcards: repasadasHoy(state.units, hoy),
-    gramatica: u ? hechasHoyEn(u.drillState, hoy) : 0,
-    ejercicios: u ? hechasHoyEn(u.exerciseState, hoy) : 0,
+    gramatica: avance ? avance.gramatica : null,
+    ejercicios: avance ? avance.ejercicios : null,
     textos: textReviewsDue(state.texts, hoy).length,
     textosEnRepaso: (state.texts || []).some(t => t && t.mastered && textInReview(t)),
     listening: minutosDeListening(state, hoy),
     vida: vidaHoy(hoy),
   });
-  // Gramática y ejercicios hechos: mañana, la unidad siguiente.
-  if (unidad && !unidad.b1) {
-    const lista = items.filter(i => i.id === 'grammar' || i.id === 'exercises').every(i => i.hecho);
+  // Todos los de la unidad respondidos: mañana, la siguiente.
+  if (avance) {
+    const lista = unidadCompleta(avance);
     const p = state.planDiario;
     if (lista && p.terminada !== hoy) { p.terminada = hoy; save(); }
     else if (!lista && p.terminada === hoy) { p.terminada = null; save(); }
@@ -15034,7 +15086,20 @@ function abrirDelPlan(id) {
     if (!unidad) return;
     const [lid, uid] = unidad.key.split('_');
     openUnit(lid, Number(uid));
-    return showUnitTab(id);
+    showUnitTab(id);
+    /* Lo que respondió antes de empezar con la unidad (en el A2) sigue
+     * respondido y no se puede volver a hacer. Borrarlo es decisión suya. */
+    const u = getUnit(lid, Number(uid));
+    const campo = id === 'grammar' ? 'drillState' : 'exerciseState';
+    const desde = (state.planDiario || {}).desde || todayLocal();
+    const viejas = Object.keys(u[campo] || {}).filter(k => !(u[campo][k] && u[campo][k].date >= desde));
+    if (viejas.length && confirm(`You answered ${viejas.length} of these before. Clear them so you can do the whole unit again?`)) {
+      viejas.forEach(k => delete u[campo][k]);
+      save();
+      if (id === 'grammar') renderGrammar(getUnitGrammar(u), u);
+      else renderExercises(getUnitExercises(u), u);
+    }
+    return;
   }
   if (id === 'texts') return document.getElementById('text-review')?.scrollIntoView({ behavior: 'smooth' });
   if (id === 'listening') return navigate('podcasts');
