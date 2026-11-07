@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-05d -->
+<!-- DEVLEARN_BUILD: 2026-11-07a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-05d';
+const APP_BUILD = '2026-11-07a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -21943,6 +21943,14 @@ Responde SOLO con un array JSON, un objeto por tema, en el mismo orden:
         const limpios = drills.filter(d => d && d.type && d.prompt && d.answer).slice(0, 3);
         if (!limpios.length) { fallos++; return; }
         u.batches[f.bi].grammar[f.gi].drillSentences = limpios;
+        /* La página queda como generada ahora. Sin esto, la nube se comía los
+         * ejercicios: al juntar, la gramática de la nube gana salvo que la de
+         * aquí sea más nueva (generatedAt), y generar ejercicios no cambiaba
+         * esa hora. Como cada aparato trae la nube antes de subir, la primera
+         * sincronización después de generarlos los borraba y él los volvía a
+         * pagar — "no se quedan guardados, y eso gasta tokens" (7 de
+         * noviembre, con los de A1 y A2). */
+        u.batches[f.bi].generatedAt = Date.now();
         hechos++;
       });
       save();

@@ -151,6 +151,10 @@ generó más recientemente (`generatedAt`), y una página que se está analizand
 (`analyzingAt`, hasta 15 minutos) no la cambia la nube. Y "Restore missing pages" también devuelve, desde un
 respaldo, la gramática que allá es más nueva, sin tocar tarjetas ni progreso: así
 recuperó las 8 páginas que la nube le había devuelto a la gramática de mayo.
+El mismo agujero se tragaba los ejercicios de gramática del botón "Create
+exercises" (7 de noviembre, con los de A1 y A2): los escribía dentro de la
+gramática pero dejaba `generatedAt` igual, así que las dos copias empataban,
+ganaba la nube y cada sincronización los borraba. Ahora el botón sube esa hora.
 
 `u10-content-fix.test.js` — La gramática, los ejercicios y el speaking de las
 pp. 109-111, corregidos a mano con `fixPageContent()`: las tareas de speaking que
