@@ -289,6 +289,11 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Gramática: que la nube vuelva a comerse los ejercicios recién generados',
+    buscar: `        u.batches[f.bi].generatedAt = Date.now();`,
+    reemplazo: ``,
+  },
+  {
     nombre: 'Plan de hoy: pasar de unidad el mismo día en que la termina',
     buscar: `  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
     reemplazo: `  else if (p.terminada && p.terminada <= hoy) i = (i + 1) % orden.length;`,

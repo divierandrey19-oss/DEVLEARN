@@ -231,6 +231,25 @@ test('si la regeneración más reciente es la de la nube, gana la nube', () => {
   assert.deepEqual([b.grammar[0].title, b.grammarVersion, b.images], ['Nueva', 3, ['foto']]);
 });
 
+/* 7 de noviembre: "en la gramática yo mismo generé los ejercicios de A1 y A2
+ * pero no se quedan guardados, y eso gasta tokens". El botón escribía los
+ * drillSentences dentro de la gramática pero dejaba generatedAt como estaba,
+ * así que la copia de la nube (sin ejercicios) ganaba: cada aparato trae la
+ * nube antes de subir, y la primera sincronización después de generarlos se
+ * los llevaba. */
+test('los ejercicios de gramática que acaba de generar no los borra la nube', () => {
+  const conDrills = lote('p26', { grammar: [{ title: 'Past simple', drillSentences: [{ type: 'translation', prompt: 'Trabajé', answer: 'I worked' }] }], generatedAt: 2000 });
+  const sinDrills = lote('p26', { grammar: [{ title: 'Past simple' }], generatedAt: 1000 });
+  const r = unir({ units: { a2_7: { batches: [conDrills] } } }, { units: { a2_7: { batches: [sinDrills] } } });
+  assert.equal(r.units.a2_7.batches[0].grammar[0].drillSentences.length, 1);
+  // Y el botón es el que sube esa hora: sin eso, las dos copias empatan y gana la nube.
+  const generador = h.extraerFuncion('generateDrillsForUnit');
+  assert.match(generador, /u\.batches\[f\.bi\]\.grammar\[f\.gi\]\.drillSentences = limpios;[\s\S]*?u\.batches\[f\.bi\]\.generatedAt = Date\.now\(\);/);
+  const empate = unir({ units: { a2_7: { batches: [lote('p26', { grammar: conDrills.grammar, generatedAt: 1000 })] } } },
+                      { units: { a2_7: { batches: [sinDrills] } } });
+  assert.equal((empate.units.a2_7.batches[0].grammar[0].drillSentences || []).length, 0, 'con la misma hora gana la nube: por eso hay que subirla');
+});
+
 test('una página que se está analizando aquí no la cambia la nube', () => {
   const analizando = lote('p26', { images: ['foto'], grammar: [], vocab: [{ word: 'sing' }], analyzing: true, analyzingAt: ahora, grammarVersion: 2, generatedAt: 1000 });
   const r = unir({ units: { a2_3: { batches: [analizando] } } }, { units: { a2_3: { batches: [vieja()] } } });
