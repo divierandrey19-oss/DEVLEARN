@@ -377,7 +377,10 @@ mismo día vencen el mismo día, y las 20 salían de una sola unidad; ahora van 
 turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
 Antes de un speaking test se enfoca en sus unidades (`focoDelRepaso` lee el
 próximo examen del calendario del curso y sus `units`, hasta su fecha: "SPEAKING
-TEST 1 / Unit 1" es la Unit 1, "SPEAKING TEST 4, 5" las 4 y 5): 14 de 20 de esas
+TEST 1 / Unit 1" es la Unit 1, "SPEAKING TEST 4, 5" las 4 y 5; un examen con
+`unitKeys` enfoca esas unidades tal cual, de cualquier nivel — el Speaking Test
+Check 0 del B1 pregunta la gramática del A2 del tablero del profe, Units 6-9, y
+el plan de hoy va por ellas): 14 de 20 de esas
 unidades, con las preguntas primero entre las nuevas, y 6 del resto. Sin un
 examen de unidades por delante (una presentación oral, el final; en el A2, pasado
 el speaking del 16 de octubre, él lo pidió), el foco son las 3 unidades del

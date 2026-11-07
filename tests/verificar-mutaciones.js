@@ -289,6 +289,16 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Speaking check: que no enfoque la gramática del A2 (Units 6-9)',
+    buscar: `  { id: 1006, n: 6, title: 'SPEAKING TEST CHECK 0 / Unit 1',             exam: true, unitKeys: ['a2_6', 'a2_9', 'a2_8', 'a2_7'] },`,
+    reemplazo: `  { id: 1006, n: 6, title: 'SPEAKING TEST CHECK 0 / Unit 1',             exam: true },`,
+  },
+  {
+    nombre: 'Speaking check: que el plan no siga las unidades del examen',
+    buscar: `    const orden = examen.unitKeys.filter(k => tieneTareas(units[k]));`,
+    reemplazo: `    const orden = [];`,
+  },
+  {
     nombre: 'Sonido: que un toque vuelva a sonar tres veces',
     buscar: `    if (ahora - this._ultimoTap < 150) return;`,
     reemplazo: ``,
@@ -342,7 +352,8 @@ const MUTACIONES = [
   },
   {
     nombre: 'Plan de hoy: pasar de unidad el mismo día en que la termina',
-    buscar: `  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
+    buscar: `  // La terminó otro día: hoy toca la siguiente (después de la 10, la 1).
+  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
     reemplazo: `  else if (p.terminada && p.terminada <= hoy) i = (i + 1) % orden.length;`,
   },
   {
