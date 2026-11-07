@@ -350,7 +350,11 @@ explicación como "no grammar mistake, but the sentence is incomplete" daba por
 buena una respuesta mala), una respuesta mala se marca una sola vez (faltaba un
 `return`: la explicación quedaba pisada y el fallo se contaba dos veces), una
 demasiado corta se rechaza sin gastar tokens, y si la IA falla no se da por
-buena.
+buena. En el mismo archivo, el aviso del libro (`avisoDelLibro`): "¿de qué
+artículo me están hablando?" — los 10 ejercicios de 1231 que preguntan por un
+texto impreso en la página avisan qué página abrir, porque las fotos se quedan
+en el aparato donde las subió. No avisa donde "article" es el artículo
+gramatical ni en "the email of your teacher".
 
 `curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
 123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen

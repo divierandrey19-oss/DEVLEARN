@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-07b -->
+<!-- DEVLEARN_BUILD: 2026-11-07c -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-07b';
+const APP_BUILD = '2026-11-07c';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -22036,7 +22036,7 @@ function renderExercises(exercises, unit) {
         <div style="font-size:0.74rem;color:var(--text-3);">${hechos} respondido${hechos !== 1 ? 's' : ''}</div>
         <button class="btn btn-ghost btn-sm" style="font-size:0.7rem;padding:5px 10px;" onclick="resetExercises()">↺ Reset</button>
       </div>` : '') + batchesWithEx.map(({ b, realIdx }) => {
-      const items = renderExerciseItems(b.exercises, globalIdx);
+      const items = renderExerciseItems(b.exercises, globalIdx, b);
       globalIdx += b.exercises.length;
       return `
         <div class="batch-section">
@@ -22053,10 +22053,24 @@ function renderExercises(exercises, unit) {
     c.innerHTML = emptyState('✏️', 'No exercises yet', 'Exercises will be generated from your book content.');
     return;
   }
-  c.innerHTML = renderExerciseItems(exercises, 0);
+  c.innerHTML = renderExerciseItems(exercises, 0, (unit && (unit.batches || []).length === 1) ? unit.batches[0] : null);
 }
 
-function renderExerciseItems(exercises, startIdx = 0) {
+/* Un ejercicio que pregunta por el texto impreso en la página: "¿de qué
+ * artículo me están hablando?" (7 de noviembre). Las fotos se quedan en el
+ * aparato donde las subió y no viajan a la nube, así que en el computador no
+ * ve la lectura de la p. 11. El aviso le dice qué página abrir. Solo las dos
+ * formas que de verdad salen en su libro (10 ejercicios de 1231), sin pescar
+ * "Which article is INCORRECT?" — ahí "article" es el artículo gramatical —
+ * ni "What is the email of your teacher?". */
+function avisoDelLibro(ex, batch) {
+  const pideElLibro = /\b(?:according to|in|from) the (?:article|reading|text|passage|story)\b|\bthe (?:article|reading|text|passage|story) (?:says?|said|mentions?|states?)\b|\bdoes the (?:article|reading|text|passage|story) say\b|\bwhat does (?:he|she|they) say\b/i;
+  if (!pideElLibro.test(`${(ex && ex.question) || ''} ${(ex && ex.context) || ''}`)) return '';
+  const pagina = bookPageLabel(batch);
+  return `<div style="font-size:0.74rem;color:var(--amber, #d29922);margin:-2px 0 8px;">📖 This one is about the text on the page — open ${pagina ? escapeHtml(pagina) : 'the page'} in your book.</div>`;
+}
+
+function renderExerciseItems(exercises, startIdx = 0, batch = null) {
   const typeColors = {
     multiple_choice:  { color: 'var(--accent)',  bg: 'var(--accent-glow)', label: 'Multiple choice' },
     fill_blank:       { color: 'var(--green)',   bg: 'var(--green-bg)',   label: 'Fill the blank' },
@@ -22187,7 +22201,7 @@ function renderExerciseItems(exercises, startIdx = 0) {
             <span class="exercise-type" style="background:${t.bg};color:${t.color};">${t.label}</span>
             <span class="exercise-counter">${i + 1} / ${shuffled.length}</span>
           </div>
-          <div class="exercise-q">${ex.question || ''}</div>
+          <div class="exercise-q">${ex.question || ''}</div>${avisoDelLibro(ex, batch)}
           <div class="match-grid" style="pointer-events:none;">
             <div class="match-col">${pairs.map(p => `<div class="match-item matched">${p.en}</div>`).join('')}</div>
             <div class="match-col">${pairs.map(p => `<div class="match-item matched">${p.es}</div>`).join('')}</div>
@@ -22200,7 +22214,7 @@ function renderExerciseItems(exercises, startIdx = 0) {
           <span class="exercise-type" style="background:${t.bg};color:${t.color};">${t.label}</span>
           <span class="exercise-counter">${i + 1} / ${shuffled.length}</span>
         </div>
-        <div class="exercise-q">${ex.question || ''}</div>
+        <div class="exercise-q">${ex.question || ''}</div>${avisoDelLibro(ex, batch)}
         <div style="margin:8px 0;">
           <input class="exercise-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${escapeStr(saved.answer)}" disabled
             style="border-color:var(--green);opacity:0.7;"/>
@@ -22214,7 +22228,7 @@ function renderExerciseItems(exercises, startIdx = 0) {
         <span class="exercise-type" style="background:${t.bg};color:${t.color};">${t.label}</span>
         <span class="exercise-counter">${i + 1} / ${shuffled.length}</span>
       </div>
-      <div class="exercise-q">${ex.question || ''}</div>
+      <div class="exercise-q">${ex.question || ''}</div>${avisoDelLibro(ex, batch)}
       ${body}
       <div class="exercise-feedback" id="ex-fb-${idx}"></div>
     </div>`;

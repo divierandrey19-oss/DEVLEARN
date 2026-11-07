@@ -122,3 +122,53 @@ test('si la IA falla, no se da por buena', async () => {
   assert.equal(veredicto, undefined);
   assert.match(fb.textContent, /Could not verify/);
 });
+
+// ── "¿De qué artículo me están hablando?" ──────────────────────────────────
+// La p. 11 de la Unit 1 pregunta por un texto impreso en la página. Las fotos
+// se quedan en el aparato donde las subió, así que en el computador no lo ve.
+
+const { avisoDelLibro } = h.ejecutar(`
+  ${h.extraerFuncion('avisoDelLibro')}
+  return { avisoDelLibro };`, {
+  bookPageLabel: b => (b && (b.pages || []).length ? `p. ${b.pages[0]}` : ''),
+  escapeHtml: x => String(x),
+});
+
+const p11 = { pages: [11] };
+
+test('los ejercicios que mandan a mirar el texto avisan qué página abrir', () => {
+  const aviso = avisoDelLibro({ question: 'Which statement is FALSE according to the article?' }, p11);
+  assert.match(aviso, /📖 This one is about the text on the page — open p\. 11 in your book\./);
+  for (const q of [
+    'According to the reading, which kind of music helps you sleep?',
+    'According to the text, what colors do people wear?',
+    "Which of these does the article say food carts sometimes DON'T have?",
+    'Andrew wants to change the topic of the conversation. What does he say?',
+    'Does Eddie want to go to a late-night show? What does he say?',
+  ]) assert.notEqual(avisoDelLibro({ question: q }, p11), '', q);
+});
+
+test('no avisa donde no hay texto que mirar', () => {
+  for (const q of [
+    'Which article is INCORRECT?',                                   // el artículo gramatical
+    'Find and correct the mistake: What is the email of your teacher?',
+    "Complete the dialogue: 'I don't like eggs.' '___!'",
+    'Thanks for the conversation! ___ now. I have to go home.',
+    'Translate to English: Repetir lo que escuchas ayuda tu pronunciación.',
+  ]) assert.equal(avisoDelLibro({ question: q }, p11), '', q);
+});
+
+test('sin número de página, el aviso igual sale', () => {
+  assert.match(avisoDelLibro({ question: 'According to the article, what produces dopamine?' }, {}),
+    /open the page in your book/);
+});
+
+test('el aviso va debajo de la pregunta, en los tres estados del ejercicio', () => {
+  const render = h.extraerFuncion('renderExerciseItems');
+  assert.match(render, /^function renderExerciseItems\(exercises, startIdx = 0, batch = null\) \{/);
+  assert.equal(render.split('${avisoDelLibro(ex, batch)}').length - 1, 3, 'resuelto, de unir y por responder');
+  assert.ok(!/<div class="exercise-q">\$\{ex\.question \|\| ''\}<\/div>(?!\$\{avisoDelLibro)/.test(render));
+  // Cada grupo pasa su página; una unidad de una sola página, la suya.
+  assert.match(fuente, /renderExerciseItems\(b\.exercises, globalIdx, b\);/);
+  assert.match(fuente, /renderExerciseItems\(exercises, 0, \(unit && \(unit\.batches \|\| \[\]\)\.length === 1\) \? unit\.batches\[0\] : null\);/);
+});

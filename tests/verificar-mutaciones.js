@@ -289,6 +289,21 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Artículo: quitar el aviso de qué página del libro abrir',
+    buscar: `  if (!pideElLibro.test(\`\${(ex && ex.question) || ''} \${(ex && ex.context) || ''}\`)) return '';`,
+    reemplazo: `  return '';`,
+  },
+  {
+    nombre: 'Artículo: avisar también donde "article" es el artículo gramatical',
+    buscar: `\\b(?:according to|in|from) the (?:article|reading|text|passage|story)\\b|`,
+    reemplazo: `\\barticle\\b|`,
+  },
+  {
+    nombre: 'Artículo: que el aviso no sepa de qué página es',
+    buscar: `      const items = renderExerciseItems(b.exercises, globalIdx, b);`,
+    reemplazo: `      const items = renderExerciseItems(b.exercises, globalIdx);`,
+  },
+  {
     nombre: 'Traducción: volver a decirle a la IA que ignore el vocabulario',
     buscar: `2. Every word is a real, correctly spelled English word.`,
     reemplazo: `2. The grammar is right; ignore word choice differences.`,
