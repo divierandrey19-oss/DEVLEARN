@@ -289,6 +289,22 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Sonido: que un toque vuelva a sonar tres veces',
+    buscar: `    if (ahora - this._ultimoTap < 150) return;`,
+    reemplazo: ``,
+  },
+  {
+    nombre: 'Sonido: que dos toques de verdad suenen como uno solo',
+    buscar: `    if (ahora - this._ultimoTap < 150) return;`,
+    reemplazo: `    if (ahora - this._ultimoTap < 5000) return;`,
+  },
+  {
+    nombre: 'Plan de hoy: que Open vuelva a dibujar Today antes de la pestaña',
+    buscar: `    openUnit(lid, Number(uid), id);`,
+    reemplazo: `    openUnit(lid, Number(uid));
+    showUnitTab(id);`,
+  },
+  {
     nombre: 'Artículo: quitar el aviso de qué página del libro abrir',
     buscar: `  if (!pideElLibro.test(\`\${(ex && ex.question) || ''} \${(ex && ex.context) || ''}\`)) return '';`,
     reemplazo: `  return '';`,

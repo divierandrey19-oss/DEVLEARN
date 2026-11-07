@@ -337,7 +337,11 @@ están todos respondidos desde que empezó con ella (`avanceDeUnidad`, con las
 mismas claves con que la app guarda cada respuesta, y `planDiario.desde`). Lo
 que respondió antes (en el A2) se borra solo si él dice que sí al abrirla. La
 tarjeta de los textos ya no se repite debajo del plan: sale al tocar Open en
-ese renglón (`__textosAbiertos`) y se esconde al salir del Dashboard.
+ese renglón (`__textosAbiertos`) y se esconde al salir del Dashboard. Y un
+toque suyo suena una sola vez: "Open" encadenaba `navigate()` y dos
+`showUnitTab()`, y se oían tres pitidos; ahora `Sound.tap()` no repite dentro
+de 150 ms, y `openUnit(lid, uid, tab)` entra directo a su pestaña en vez de
+dibujar Today para cambiarla enseguida.
 
 `corregir-traduccion.test.js` — Corregir una traducción escrita (7 de
 noviembre). Él escribió "Repeating what you hear helps ypo" y la app le dijo

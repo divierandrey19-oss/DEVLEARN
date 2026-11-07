@@ -154,7 +154,10 @@ test('arriba en el Dashboard, y cada renglón abre lo suyo', () => {
   assert.match(h.extraerFuncion('renderPlanHoy'), /<button class="btn \$\{i\.hecho \? 'btn-ghost' : 'btn-primary'\} btn-sm"[^>]*onclick="abrirDelPlan\('\$\{i\.id\}'\)">Open →<\/button>/);
   const abrir = h.extraerFuncion('abrirDelPlan');
   assert.match(abrir, /if \(id === 'flash'\) return openDailyReview\(\);/);
-  assert.match(abrir, /openUnit\(lid, Number\(uid\)\);\n\s*showUnitTab\(id\);/);
+  // Entra directo a su pestaña: así no dibuja Today para cambiarla enseguida,
+  // y suena un solo toque y no tres.
+  assert.match(abrir, /openUnit\(lid, Number\(uid\), id\);/);
+  assert.doesNotMatch(abrir, /showUnitTab\(id\);/);
   assert.match(abrir, /if \(id === 'listening'\) return navigate\('podcasts'\);/);
   assert.match(abrir, /if \(id === 'life'\) return navigate\('life'\);/);
   assert.match(h.extraerFuncion('marcarPlan'), /if \(!state\.planHoy \|\| state\.planHoy\.fecha !== hoy\) state\.planHoy = \{ fecha: hoy, hechos: \{\} \};/);
@@ -186,4 +189,26 @@ test('los textos no salen dos veces: la tarjeta aparece al tocar Open en el plan
   assert.match(abrir, /if \(id === 'texts'\) \{\n\s*window\.__textosAbiertos = true;\n\s*renderTextReview\(\);/);
   assert.match(h.extraerFuncion('navigate'), /if \(page !== 'dashboard'\) window\.__textosAbiertos = false;/, 'se cierra al salir del Dashboard');
   assert.match(h.extraerFuncion('markTextReview'), /renderTextReview\(\);\n\s*renderPlanHoy\(\);/, 'el renglón baja con cada texto');
+});
+
+test('un toque suyo suena una sola vez, aunque por dentro sean tres llamadas', () => {
+  // "Cuando le hundo Open se escucha como si le fuera presionado varias
+  // veces": navigate() y los showUnitTab() encadenados sonaban cada uno.
+  let sonaron = 0;
+  let reloj = 1000;
+  const { Sound } = h.ejecutar(`${h.fuente().match(/const Sound = \{[\s\S]*?\n\};/)[0]} return { Sound };`,
+    { window: {}, Date: { now: () => reloj } });
+  Sound._tone = () => { sonaron++; };
+  Sound.tap(); Sound.tap(); Sound.tap();          // la cascada: el mismo tic
+  assert.equal(sonaron, 1);
+  reloj += 149; Sound.tap();
+  assert.equal(sonaron, 1, 'todavía el mismo toque');
+  reloj += 1;   Sound.tap();
+  assert.equal(sonaron, 2, 'un toque nuevo sí suena');
+});
+
+test('openUnit entra a la pestaña que le pidan, y por defecto a Today', () => {
+  const abrirUnidad = h.extraerFuncion('openUnit');
+  assert.match(abrirUnidad, /^function openUnit\(lid, uid, tab = 'start'\) \{/);
+  assert.match(abrirUnidad, /\n  showUnitTab\(tab\);\n  loadUnitContent\(\);/);
 });

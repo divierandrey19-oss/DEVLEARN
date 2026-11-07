@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-07c -->
+<!-- DEVLEARN_BUILD: 2026-11-07d -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-07c';
+const APP_BUILD = '2026-11-07d';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -15086,8 +15086,7 @@ function abrirDelPlan(id) {
     const unidad = unidadDelPlan(state, todayLocal());
     if (!unidad) return;
     const [lid, uid] = unidad.key.split('_');
-    openUnit(lid, Number(uid));
-    showUnitTab(id);
+    openUnit(lid, Number(uid), id);
     /* Lo que respondió antes de empezar con la unidad (en el A2) sigue
      * respondido y no se puede volver a hacer. Borrarlo es decisión suya. */
     const u = getUnit(lid, Number(uid));
@@ -15417,7 +15416,9 @@ function openLevel(lid) {
 
 function goBackToLevel() { if (current.lid) openLevel(current.lid); }
 
-function openUnit(lid, uid) {
+/* `tab`: a qué pestaña entrar. Sin esto, "Open" en el plan dibujaba Today
+ * entera (con sus diez unidades) y la cambiaba enseguida por Grammar. */
+function openUnit(lid, uid, tab = 'start') {
   current.lid = lid;
   current.uid = uid;
   state.lastUnit = lid + '_' + uid;
@@ -15432,7 +15433,7 @@ function openUnit(lid, uid) {
   document.getElementById('uh-sub').textContent = u.description || 'Upload pages from your American Schoolway book — the AI will create your full learning experience.';
   navigate('unit');
   document.getElementById('page-title').textContent = `${lvl.id.toUpperCase()} · Unit ${uid}`;
-  showUnitTab('start');
+  showUnitTab(tab);
   loadUnitContent();
   loadNotes();
 }
@@ -26330,7 +26331,16 @@ const Sound = {
   flip() {
     this._tone({ freq: 660, dur: 0.06, type: 'sine', vol: 0.04, attack: 0.005, release: 0.05 });
   },
+  _ultimoTap: 0,
   tap() {
+    /* Un solo toque suyo encadena varias llamadas: "Open" en el plan de hoy
+     * pasa por navigate() y por dos showUnitTab(), y se oían tres pitidos
+     * ("se escucha como si le fuera presionado varias veces", 7 de
+     * noviembre). La cascada es toda del mismo tic, así que lo que llega en
+     * los milisegundos siguientes es el mismo toque y no suena otra vez. */
+    const ahora = Date.now();
+    if (ahora - this._ultimoTap < 150) return;
+    this._ultimoTap = ahora;
     this._tone({ freq: 880, dur: 0.04, type: 'sine', vol: 0.025, attack: 0.002, release: 0.03 });
   },
   complete() {
