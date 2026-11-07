@@ -339,6 +339,19 @@ que respondió antes (en el A2) se borra solo si él dice que sí al abrirla. La
 tarjeta de los textos ya no se repite debajo del plan: sale al tocar Open en
 ese renglón (`__textosAbiertos`) y se esconde al salir del Dashboard.
 
+`corregir-traduccion.test.js` — Corregir una traducción escrita (7 de
+noviembre). Él escribió "Repeating what you hear helps ypo" y la app le dijo
+"✅ Correct!": el prompt solo pedía errores de gramática y decía que ignorara el
+vocabulario, así que una frase cortada con una palabra que no existe pasaba.
+Ahora pide las dos cosas —que diga lo mismo que la respuesta modelo y que esté
+escrita en inglés de verdad—, y siguen valiendo los sinónimos y otro orden
+correcto. El texto suelto de la IA solo decide si el JSON no se pudo leer (una
+explicación como "no grammar mistake, but the sentence is incomplete" daba por
+buena una respuesta mala), una respuesta mala se marca una sola vez (faltaba un
+`return`: la explicación quedaba pisada y el fallo se contaba dos veces), una
+demasiado corta se rechaza sin gastar tokens, y si la IA falla no se da por
+buena.
+
 `curso-b1.test.js` — El calendario del B1 (5 de noviembre), de la clase 2 a la
 123 de BLOCKS. Cada clase tiene id = 1000 + su número: las 37-89 del A2 siguen
 marcadas y con fecha en sus datos (y se unen entre aparatos), y reusar esos

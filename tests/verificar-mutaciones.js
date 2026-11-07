@@ -289,6 +289,22 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Traducción: volver a decirle a la IA que ignore el vocabulario',
+    buscar: `2. Every word is a real, correctly spelled English word.`,
+    reemplazo: `2. The grammar is right; ignore word choice differences.`,
+  },
+  {
+    nombre: 'Traducción: que el texto suelto vuelva a mandar sobre el JSON',
+    buscar: `      const noErrorInText = !data && (rawText.includes('no grammar mistake') ||`,
+    reemplazo: `      const noErrorInText = (rawText.includes('no grammar mistake') ||`,
+  },
+  {
+    nombre: 'Traducción: marcar dos veces una respuesta mala',
+    buscar: `         * que falló y el sonido). */
+        return;`,
+    reemplazo: `         * que falló y el sonido). */`,
+  },
+  {
     nombre: 'Gramática: que la nube vuelva a comerse los ejercicios recién generados',
     buscar: `        u.batches[f.bi].generatedAt = Date.now();`,
     reemplazo: ``,

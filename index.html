@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-07a -->
+<!-- DEVLEARN_BUILD: 2026-11-07b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4907,7 +4907,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-07a';
+const APP_BUILD = '2026-11-07b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -22245,41 +22245,48 @@ async function checkTranslation(idx, ans, exp) {
   // Use Claude for grammar-aware checking if available
   if (AIService.mode === 'claude' && AIService.getKey()) {
     try {
-      const prompt = `You are an English grammar checker for a Colombian A2 student.
+      /* Antes solo buscaba errores de gramática y decía "ignora el vocabulario":
+       * "Repeating what you hear helps ypo" pasó como correcta (7 de noviembre).
+       * Una traducción está bien si dice lo mismo Y está escrita en inglés de
+       * verdad; los sinónimos y otro orden válido siguen valiendo. */
+      const prompt = `You are checking an English translation written by a Colombian A2 student.
 
-The student translated this Spanish sentence: based on context from model answer "${ans}"
+Model answer: "${ans}"
 Student wrote: "${userText}"
 
-Your ONLY job: find REAL grammar mistakes. Ignore word choice differences.
+Mark it correct ONLY if BOTH of these are true:
+1. It says the same as the model answer — no part of the meaning is missing, and nothing added changes it.
+2. Every word is a real, correctly spelled English word.
 
-A real grammar mistake is:
-- Wrong verb tense (e.g. "she make" instead of "she makes")  
-- Missing subject or verb
-- Wrong article (e.g. "the breakfast" when talking in general — meals don't take "the")
-- Subject-verb disagreement
+NOT an error — accept these:
+- A synonym that keeps the meaning ("makes" for "prepares", "mom" for "mother")
+- A different but grammatically correct word order
+- A contraction, or a missing period at the end
 
-NOT a grammar mistake:
-- Using "makes" instead of "prepares" — both valid for food
-- Using "mother" instead of "mom" — both valid
-- Using any synonym that preserves the meaning
-- Different but grammatically correct word order
+An error — reject these:
+- Part of the sentence missing or cut off
+- A word that is not English or is misspelled ("ypo", "helpd")
+- Wrong verb tense, missing subject or verb, subject-verb disagreement, wrong article
 
 Respond ONLY with this JSON:
-{"has_error": true or false, "error": "describe the specific grammar error in simple English, or null if no error"}`;
+{"has_error": true or false, "error": "the mistake in simple English, one short sentence, or null if there is none"}`;
 
       const raw  = await AIService._callClaude({ messages: [{ role: 'user', content: prompt }], maxTokens: 150, isJSON: true, timeoutMs: 30000 });
       const rawText = (typeof raw === 'string' ? raw : '').toLowerCase();
       const data = AIService._parseClaudeJSON(raw);
 
-      // Check raw text first — if Claude says no grammar mistake anywhere, force correct
-      const noErrorInText = rawText.includes('no grammar mistake') ||
+      /* El texto suelto solo cuando el JSON no se pudo leer. Mandaba él aunque
+       * el JSON dijera lo contrario, y con el prompt de arriba una explicación
+       * como "no grammar mistake, but the sentence is incomplete" daría por
+       * buena una respuesta mala. */
+      const noErrorInText = !data && (rawText.includes('no grammar mistake') ||
                             rawText.includes('there is no grammar') ||
                             rawText.includes('no grammatical mistake') ||
                             rawText.includes('no grammatical error') ||
                             rawText.includes('"has_error": false') ||
                             rawText.includes('"has_error":false') ||
                             rawText.includes('"has_error": null') ||
-                            rawText.includes('"has_error":null');
+                            rawText.includes('"has_error":null'));
 
       if (noErrorInText) {
         fb.className = 'exercise-feedback show correct';
@@ -22300,6 +22307,11 @@ Respond ONLY with this JSON:
 
         const errorMsg = data.error || data.feedback || 'Check your answer.';
         exerciseWrong(idx, input, fb, ans, errorMsg);
+        /* Sin este return seguía hasta el final y volvía a marcarla mal: la
+         * explicación de la IA quedaba pisada por "Expected: …", y el fallo se
+         * contaba dos veces (ejercicios hechos, palabra floja, la lista de los
+         * que falló y el sonido). */
+        return;
       }
     } catch (e) {
       // Claude failed — show neutral message, don't auto-accept
