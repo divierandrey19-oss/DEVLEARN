@@ -289,6 +289,28 @@ const MUTACIONES = [
     reemplazo: '',
   },
   {
+    nombre: 'Textos: que vuelva a repasar solo la 9 y la 10, sin las del speaking',
+    buscar: `  return [...new Set([9, 10, ...nums])].sort((a, b) => a - b);`,
+    reemplazo: `  return [9, 10];`,
+  },
+  {
+    nombre: 'Textos: que el Dashboard no fije las unidades del foco antes del plan',
+    buscar: `  fijarUnidadesDeTexto();
+  if (seedTextReviews(state.texts, todayLocal())) save();
+  renderPlanHoy();`,
+    reemplazo: `  renderPlanHoy();`,
+  },
+  {
+    nombre: 'Speaking check: que no enfoque la gramática del A2 (Units 6-9)',
+    buscar: `  { id: 1006, n: 6, title: 'SPEAKING TEST CHECK 0 / Unit 1',             exam: true, unitKeys: ['a2_6', 'a2_9', 'a2_8', 'a2_7'] },`,
+    reemplazo: `  { id: 1006, n: 6, title: 'SPEAKING TEST CHECK 0 / Unit 1',             exam: true },`,
+  },
+  {
+    nombre: 'Speaking check: que el plan no siga las unidades del examen',
+    buscar: `    const orden = examen.unitKeys.filter(k => tieneTareas(units[k]));`,
+    reemplazo: `    const orden = [];`,
+  },
+  {
     nombre: 'Sonido: que un toque vuelva a sonar tres veces',
     buscar: `    if (ahora - this._ultimoTap < 150) return;`,
     reemplazo: ``,
@@ -342,7 +364,8 @@ const MUTACIONES = [
   },
   {
     nombre: 'Plan de hoy: pasar de unidad el mismo día en que la termina',
-    buscar: `  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
+    buscar: `  // La terminó otro día: hoy toca la siguiente (después de la 10, la 1).
+  else if (p.terminada && p.terminada < hoy) i = (i + 1) % orden.length;`,
     reemplazo: `  else if (p.terminada && p.terminada <= hoy) i = (i + 1) % orden.length;`,
   },
   {
@@ -403,9 +426,9 @@ const MUTACIONES = [
   },
   {
     nombre: 'Plan de hoy: que no salga en el Dashboard',
-    buscar: `function renderDashboard() {
+    buscar: `  if (seedTextReviews(state.texts, todayLocal())) save();
   renderPlanHoy();`,
-    reemplazo: `function renderDashboard() {`,
+    reemplazo: `  if (seedTextReviews(state.texts, todayLocal())) save();`,
   },
   {
     nombre: 'Curso B1: reusar los números del A2, que ya están marcados como vistos',
@@ -631,10 +654,10 @@ const MUTACIONES = [
   },
   {
     nombre: 'mover BACKUP_KEY después de la línea de arranque',
-    buscar: `const BACKUP_KEY = 'lingua_v4_autobackup';
+    buscar: `let _unidadesTextoEnRepaso = [9, 10];
 let state = loadState();`,
     reemplazo: `let state = loadState();
-const BACKUP_KEY = 'lingua_v4_autobackup';`,
+let _unidadesTextoEnRepaso = [9, 10];`,
   },
   {
     nombre: 'desincronizar el sello de build',
@@ -663,8 +686,8 @@ const BACKUP_KEY = 'lingua_v4_autobackup';`,
   },
   {
     nombre: 'repasar los textos de todas las unidades',
-    buscar: `  return !!u && [9, 10].includes(Number(u[1]));`,
-    reemplazo: `  return true;`,
+    buscar: `  return !!u && _unidadesTextoEnRepaso.includes(Number(u[1]));`,
+    reemplazo: `  return !!u;`,
   },
   {
     nombre: 'repasar desde la primera página y no desde la última',

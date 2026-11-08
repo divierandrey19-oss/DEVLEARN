@@ -203,7 +203,7 @@ que pidió (`planDeRepaso`): el martes 13 los de la Unit 9, el miércoles los de
 la 10 y el jueves todos, aunque su fecha sea más adelante; el que no repasó ese
 día sigue saliendo, también el viernes del examen (el 16 en la mañana quería
 repasar los que le faltaron y ya no aparecían), y pasado el viernes vuelve a
-mandar solo su fecha.
+mandar solo su fecha. Desde el 8 de noviembre repasa, además de la 9 y la 10, los textos de las unidades del speaking que tenga por delante (`unidadesDeTextoSegunFoco` lee `focoDelRepaso`): con el Speaking Test Check del B1, las Units 6-9. El Dashboard las fija (`fijarUnidadesDeTexto`) antes de usar `textInReview`; la unidad base (9, 10) va en `_unidadesTextoEnRepaso`, declarada antes del arranque porque `seedTextReviews` corre en la carga.
 
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de
@@ -377,7 +377,10 @@ mismo día vencen el mismo día, y las 20 salían de una sola unidad; ahora van 
 turnos entre unidades (`intercalarUnidades`), sin perder la prioridad.
 Antes de un speaking test se enfoca en sus unidades (`focoDelRepaso` lee el
 próximo examen del calendario del curso y sus `units`, hasta su fecha: "SPEAKING
-TEST 1 / Unit 1" es la Unit 1, "SPEAKING TEST 4, 5" las 4 y 5): 14 de 20 de esas
+TEST 1 / Unit 1" es la Unit 1, "SPEAKING TEST 4, 5" las 4 y 5; un examen con
+`unitKeys` enfoca esas unidades tal cual, de cualquier nivel — el Speaking Test
+Check 0 del B1 pregunta la gramática del A2 del tablero del profe, Units 6-9, y
+el plan de hoy va por ellas): 14 de 20 de esas
 unidades, con las preguntas primero entre las nuevas, y 6 del resto. Sin un
 examen de unidades por delante (una presentación oral, el final; en el A2, pasado
 el speaking del 16 de octubre, él lo pidió), el foco son las 3 unidades del

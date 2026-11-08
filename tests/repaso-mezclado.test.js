@@ -242,3 +242,17 @@ test('la meta y la ronda se ven en Memory Review, al empezar y al terminar', () 
   assert.match(fuente, /const otraRonda = isDailyRev && dueCount > 0 && hechasHoy < SRS\.META_DIARIA;/);
   assert.match(fuente, /\$\{otraRonda \? `<button class="btn btn-primary" onclick="closeFcStudy\(\); openDailyReview\(\)">Next round →<\/button>` : ''\}/);
 });
+
+// ── El speaking test check 0 del B1 (8 de noviembre) ───────────────────────
+// El profe puso en el tablero los 4 temas de los readiness checks, que son
+// gramática del A2: present/continuous/going to (Unit 6), modales (9),
+// comparativos (8) y pasado (7). El repaso se enfoca en esas unidades hasta el
+// speaking, aunque el curso sea del B1.
+test('el speaking test check 0 enfoca la gramática del A2 (Units 6-9)', () => {
+  const f = focoDelRepaso({ classesDone: [] }, '2026-11-15');
+  assert.deepEqual([...f.keys].sort(), ['a2_6', 'a2_7', 'a2_8', 'a2_9']);
+  assert.equal(f.unidades, 'Units 6, 7, 8, 9', 'ordenadas, aunque el tablero vaya 6-9-8-7');
+  assert.ok(!f.atrasadas);
+  // Marcado como visto, el foco pasa al siguiente examen, ya del B1.
+  assert.equal(focoDelRepaso({ classesDone: [ids('SPEAKING TEST CHECK 0 / Unit 1')] }, '2026-11-15').unidades, 'Unit 1');
+});

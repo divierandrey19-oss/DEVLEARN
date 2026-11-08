@@ -149,7 +149,7 @@ test('con toda la unidad respondida queda anotada para pasar a la siguiente mañ
 test('arriba en el Dashboard, y cada renglón abre lo suyo', () => {
   const hoy = fuente.indexOf('<div class="section-title dash-section">Today</div>');
   assert.ok(fuente.indexOf('<div id="plan-hoy"></div>', hoy) < fuente.indexOf('<div id="text-review"></div>', hoy), 'lo primero de Today');
-  assert.match(h.extraerFuncion('renderDashboard'), /^function renderDashboard\(\) \{\n\s*renderPlanHoy\(\);/);
+  assert.match(h.extraerFuncion('renderDashboard'), /^function renderDashboard\(\) \{[\s\S]*?\n  renderPlanHoy\(\);/);
   // Él pidió un botón "Open" a la vista en cada renglón.
   assert.match(h.extraerFuncion('renderPlanHoy'), /<button class="btn \$\{i\.hecho \? 'btn-ghost' : 'btn-primary'\} btn-sm"[^>]*onclick="abrirDelPlan\('\$\{i\.id\}'\)">Open →<\/button>/);
   const abrir = h.extraerFuncion('abrirDelPlan');
@@ -211,4 +211,14 @@ test('openUnit entra a la pestaña que le pidan, y por defecto a Today', () => {
   const abrirUnidad = h.extraerFuncion('openUnit');
   assert.match(abrirUnidad, /^function openUnit\(lid, uid, tab = 'start'\) \{/);
   assert.match(abrirUnidad, /\n  showUnitTab\(tab\);\n  loadUnitContent\(\);/);
+});
+
+test('mientras el speaking test check está pendiente, el plan va por las Units 6,9,8,7', () => {
+  const u = Object.fromEntries(['a2_6', 'a2_7', 'a2_8', 'a2_9'].map(k => [k, unidad(k)]));
+  assert.equal(unidadDelPlan({ units: u, classesDone: [] }, HOY).key, 'a2_6', 'primero el present (Unit 6)');
+  assert.equal(unidadDelPlan({ units: u, classesDone: [], planDiario: { unidad: 'a2_6', terminada: HOY } }, '2026-11-06').key, 'a2_9', 'después modales (Unit 9)');
+  assert.equal(unidadDelPlan({ units: u, classesDone: [], planDiario: { unidad: 'a2_7', terminada: HOY } }, '2026-11-06').key, 'a2_6', 'tras la última (Unit 7), vuelve a la 6');
+  // Marcado el check-0, el plan vuelve al flujo normal (Unit 1 del A2).
+  const conU1 = { ...u, a2_1: unidad('a2_1') };
+  assert.equal(unidadDelPlan({ units: conU1, classesDone: [1006] }, HOY).key, 'a2_1');
 });
