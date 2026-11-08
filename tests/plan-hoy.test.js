@@ -149,7 +149,7 @@ test('con toda la unidad respondida queda anotada para pasar a la siguiente mañ
 test('arriba en el Dashboard, y cada renglón abre lo suyo', () => {
   const hoy = fuente.indexOf('<div class="section-title dash-section">Today</div>');
   assert.ok(fuente.indexOf('<div id="plan-hoy"></div>', hoy) < fuente.indexOf('<div id="text-review"></div>', hoy), 'lo primero de Today');
-  assert.match(h.extraerFuncion('renderDashboard'), /^function renderDashboard\(\) \{\n\s*renderPlanHoy\(\);/);
+  assert.match(h.extraerFuncion('renderDashboard'), /^function renderDashboard\(\) \{[\s\S]*?\n  renderPlanHoy\(\);/);
   // Él pidió un botón "Open" a la vista en cada renglón.
   assert.match(h.extraerFuncion('renderPlanHoy'), /<button class="btn \$\{i\.hecho \? 'btn-ghost' : 'btn-primary'\} btn-sm"[^>]*onclick="abrirDelPlan\('\$\{i\.id\}'\)">Open →<\/button>/);
   const abrir = h.extraerFuncion('abrirDelPlan');

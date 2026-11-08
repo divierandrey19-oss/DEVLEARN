@@ -203,7 +203,7 @@ que pidió (`planDeRepaso`): el martes 13 los de la Unit 9, el miércoles los de
 la 10 y el jueves todos, aunque su fecha sea más adelante; el que no repasó ese
 día sigue saliendo, también el viernes del examen (el 16 en la mañana quería
 repasar los que le faltaron y ya no aparecían), y pasado el viernes vuelve a
-mandar solo su fecha.
+mandar solo su fecha. Desde el 8 de noviembre repasa, además de la 9 y la 10, los textos de las unidades del speaking que tenga por delante (`unidadesDeTextoSegunFoco` lee `focoDelRepaso`): con el Speaking Test Check del B1, las Units 6-9. El Dashboard las fija (`fijarUnidadesDeTexto`) antes de usar `textInReview`; la unidad base (9, 10) va en `_unidadesTextoEnRepaso`, declarada antes del arranque porque `seedTextReviews` corre en la carga.
 
 `u9-fix.test.js` — La Unit 9 revisada contra las fotos: números de página por
 id, letra mal leída (Teri, cast), ejemplos que mezclaban opciones, opciones de

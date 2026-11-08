@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-08a -->
+<!-- DEVLEARN_BUILD: 2026-11-08b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4614,6 +4614,12 @@ const V9_ANTERIORES = {
 const KEY = 'lingua_v4';
 const OLD_KEYS = ['lingua_v3', 'lingua_v2'];
 const BACKUP_KEY = 'lingua_v4_autobackup';
+/* Qué unidades repasan sus textos. Arranca fija (9 y 10, las del speaking final
+ * del A2) y el Dashboard le suma las del speaking que tenga por delante
+ * (fijarUnidadesDeTexto). Va aquí, antes de loadState(): seedTextReviews corre
+ * dentro de migrateState durante la carga y lee textInReview, y leer el foco
+ * ahí tocaría COURSE_SYLLABUS, que todavía no existe (CLAUDE.md). */
+let _unidadesTextoEnRepaso = [9, 10];
 let state = loadState();
 if (window.__loadCorrupt) showLoadCorruptBanner();
 if (window.__loadedFromAutoBackup) showAutoBackupBanner();
@@ -4907,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-08a';
+const APP_BUILD = '2026-11-08b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -15125,6 +15131,10 @@ function abrirDelPlan(id) {
 }
 
 function renderDashboard() {
+  // Antes de renderPlanHoy, que ya mira textInReview: fija las unidades del
+  // foco y programa los textos que entraron por él (uno por día).
+  fijarUnidadesDeTexto();
+  if (seedTextReviews(state.texts, todayLocal())) save();
   renderPlanHoy();
   renderStudyTimer();
   renderExamCountdown();
@@ -17338,12 +17348,21 @@ function scheduleTextReview(t, recordado, hoy) {
   return pasos[step];
 }
 
-/* Solo repasa las Units 9 y 10: son las que más le sirven para el speaking
- * del examen. Lo decidió él; los textos de las demás siguen marcándose ✅ sin
- * entrar al repaso. La unidad sale del título ("U9 · pág 97"). */
+/* Repasa las Units 9 y 10 (las del speaking final del A2) y, mientras tenga un
+ * speaking por delante, también sus unidades: el 8 de noviembre pidió repasar
+ * los textos de las unidades del Speaking Test Check (6-9), no solo la 9 y 10.
+ * Qué unidades es `_unidadesTextoEnRepaso`, que el Dashboard fija según el foco.
+ * La unidad sale del título ("U9 · pág 97"). */
+function unidadesDeTextoSegunFoco(foco) {
+  const nums = foco && foco.keys ? [...foco.keys].map(k => Number(String(k).split('_')[1])).filter(Number.isFinite) : [];
+  return [...new Set([9, 10, ...nums])].sort((a, b) => a - b);
+}
+function fijarUnidadesDeTexto() {
+  _unidadesTextoEnRepaso = unidadesDeTextoSegunFoco(focoDelRepaso());
+}
 function textInReview(t) {
   const u = ((t && t.title) || '').match(/^\s*U(\d+)\b/i);
-  return !!u && [9, 10].includes(Number(u[1]));
+  return !!u && _unidadesTextoEnRepaso.includes(Number(u[1]));
 }
 
 // La fecha de su próximo repaso, o null si no está en el repaso.

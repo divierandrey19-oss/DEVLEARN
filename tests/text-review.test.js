@@ -38,7 +38,7 @@ function montar({ texts = [], hoy = HOY } = {}) {
     ${h.extraerFuncion('textosRecordadosHoy')}
     return { addDaysLocal, scheduleTextReview, seedTextReviews, textReviewsDue, textoTocaEl,
              textReviewWhen, toggleTextMastered, markTextReview, textosRecordadosHoy };
-  `, { state, todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, renderPlanHoy() {}, toast() {} });
+  `, { state, _unidadesTextoEnRepaso: [9, 10], todayLocal: () => hoy, save() {}, renderTexts() {}, renderTextReview() {}, renderPlanHoy() {}, toast() {} });
   return { ...f, state };
 }
 
@@ -333,4 +333,34 @@ test('My texts y el Dashboard usan el día del plan, no solo la fecha del repaso
   const tarjeta = h.extraerFuncion('renderTextReview');
   assert.match(tarjeta, /const due = textReviewsDue\(state\.texts, hoy\);/);
   assert.match(tarjeta, /textReviewWhen\(toca\(next\), hoy\)/);
+});
+
+// ── Los textos del speaking que tiene por delante (8 de noviembre) ─────────
+// "No quiero uno nuevo, quiero los mismos que están ahí, todos los textos de
+// las unidades que voy a ver": además de la 9 y la 10, las del Speaking Test
+// Check (6-9).
+const { unidadesDeTextoSegunFoco } = h.ejecutar(
+  `${h.extraerFuncion('unidadesDeTextoSegunFoco')} return { unidadesDeTextoSegunFoco };`, {});
+
+test('las unidades de texto siguen el foco, y siempre dejan la 9 y la 10', () => {
+  assert.deepEqual(unidadesDeTextoSegunFoco({ keys: new Set(['a2_6', 'a2_9', 'a2_8', 'a2_7']) }), [6, 7, 8, 9, 10]);
+  assert.deepEqual(unidadesDeTextoSegunFoco(null), [9, 10], 'sin foco, solo las que él se aprendió');
+  assert.deepEqual(unidadesDeTextoSegunFoco({ keys: new Set(['b1_1']) }), [1, 9, 10]);
+});
+
+test('con el foco puesto, un texto de la Unit 6 sí entra al repaso', () => {
+  const { textInReview } = h.ejecutar(`${h.extraerFuncion('textInReview')} return { textInReview };`,
+    { _unidadesTextoEnRepaso: [6, 7, 8, 9, 10] });
+  assert.ok(textInReview({ title: 'U6 · pág 61', mastered: true }));
+  assert.ok(textInReview({ title: 'U9 · pág 97', mastered: true }));
+  assert.ok(!textInReview({ title: 'U5 · pág 55', mastered: true }), 'la 5 no está en el foco');
+});
+
+test('arranca con la 9 y la 10 fijas, sin tocar el foco durante la carga', () => {
+  // seedTextReviews corre en migrateState, antes de que exista COURSE_SYLLABUS.
+  const fuente = h.fuente();
+  const iVar = fuente.indexOf('let _unidadesTextoEnRepaso = [9, 10];');
+  assert.ok(iVar > 0 && iVar < fuente.indexOf('let state = loadState();'), 'declarada antes del arranque');
+  assert.doesNotMatch(h.extraerFuncion('textInReview'), /focoDelRepaso/, 'textInReview no lee el foco (corre en la carga)');
+  assert.match(h.extraerFuncion('renderDashboard'), /fijarUnidadesDeTexto\(\);\n\s*if \(seedTextReviews\(state\.texts, todayLocal\(\)\)\) save\(\);\n\s*renderPlanHoy\(\);/);
 });
