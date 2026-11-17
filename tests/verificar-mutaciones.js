@@ -551,9 +551,14 @@ const MUTACIONES = [
     reemplazo: `━━ OPTIONS ━━`,
   },
   {
-    nombre: 'Textos U10: no subir SEED_VERSION (nunca le llegarían)',
-    buscar: `  const SEED_VERSION = 16;`,
-    reemplazo: `  const SEED_VERSION = 15;`,
+    nombre: 'Textos: no subir SEED_VERSION al agregar contenido (nunca le llegarían)',
+    buscar: `  const SEED_VERSION = 17;   // v17: su guion de TikTok (video 2), txt_tiktok2`,
+    reemplazo: `  const SEED_VERSION = 16;   // v17: su guion de TikTok (video 2), txt_tiktok2`,
+  },
+  {
+    nombre: 'Guion de TikTok: cambiarle una palabra a su texto',
+    buscar: `the admission exam at the National University of Colombia`,
+    reemplazo: `the admission exam at a university in Colombia`,
   },
   {
     nombre: 'Página del libro: que el número leído no se guarde',
