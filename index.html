@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-08b -->
+<!-- DEVLEARN_BUILD: 2026-11-17a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-08b';
+const APP_BUILD = '2026-11-17a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6571,7 +6571,7 @@ function migrateState(s) {
   // 16: el de las pp. 116-117 (sueños, fortalezas y debilidades): sus sueños de
   // los textos anteriores; fortalezas y debilidades, las que él dijo. El consejo
   // del artículo lo escogí yo, como él pidió ("busca uno que vaya con lo mío").
-  const SEED_VERSION = 16;
+  const SEED_VERSION = 17;   // v17: su guion de TikTok (video 2), txt_tiktok2
   /* Sus textos cuentan su vida: solo entran en un aparato suyo, el que ya los
    * había recibido antes. El 8 de octubre compartió la app con una compañera y
    * no quiere que ella los vea. Un aparato nuevo suyo los trae de su nube al
@@ -6735,6 +6735,13 @@ function migrateState(s) {
         wh: [],
         body: "Let me tell you about my dreams for the future. My dream is to graduate from my English course with a C1 level next year. I also dream about working abroad and getting rich, so I can help my family and the animals that live on the street. To make my dreams come true, I study English every morning. I think my strengths are that I'm hard-working, disciplined and consistent. For example, I study every day, even when the shop is super busy. But I also have some weaknesses. First, I could be more fluent in English, so I need to practice speaking more. Second, I need to save more money. And I don't always have time for exercise. That's why the most helpful tip for me is \"Target your weaknesses,\" because if I know my weaknesses, I can change the way I do things. So I'm going to start with one small step: practice speaking every day. What about you? What's your dream for the future?",
         trans: "Déjame contarte mis sueños para el futuro. Mi sueño es graduarme de mi curso de inglés con nivel C1 el próximo año. También sueño con trabajar en el exterior y hacerme rico, para poder ayudar a mi familia y a los animales que viven en la calle. Para hacer realidad mis sueños, estudio inglés todas las mañanas. Creo que mis fortalezas son que soy trabajador, disciplinado y constante. Por ejemplo, estudio todos los días, aunque la tienda esté súper ocupada. Pero también tengo algunas debilidades. Primero, podría tener más fluidez en inglés, así que necesito practicar más el speaking. Segundo, necesito ahorrar más plata. Y no siempre tengo tiempo para hacer ejercicio. Por eso el consejo más útil para mí es \"Enfócate en tus debilidades\", porque si conozco mis debilidades, puedo cambiar la forma en que hago las cosas. Así que voy a empezar con un paso pequeño: practicar speaking todos los días. ¿Y tú? ¿Cuál es tu sueño para el futuro?" },
+      /* Su guion de TikTok (video 2), que quiere practicar en el lector para la
+       * pronunciación. Es su texto tal cual, sin cambiarle una palabra. El
+       * título no empieza por "U<n>", así que no entra al repaso por unidad. */
+      { id: 'txt_tiktok2', title: 'TikTok · Video 2',
+        wh: [],
+        body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nHi, I'm Dev. I'm from Colombia. My English isn't perfect, but I'm practicing, and this video is part of that. When I finished high school, I had no idea what to study. I did two technical programs in accounting and finance, because it was the option I had at the time.\n\nHalfway through, I realized it wasn't for me. But instead of throwing that time away, I used what I learned to start a business with my brother.\n\nAnd that's when I understood: you don't need to have it all figured out to start building.\n\nThese last few years, I've been learning on my own. I have my A2 English certificate, I'm working on my B1, and now I'm preparing for the admission exam at the National University of Colombia.\n\nI'm not telling you this to show off. I'm telling you because there's more than one path. Here I'll share what I learn: English, the business, and how I prepare for the exam. And when I take it, I'll tell you if I pass or not. My journey is just starting.",
+        trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nHola, soy Dev. Soy de Colombia. Mi inglés no es perfecto, pero estoy practicando, y este video es parte de eso. Cuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas técnicos en contabilidad y finanzas, porque era la opción que tenía en ese momento.\n\nA la mitad, me di cuenta de que no era para mí. Pero en lugar de botar ese tiempo, usé lo que aprendí para empezar un negocio con mi hermano.\n\nY ahí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nEstos últimos años, he estado aprendiendo por mi cuenta. Tengo mi certificado de inglés A2, estoy trabajando en mi B1, y ahora me estoy preparando para el examen de admisión de la Universidad Nacional de Colombia.\n\nNo te cuento esto para presumir. Te lo cuento porque hay más de un camino. Aquí voy a compartir lo que aprendo: el inglés, el negocio, y cómo me preparo para el examen. Y cuando lo presente, les cuento si paso o no. Mi camino apenas está empezando." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
