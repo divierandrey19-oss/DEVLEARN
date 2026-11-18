@@ -566,6 +566,11 @@ const MUTACIONES = [
     reemplazo: `if (true && /[,;:]$/.test(tok)) out +=`,
   },
   {
+    nombre: 'Bloques: que los renglones en blanco se vuelvan a ignorar',
+    buscar: `    if (i > 0 && /\\n[ \\t]*\\n/.test(String(body).slice(pos, idx))) starts.add(i);`,
+    reemplazo: `    if (i > 0 && /\\n[ \\t]*\\nZZZ/.test(String(body).slice(pos, idx))) starts.add(i);`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
