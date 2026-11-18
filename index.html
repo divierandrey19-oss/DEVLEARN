@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-17a -->
+<!-- DEVLEARN_BUILD: 2026-11-17b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-17a';
+const APP_BUILD = '2026-11-17b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17684,6 +17684,7 @@ function openPodcastReader(id) {
     current: -1,
     rate: state.txRate || 0.85,
     playing: false,
+    breathing: !!state.txBreathing,
     flippedES: new Set(),
     mismatch: pod.translation.length > 0 && pod.translation.length !== sentences.length,
   };
@@ -17794,6 +17795,7 @@ function openText(id) {
     rate: state.txRate || 0.85,
     playing: false,
     speakMode: !!state.txSpeakMode,
+    breathing: !!state.txBreathing,
     flippedES: new Set(),
     mismatch: t.translation.length > 0 && t.translation.length !== sentences.length,
   };
@@ -17880,8 +17882,15 @@ function renderTextReader() {
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:700;font-size:0.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.title)}</div>
-        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${traduccion.length ? ' · 🔄 listen to or flip a sentence' : ' · 🔊 listen to a sentence'}</div>
+        <div style="font-size:0.68rem;color:var(--text-3);">Tap a word to see its translation${traduccion.length ? ' · 🔄 listen to or flip a sentence' : ' · 🔊 listen to a sentence'}${st.breathing ? ' · <b style="color:var(--accent);">/</b> = toma aire' : ''}</div>
       </div>
+      <button class="btn btn-sm" id="tx-breath-toggle" onclick="toggleBreathing()"
+        title="Marcar dónde respirar (coma, punto y coma, dos puntos)"
+        style="flex-shrink:0;padding:8px 10px;font-size:0.78rem;${st.breathing
+          ? 'background:var(--accent);color:#fff;border:0;'
+          : 'background:transparent;color:var(--text-3);border:1px solid var(--border-2);'}">
+        🫁${st.breathing ? ' ON' : ''}
+      </button>
       <button class="btn btn-sm" id="tx-speak-toggle" onclick="toggleSpeakMode()"
         title="Count this time as speaking practice"
         style="flex-shrink:0;padding:8px 10px;font-size:0.78rem;${st.speakMode
@@ -17909,17 +17918,27 @@ function renderTextReader() {
         return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
           sent.split(/(\s+)/).map(tok => {
             if (!/\S/.test(tok)) return tok;
+            let out;
             // "23rd" es un número, no la palabra "rd" (5 de octubre).
             const ordinal = tok.match(/\d+(?:st|nd|rd|th)\b/i);
-            if (ordinal) return `<span onclick="sayNumber(this,'${escapeStr(ordinal[0])}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
-            const clean = tok.replace(/[^A-Za-z'’-]/g, '');
-            if (!clean) {
-              // Digits get their own handler: how to say them, not a translation.
-              const num = tok.replace(/[^\d]/g, '');
-              if (num) return `<span onclick="sayNumber(this,'${escapeStr(num)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
-              return escapeHtml(tok);
+            if (ordinal) {
+              out = `<span onclick="sayNumber(this,'${escapeStr(ordinal[0])}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+            } else {
+              const clean = tok.replace(/[^A-Za-z'’-]/g, '');
+              if (!clean) {
+                // Digits get their own handler: how to say them, not a translation.
+                const num = tok.replace(/[^\d]/g, '');
+                out = num
+                  ? `<span onclick="sayNumber(this,'${escapeStr(num)}')" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`
+                  : escapeHtml(tok);
+              } else {
+                out = `<span onclick="lookupWord(this,this.dataset.w)" data-w="${escapeStr(clean)}" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+              }
             }
-            return `<span onclick="lookupWord(this,this.dataset.w)" data-w="${escapeStr(clean)}" style="cursor:pointer;border-bottom:1px dotted var(--text-3);">${escapeHtml(tok)}</span>`;
+            // Marca de respiración tras coma / punto y coma / dos puntos. Solo
+            // visual, no toca el texto ni el audio (ver toggleBreathing).
+            if (st.breathing && /[,;:]$/.test(tok)) out += ` <span class="tx-breath" aria-hidden="true" style="color:var(--accent);opacity:0.65;font-weight:700;">/</span>`;
+            return out;
           }).join('')
         }</span><button class="tx-flip" onclick="sentenceMenu(${si}, this)" title="Listen or flip" style="background:transparent;border:0;color:var(--text-3);font-size:0.82rem;padding:0 6px;cursor:pointer;">${es ? '🔄' : '🔊'}</button> `;
       }).join('')}
@@ -18395,6 +18414,21 @@ function toggleSpeakMode() {
   toast(_txState.speakMode
     ? '🗣️ Counting as speaking practice'
     : '📖 Counting as reading');
+  renderTextReader();
+}
+
+/* Marca de respiración: una "/" después de cada coma, punto y coma o dos
+ * puntos, para saber dónde tomar aire al grabar (los textos los memoriza para
+ * hablar, y su punto flojo es la coherencia). Es solo visual: se calcula de la
+ * puntuación al dibujar, no se guarda en el texto, así que el Listen, el tocar
+ * una palabra y el Flip siguen con el texto limpio. El fin de frase (el botón
+ * 🔄/🔊) ya es la pausa larga. */
+function toggleBreathing() {
+  if (!_txState) return;
+  _txState.breathing = !_txState.breathing;
+  state.txBreathing = _txState.breathing;   // se recuerda para el próximo texto
+  save();
+  Sound.tap();
   renderTextReader();
 }
 

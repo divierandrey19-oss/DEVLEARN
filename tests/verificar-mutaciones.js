@@ -561,6 +561,11 @@ const MUTACIONES = [
     reemplazo: `the admission exam at a university in Colombia`,
   },
   {
+    nombre: 'Respirar: que la marca ya no dependa del toggle',
+    buscar: `if (st.breathing && /[,;:]$/.test(tok)) out +=`,
+    reemplazo: `if (true && /[,;:]$/.test(tok)) out +=`,
+  },
+  {
     nombre: 'Página del libro: que el número leído no se guarde',
     buscar: `    if (paginas.length) batch.pages = paginas;`,
     reemplazo: '',
@@ -1490,8 +1495,8 @@ let _unidadesTextoEnRepaso = [9, 10];`,
   },
   {
     nombre: 'que "23rd" vuelva a buscar la palabra "rd"',
-    buscar: `            if (ordinal) return`,
-    reemplazo: `            if (false) return`,
+    buscar: `            if (ordinal) {`,
+    reemplazo: `            if (false) {`,
   },
   {
     nombre: 'que "23rd" se diga "twenty-three" y no "twenty-third"',

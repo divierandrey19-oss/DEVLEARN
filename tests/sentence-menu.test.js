@@ -133,6 +133,6 @@ test('"23rd" es un número: se dice "twenty-third", no se busca "rd"', () => {
   assert.deepEqual([1, 2, 3, 5, 8, 9, 12, 15, 20, 21, 23, 31].map(o),
     ['first', 'second', 'third', 'fifth', 'eighth', 'ninth', 'twelfth', 'fifteenth', 'twentieth', 'twenty-first', 'twenty-third', 'thirty-first']);
   const lectorTexto = h.extraerFuncion('renderTextReader');
-  assert.match(lectorTexto, /const ordinal = tok\.match\(\/\\d\+\(\?:st\|nd\|rd\|th\)\\b\/i\);\n\s*if \(ordinal\) return `<span onclick="sayNumber/);
+  assert.match(lectorTexto, /const ordinal = tok\.match\(\/\\d\+\(\?:st\|nd\|rd\|th\)\\b\/i\);\n\s*if \(ordinal\) \{\n\s*out = `<span onclick="sayNumber/);
   assert.match(h.extraerFuncion('sayNumber'), /\? ordinalEnglish\(numberToEnglish\(n\)\) : numberToEnglish\(n\)/);
 });
