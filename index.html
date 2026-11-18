@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-17b -->
+<!-- DEVLEARN_BUILD: 2026-11-18a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-17b';
+const APP_BUILD = '2026-11-18a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -17653,6 +17653,25 @@ function splitSentences(text) {
     .filter(Boolean);
 }
 
+/* Los índices de frase que empiezan un párrafo nuevo (un renglón en blanco los
+ * separa en el texto). El lector lee frase por frase, así que los renglones en
+ * blanco se perdían y los bloques se veían como un solo párrafo (él escribe sus
+ * guiones de TikTok por bloques). Se calcula sobre las MISMAS frases que ya usa
+ * el lector — se busca cada frase en el cuerpo y, si antes de ella hay un
+ * renglón en blanco, empieza bloque — así no cambia el conteo ni el emparejado
+ * con la traducción. La primera frase nunca cuenta como salto. */
+function paragraphStarts(body, sentences) {
+  const starts = new Set();
+  let pos = 0;
+  for (let i = 0; i < sentences.length; i++) {
+    const idx = String(body || '').indexOf(sentences[i], pos);
+    if (idx === -1) continue;
+    if (i > 0 && /\n[ \t]*\n/.test(String(body).slice(pos, idx))) starts.add(i);
+    pos = idx + sentences[i].length;
+  }
+  return starts;
+}
+
 /* The reader serves two sources now: his own texts and podcast transcripts.
  * They differ in purpose — a text is memorised, a transcript is understood —
  * so the reader adapts rather than being copied. */
@@ -17681,6 +17700,7 @@ function openPodcastReader(id) {
   pod.translation = pod.trans ? splitSentences(pod.trans) : [];
   _txState = {
     id, kind: 'podcast', sentences,
+    paraStart: paragraphStarts(pod.transcript, sentences),
     current: -1,
     rate: state.txRate || 0.85,
     playing: false,
@@ -17791,6 +17811,7 @@ function openText(id) {
   t.translation = t.trans ? splitSentences(t.trans) : [];
   _txState = {
     id, kind: 'text', sentences,
+    paraStart: paragraphStarts(t.body, sentences),
     current: -1,
     rate: state.txRate || 0.85,
     playing: false,
@@ -17909,13 +17930,18 @@ function renderTextReader() {
       ${st.sentences.map((sent, si) => {
         const es = traduccion[si];
         const flipped = st.flippedES && st.flippedES.has(si);
+        /* Un renglón en blanco en el texto abre bloque: aquí se ve como una
+         * línea de separación, en vez de pegar todo en un párrafo. */
+        const pre = (st.paraStart && st.paraStart.has(si))
+          ? '<span class="tx-para" aria-hidden="true" style="display:block;height:0.85em;"></span>'
+          : '';
         /* Only the tapped sentence swaps. Showing English and Spanish together
          * is precisely the crutch he is trying to drop — the eye goes to the
          * Spanish and the effort stops. */
         if (flipped && es) {
-          return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;color:var(--text-3);font-style:italic;">${escapeHtml(es)}</span><button class="tx-flip" onclick="sentenceMenu(${si}, this)" title="Listen or flip" style="background:transparent;border:0;color:var(--accent);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button> `;
+          return pre + `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;color:var(--text-3);font-style:italic;">${escapeHtml(es)}</span><button class="tx-flip" onclick="sentenceMenu(${si}, this)" title="Listen or flip" style="background:transparent;border:0;color:var(--accent);font-size:0.82rem;padding:0 6px;cursor:pointer;">🔄</button> `;
         }
-        return `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
+        return pre + `<span class="tx-sent" data-si="${si}" style="border-radius:6px;padding:1px 0;">${
           sent.split(/(\s+)/).map(tok => {
             if (!/\S/.test(tok)) return tok;
             let out;
