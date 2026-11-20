@@ -561,6 +561,11 @@ const MUTACIONES = [
     reemplazo: `the admission exam at a university in Colombia`,
   },
   {
+    nombre: 'TikTok B6: que la migración pise el bloque que él editó',
+    buscar: `if (t.body && t.body.includes(viejoEN)) t.body = t.body.replace(viejoEN, nuevoEN);`,
+    reemplazo: `if (t.body && true) t.body = t.body.replace(viejoEN, nuevoEN);`,
+  },
+  {
     nombre: 'Respirar: que la marca ya no dependa del toggle',
     buscar: `if (st.breathing && /[,;:]$/.test(tok)) out +=`,
     reemplazo: `if (true && /[,;:]$/.test(tok)) out +=`,

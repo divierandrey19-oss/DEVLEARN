@@ -58,3 +58,28 @@ test('el título no entra al repaso por unidad', () => {
   // Y un texto de unidad sí entra, para no romper esa parte sin querer.
   assert.equal(textInReview({ title: 'U9 · pág 97' }), true);
 });
+
+test('el bloque 6 quedó con la versión mejorada (más coherencia)', () => {
+  assert.match(t.body, /Here we'll learn together: how to improve your English, how to start a business, and how to get ready for university\./);
+  assert.doesNotMatch(t.body, /Here I'll share what I learn: English, the business/, 'ya no está la versión vieja');
+  assert.match(t.body, /And when I take my exam, I'll tell you if I pass or not\./);
+  // El bloque 6 en inglés y su traducción parten en las mismas 5 frases: si se
+  // juntaran las dos primeras ("...presumir, sino porque..."), el Flip se
+  // desincroniza y sale el aviso ⚠.
+  const b6en = t.body.split(/\n\n/).pop();
+  const b6es = t.trans.split(/\n\n/).pop();
+  assert.equal(splitSentences(b6es).length, splitSentences(b6en).length);
+  assert.equal(splitSentences(b6en).length, 5);
+});
+
+test('la migración corrige el bloque 6 ya sembrado, sin pisar lo que él edite', () => {
+  // Solo reemplaza si sigue siendo la versión vieja exacta (includes), así que
+  // una edición suya no se toca.
+  assert.match(fuente, /if \(!merged\._tiktok2B6V2\) \{/);
+  assert.match(fuente, /if \(t\.body && t\.body\.includes\(viejoEN\)\) t\.body = t\.body\.replace\(viejoEN, nuevoEN\);/);
+  assert.match(fuente, /if \(t\.trans && t\.trans\.includes\(viejoES\)\) t\.trans = t\.trans\.replace\(viejoES, nuevoES\);/);
+  // La bandera se marca dentro de if (t): si el texto llega después de la nube,
+  // reintenta en vez de quedar sin corregir.
+  assert.match(fuente, /if \(t\) \{/);
+  assert.match(fuente, /merged\._tiktok2B6V2 = true;/);
+});

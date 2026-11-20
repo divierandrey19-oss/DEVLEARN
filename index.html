@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-18a -->
+<!-- DEVLEARN_BUILD: 2026-11-20a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-18a';
+const APP_BUILD = '2026-11-20a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6509,6 +6509,26 @@ function migrateState(s) {
     });
   }
 
+  /* Guion de TikTok (video 2), bloque 6: él lo mejoró — más coherencia, con
+   * estructura paralela ("how to improve your English, how to start a business,
+   * and how to get ready for university"). Se reemplaza solo ese bloque en su
+   * texto ya sembrado, y solo si sigue siendo la versión anterior exacta; si lo
+   * editó él, no se toca. La traducción se parte en las mismas 5 frases que el
+   * inglés para que el Flip to Spanish cuadre. La bandera se marca solo si el
+   * texto está en el aparato, por si llega después de la nube. */
+  if (!merged._tiktok2B6V2) {
+    const t = merged.texts.find(x => x && x.id === 'txt_tiktok2');
+    if (t) {
+      const viejoEN = "I'm not telling you this to show off. I'm telling you because there's more than one path. Here I'll share what I learn: English, the business, and how I prepare for the exam. And when I take it, I'll tell you if I pass or not. My journey is just starting.";
+      const nuevoEN = "I'm not telling you this to show off. I'm telling you because there's more than one path. Here we'll learn together: how to improve your English, how to start a business, and how to get ready for university. And when I take my exam, I'll tell you if I pass or not. My journey is just starting.";
+      const viejoES = "No te cuento esto para presumir. Te lo cuento porque hay más de un camino. Aquí voy a compartir lo que aprendo: el inglés, el negocio, y cómo me preparo para el examen. Y cuando lo presente, les cuento si paso o no. Mi camino apenas está empezando.";
+      const nuevoES = "No te cuento esto para presumir. Te lo cuento porque no hay un solo camino. Aquí vamos a aprender juntos: cómo mejorar el inglés, cómo emprender y cómo prepararse para entrar a la universidad. Y cuando presente mi examen, voy a contar si paso o si no paso. Mi proceso apenas empieza.";
+      if (t.body && t.body.includes(viejoEN)) t.body = t.body.replace(viejoEN, nuevoEN);
+      if (t.trans && t.trans.includes(viejoES)) t.trans = t.trans.replace(viejoES, nuevoES);
+      merged._tiktok2B6V2 = true;
+    }
+  }
+
   /* Los phrasal verbs de las Units 7 y 8 entran como un lote propio dentro de
    * su unidad, no mezclados con las demás palabras: así pasan por Flashcards,
    * Quiz, Write y Listen igual que el resto, pero él los puede estudiar como
@@ -6740,8 +6760,8 @@ function migrateState(s) {
        * título no empieza por "U<n>", así que no entra al repaso por unidad. */
       { id: 'txt_tiktok2', title: 'TikTok · Video 2',
         wh: [],
-        body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nHi, I'm Dev. I'm from Colombia. My English isn't perfect, but I'm practicing, and this video is part of that. When I finished high school, I had no idea what to study. I did two technical programs in accounting and finance, because it was the option I had at the time.\n\nHalfway through, I realized it wasn't for me. But instead of throwing that time away, I used what I learned to start a business with my brother.\n\nAnd that's when I understood: you don't need to have it all figured out to start building.\n\nThese last few years, I've been learning on my own. I have my A2 English certificate, I'm working on my B1, and now I'm preparing for the admission exam at the National University of Colombia.\n\nI'm not telling you this to show off. I'm telling you because there's more than one path. Here I'll share what I learn: English, the business, and how I prepare for the exam. And when I take it, I'll tell you if I pass or not. My journey is just starting.",
-        trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nHola, soy Dev. Soy de Colombia. Mi inglés no es perfecto, pero estoy practicando, y este video es parte de eso. Cuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas técnicos en contabilidad y finanzas, porque era la opción que tenía en ese momento.\n\nA la mitad, me di cuenta de que no era para mí. Pero en lugar de botar ese tiempo, usé lo que aprendí para empezar un negocio con mi hermano.\n\nY ahí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nEstos últimos años, he estado aprendiendo por mi cuenta. Tengo mi certificado de inglés A2, estoy trabajando en mi B1, y ahora me estoy preparando para el examen de admisión de la Universidad Nacional de Colombia.\n\nNo te cuento esto para presumir. Te lo cuento porque hay más de un camino. Aquí voy a compartir lo que aprendo: el inglés, el negocio, y cómo me preparo para el examen. Y cuando lo presente, les cuento si paso o no. Mi camino apenas está empezando." },
+        body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nHi, I'm Dev. I'm from Colombia. My English isn't perfect, but I'm practicing, and this video is part of that. When I finished high school, I had no idea what to study. I did two technical programs in accounting and finance, because it was the option I had at the time.\n\nHalfway through, I realized it wasn't for me. But instead of throwing that time away, I used what I learned to start a business with my brother.\n\nAnd that's when I understood: you don't need to have it all figured out to start building.\n\nThese last few years, I've been learning on my own. I have my A2 English certificate, I'm working on my B1, and now I'm preparing for the admission exam at the National University of Colombia.\n\nI'm not telling you this to show off. I'm telling you because there's more than one path. Here we'll learn together: how to improve your English, how to start a business, and how to get ready for university. And when I take my exam, I'll tell you if I pass or not. My journey is just starting.",
+        trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nHola, soy Dev. Soy de Colombia. Mi inglés no es perfecto, pero estoy practicando, y este video es parte de eso. Cuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas técnicos en contabilidad y finanzas, porque era la opción que tenía en ese momento.\n\nA la mitad, me di cuenta de que no era para mí. Pero en lugar de botar ese tiempo, usé lo que aprendí para empezar un negocio con mi hermano.\n\nY ahí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nEstos últimos años, he estado aprendiendo por mi cuenta. Tengo mi certificado de inglés A2, estoy trabajando en mi B1, y ahora me estoy preparando para el examen de admisión de la Universidad Nacional de Colombia.\n\nNo te cuento esto para presumir. Te lo cuento porque no hay un solo camino. Aquí vamos a aprender juntos: cómo mejorar el inglés, cómo emprender y cómo prepararse para entrar a la universidad. Y cuando presente mi examen, voy a contar si paso o si no paso. Mi proceso apenas empieza." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);
