@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-22a -->
+<!-- DEVLEARN_BUILD: 2026-11-22b -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-22a';
+const APP_BUILD = '2026-11-22b';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6529,21 +6529,22 @@ function migrateState(s) {
     }
   }
 
-  /* Video 2, versión nueva (más corto, 5 bloques). Reemplaza TODO el texto,
+  /* Video 2, versión nueva (6 bloques; agrega el bloque "My English isn't
+   * perfect..."). Reemplaza TODO el texto,
    * y solo si sigue siendo la versión anterior exacta (v2): si él editó
    * cualquier parte, no se toca. La migración del bloque 6 corre antes, así
    * que cuando esta corre el texto ya está en v2. La traducción va partida en
-   * las mismas 13 frases que el inglés, para que el Flip cuadre. Bandera
+   * las mismas 14 frases que el inglés, para que el Flip cuadre. Bandera
    * nueva; se marca solo si el texto está en el aparato. */
-  if (!merged._tiktok2V3) {
+  if (!merged._tiktok2V4) {
     const t = merged.texts.find(x => x && x.id === 'txt_tiktok2');
     if (t) {
       const v2EN = "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nHi, I'm Dev. I'm from Colombia. My English isn't perfect, but I'm practicing, and this video is part of that. When I finished high school, I had no idea what to study. I did two technical programs in accounting and finance, because it was the option I had at the time.\n\nHalfway through, I realized it wasn't for me. But instead of throwing that time away, I used what I learned to start a business with my brother.\n\nAnd that's when I understood: you don't need to have it all figured out to start building.\n\nThese last few years, I've been learning on my own. I have my A2 English certificate, I'm working on my B1, and now I'm preparing for the admission exam at the National University of Colombia.\n\nI'm not telling you this to show off. I'm telling you because there's more than one path. Here we'll learn together: how to improve your English, how to start a business, and how to get ready for university. And when I take my exam, I'll tell you if I pass or not. My journey is just starting.";
-      const v3EN = "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nWhen I finished high school, I had no idea what to study. I did two programs in accounting and finance. Halfway through, I realized it wasn't for me. But I used what I learned to start a business with my brother.\n\nThat's when I understood: you don't need to have it all figured out to start building.\n\nNow I'm learning English. I have my A2 and I'm working on my B1. And I'm preparing for the admission exam for the National University.\n\nFollow me and let's learn together: English, business, and getting into university. When I take the exam, I'll let you know if I pass. My journey is just starting.";
+      const v4EN = "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nMy English isn't perfect, but I'm practicing, and this video is part of that.\n\nWhen I finished high school, I had no idea what to study. I did two programs in accounting and finance. Halfway through, I realized it wasn't for me. But I used what I learned to start a business with my brother.\n\nThat's when I understood: you don't need to have it all figured out to start building.\n\nNow I'm learning English. I have my A2 and I'm working on my B1. And I'm preparing for the admission exam for the National University.\n\nFollow me and let's learn together: English, business, and getting into university. When I take the exam, I'll let you know if I pass. My journey is just starting.";
       const v2ES = "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nHola, soy Dev. Soy de Colombia. Mi inglés no es perfecto, pero estoy practicando, y este video es parte de eso. Cuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas técnicos en contabilidad y finanzas, porque era la opción que tenía en ese momento.\n\nA la mitad, me di cuenta de que no era para mí. Pero en lugar de botar ese tiempo, usé lo que aprendí para empezar un negocio con mi hermano.\n\nY ahí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nEstos últimos años, he estado aprendiendo por mi cuenta. Tengo mi certificado de inglés A2, estoy trabajando en mi B1, y ahora me estoy preparando para el examen de admisión de la Universidad Nacional de Colombia.\n\nNo te cuento esto para presumir. Te lo cuento porque no hay un solo camino. Aquí vamos a aprender juntos: cómo mejorar el inglés, cómo emprender y cómo prepararse para entrar a la universidad. Y cuando presente mi examen, voy a contar si paso o si no paso. Mi proceso apenas empieza.";
-      const v3ES = "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nCuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas en contabilidad y finanzas. A la mitad, me di cuenta de que no era para mí. Pero usé lo que aprendí para empezar un negocio con mi hermano.\n\nAhí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nAhora estoy aprendiendo inglés. Tengo mi A2 y estoy trabajando en mi B1. Y me estoy preparando para el examen de admisión de la Universidad Nacional.\n\nSígueme y aprendamos juntos: inglés, negocios y cómo entrar a la universidad. Cuando presente el examen, les cuento si paso. Mi proceso apenas empieza.";
-      if (t.body === v2EN && t.trans === v2ES) { t.body = v3EN; t.trans = v3ES; }
-      merged._tiktok2V3 = true;
+      const v4ES = "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nMi inglés no es perfecto, pero estoy practicando, y este video es parte de eso.\n\nCuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas en contabilidad y finanzas. A la mitad, me di cuenta de que no era para mí. Pero usé lo que aprendí para empezar un negocio con mi hermano.\n\nAhí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nAhora estoy aprendiendo inglés. Tengo mi A2 y estoy trabajando en mi B1. Y me estoy preparando para el examen de admisión de la Universidad Nacional.\n\nSígueme y aprendamos juntos: inglés, negocios y cómo entrar a la universidad. Cuando presente el examen, les cuento si paso. Mi proceso apenas empieza.";
+      if (t.body === v2EN && t.trans === v2ES) { t.body = v4EN; t.trans = v4ES; }
+      merged._tiktok2V4 = true;
     }
   }
 
@@ -6778,8 +6779,8 @@ function migrateState(s) {
        * título no empieza por "U<n>", así que no entra al repaso por unidad. */
       { id: 'txt_tiktok2', title: 'TikTok · Video 2',
         wh: [],
-        body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nWhen I finished high school, I had no idea what to study. I did two programs in accounting and finance. Halfway through, I realized it wasn't for me. But I used what I learned to start a business with my brother.\n\nThat's when I understood: you don't need to have it all figured out to start building.\n\nNow I'm learning English. I have my A2 and I'm working on my B1. And I'm preparing for the admission exam for the National University.\n\nFollow me and let's learn together: English, business, and getting into university. When I take the exam, I'll let you know if I pass. My journey is just starting.",
-        trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nCuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas en contabilidad y finanzas. A la mitad, me di cuenta de que no era para mí. Pero usé lo que aprendí para empezar un negocio con mi hermano.\n\nAhí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nAhora estoy aprendiendo inglés. Tengo mi A2 y estoy trabajando en mi B1. Y me estoy preparando para el examen de admisión de la Universidad Nacional.\n\nSígueme y aprendamos juntos: inglés, negocios y cómo entrar a la universidad. Cuando presente el examen, les cuento si paso. Mi proceso apenas empieza." },
+        body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nMy English isn't perfect, but I'm practicing, and this video is part of that.\n\nWhen I finished high school, I had no idea what to study. I did two programs in accounting and finance. Halfway through, I realized it wasn't for me. But I used what I learned to start a business with my brother.\n\nThat's when I understood: you don't need to have it all figured out to start building.\n\nNow I'm learning English. I have my A2 and I'm working on my B1. And I'm preparing for the admission exam for the National University.\n\nFollow me and let's learn together: English, business, and getting into university. When I take the exam, I'll let you know if I pass. My journey is just starting.",
+        trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nMi inglés no es perfecto, pero estoy practicando, y este video es parte de eso.\n\nCuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas en contabilidad y finanzas. A la mitad, me di cuenta de que no era para mí. Pero usé lo que aprendí para empezar un negocio con mi hermano.\n\nAhí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nAhora estoy aprendiendo inglés. Tengo mi A2 y estoy trabajando en mi B1. Y me estoy preparando para el examen de admisión de la Universidad Nacional.\n\nSígueme y aprendamos juntos: inglés, negocios y cómo entrar a la universidad. Cuando presente el examen, les cuento si paso. Mi proceso apenas empieza." },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);

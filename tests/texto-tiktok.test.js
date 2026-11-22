@@ -28,9 +28,10 @@ test('el guion de TikTok está en la semilla, con su traducción', () => {
 });
 
 test('es su texto tal cual, sin cambiarle una palabra', () => {
-  // Frases exactas de lo que él mandó (video 2, versión corta de 5 bloques).
+  // Frases exactas de lo que él mandó (video 2, versión corta de 6 bloques).
   // Si una se edita, la prueba lo atrapa.
   assert.match(t.body, /^I'm 21, and I still haven't gone to university\. And it's not because I don't want to\./);
+  assert.match(t.body, /My English isn't perfect, but I'm practicing, and this video is part of that\./);
   assert.match(t.body, /I did two programs in accounting and finance/);
   assert.match(t.body, /you don't need to have it all figured out to start building/);
   assert.match(t.body, /preparing for the admission exam for the National University/);
@@ -42,7 +43,7 @@ test('cada frase tiene su traducción: el Flip to Spanish cuadra', () => {
   // Si no coinciden, el lector marca mismatch y el menú de la frase pierde
   // "Flip to Spanish".
   assert.equal(splitSentences(t.trans).length, splitSentences(t.body).length);
-  assert.equal(splitSentences(t.body).length, 13, 'los dos puntos no parten frase (van con "understood:" y "together:")');
+  assert.equal(splitSentences(t.body).length, 14, 'los dos puntos no parten frase (van con "understood:" y "together:")');
 });
 
 test('se entrega subiendo SEED_VERSION', () => {
@@ -61,26 +62,26 @@ test('el título no entra al repaso por unidad', () => {
   assert.equal(textInReview({ title: 'U9 · pág 97' }), true);
 });
 
-test('el guion nuevo son 5 bloques, sin lo que él quitó', () => {
+test('el guion nuevo son 6 bloques, sin lo que él quitó', () => {
   assert.match(t.body, /Follow me and let's learn together: English, business, and getting into university\./);
-  assert.doesNotMatch(t.body, /Hi, I'm Dev/, 'la versión corta quitó la presentación');
+  assert.doesNotMatch(t.body, /Hi, I'm Dev/, 'la versión corta quitó la presentación larga');
   assert.doesNotMatch(t.body, /how to improve your English/, 'ya no está el bloque 6 anterior');
-  assert.equal(t.body.split(/\n\n/).length, 5, 'cinco bloques');
-  assert.equal(t.trans.split(/\n\n/).length, 5, 'la traducción, también cinco');
+  assert.equal(t.body.split(/\n\n/).length, 6, 'seis bloques');
+  assert.equal(t.trans.split(/\n\n/).length, 6, 'la traducción, también seis');
 });
 
 test('la migración del bloque 6 (v1→v2) sigue, sin pisar lo que él edite', () => {
   // Sigue viva para un aparato que aún esté en v1: lo lleva a v2 antes de que
-  // corra la V3. Solo reemplaza si sigue siendo la versión vieja exacta.
+  // corra la V4. Solo reemplaza si sigue siendo la versión vieja exacta.
   assert.match(fuente, /if \(!merged\._tiktok2B6V2\) \{/);
   assert.match(fuente, /if \(t\.body && t\.body\.includes\(viejoEN\)\) t\.body = t\.body\.replace\(viejoEN, nuevoEN\);/);
   assert.match(fuente, /merged\._tiktok2B6V2 = true;/);
 });
 
-test('la migración V3 reemplaza todo el texto, solo si sigue siendo la v2 exacta', () => {
+test('la migración V4 reemplaza todo el texto, solo si sigue siendo la v2 exacta', () => {
   // Reemplaza body y trans juntos, y solo si AMBOS son la v2 exacta: si él
   // editó cualquier parte, no se toca. La bandera se marca solo si el texto está.
-  assert.match(fuente, /if \(!merged\._tiktok2V3\) \{/);
-  assert.match(fuente, /if \(t\.body === v2EN && t\.trans === v2ES\) \{ t\.body = v3EN; t\.trans = v3ES; \}/);
-  assert.match(fuente, /merged\._tiktok2V3 = true;/);
+  assert.match(fuente, /if \(!merged\._tiktok2V4\) \{/);
+  assert.match(fuente, /if \(t\.body === v2EN && t\.trans === v2ES\) \{ t\.body = v4EN; t\.trans = v4ES; \}/);
+  assert.match(fuente, /merged\._tiktok2V4 = true;/);
 });
