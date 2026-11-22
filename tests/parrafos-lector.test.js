@@ -45,8 +45,8 @@ test('el guion de TikTok se ve en sus seis bloques', () => {
   const semilla = h.ejecutar(`return ${fuente.slice(ini + '    const seed = '.length, fin + 6)};`, {});
   const t = semilla.find(x => x.id === 'txt_tiktok2');
   assert.ok(t, 'falta txt_tiktok2');
-  // Cinco saltos = seis bloques, en los límites que él escribió.
-  assert.deepEqual(starts(t.body), [2, 7, 9, 10, 12]);
+  // Cinco saltos = seis bloques, en los límites que él escribió (video 2 corto).
+  assert.deepEqual(starts(t.body), [2, 3, 7, 8, 11]);
 });
 
 test('el lector pide los saltos de bloque al abrir el texto', () => {
