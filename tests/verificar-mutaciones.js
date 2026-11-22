@@ -556,9 +556,9 @@ const MUTACIONES = [
     reemplazo: `  const SEED_VERSION = 16;   // v17: su guion de TikTok (video 2), txt_tiktok2`,
   },
   {
-    nombre: 'Guion de TikTok: cambiarle una palabra a su texto',
-    buscar: `the admission exam at the National University of Colombia`,
-    reemplazo: `the admission exam at a university in Colombia`,
+    nombre: 'TikTok V3: que la migración pise el texto que él editó',
+    buscar: `if (t.body === v2EN && t.trans === v2ES) { t.body = v3EN; t.trans = v3ES; }`,
+    reemplazo: `if (true) { t.body = v3EN; t.trans = v3ES; }`,
   },
   {
     nombre: 'TikTok B6: que la migración pise el bloque que él editó',

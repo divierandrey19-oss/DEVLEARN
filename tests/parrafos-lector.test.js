@@ -38,15 +38,15 @@ test('no cambia el conteo de frases que lee el audio', () => {
   assert.equal(splitSentences('One. Two.\n\nThree.').length, 3);
 });
 
-test('el guion de TikTok se ve en sus seis bloques', () => {
+test('el guion de TikTok se ve en sus cinco bloques', () => {
   const fuente = h.fuente();
   const ini = fuente.indexOf('    const seed = [');
   const fin = fuente.indexOf('\n    ];\n', ini);
   const semilla = h.ejecutar(`return ${fuente.slice(ini + '    const seed = '.length, fin + 6)};`, {});
   const t = semilla.find(x => x.id === 'txt_tiktok2');
   assert.ok(t, 'falta txt_tiktok2');
-  // Cinco saltos = seis bloques, en los límites que él escribió.
-  assert.deepEqual(starts(t.body), [2, 7, 9, 10, 12]);
+  // Cuatro saltos = cinco bloques, en los límites que él escribió (video 2 corto).
+  assert.deepEqual(starts(t.body), [2, 6, 7, 10]);
 });
 
 test('el lector pide los saltos de bloque al abrir el texto', () => {
