@@ -17,6 +17,7 @@ const ini = fuente.indexOf('    const seed = [');
 const fin = fuente.indexOf('\n    ];\n', ini);
 const semilla = h.ejecutar(`return ${fuente.slice(ini + '    const seed = '.length, fin + 6)};`, {});
 const t = semilla.find(x => x.id === 'txt_tiktok2');
+const t3 = semilla.find(x => x.id === 'txt_tiktok3');
 
 const { splitSentences } = h.ejecutar(`${h.extraerFuncion('splitSentences')} return { splitSentences };`, {});
 
@@ -48,7 +49,7 @@ test('cada frase tiene su traducción: el Flip to Spanish cuadra', () => {
 
 test('se entrega subiendo SEED_VERSION', () => {
   const m = fuente.match(/const SEED_VERSION = (\d+);/);
-  assert.ok(m && Number(m[1]) >= 17, 'con 16, quien ya abrió la app nunca recibe el guion');
+  assert.ok(m && Number(m[1]) >= 18, 'con 17, quien ya abrió la app nunca recibe el video 3');
 });
 
 test('el título no entra al repaso por unidad', () => {
@@ -84,4 +85,32 @@ test('la migración V4 reemplaza todo el texto, solo si sigue siendo la v2 exact
   assert.match(fuente, /if \(!merged\._tiktok2V4\) \{/);
   assert.match(fuente, /if \(t\.body === v2EN && t\.trans === v2ES\) \{ t\.body = v4EN; t\.trans = v4ES; \}/);
   assert.match(fuente, /merged\._tiktok2V4 = true;/);
+});
+
+// ── Video 3: el viaje a Cartagena (para el primer speaking del B1) ──────────
+
+test('el video 3 está en la semilla, tal cual, con su traducción', () => {
+  assert.ok(t3, 'falta txt_tiktok3');
+  assert.equal(t3.title, 'TikTok · Video 3');
+  assert.deepEqual(t3.wh, []);
+  // Frases exactas de lo que él mandó.
+  assert.match(t3.body, /^Last month, I was in Cartagena… swimming with fish! Oh my God, it was amazing\./);
+  assert.match(t3.body, /We went to San Felipe Castle to do a photo shoot for her birthday/);
+  assert.match(t3.body, /In Barú, I went snorkeling\./);
+  assert.match(t3.body, /But the best part\? Spending time with my family\./);
+  assert.match(t3.body, /Have you ever been to Cartagena\? If you haven't, you have to go!$/);
+});
+
+test('el video 3: cada frase con su traducción (Flip cuadra) y 9 bloques', () => {
+  assert.equal(splitSentences(t3.trans).length, splitSentences(t3.body).length);
+  assert.equal(splitSentences(t3.body).length, 24, 'los "…" y los ¿¡ no descuadran el conteo');
+  assert.equal(t3.body.split(/\n\n/).length, 9);
+  assert.equal(t3.trans.split(/\n\n/).length, 9);
+});
+
+test('el video 3 no entra al repaso por unidad', () => {
+  const { textInReview } = h.ejecutar(
+    `let _unidadesTextoEnRepaso = [1,2,3,4,5,6,7,8,9,10];
+     ${h.extraerFuncion('textInReview')} return { textInReview };`, {});
+  assert.equal(textInReview(t3), false);
 });
