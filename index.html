@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-22b -->
+<!-- DEVLEARN_BUILD: 2026-11-24a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-22b';
+const APP_BUILD = '2026-11-24a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6610,7 +6610,7 @@ function migrateState(s) {
   // 16: el de las pp. 116-117 (sueños, fortalezas y debilidades): sus sueños de
   // los textos anteriores; fortalezas y debilidades, las que él dijo. El consejo
   // del artículo lo escogí yo, como él pidió ("busca uno que vaya con lo mío").
-  const SEED_VERSION = 17;   // v17: su guion de TikTok (video 2), txt_tiktok2
+  const SEED_VERSION = 18;   // v18: su guion de TikTok (video 3), txt_tiktok3
   /* Sus textos cuentan su vida: solo entran en un aparato suyo, el que ya los
    * había recibido antes. El 8 de octubre compartió la app con una compañera y
    * no quiere que ella los vea. Un aparato nuevo suyo los trae de su nube al
@@ -6781,6 +6781,14 @@ function migrateState(s) {
         wh: [],
         body: "I'm 21, and I still haven't gone to university. And it's not because I don't want to.\n\nMy English isn't perfect, but I'm practicing, and this video is part of that.\n\nWhen I finished high school, I had no idea what to study. I did two programs in accounting and finance. Halfway through, I realized it wasn't for me. But I used what I learned to start a business with my brother.\n\nThat's when I understood: you don't need to have it all figured out to start building.\n\nNow I'm learning English. I have my A2 and I'm working on my B1. And I'm preparing for the admission exam for the National University.\n\nFollow me and let's learn together: English, business, and getting into university. When I take the exam, I'll let you know if I pass. My journey is just starting.",
         trans: "Tengo 21 años, y todavía no he ido a la universidad. Y no es porque no quiera.\n\nMi inglés no es perfecto, pero estoy practicando, y este video es parte de eso.\n\nCuando terminé el colegio, no tenía idea de qué estudiar. Hice dos programas en contabilidad y finanzas. A la mitad, me di cuenta de que no era para mí. Pero usé lo que aprendí para empezar un negocio con mi hermano.\n\nAhí fue cuando entendí: no necesitas tenerlo todo resuelto para empezar a construir.\n\nAhora estoy aprendiendo inglés. Tengo mi A2 y estoy trabajando en mi B1. Y me estoy preparando para el examen de admisión de la Universidad Nacional.\n\nSígueme y aprendamos juntos: inglés, negocios y cómo entrar a la universidad. Cuando presente el examen, les cuento si paso. Mi proceso apenas empieza." },
+      /* Su guion de TikTok (video 3): el viaje a Cartagena por los quince de
+       * su sobrina. Para practicar el primer speaking del B1. Su texto tal
+       * cual; traducción partida en las mismas 24 frases para que el Flip
+       * cuadre. Título sin 'U<n>', así que no entra al repaso por unidad. */
+      { id: 'txt_tiktok3', title: 'TikTok · Video 3',
+        wh: [],
+        body: "Last month, I was in Cartagena… swimming with fish! Oh my God, it was amazing. Let me tell you about it.\n\nWe traveled to celebrate my niece's fifteenth birthday. We went to San Felipe Castle to do a photo shoot for her birthday, and she was so happy!\n\nAnd here we are at the Clock Tower: my mom, my brother, my sister, my niece… and me! I love this picture.\n\nAt night, we walked around the Walled City. The streets were so beautiful… it felt like a movie.\n\nIn Barú, I went snorkeling. Oh my God, the water was so clear! I could see the fish right in front of me. And the beaches… wow, so beautiful.\n\nWe celebrated her birthday with a picnic at sunset. Honestly, that was one of my favorite moments.\n\nBut the best part? Spending time with my family. It was a really beautiful experience, and I'll never forget it.\n\nWould I go back? Yes, definitely! Cartagena is a beautiful, historic city, with many beaches and places to discover. I miss it already.\n\nHave you ever been to Cartagena? If you haven't, you have to go!",
+        trans: "El mes pasado estuve en Cartagena… ¡nadando con peces! Dios mío, fue increíble. Déjame contarte.\n\nViajamos para celebrar los quince años de mi sobrina. Fuimos al Castillo de San Felipe a hacerle una sesión de fotos por su cumpleaños, ¡y estaba feliz!\n\nY aquí estamos en la Torre del Reloj: mi mamá, mi hermano, mi hermana, mi sobrina… ¡y yo! Me encanta esta foto.\n\nEn la noche, caminamos por la Ciudad Amurallada. Las calles eran tan bonitas… parecía una película.\n\nEn Barú, hice snorkel. ¡Dios mío, el agua estaba tan clara! Podía ver los peces justo en frente de mí. Y las playas… guau, tan bonitas.\n\nCelebramos su cumpleaños con un picnic al atardecer. La verdad, ese fue uno de mis momentos favoritos.\n\n¿Pero la mejor parte? Pasar tiempo con mi familia. Fue una experiencia muy bonita, y nunca la voy a olvidar.\n\n¿Volvería? ¡Sí, claro que sí! Cartagena es una ciudad bonita e histórica, con muchas playas y lugares por descubrir. Ya la extraño.\n\n¿Has estado alguna vez en Cartagena? Si no, ¡tienes que ir!" },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);

@@ -552,13 +552,18 @@ const MUTACIONES = [
   },
   {
     nombre: 'Textos: no subir SEED_VERSION al agregar contenido (nunca le llegarían)',
-    buscar: `  const SEED_VERSION = 17;   // v17: su guion de TikTok (video 2), txt_tiktok2`,
-    reemplazo: `  const SEED_VERSION = 16;   // v17: su guion de TikTok (video 2), txt_tiktok2`,
+    buscar: `  const SEED_VERSION = 18;   // v18: su guion de TikTok (video 3), txt_tiktok3`,
+    reemplazo: `  const SEED_VERSION = 17;   // v18: su guion de TikTok (video 3), txt_tiktok3`,
   },
   {
     nombre: 'TikTok V4: que la migración pise el texto que él editó',
     buscar: `if (t.body === v2EN && t.trans === v2ES) { t.body = v4EN; t.trans = v4ES; }`,
     reemplazo: `if (true) { t.body = v4EN; t.trans = v4ES; }`,
+  },
+  {
+    nombre: 'Video 3: cambiarle una palabra a su guion de Cartagena',
+    buscar: `In Barú, I went snorkeling.`,
+    reemplazo: `In Barú, I went swimming.`,
   },
   {
     nombre: 'TikTok B6: que la migración pise el bloque que él editó',
