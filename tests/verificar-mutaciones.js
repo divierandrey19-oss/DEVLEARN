@@ -566,6 +566,11 @@ const MUTACIONES = [
     reemplazo: `In Barú, I went swimming.`,
   },
   {
+    nombre: 'Video 3 B3: que la migración pise el bloque que él editó',
+    buscar: `if (t.body && t.body.includes(b3EN)) t.body = t.body.replace(b3EN, b3EN2);`,
+    reemplazo: `if (t.body) t.body = t.body.replace(b3EN, b3EN2);`,
+  },
+  {
     nombre: 'TikTok B6: que la migración pise el bloque que él editó',
     buscar: `if (t.body && t.body.includes(viejoEN)) t.body = t.body.replace(viejoEN, nuevoEN);`,
     reemplazo: `if (t.body && true) t.body = t.body.replace(viejoEN, nuevoEN);`,
