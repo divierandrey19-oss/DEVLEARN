@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DEVLEARN_BUILD: 2026-11-24a -->
+<!-- DEVLEARN_BUILD: 2026-11-25a -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"/>
@@ -4913,7 +4913,7 @@ let fc = { idx: 0, flipped: false, mode: 'classic', vocab: [], context: null, ba
 
 // Build stamp — shown in Settings. Bump this whenever the file is updated so
 // it's possible to confirm a device isn't serving a stale cached copy.
-const APP_BUILD = '2026-11-24a';
+const APP_BUILD = '2026-11-25a';
 
 // Quiz session persistence — survives page reload
 // Stored separately from SRS state so it doesn't bloat the main save
@@ -6548,6 +6548,24 @@ function migrateState(s) {
     }
   }
 
+  /* Video 3, bloque 3: cambió la foto de la Torre del Reloj (ahora "la
+   * entrada principal a la Ciudad Amurallada", sin la lista de la familia).
+   * Se reemplaza solo ese bloque en su texto ya sembrado, y solo si sigue
+   * siendo la versión anterior exacta; si lo editó él, no se toca. Sigue
+   * siendo 2 frases, así el Flip cuadra. Bandera solo si el texto está. */
+  if (!merged._tiktok3V2) {
+    const t = merged.texts.find(x => x && x.id === 'txt_tiktok3');
+    if (t) {
+      const b3EN = "And here we are at the Clock Tower: my mom, my brother, my sister, my niece… and me! I love this picture.";
+      const b3EN2 = "And this is the Clock Tower, the main entrance to the Walled City. I love this picture.";
+      const b3ES = "Y aquí estamos en la Torre del Reloj: mi mamá, mi hermano, mi hermana, mi sobrina… ¡y yo! Me encanta esta foto.";
+      const b3ES2 = "Y esta es la Torre del Reloj, la entrada principal a la Ciudad Amurallada. Me encanta esta foto.";
+      if (t.body && t.body.includes(b3EN)) t.body = t.body.replace(b3EN, b3EN2);
+      if (t.trans && t.trans.includes(b3ES)) t.trans = t.trans.replace(b3ES, b3ES2);
+      merged._tiktok3V2 = true;
+    }
+  }
+
   /* Los phrasal verbs de las Units 7 y 8 entran como un lote propio dentro de
    * su unidad, no mezclados con las demás palabras: así pasan por Flashcards,
    * Quiz, Write y Listen igual que el resto, pero él los puede estudiar como
@@ -6787,8 +6805,8 @@ function migrateState(s) {
        * cuadre. Título sin 'U<n>', así que no entra al repaso por unidad. */
       { id: 'txt_tiktok3', title: 'TikTok · Video 3',
         wh: [],
-        body: "Last month, I was in Cartagena… swimming with fish! Oh my God, it was amazing. Let me tell you about it.\n\nWe traveled to celebrate my niece's fifteenth birthday. We went to San Felipe Castle to do a photo shoot for her birthday, and she was so happy!\n\nAnd here we are at the Clock Tower: my mom, my brother, my sister, my niece… and me! I love this picture.\n\nAt night, we walked around the Walled City. The streets were so beautiful… it felt like a movie.\n\nIn Barú, I went snorkeling. Oh my God, the water was so clear! I could see the fish right in front of me. And the beaches… wow, so beautiful.\n\nWe celebrated her birthday with a picnic at sunset. Honestly, that was one of my favorite moments.\n\nBut the best part? Spending time with my family. It was a really beautiful experience, and I'll never forget it.\n\nWould I go back? Yes, definitely! Cartagena is a beautiful, historic city, with many beaches and places to discover. I miss it already.\n\nHave you ever been to Cartagena? If you haven't, you have to go!",
-        trans: "El mes pasado estuve en Cartagena… ¡nadando con peces! Dios mío, fue increíble. Déjame contarte.\n\nViajamos para celebrar los quince años de mi sobrina. Fuimos al Castillo de San Felipe a hacerle una sesión de fotos por su cumpleaños, ¡y estaba feliz!\n\nY aquí estamos en la Torre del Reloj: mi mamá, mi hermano, mi hermana, mi sobrina… ¡y yo! Me encanta esta foto.\n\nEn la noche, caminamos por la Ciudad Amurallada. Las calles eran tan bonitas… parecía una película.\n\nEn Barú, hice snorkel. ¡Dios mío, el agua estaba tan clara! Podía ver los peces justo en frente de mí. Y las playas… guau, tan bonitas.\n\nCelebramos su cumpleaños con un picnic al atardecer. La verdad, ese fue uno de mis momentos favoritos.\n\n¿Pero la mejor parte? Pasar tiempo con mi familia. Fue una experiencia muy bonita, y nunca la voy a olvidar.\n\n¿Volvería? ¡Sí, claro que sí! Cartagena es una ciudad bonita e histórica, con muchas playas y lugares por descubrir. Ya la extraño.\n\n¿Has estado alguna vez en Cartagena? Si no, ¡tienes que ir!" },
+        body: "Last month, I was in Cartagena… swimming with fish! Oh my God, it was amazing. Let me tell you about it.\n\nWe traveled to celebrate my niece's fifteenth birthday. We went to San Felipe Castle to do a photo shoot for her birthday, and she was so happy!\n\nAnd this is the Clock Tower, the main entrance to the Walled City. I love this picture.\n\nAt night, we walked around the Walled City. The streets were so beautiful… it felt like a movie.\n\nIn Barú, I went snorkeling. Oh my God, the water was so clear! I could see the fish right in front of me. And the beaches… wow, so beautiful.\n\nWe celebrated her birthday with a picnic at sunset. Honestly, that was one of my favorite moments.\n\nBut the best part? Spending time with my family. It was a really beautiful experience, and I'll never forget it.\n\nWould I go back? Yes, definitely! Cartagena is a beautiful, historic city, with many beaches and places to discover. I miss it already.\n\nHave you ever been to Cartagena? If you haven't, you have to go!",
+        trans: "El mes pasado estuve en Cartagena… ¡nadando con peces! Dios mío, fue increíble. Déjame contarte.\n\nViajamos para celebrar los quince años de mi sobrina. Fuimos al Castillo de San Felipe a hacerle una sesión de fotos por su cumpleaños, ¡y estaba feliz!\n\nY esta es la Torre del Reloj, la entrada principal a la Ciudad Amurallada. Me encanta esta foto.\n\nEn la noche, caminamos por la Ciudad Amurallada. Las calles eran tan bonitas… parecía una película.\n\nEn Barú, hice snorkel. ¡Dios mío, el agua estaba tan clara! Podía ver los peces justo en frente de mí. Y las playas… guau, tan bonitas.\n\nCelebramos su cumpleaños con un picnic al atardecer. La verdad, ese fue uno de mis momentos favoritos.\n\n¿Pero la mejor parte? Pasar tiempo con mi familia. Fue una experiencia muy bonita, y nunca la voy a olvidar.\n\n¿Volvería? ¡Sí, claro que sí! Cartagena es una ciudad bonita e histórica, con muchas playas y lugares por descubrir. Ya la extraño.\n\n¿Has estado alguna vez en Cartagena? Si no, ¡tienes que ir!" },
     ];
     seed.forEach((t, i) => {
       const existente = merged.texts.find(x => x && x.id === t.id);

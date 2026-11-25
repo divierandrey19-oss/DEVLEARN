@@ -114,3 +114,17 @@ test('el video 3 no entra al repaso por unidad', () => {
      ${h.extraerFuncion('textInReview')} return { textInReview };`, {});
   assert.equal(textInReview(t3), false);
 });
+
+test('el video 3: el bloque 3 quedó con la Torre del Reloj como entrada', () => {
+  assert.match(t3.body, /And this is the Clock Tower, the main entrance to the Walled City\. I love this picture\./);
+  assert.doesNotMatch(t3.body, /my mom, my brother, my sister, my niece/, 'ya no está la lista de la familia');
+});
+
+test('la migración V2 del video 3 cambia solo el bloque 3, sin pisar lo que él edite', () => {
+  // Reemplazo por includes de la versión anterior exacta; bandera solo si el
+  // texto está en el aparato.
+  assert.match(fuente, /if \(!merged\._tiktok3V2\) \{/);
+  assert.match(fuente, /if \(t\.body && t\.body\.includes\(b3EN\)\) t\.body = t\.body\.replace\(b3EN, b3EN2\);/);
+  assert.match(fuente, /if \(t\.trans && t\.trans\.includes\(b3ES\)\) t\.trans = t\.trans\.replace\(b3ES, b3ES2\);/);
+  assert.match(fuente, /merged\._tiktok3V2 = true;/);
+});
